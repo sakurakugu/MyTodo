@@ -1,0 +1,74 @@
+/* File 生成于 Qt Creator */
+/* QML项目配置文件 */
+import QmlProject
+
+Project {
+    /* 设置项目的主文件 */
+    mainFile: "qml/Main.qml"
+
+    /* 包含当前目录及子目录中的所有.qml、.js和图像文件 */
+    /* 包含所有QML文件 */
+    QmlFiles {
+        directory: "." /* 从当前目录开始搜索 */
+    }
+
+    /* 包含所有JavaScript文件 */
+    JavaScriptFiles {
+        directory: "." /* 从当前目录开始搜索 */
+    }
+
+    /* 包含所有图像文件 */
+    ImageFiles {
+        directory: "." /* 从当前目录开始搜索 */
+    }
+
+    /* 包含配置文件 */
+    Files {
+        filter: "*.conf" /* 过滤所有.conf文件 */
+        files: ["qtquickcontrols2.conf"] /* 特别指定的配置文件 */
+    }
+
+    /* 包含QML模块定义文件 */
+    Files {
+        filter: "qmldir" /* 过滤所有qmldir文件 */
+        directory: "." /* 从当前目录开始搜索 */
+    }
+
+    /* 包含字体文件 */
+    Files {
+        filter: "*.ttf;*.otf" /* 过滤所有TrueType和OpenType字体文件 */
+        directory: "." /* 从当前目录开始搜索 */
+    }
+
+    /* 包含C++源文件和头文件 */
+    Files {
+        filter: "*.cpp;*.h" /* 过滤所有C++源文件和头文件 */
+        directory: "cpp" /* 从cpp目录开始搜索 */
+    }
+
+    /* 包含Markdown文档文件 */
+    Files {
+        filter: "*.md" /* 过滤所有Markdown文件 */
+        directory: "docs" /* 从docs目录开始搜索 */
+    }
+
+    /* 包含Qt资源文件 */
+    Files {
+        filter: "*.qrc" /* 过滤所有Qt资源文件 */
+    }
+
+    /* 包含文本文件 */
+    Files {
+        filter: "*.txt" /* 过滤所有文本文件 */
+        files: ["CMakeLists.txt"] /* 特别指定CMake构建配置文件 */
+    }
+
+    /* 环境变量设置 */
+    Environment {
+        QT_QUICK_CONTROLS_STYLE: "Material" /* 设置Qt Quick控件使用Material风格 */
+        QT_AUTO_SCREEN_SCALE_FACTOR: "1" /* 启用自动屏幕缩放 */
+    }
+
+    /* 传递给QML运行时的插件目录列表 */
+    importPaths: [ "." ] /* 设置当前目录为导入路径 */
+}
