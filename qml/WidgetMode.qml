@@ -85,8 +85,14 @@ Item {
                     text: "自动同步"
                     checked: todoModel.isOnline
                     onCheckedChanged: {
-                        todoModel.isOnline = checked;
-                        // 保存逻辑统一在C++ setIsOnline 中
+                        if (checked && !todoModel.isLoggedIn) {
+                            // 如果要开启自动同步但未登录，显示提示并重置开关
+                            autoSyncSwitch.checked = false;
+                            loginRequiredDialog.open();
+                        } else {
+                            todoModel.isOnline = checked;
+                            // 保存逻辑统一在C++ setIsOnline 中
+                        }
                     }
                 }
             }
@@ -326,6 +332,32 @@ Item {
                     ScrollBar.vertical: ScrollBar {}
                 }
             }
+        }
+    }
+
+    // 登录提示对话框
+    Dialog {
+        id: loginRequiredDialog
+        title: qsTr("需要登录")
+        modal: true
+        x: (parent.width - width) / 2
+        y: (parent.height - height) / 2
+        width: 250
+        height: 150
+        standardButtons: Dialog.Ok
+        
+        background: Rectangle {
+            color: isDarkMode ? "#2c3e50" : "white"
+            border.color: isDarkMode ? "#34495e" : "#bdc3c7"
+            border.width: 1
+            radius: 8
+        }
+        
+        Label {
+            text: qsTr("开启自动同步功能需要先登录账户。")
+            wrapMode: Text.WordWrap
+            color: textColor
+            anchors.centerIn: parent
         }
     }
 }

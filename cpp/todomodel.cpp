@@ -665,6 +665,11 @@ void TodoModel::logout() {
         m_todos[i]->setSynced(false);
     }
     
+    // 发出用户名变化信号
+    emit usernameChanged();
+    // 发出登录状态变化信号
+    emit isLoggedInChanged();
+    
     // 发出退出登录成功信号
     emit logoutSuccessful();
 }
@@ -770,6 +775,12 @@ void TodoModel::handleLoginResponse(QNetworkReply *reply) {
                 m_settings->save("username", m_username);
 
                 qDebug() << "用户" << m_username << "登录成功";
+                
+                // 发出用户名变化信号
+                emit usernameChanged();
+                // 发出登录状态变化信号
+                emit isLoggedInChanged();
+                
                 emit loginSuccessful(m_username);
 
                 // 登录成功后自动同步
@@ -1156,6 +1167,36 @@ void TodoModel::initializeServerConfig() {
  */
 QString TodoModel::getApiUrl(const QString &endpoint) const {
     return m_serverBaseUrl + endpoint;
+}
+
+/**
+ * @brief 检查URL是否使用HTTPS协议
+ * @param url 要检查的URL
+ * @return 如果使用HTTPS则返回true，否则返回false
+ */
+bool TodoModel::isHttpsUrl(const QString &url) const {
+    return url.startsWith("https://", Qt::CaseInsensitive);
+}
+
+/**
+ * @brief 更新服务器配置
+ * @param baseUrl 新的服务器基础URL
+ */
+void TodoModel::updateServerConfig(const QString &baseUrl) {
+    if (baseUrl.isEmpty()) {
+        qWarning() << "尝试设置空的服务器URL";
+        return;
+    }
+    
+    // 更新内存中的配置
+    m_serverBaseUrl = baseUrl;
+    
+    // 保存到设置中
+    m_settings->save("server/baseUrl", baseUrl);
+    m_settings->save("apiBaseUrl", baseUrl); // 兼容Setting.qml中的配置
+    
+    qDebug() << "服务器配置已更新:" << baseUrl;
+    qDebug() << "HTTPS状态:" << (isHttpsUrl(baseUrl) ? "安全" : "不安全");
 }
 
 bool TodoModel::exportTodos(const QString &filePath) {

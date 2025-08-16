@@ -23,6 +23,8 @@ class TodoModel : public QAbstractListModel {
     Q_PROPERTY(bool isOnline READ isOnline WRITE setIsOnline NOTIFY isOnlineChanged)
     Q_PROPERTY(QString currentCategory READ currentCategory WRITE setCurrentCategory NOTIFY currentCategoryChanged)
     Q_PROPERTY(QString currentFilter READ currentFilter WRITE setCurrentFilter NOTIFY currentFilterChanged)
+    Q_PROPERTY(QString username READ getUsername NOTIFY usernameChanged)
+    Q_PROPERTY(bool isLoggedIn READ isLoggedIn NOTIFY isLoggedInChanged)
 
   public:
     /**
@@ -86,11 +88,17 @@ class TodoModel : public QAbstractListModel {
 
     // 获取设置对象
     Q_INVOKABLE Settings* settings() const { return m_settings; }
+    
+    // 服务器配置相关
+    Q_INVOKABLE bool isHttpsUrl(const QString &url) const;     // 检查URL是否使用HTTPS
+    Q_INVOKABLE void updateServerConfig(const QString &baseUrl); // 更新服务器配置
 
   signals:
     void isOnlineChanged();                                                    // 在线状态变化信号
     void currentCategoryChanged();                                             // 当前分类筛选器变化信号
     void currentFilterChanged();                                               // 当前筛选条件变化信号
+    void usernameChanged();                                                    // 用户名变化信号
+    void isLoggedInChanged();                                                  // 登录状态变化信号
     void syncStarted();                                                        // 同步操作开始信号
     void syncCompleted(bool success, const QString &errorMessage = QString()); // 同步操作完成信号
     void loginSuccessful(const QString &username);                             // 登录成功信号
