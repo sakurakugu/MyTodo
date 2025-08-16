@@ -234,6 +234,7 @@ Window {
         anchors.bottom: parent.bottom
         visible: !isDesktopWidget
         cursorShape: Qt.SizeHorCursor
+        z: 2000
 
         property string edge: "left"
 
@@ -251,6 +252,7 @@ Window {
         anchors.bottom: parent.bottom
         visible: !isDesktopWidget
         cursorShape: Qt.SizeHorCursor
+        z: 2000
 
         property string edge: "right"
 
@@ -268,6 +270,7 @@ Window {
         anchors.right: parent.right
         visible: !isDesktopWidget
         cursorShape: Qt.SizeVerCursor
+        z: 2000
 
         property string edge: "top"
 
@@ -285,6 +288,7 @@ Window {
         anchors.right: parent.right
         visible: !isDesktopWidget
         cursorShape: Qt.SizeVerCursor
+        z: 2000
 
         property string edge: "bottom"
 
@@ -302,6 +306,7 @@ Window {
         anchors.top: parent.top
         visible: !isDesktopWidget
         cursorShape: Qt.SizeFDiagCursor
+        z: 2000
 
         property string edge: "topleft"
 
@@ -319,6 +324,7 @@ Window {
         anchors.top: parent.top
         visible: !isDesktopWidget
         cursorShape: Qt.SizeBDiagCursor
+        z: 2000
 
         property string edge: "topright"
 
@@ -336,6 +342,7 @@ Window {
         anchors.bottom: parent.bottom
         visible: !isDesktopWidget
         cursorShape: Qt.SizeBDiagCursor
+        z: 2000
 
         property string edge: "bottomleft"
 
@@ -353,6 +360,7 @@ Window {
         anchors.bottom: parent.bottom
         visible: !isDesktopWidget
         cursorShape: Qt.SizeFDiagCursor
+        z: 2000
 
         property string edge: "bottomright"
 

@@ -58,6 +58,13 @@ int main(int argc, char *argv[]) {
     Settings settings;                       // 创建Settings实例
     TodoModel todoModel(nullptr, &settings); // 创建TodoModel实例
     MainWindow mainWindow;                   // 创建MainWindow实例
+    
+    // 检查是否通过开机自启动启动
+    QStringList arguments = app.arguments();
+    if (arguments.contains("--autostart")) {
+        // 如果是开机自启动，默认设置为小组件模式
+        mainWindow.setIsDesktopWidget(true);
+    }
 
     QQmlApplicationEngine engine;
 

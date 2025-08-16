@@ -69,6 +69,15 @@ Page {
         }
 
         Switch {
+            id: autoStartSwitch
+            text: qsTr("开机自启动")
+            checked: mainWindow.isAutoStartEnabled()
+            onCheckedChanged: {
+                mainWindow.setAutoStart(checked);
+            }
+        }
+
+        Switch {
             id: autoSyncSwitch
             text: qsTr("自动同步")
             checked: todoModel.isOnline

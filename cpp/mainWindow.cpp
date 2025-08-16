@@ -1,4 +1,8 @@
 #include "mainWindow.h"
+#include <QSettings>
+#include <QCoreApplication>
+#include <QDir>
+#include <QStandardPaths>
 
 MainWindow::MainWindow(QObject *parent)
     : QObject(parent), m_isDesktopWidget(false), m_isShowAddTask(false), m_isShowTodos(true), m_isShowSetting(false) {
@@ -99,4 +103,26 @@ void MainWindow::toggleTodosVisible() {
 void MainWindow::toggleSettingsVisible() {
     setIsShowSetting(!m_isShowSetting);
     updateWidgetHeight(); // 动态更新高度
+}
+
+bool MainWindow::isAutoStartEnabled() const {
+    QSettings settings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
+    return settings.contains("MyTodo");
+}
+
+bool MainWindow::setAutoStart(bool enabled) {
+    QSettings settings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
+    
+    if (enabled) {
+        QString applicationPath = QCoreApplication::applicationFilePath();
+        applicationPath = QDir::toNativeSeparators(applicationPath);
+        // 添加命令行参数标识开机自启动
+        applicationPath += " --autostart";
+        settings.setValue("MyTodo", applicationPath);
+    } else {
+        settings.remove("MyTodo");
+    }
+    
+    settings.sync();
+    return settings.status() == QSettings::NoError;
 }

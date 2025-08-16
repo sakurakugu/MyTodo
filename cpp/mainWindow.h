@@ -32,6 +32,10 @@ class MainWindow : public QObject {
     void toggleAddTaskVisible();
     void toggleTodosVisible();
     void toggleSettingsVisible();
+    
+    // 开机自启动相关方法
+    Q_INVOKABLE bool isAutoStartEnabled() const;
+    Q_INVOKABLE bool setAutoStart(bool enabled);
 
   private:
     void updateWidgetHeight(); // 动态更新小组件模式高度
