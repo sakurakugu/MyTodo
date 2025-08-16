@@ -6,6 +6,9 @@
 #include <QUuid>
 #include <QNetworkProxy>
 #include <QProcess>
+#include <QFile>
+#include <QFileInfo>
+#include <QDir>
 
 TodoModel::TodoModel(QObject *parent, Settings *settings, Settings::StorageType storageType)
     : QAbstractListModel(parent), m_isOnline(false), m_currentCategory(""), m_currentFilter(""),
@@ -1132,26 +1135,6 @@ void TodoModel::pushLocalChangesToServer() {
 }
 
 /**
- * @brief 保存设置到配置文件
- * @param key 设置键名
- * @param value 设置值
- * @return 保存是否成功
- */
-bool TodoModel::save(const QString &key, const QVariant &value) {
-    return m_settings->save(key, value);
-}
-
-/**
- * @brief 从配置文件读取设置
- * @param key 设置键名
- * @param defaultValue 默认值（如果设置不存在）
- * @return 设置值
- */
-QVariant TodoModel::get(const QString &key, const QVariant &defaultValue) {
-    return m_settings->get(key, defaultValue);
-}
-
-/**
  * @brief 初始化服务器配置
  */
 void TodoModel::initializeServerConfig() {
@@ -1173,4 +1156,132 @@ void TodoModel::initializeServerConfig() {
  */
 QString TodoModel::getApiUrl(const QString &endpoint) const {
     return m_serverBaseUrl + endpoint;
+}
+
+bool TodoModel::exportTodos(const QString &filePath) {
+    QJsonArray todosArray;
+    
+    // 将所有待办事项转换为JSON格式
+    for (const TodoItem *todo : m_todos) {
+        QJsonObject todoObj;
+        todoObj["id"] = todo->id();
+        todoObj["title"] = todo->title();
+        todoObj["description"] = todo->description();
+        todoObj["category"] = todo->category();
+        todoObj["urgency"] = todo->urgency();
+        todoObj["importance"] = todo->importance();
+        todoObj["status"] = todo->status();
+        todoObj["createdAt"] = todo->createdAt().toString(Qt::ISODate);
+        todoObj["updatedAt"] = todo->updatedAt().toString(Qt::ISODate);
+        todoObj["synced"] = todo->synced();
+        
+        todosArray.append(todoObj);
+    }
+    
+    // 创建根JSON对象
+    QJsonObject rootObj;
+    rootObj["version"] = "1.0";
+    rootObj["exportDate"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+    rootObj["todos"] = todosArray;
+    
+    // 写入文件
+    QJsonDocument doc(rootObj);
+    QFile file(filePath);
+    
+    // 确保目录存在
+    QFileInfo fileInfo(filePath);
+    QDir dir = fileInfo.absoluteDir();
+    if (!dir.exists()) {
+        dir.mkpath(".");
+    }
+    
+    if (!file.open(QIODevice::WriteOnly)) {
+        qWarning() << "无法打开文件进行写入:" << filePath;
+        return false;
+    }
+    
+    file.write(doc.toJson());
+    file.close();
+    
+    qDebug() << "成功导出" << m_todos.size() << "个待办事项到" << filePath;
+    return true;
+}
+
+bool TodoModel::importTodos(const QString &filePath) {
+    QFile file(filePath);
+    
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "无法打开文件进行读取:" << filePath;
+        return false;
+    }
+    
+    QByteArray data = file.readAll();
+    file.close();
+    
+    QJsonParseError error;
+    QJsonDocument doc = QJsonDocument::fromJson(data, &error);
+    
+    if (error.error != QJsonParseError::NoError) {
+        qWarning() << "JSON解析错误:" << error.errorString();
+        return false;
+    }
+    
+    QJsonObject rootObj = doc.object();
+    
+    // 检查版本兼容性
+    QString version = rootObj["version"].toString();
+    if (version != "1.0") {
+        qWarning() << "不支持的文件版本:" << version;
+        return false;
+    }
+    
+    QJsonArray todosArray = rootObj["todos"].toArray();
+    int importedCount = 0;
+    int skippedCount = 0;
+    
+    beginResetModel();
+    
+    for (const QJsonValue &value : todosArray) {
+        QJsonObject todoObj = value.toObject();
+        
+        QString id = todoObj["id"].toString();
+        
+        // 检查是否已存在相同ID的待办事项
+        bool exists = false;
+        for (const TodoItem *existingTodo : m_todos) {
+            if (existingTodo->id() == id) {
+                exists = true;
+                skippedCount++;
+                break;
+            }
+        }
+        
+        if (!exists) {
+            // 创建新的待办事项
+            TodoItem *newTodo = new TodoItem(
+                id,
+                todoObj["title"].toString(),
+                todoObj["description"].toString(),
+                todoObj["category"].toString(),
+                todoObj["urgency"].toString(),
+                todoObj["importance"].toString(),
+                todoObj["status"].toString(),
+                QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),
+                QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate),
+                todoObj["synced"].toBool(),
+                this
+            );
+            
+            m_todos.append(newTodo);
+            importedCount++;
+        }
+    }
+    
+    endResetModel();
+    
+    // 保存到本地存储
+    saveToLocalStorage();
+    
+    qDebug() << "导入完成 - 新增:" << importedCount << "个，跳过:" << skippedCount << "个";
+    return true;
 }

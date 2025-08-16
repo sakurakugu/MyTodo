@@ -79,13 +79,13 @@ class TodoModel : public QAbstractListModel {
 
     Q_INVOKABLE QString getUsername() const; // 获取用户名
     Q_INVOKABLE QString getEmail() const;    // 获取邮箱
+    
+    // 导出导入功能
+    Q_INVOKABLE bool exportTodos(const QString &filePath); // 导出待办事项到文件
+    Q_INVOKABLE bool importTodos(const QString &filePath); // 从文件导入待办事项
 
     // 获取设置对象
     Q_INVOKABLE Settings* settings() const { return m_settings; }
-    
-    // 为了保持兼容性，保留这些方法但内部使用Settings类实现
-    Q_INVOKABLE bool save(const QString &key, const QVariant &value);
-    Q_INVOKABLE QVariant get(const QString &key, const QVariant &defaultValue = QVariant());
 
   signals:
     void isOnlineChanged();                                                    // 在线状态变化信号
