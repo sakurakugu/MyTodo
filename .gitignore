@@ -84,9 +84,12 @@ CMakeLists.txt.user*
 .uic/
 /build*/
 
+# IDE 生成文件
+.idea/
+
 # 其他
 replacements.txt
 test/
 
 # 临时
-settings.cpp
+cmake-build-debug/

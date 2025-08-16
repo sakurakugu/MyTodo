@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
 import QtQuick.Dialogs
+import "components"
 
 Page {
     id: settingPage
@@ -13,8 +14,14 @@ Page {
     // 根窗口引用，用于更新全局属性
     property var rootWindow: null
 
+    // 主题管理器
+    ThemeManager {
+        id: theme
+        isDarkMode: settingPage.isDarkMode
+    }
+
     background: Rectangle {
-        color: isDarkMode ? "#1e272e" : "white"
+        color: theme.backgroundColor
     }
 
     header: ToolBar {
@@ -28,7 +35,7 @@ Page {
                 text: qsTr("设置")
                 font.bold: true
                 font.pixelSize: 16
-                color: isDarkMode ? "#ecf0f1" : "black"
+                color: theme.textColor
                 Layout.leftMargin: 10
             }
         }
@@ -47,7 +54,7 @@ Page {
             text: qsTr("外观设置")
             font.bold: true
             font.pixelSize: 16
-            color: isDarkMode ? "#ecf0f1" : "black"
+            color: theme.textColor
         }
 
         Switch {
@@ -101,28 +108,24 @@ Page {
             text: qsTr("数据管理")
             font.bold: true
             font.pixelSize: 16
-            color: isDarkMode ? "#ecf0f1" : "black"
+            color: theme.textColor
             Layout.topMargin: 10
         }
 
         RowLayout {
             spacing: 10
             
-            Button {
+            CustomButton {
                 text: qsTr("导出待办事项")
-                background: Rectangle {
-                    color: "#27ae60"
-                    radius: 4
-                }
+                textColor: "white"
+                backgroundColor: "#27ae60"
                 onClicked: exportFileDialog.open()
             }
             
-            Button {
+            CustomButton {
                 text: qsTr("导入待办事项")
-                background: Rectangle {
-                    color: "#3498db"
-                    radius: 4
-                }
+                textColor: "white"
+                backgroundColor: "#3498db"
                 onClicked: importFileDialog.open()
             }
         }
@@ -131,16 +134,14 @@ Page {
             text: qsTr("关于")
             font.bold: true
             font.pixelSize: 16
-            color: isDarkMode ? "#ecf0f1" : "black"
+            color: theme.textColor
             Layout.topMargin: 10
         }
 
-        Button {
+        CustomButton {
             text: qsTr("GitHub主页")
-            background: Rectangle {
-                color: "#0f85d3"
-                radius: 4
-            }
+            textColor: "white"
+            backgroundColor: "#0f85d3"
             onClicked: Qt.openUrlExternally("https://github.com/sakurakugu/MyTodo")
         }
 
@@ -148,7 +149,7 @@ Page {
             text: qsTr("服务器配置")
             font.bold: true
             font.pixelSize: 16
-            color: isDarkMode ? "#ecf0f1" : "black"
+            color: theme.textColor
             Layout.topMargin: 10
         }
 
@@ -158,7 +159,7 @@ Page {
 
             Label {
                 text: qsTr("API服务器地址:")
-                color: isDarkMode ? "#ecf0f1" : "black"
+                color: theme.textColor
             }
 
             TextField {
@@ -166,10 +167,10 @@ Page {
                 Layout.fillWidth: true
                 placeholderText: qsTr("请输入API服务器地址")
                 text: settings.get("server/baseUrl", "https://api.example.com")
-                color: isDarkMode ? "#ecf0f1" : "black"
+                color: theme.textColor
                 background: Rectangle {
-                    color: isDarkMode ? "#2d3436" : "#f5f5f5"
-                    border.color: isDarkMode ? "#34495e" : "#cccccc"
+                    color: theme.secondaryBackgroundColor
+                    border.color: theme.borderColor
                     border.width: 1
                     radius: 4
                 }
@@ -178,8 +179,10 @@ Page {
             RowLayout {
                 spacing: 10
 
-                Button {
+                CustomButton {
                     text: qsTr("保存配置")
+                    textColor: "white"
+                    backgroundColor: "#27ae60"
                     enabled: apiUrlField.text.length > 0
                     onClicked: {
                         var url = apiUrlField.text.trim()
@@ -198,20 +201,14 @@ Page {
                         todoModel.updateServerConfig(url)
                         apiConfigSuccessDialog.open()
                     }
-                    background: Rectangle {
-                        color: "#27ae60"
-                        radius: 4
-                    }
                 }
 
-                Button {
+                CustomButton {
                     text: qsTr("重置为默认")
+                    textColor: "white"
+                    backgroundColor: "#95a5a6"
                     onClicked: {
                         apiUrlField.text = "https://api.example.com"
-                    }
-                    background: Rectangle {
-                        color: "#95a5a6"
-                        radius: 4
                     }
                 }
             }

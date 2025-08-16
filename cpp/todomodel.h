@@ -1,22 +1,55 @@
+/**
+ * @file todomodel.h
+ * @brief TodoModel类的头文件
+ * 
+ * 该文件定义了TodoModel类，用于管理待办事项的数据模型。
+ * 
+ * @author MyTodo Team
+ * @date 2024
+ */
+
 #ifndef TODOMODEL_H
 #define TODOMODEL_H
 
 #include "todoItem.h"
 #include "settings.h"
+#include "networkmanager.h"
 #include <QAbstractListModel>
 #include <QDebug>
 #include <QList>
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
-#include <QTimer>
+#include <QSortFilterProxyModel>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QVariantMap>
+#include <memory>
+#include <vector>
 
 /**
  * @class TodoModel
- * @brief 待办事项列表模型，负责管理所有待办事项
+ * @brief 待办事项列表模型，负责管理所有待办事项的核心类
  *
- * TodoModel类提供了管理待办事项的功能，包括本地存储、网络同步和过滤排序。
- * 该类实现了QAbstractListModel接口，可以与Qt的视图类和QML无缝集成。
- * 支持在线/离线模式，具有自动同步和错误处理能力。
+ * TodoModel类是应用程序的核心数据模型，提供了完整的待办事项管理功能：
+ * 
+ * **核心功能：**
+ * - 待办事项的CRUD操作（创建、读取、更新、删除）
+ * - 本地数据持久化存储
+ * - 网络同步和离线支持
+ * - 数据过滤和分类
+ * - 用户认证和会话管理
+ * 
+ * **架构特点：**
+ * - 继承自QAbstractListModel，与Qt视图系统完美集成
+ * - 支持QML属性绑定和信号槽机制
+ * - 使用智能指针管理内存，确保安全性
+ * - 实现了过滤缓存机制，提升性能
+ * 
+ * **使用场景：**
+ * - 在QML中作为ListView的model
+ * - 在C++中作为数据访问层
+ * - 支持在线/离线模式切换
+ * 
+ * @note 该类是线程安全的，所有网络操作都在后台线程执行
+ * @see TodoItem, NetworkManager, Settings
  */
 class TodoModel : public QAbstractListModel {
     Q_OBJECT
@@ -45,7 +78,22 @@ class TodoModel : public QAbstractListModel {
     };
     Q_ENUM(TodoRoles)
 
+    /**
+     * @brief 构造函数
+     * 
+     * 创建TodoModel实例，初始化网络管理器、设置对象和本地存储。
+     * 
+     * @param parent 父对象指针，用于Qt对象树管理
+     * @param settings 设置对象指针，如果为nullptr则创建新的设置对象
+     * @param storageType 存储类型，默认使用注册表存储
+     */
     explicit TodoModel(QObject *parent = nullptr, Settings *settings = nullptr, Settings::StorageType storageType = Settings::Registry);
+    
+    /**
+     * @brief 析构函数
+     * 
+     * 清理资源，保存未同步的数据到本地存储。
+     */
     ~TodoModel();
 
     // QAbstractListModel 必要的实现方法
@@ -107,31 +155,44 @@ class TodoModel : public QAbstractListModel {
     void syncCompleted(bool success, const QString &errorMessage = QString()); // 同步操作完成信号
     void loginSuccessful(const QString &username);                             // 登录成功信号
     void loginFailed(const QString &errorMessage);                             // 登录失败信号
+    void loginRequired();                                                      // 需要登录信号
     void logoutSuccessful();                                                   // 退出登录成功信号
 
   private slots:
-    void onNetworkReplyFinished(QNetworkReply *reply); // 处理网络请求完成事件
-    void handleLoginResponse(QNetworkReply *reply);    // 处理登录请求的响应
-    void handleSyncResponse(QNetworkReply *reply);     // 处理同步请求的响应
-    void handleNetworkTimeout();                       // 处理网络请求超时
+    void onNetworkRequestCompleted(NetworkManager::RequestType type, const QJsonObject &response); // 处理网络请求成功
+    void onNetworkRequestFailed(NetworkManager::RequestType type, NetworkManager::NetworkError error, const QString &message); // 处理网络请求失败
+    void onNetworkStatusChanged(bool isOnline);        // 处理网络状态变化
+    void onAuthTokenExpired();                         // 处理认证令牌过期
 
   private:
     bool loadFromLocalStorage();                                 // 从本地存储加载待办事项
     bool saveToLocalStorage();                                   // 将待办事项保存到本地存储
     void fetchTodosFromServer();                                 // 从服务器获取最新的待办事项
     void pushLocalChangesToServer();                             // 将本地更改推送到服务器
+    void handleFetchTodosSuccess(const QJsonObject &response);   // 处理获取待办事项成功
+    void handlePushChangesSuccess(const QJsonObject &response);  // 处理推送更改成功
+    void handleLoginSuccess(const QJsonObject &response);       // 处理登录成功
+    void handleSyncSuccess(const QJsonObject &response);        // 处理同步成功
+    void updateTodosFromServer(const QJsonArray &todosArray);    // 从服务器数据更新待办事项
     void logError(const QString &context, const QString &error); // 记录错误信息
     QVariant getItemData(const TodoItem *item, int role) const;
     void initializeServerConfig(); // 初始化服务器配置
+    
+    // 性能优化相关方法
+    void updateFilterCache();                                    // 更新过滤缓存
+    bool itemMatchesFilter(const TodoItem* item) const;         // 检查项目是否匹配当前过滤条件
+    TodoItem* getFilteredItem(int index) const;                 // 获取过滤后的项目（带边界检查）
+    void invalidateFilterCache();                               // 使过滤缓存失效
 
     // 成员变量
-    QList<TodoItem *> m_todos;               ///< 待办事项列表
+    std::vector<std::unique_ptr<TodoItem>> m_todos; ///< 待办事项列表（使用智能指针）
+    QList<TodoItem*> m_filteredTodos;         ///< 过滤后的待办事项列表（缓存）
+    bool m_filterCacheDirty;                  ///< 过滤缓存是否需要更新
     bool m_isOnline;                         ///< 是否在线
     QString m_currentCategory;               ///< 当前分类筛选器
     QString m_currentFilter;                 ///< 当前筛选条件
-    QNetworkAccessManager *m_networkManager; ///< 网络管理器
+    NetworkManager *m_networkManager;        ///< 网络管理器
     Settings* m_settings;                    ///< 应用设置
-    QTimer *m_networkTimeoutTimer;           ///< 网络请求超时计时器
 
     QString m_accessToken;  ///< 访问令牌
     QString m_refreshToken; ///< 刷新令牌
@@ -142,10 +203,9 @@ class TodoModel : public QAbstractListModel {
     QString m_serverBaseUrl;    ///< 服务器基础URL
     QString m_todoApiEndpoint;  ///< 待办事项API端点
     QString m_authApiEndpoint;  ///< 认证API端点
-
-    static const int NETWORK_TIMEOUT_MS = 10000; ///< 网络请求超时时间(毫秒)
-    static const int MAX_RETRIES = 3;            ///< 最大重试次数
-    int m_currentRetryCount;                     ///< 当前重试计数
+    
+    // 待同步项目的临时存储
+    QList<TodoItem*> m_pendingUnsyncedItems; ///< 待同步项目列表
 
     // 辅助方法
     QString getApiUrl(const QString &endpoint) const; ///< 获取完整的API URL

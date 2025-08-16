@@ -1,3 +1,13 @@
+/**
+ * @file todoitem.h
+ * @brief TodoItem类的头文件
+ * 
+ * 该文件定义了TodoItem类，用于表示待办事项的数据模型。
+ * 
+ * @author MyTodo Team
+ * @date 2024
+ */
+
 #ifndef TODOITEM_H
 #define TODOITEM_H
 
@@ -7,10 +17,19 @@
 
 /**
  * @class TodoItem
- * @brief 表示单个待办事项的类
+ * @brief 表示单个待办事项的数据模型类
  * 
- * TodoItem类封装了一个待办事项的所有属性，包括标题、描述、分类、
- * 优先级信息以及同步状态等。该类支持Qt属性系统，可在QML中使用。
+ * TodoItem类封装了一个待办事项的所有属性，包括：
+ * - 基本信息：ID、标题、描述
+ * - 分类信息：分类、紧急程度、重要程度
+ * - 状态信息：当前状态、创建时间、更新时间
+ * - 同步信息：是否已与服务器同步
+ * 
+ * 该类继承自QObject，支持Qt的属性系统和信号槽机制，
+ * 可以直接在QML中使用，实现数据绑定和自动更新UI。
+ * 
+ * @note 所有属性都有对应的getter、setter方法和change信号
+ * @see TodoModel
  */
 class TodoItem : public QObject {
     Q_OBJECT
@@ -26,7 +45,29 @@ class TodoItem : public QObject {
     Q_PROPERTY(bool synced READ synced WRITE setSynced NOTIFY syncedChanged)
 
   public:
+    /**
+     * @brief 默认构造函数
+     * @param parent 父对象指针，用于Qt对象树管理
+     */
     explicit TodoItem(QObject *parent = nullptr);
+    
+    /**
+     * @brief 带参数的构造函数
+     * 
+     * 使用指定参数创建TodoItem对象，通常用于从数据库或网络加载数据。
+     * 
+     * @param id 待办事项唯一标识符
+     * @param title 待办事项标题
+     * @param description 待办事项详细描述
+     * @param category 待办事项分类
+     * @param urgency 紧急程度
+     * @param importance 重要程度
+     * @param status 当前状态
+     * @param createdAt 创建时间
+     * @param updatedAt 最后更新时间
+     * @param synced 是否已与服务器同步
+     * @param parent 父对象指针
+     */
     TodoItem(const QString &id, const QString &title, const QString &description, const QString &category,
              const QString &urgency, const QString &importance, const QString &status, const QDateTime &createdAt,
              const QDateTime &updatedAt, bool synced, QObject *parent = nullptr);

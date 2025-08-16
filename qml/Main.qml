@@ -1,8 +1,30 @@
+/**
+ * @file Main.qml
+ * @brief 应用程序主窗口
+ * 
+ * 该文件定义了MyTodo应用程序的主窗口界面，包括：
+ * - 无边框窗口设计
+ * - 桌面小组件模式支持
+ * - 深色/浅色主题切换
+ * - 窗口拖拽和调整大小功能
+ * - 页面导航和状态管理
+ * 
+ * @author MyTodo Team
+ * @date 2024
+ */
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
+import "components"
 
+/**
+ * @brief 应用程序主窗口
+ * 
+ * 主窗口采用无边框设计，支持桌面小组件模式和普通窗口模式。
+ * 提供了完整的主题系统和响应式布局。
+ */
 Window {
     id: root
     width: 640
@@ -11,58 +33,95 @@ Window {
     minimumHeight: 480
     visible: true
     title: qsTr("我的待办")
-    color: "transparent" // 要始终保持背景透明，不然window下再次变透明会变黑
-    flags: Qt.FramelessWindowHint | (isDesktopWidget ? Qt.Tool : Qt.Window) // Qt.FramelessWindowHint 要一直保持存在，不然windows会在没有它时背景变黑，而且变不回来......
+    
+    // 背景透明度设置 - 必须保持透明，否则在Windows下会出现黑色背景问题
+    color: "transparent"
+    
+    // 窗口标志设置 - FramelessWindowHint必须始终存在，否则Windows下会出现背景变黑且无法恢复的问题
+    flags: Qt.FramelessWindowHint | (isDesktopWidget ? Qt.Tool : Qt.Window)
 
-    property int resizeBorderWidth: 5     // 定义边框调整大小的边距
-    property bool isDesktopWidget: mainWindow.isDesktopWidget  // 是否是桌面小组件模式
-    property bool isShowTodos: mainWindow.isShowTodos       // 是否展示所有任务，在小组件模式下
-    property bool isShowAddTask: mainWindow.isShowAddTask    // 是否展示添加任务
-    property bool isShowSetting: mainWindow.isShowSetting    // 是否展示设置
-    // property bool isDarkMode: settings.get("isDarkMode", false)
-    property bool isDarkMode: false       // 添加深色模式属性
-    property bool preventDragging: settings.get("preventDragging", false) // 是否防止拖动
+    // 窗口调整相关属性
+    property int resizeBorderWidth: 5     ///< 边框调整大小的边距宽度
+    
+    // 显示模式控制属性
+    property bool isDesktopWidget: mainWindow.isDesktopWidget  ///< 是否为桌面小组件模式
+    property bool isShowTodos: mainWindow.isShowTodos         ///< 是否显示所有任务（小组件模式下）
+    property bool isShowAddTask: mainWindow.isShowAddTask      ///< 是否显示添加任务界面
+    property bool isShowSetting: mainWindow.isShowSetting      ///< 是否显示设置界面
+    
+    // 主题相关属性
+    property bool isDarkMode: false                           ///< 深色模式开关
+    // property bool isDarkMode: settings.get("isDarkMode", false) // 从设置中读取深色模式状态
+    
+    // 交互控制属性
+    property bool preventDragging: settings.get("preventDragging", false) ///< 是否禁止窗口拖拽
 
-    // 使用StackView进行页面导航
+    // 页面导航系统（使用StackView实现）
 
-    // 颜色主题
-    property color primaryColor: isDarkMode ? "#2c3e50" : "#4a86e8"
-    property color backgroundColor: isDarkMode ? "#1e272e" : "white"
-    property color secondaryBackgroundColor: isDarkMode ? "#2d3436" : "#f5f5f5"
-    property color textColor: isDarkMode ? "#ecf0f1" : "black"
-    property color borderColor: isDarkMode ? "#34495e" : "#cccccc"
+    /**
+     * @brief 主题颜色系统
+     * 
+     * 定义了深色和浅色两套主题的颜色方案，
+     * 根据isDarkMode属性自动切换。
+     */
+    property color primaryColor: isDarkMode ? "#2c3e50" : "#4a86e8"              ///< 主色调
+    property color backgroundColor: isDarkMode ? "#1e272e" : "white"             ///< 主背景色
+    property color secondaryBackgroundColor: isDarkMode ? "#2d3436" : "#f5f5f5"  ///< 次要背景色
+    property color textColor: isDarkMode ? "#ecf0f1" : "black"                  ///< 文本颜色
+    property color borderColor: isDarkMode ? "#34495e" : "#cccccc"              ///< 边框颜色
 
-    // 监听mainWindow的宽度和高度变化
+    /**
+     * @brief 窗口尺寸同步连接
+     * 
+     * 监听C++端mainWindow对象的尺寸变化，
+     * 确保QML窗口与C++窗口尺寸保持同步。
+     */
     Connections {
         target: mainWindow
+        
+        /// 处理窗口宽度变化
         function onWidthChanged(width) {
             root.width = width;
         }
+        
+        /// 处理窗口高度变化
         function onHeightChanged(height) {
             root.height = height;
         }
     }
 
-    // 标题栏
+    /**
+     * @brief 应用程序标题栏
+     * 
+     * 自定义标题栏，支持窗口拖拽功能。
+     * 在桌面小组件模式和普通窗口模式下有不同的样式。
+     */
     Rectangle {
         id: titleBar
         anchors.top: parent.top
-        width: isDesktopWidget ? 400 : parent.width
-        height: isDesktopWidget ? 35 : 45
-        color: primaryColor
-        border.color: isDesktopWidget ? borderColor : "transparent"
-        border.width: isDesktopWidget ? 1 : 0
-        radius: isDesktopWidget ? 5 : 0
+        width: isDesktopWidget ? 400 : parent.width     ///< 小组件模式固定宽度，普通模式填充父容器
+        height: isDesktopWidget ? 35 : 45               ///< 小组件模式较小高度，普通模式较大高度
+        color: primaryColor                             ///< 使用主题主色调
+        border.color: isDesktopWidget ? borderColor : "transparent"  ///< 小组件模式显示边框
+        border.width: isDesktopWidget ? 1 : 0           ///< 边框宽度
+        radius: isDesktopWidget ? 5 : 0                 ///< 小组件模式圆角
 
-        // 允许按住标题栏拖动窗口
+        /**
+         * @brief 窗口拖拽处理区域
+         * 
+         * 处理标题栏的鼠标拖拽事件，实现窗口移动功能。
+         * 支持防拖拽设置和不同模式下的拖拽控制。
+         */
         MouseArea {
             anchors.fill: parent
-            property point clickPos: "0,0"
+            property point clickPos: "0,0"  ///< 记录鼠标按下时的位置
 
+            /// 鼠标按下事件处理
             onPressed: function(mouse) {
                 clickPos = Qt.point(mouse.x, mouse.y);
             }
 
+            /// 鼠标移动事件处理 - 实现窗口拖拽
             onPositionChanged: function(mouse) {
                 // 只有在非小组件模式或小组件模式但未启用防止拖动时才允许拖动
                 if (pressed && ((!isDesktopWidget) || (isDesktopWidget && !preventDragging))) {
@@ -71,26 +130,44 @@ Window {
                     root.y += delta.y;
                 }
             }
-            z: -1 // 确保此MouseArea在其他控件下层，不影响其他控件的点击事件
+            z: -1 ///< 确保此MouseArea在其他控件下层，不影响其他控件的点击事件
         }
 
+        /**
+         * @brief 标题栏内容布局
+         * 
+         * 包含用户信息区域和控制按钮组，
+         * 根据不同模式显示不同的内容。
+         */
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: isDesktopWidget ? 5 : 10
-            anchors.rightMargin: isDesktopWidget ? 5 : 10
+            anchors.leftMargin: isDesktopWidget ? 5 : 10   ///< 左边距
+            anchors.rightMargin: isDesktopWidget ? 5 : 10  ///< 右边距
 
-            // 用户头像和信息
+            /**
+             * @brief 用户信息显示区域
+             * 
+             * 仅在普通窗口模式下显示，包含用户头像和用户名。
+             * 点击可弹出用户菜单。
+             */
             RowLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 spacing: 10
-                visible: !isDesktopWidget
+                visible: !isDesktopWidget  ///< 仅在非小组件模式下显示
 
-                // 用户头像和信息区域 - 只有这部分点击时弹出菜单
+                /**
+                 * @brief 用户资料点击区域
+                 * 
+                 * 处理用户头像和信息的点击事件，弹出用户菜单。
+                 */
                 MouseArea {
                     id: userProfileMouseArea
                     Layout.preferredWidth: childrenRect.width
-                    Layout.fillHeight: true
+                    Layout.preferredHeight: childrenRect.height
+                    Layout.alignment: Qt.AlignVCenter
+                    
+                    /// 点击弹出用户菜单
                     onClicked: {
                         // 计算菜单位置，固定在用户头像下方
                         var pos = mapToItem(null, 0, height);
@@ -100,78 +177,83 @@ Window {
                     RowLayout {
                         spacing: 10
 
-                        // 用户头像
+                        /**
+                         * @brief 用户头像显示
+                         * 
+                         * 圆形头像容器，显示默认用户图标。
+                         */
                         Rectangle {
                             width: 30
                             height: 30
-                            radius: 15
-                            color: "lightgray"
-                            Layout.alignment: Qt.AlignVCenter  // 垂直居中对齐
+                            radius: 15                          ///< 圆形头像
+                            color: "lightgray"                  ///< 头像背景色
+                            Layout.alignment: Qt.AlignVCenter  ///< 垂直居中对齐
 
+                            /// 头像图标
                             Text {
                                 anchors.centerIn: parent
-                                text: "👤"
+                                text: "👤"                      ///< 默认用户图标
                                 font.pixelSize: 18
                             }
                         }
 
-                        // 用户名
+                        /**
+                         * @brief 用户名显示
+                         * 
+                         * 显示当前登录用户的用户名，未登录时显示提示文本。
+                         */
                         Text {
                             text: todoModel.username !== "" ? todoModel.username : "未登录"
-                            color: "white"
-                            font.bold: true
-                            font.pixelSize: 14
-                            Layout.alignment: Qt.AlignVCenter  // 垂直居中对齐
-                            horizontalAlignment: Text.AlignLeft  // 水平左对齐
+                            color: "white"                      ///< 白色文本
+                            font.bold: true                    ///< 粗体字
+                            font.pixelSize: 14                 ///< 字体大小
+                            Layout.alignment: Qt.AlignVCenter  ///< 垂直居中对齐
+                            horizontalAlignment: Text.AlignLeft ///< 水平左对齐
                         }
                     }
                 }
 
-                // 标题栏剩余空间
+                /// 标题栏剩余空间填充
                 Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                 }
             }
 
-            // 小组件模式按钮组
+            /**
+             * @brief 小组件模式控制按钮组
+             * 
+             * 仅在桌面小组件模式下显示的功能按钮，
+             * 包括设置、任务列表展开/收起、添加任务等功能。
+             */
             RowLayout {
-                Layout.fillWidth: isDesktopWidget ? true : false
-                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                spacing: 2
-                visible: isDesktopWidget
+                Layout.fillWidth: isDesktopWidget ? true : false   ///< 小组件模式下填充宽度
+                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter  ///< 右对齐垂直居中
+                spacing: 2                                         ///< 按钮间距
+                visible: isDesktopWidget                           ///< 仅在小组件模式下显示
 
-                Button {
-                    text: "☰"
-                    onClicked: mainWindow.toggleSettingsVisible()
-                    flat: true
-                    implicitWidth: 30
-                    implicitHeight: 30
-                    background: Rectangle { color: "transparent" }
-                    contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 16; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                /// 设置按钮
+                CustomButton {
+                    text: "☰"                                       ///< 汉堡菜单图标
+                    onClicked: mainWindow.toggleSettingsVisible()  ///< 切换设置界面显示
+                    fontSize: 16
                 }
 
-                Button {
-                    text: isShowTodos ? "^" : "v"
-                    onClicked: mainWindow.toggleTodosVisible()
-                    flat: true
-                    implicitWidth: 30
-                    implicitHeight: 30
-                    background: Rectangle { color: "transparent" }
-                    contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 16; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                /// 任务列表展开/收起按钮
+                CustomButton {
+                    text: isShowTodos ? "^" : "v"                   ///< 根据状态显示箭头
+                    onClicked: mainWindow.toggleTodosVisible()     ///< 切换任务列表显示
+                    fontSize: 16
                 }
 
-                Button {
-                    text: "+"
-                    onClicked: mainWindow.toggleAddTaskVisible()
-                    flat: true
-                    implicitWidth: 30
-                    implicitHeight: 30
-                    background: Rectangle { color: "transparent" }
-                    contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 16; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                /// 添加任务按钮
+                CustomButton {
+                    text: "+"                                       ///< 加号图标
+                    onClicked: mainWindow.toggleAddTaskVisible()   ///< 切换添加任务界面显示
+                    fontSize: 16
                 }
 
-                Button {
+                CustomButton {
                     text: isDesktopWidget ? "大" : "小"
                     onClicked: {
                         if (isDesktopWidget) {
@@ -181,11 +263,7 @@ Window {
                             mainWindow.toggleWidgetMode();
                         }
                     }
-                    flat: true
-                    implicitWidth: 30
-                    implicitHeight: 30
-                    background: Rectangle { color: "transparent" }
-                    contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    fontSize: 14
                 }
             }
 
@@ -195,7 +273,7 @@ Window {
                 spacing: 5
                 visible: !isDesktopWidget
 
-                Button {
+                CustomButton {
                     text: isDesktopWidget ? "大" : "小"
                     onClicked: {
                         if (isDesktopWidget) {
@@ -205,20 +283,14 @@ Window {
                             mainWindow.toggleWidgetMode();
                         }
                     }
-                    flat: true
-                    implicitWidth: 30
-                    background: Rectangle { color: "transparent" }
-                    contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    fontSize: 14
                 }
 
                 // 关闭按钮
-                Button {
+                CustomButton {
                     text: "✕"
                     onClicked: root.close()
-                    flat: true
-                    implicitWidth: 30
-                    background: Rectangle { color: "transparent" }
-                    contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    fontSize: 14
                 }
             }
         }

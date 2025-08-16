@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "components"
 
 Item {
     id: widgetMode
@@ -17,12 +18,11 @@ Item {
     signal preventDraggingToggled(bool value)
     signal darkModeToggled(bool value)
     
-    // 颜色主题
-    property color primaryColor: isDarkMode ? "#2c3e50" : "#4a86e8"
-    property color backgroundColor: isDarkMode ? "#1e272e" : "white"
-    property color secondaryBackgroundColor: isDarkMode ? "#2d3436" : "#f5f5f5"
-    property color textColor: isDarkMode ? "#ecf0f1" : "black"
-    property color borderColor: isDarkMode ? "#34495e" : "#cccccc"
+    // 主题管理器
+    ThemeManager {
+        id: theme
+        isDarkMode: widgetMode.isDarkMode
+    }
     
     // 小组件模式的设置弹出窗口
     Popup {
@@ -37,8 +37,8 @@ Item {
         visible: isDesktopWidget && isShowSetting
 
         contentItem: Rectangle {
-            color: secondaryBackgroundColor
-            border.color: borderColor
+            color: theme.secondaryBackgroundColor
+            border.color: theme.borderColor
             border.width: 1
             radius: 5
 
@@ -51,7 +51,7 @@ Item {
                     text: "设置"
                     font.bold: true
                     font.pixelSize: 16
-                    color: textColor
+                    color: theme.textColor
                 }
 
                 // 设置内容
@@ -111,8 +111,8 @@ Item {
         visible: isDesktopWidget && isShowAddTask
 
         contentItem: Rectangle {
-            color: secondaryBackgroundColor
-            border.color: borderColor
+            color: theme.secondaryBackgroundColor
+            border.color: theme.borderColor
             border.width: 1
             radius: 5
 
@@ -125,39 +125,30 @@ Item {
                     text: "添加任务"
                     font.bold: true
                     font.pixelSize: 16
-                    color: textColor
+                    color: theme.textColor
                 }
 
-                TextField {
-                    id: newTaskField
+                TaskForm {
+                    id: addTaskForm
                     Layout.fillWidth: true
-                    placeholderText: "输入新任务..."
-                    onAccepted: {
-                        if (text.trim() !== "") {
-                            todoModel.addTodo(text.trim());
-                            text = "";
-                            mainWindow.isShowAddTask = false;
-                        }
-                    }
-                }
-
-                ComboBox {
-                    id: taskCategory
-                    Layout.fillWidth: true
-                    model: ["工作", "学习", "生活", "其他"]
-                    currentIndex: 0
+                    Layout.fillHeight: true
+                    theme: widgetMode.theme
+                    isCompactMode: true
                 }
 
                 RowLayout {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignRight
 
-                    Button {
+                    CustomButton {
                         text: "添加"
+                        textColor: "white"
+                        backgroundColor: theme.primaryColor
                         onClicked: {
-                            if (newTaskField.text.trim() !== "") {
-                                todoModel.addTodo(newTaskField.text.trim());
-                                newTaskField.text = "";
+                            if (addTaskForm.isValid()) {
+                                var todoData = addTaskForm.getTodoData();
+                                todoModel.addTodo(todoData.title, todoData.description, todoData.category, todoData.urgency, todoData.importance);
+                                addTaskForm.clear();
                                 mainWindow.isShowAddTask = false;
                             }
                         }
@@ -199,8 +190,8 @@ Item {
         visible: isDesktopWidget && isShowTodos // 在小组件模式下且需要显示所有任务时显示
 
         contentItem: Rectangle {
-            color: secondaryBackgroundColor
-            border.color: borderColor
+            color: theme.secondaryBackgroundColor
+            border.color: theme.borderColor
             border.width: 1
             radius: 5
 
@@ -213,7 +204,7 @@ Item {
                     text: "待办任务"
                     font.bold: true
                     font.pixelSize: 16
-                    color: textColor
+                    color: theme.textColor
                 }
 
                 // 待办列表
@@ -254,7 +245,7 @@ Item {
                             }
                             Label {
                                 text: todoListPopupView.refreshing ? qsTr("正在同步...") : (todoListPopupView.pullDistance >= todoListPopupView.pullThreshold ? qsTr("释放刷新") : qsTr("下拉刷新"))
-                                color: textColor
+                                color: theme.textColor
                                 font.pixelSize: 11
                             }
                         }
@@ -276,7 +267,7 @@ Item {
                     delegate: Rectangle {
                         width: todoListPopupView.width
                         height: 40
-                        color: index % 2 === 0 ? secondaryBackgroundColor : backgroundColor
+                        color: index % 2 === 0 ? theme.secondaryBackgroundColor : theme.backgroundColor
 
                         RowLayout {
                             anchors.fill: parent
@@ -302,7 +293,7 @@ Item {
                             // 待办标题
                             Label {
                                 text: model.title
-                                color: textColor
+                                color: theme.textColor
                                 Layout.fillWidth: true
                             }
 
@@ -347,8 +338,8 @@ Item {
         standardButtons: Dialog.Ok
         
         background: Rectangle {
-            color: isDarkMode ? "#2c3e50" : "white"
-            border.color: isDarkMode ? "#34495e" : "#bdc3c7"
+            color: theme.backgroundColor
+            border.color: theme.borderColor
             border.width: 1
             radius: 8
         }
@@ -356,7 +347,7 @@ Item {
         Label {
             text: qsTr("开启自动同步功能需要先登录账户。")
             wrapMode: Text.WordWrap
-            color: textColor
+            color: theme.textColor
             anchors.centerIn: parent
         }
     }

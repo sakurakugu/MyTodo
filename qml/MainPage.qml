@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "components"
 
 Page {
     id: mainPage
@@ -10,14 +11,14 @@ Page {
     property bool isDesktopWidget: false
     // 提供根窗口引用，便于在子页面中读写全局属性
     property var rootWindow: null
-    property color primaryColor: isDarkMode ? "#2c3e50" : "#4a86e8"
-    property color backgroundColor: isDarkMode ? "#1e272e" : "white"
-    property color secondaryBackgroundColor: isDarkMode ? "#2d3436" : "#f5f5f5"
-    property color textColor: isDarkMode ? "#ecf0f1" : "black"
-    property color borderColor: isDarkMode ? "#34495e" : "#cccccc"
+    // 主题管理器
+    ThemeManager {
+        id: theme
+        isDarkMode: mainPage.isDarkMode
+    }
 
     background: Rectangle {
-        color: backgroundColor
+        color: theme.backgroundColor
     }
 
     // 主内容区域，使用ColumnLayout
@@ -36,7 +37,7 @@ Page {
                 id: sidebar
                 Layout.preferredWidth: 200
                 Layout.fillHeight: true
-                color: secondaryBackgroundColor
+                color: theme.secondaryBackgroundColor
                 visible: !isDesktopWidget
 
                 ColumnLayout {
@@ -48,13 +49,13 @@ Page {
                         text: qsTr("分类")
                         font.bold: true
                         font.pixelSize: 16
-                        color: textColor
+                        color: theme.textColor
                     }
 
                     Label {
                         text: "状态"
                         font.pixelSize: 14
-                        color: textColor
+                        color: theme.textColor
                     }
 
                     ComboBox {
@@ -69,7 +70,7 @@ Page {
                     Label {
                         text: "分类"
                         font.pixelSize: 14
-                        color: textColor
+                        color: theme.textColor
                     }
 
                     ComboBox {
@@ -110,7 +111,7 @@ Page {
                         id: newTodoField
                         Layout.fillWidth: true
                         placeholderText: qsTr("添加新待办...")
-                        color: textColor
+                        color: theme.textColor
                         onAccepted: {
                             if (text.trim() !== "") {
                                 todoModel.addTodo(text.trim());
@@ -297,93 +298,20 @@ Page {
 
         function open(todo) {
             currentTodo = todo;
-            titleField.text = todo.title || "";
-            descriptionField.text = todo.description || "";
-            categoryCombo.currentIndex = Math.max(0, categoryCombo.model.indexOf(todo.category));
-            urgencyCombo.currentIndex = Math.max(0, urgencyCombo.model.indexOf(todo.urgency));
-            importanceCombo.currentIndex = Math.max(0, importanceCombo.model.indexOf(todo.importance));
+            taskForm.setTodo(todo);
             visible = true;
         }
 
-        ScrollView {
+        TaskForm {
+            id: taskForm
             anchors.fill: parent
-            clip: true
-
-            ColumnLayout {
-                width: todoDetailsDialog.width  // 减去滚动条宽度
-                spacing: 10
-
-                Label {
-                    text: qsTr("标题")
-                    color: textColor
-                }
-                TextField {
-                    id: titleField
-                    Layout.fillWidth: true
-                    color: textColor
-                }
-
-                Label {
-                    text: qsTr("描述")
-                    color: textColor
-                }
-                TextArea {
-                    id: descriptionField
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 80
-                    wrapMode: TextEdit.Wrap
-                    color: textColor
-                }
-
-                Label {
-                    text: qsTr("分类")
-                    color: textColor
-                }
-                ComboBox {
-                    id: categoryCombo
-                    model: ["工作", "学习", "生活", "其他"]
-                    Layout.fillWidth: true
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-
-                    ColumnLayout {
-                        Label {
-                            text: qsTr("紧急程度")
-                            color: textColor
-                        }
-                        ComboBox {
-                            id: urgencyCombo
-                            model: ["高", "中", "低"]
-                            Layout.fillWidth: true
-                        }
-                    }
-
-                    ColumnLayout {
-                        Label {
-                            text: qsTr("重要程度")
-                            color: textColor
-                        }
-                        ComboBox {
-                            id: importanceCombo
-                            model: ["高", "中", "低"]
-                            Layout.fillWidth: true
-                        }
-                    }
-                }
-            }
+            theme: mainPage.theme
         }
 
         onAccepted: {
-            if (currentTodo && titleField.text.trim() !== "") {
-                todoModel.updateTodo(todoListView.currentIndex, {
-                    "title": titleField.text.trim(),
-                    "description": descriptionField.text.trim(),
-                    "category": categoryCombo.currentText,
-                    "urgency": urgencyCombo.currentText,
-                    "importance": importanceCombo.currentText
-                });
+            if (currentTodo && taskForm.isValid()) {
+                var todoData = taskForm.getTodoData();
+                todoModel.updateTodo(todoListView.currentIndex, todoData);
             }
         }
     }
