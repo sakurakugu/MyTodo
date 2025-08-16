@@ -128,20 +128,6 @@ Page {
                             }
                         }
                     }
-
-                    Button {
-                        text: qsTr("设置")
-                        onClicked: {
-                            // 通过父StackView导航到设置页面
-                            var stack = mainPage.StackView.view;
-                            if (stack) {
-                                stack.push(Qt.resolvedUrl("Setting.qml"), {
-                                    isDarkMode: mainPage.isDarkMode,
-                                    rootWindow: mainPage.rootWindow
-                                });
-                            }
-                        }
-                    }
                 }
 
                 // 待办列表
@@ -153,6 +139,54 @@ Page {
 
                     // 使用 C++ 的 TodoModel
                     model: todoModel
+
+                    // 下拉刷新相关属性与逻辑
+                    property bool refreshing: false
+                    property int pullThreshold: 60
+                    property real pullDistance: 0
+
+                    onContentYChanged: {
+                        pullDistance = contentY < 0 ? -contentY : 0;
+                    }
+                    onMovementEnded: {
+                        if (contentY < -pullThreshold && atYBeginning && !refreshing) {
+                            refreshing = true;
+                            todoModel.syncWithServer();
+                        }
+                    }
+
+                    header: Item {
+                        width: todoListView.width
+                        height: todoListView.refreshing ? 50 : Math.min(50, todoListView.pullDistance)
+                        visible: height > 0 || todoListView.refreshing
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 6
+                            BusyIndicator {
+                                running: todoListView.refreshing
+                                visible: todoListView.refreshing || todoListView.pullDistance > 0
+                                width: 20; height: 20
+                            }
+                            Label {
+                                text: todoListView.refreshing ? qsTr("正在同步...") : (todoListView.pullDistance >= todoListView.pullThreshold ? qsTr("释放刷新") : qsTr("下拉刷新"))
+                                color: textColor
+                                font.pixelSize: 12
+                            }
+                        }
+                    }
+
+                    Connections {
+                        target: todoModel
+                        onSyncStarted: {
+                            if (!todoListView.refreshing && todoListView.atYBeginning) {
+                                todoListView.refreshing = true;
+                            }
+                        }
+                        onSyncCompleted: function(success, errorMessage) {
+                            todoListView.refreshing = false;
+                            todoListView.contentY = 0;
+                        }
+                    }
 
                     delegate: Rectangle {
                         width: todoListView.width

@@ -9,7 +9,6 @@ Page {
     // 从父栈传入的属性
     property bool isDarkMode: false
     property bool preventDragging: settings.get("preventDragging", false)
-    property bool autoSync: settings.get("autoSync", false)
     // 根窗口引用，用于更新全局属性
     property var rootWindow: null
 
@@ -46,7 +45,7 @@ Page {
             color: isDarkMode ? "#ecf0f1" : "black"
         }
 
-        CheckBox {
+        Switch {
             id: darkModeCheckBox
             text: qsTr("深色模式")
             checked: isDarkMode
@@ -57,7 +56,7 @@ Page {
             }
         }
 
-        CheckBox {
+        Switch {
             id: preventDraggingCheckBox
             text: qsTr("防止拖动窗口（小窗口模式）")
             checked: preventDragging
@@ -69,14 +68,12 @@ Page {
             }
         }
 
-        CheckBox {
-            id: autoSyncCheckBox
+        Switch {
+            id: autoSyncSwitch
             text: qsTr("自动同步")
-            checked: autoSync
+            checked: todoModel.isOnline
             onCheckedChanged: {
-                autoSync = checked;
-                settings.save("autoSync", autoSync);
-                todoModel.isOnline = autoSync;
+                todoModel.isOnline = checked;
             }
         }
 
@@ -90,7 +87,6 @@ Page {
 
         Button {
             text: qsTr("GitHub主页")
-            Layout.fillWidth: true
             background: Rectangle {
                 color: "#0f85d3"
                 radius: 4
@@ -98,22 +94,5 @@ Page {
             onClicked: Qt.openUrlExternally("https://github.com/sakurakugu/MyTodo")
         }
 
-        Item { Layout.fillHeight: true }
-
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.alignment: Qt.AlignRight
-            spacing: 10
-
-            Button {
-                text: qsTr("取消")
-                onClicked: settingPage.StackView.view ? settingPage.StackView.view.pop() : null
-            }
-
-            Button {
-                text: qsTr("确定")
-                onClicked: settingPage.StackView.view ? settingPage.StackView.view.pop() : null
-            }
-        }
     }
 }

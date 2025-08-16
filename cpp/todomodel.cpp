@@ -27,6 +27,10 @@ TodoModel::TodoModel(QObject *parent, Settings *settings, Settings::StorageType 
         qWarning() << "无法从本地存储加载待办事项数据";
     }
 
+    // 从设置初始化在线状态（与原autoSync合并）
+    m_isOnline = m_settings->get("autoSync", false).toBool();
+    emit isOnlineChanged();
+
     // 尝试使用存储的令牌自动登录
     if (m_settings->contains("accessToken")) {
         m_accessToken = m_settings->get("accessToken").toString();
@@ -250,6 +254,8 @@ void TodoModel::setIsOnline(bool online) {
                 // 连接成功，更新状态
                 m_isOnline = online;
                 emit isOnlineChanged();
+                // 保存到设置，保持与autoSync一致
+                m_settings->save("autoSync", m_isOnline);
                 
                 if (m_isOnline && isLoggedIn()) {
                     syncWithServer();
@@ -265,6 +271,8 @@ void TodoModel::setIsOnline(bool online) {
         // 切换到离线模式不需要验证，直接更新状态
         m_isOnline = online;
         emit isOnlineChanged();
+        // 保存到设置，保持与autoSync一致
+        m_settings->save("autoSync", m_isOnline);
     }
 }
 
