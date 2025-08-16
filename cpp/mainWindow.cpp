@@ -54,20 +54,49 @@ void MainWindow::toggleWidgetMode() {
     // 根据模式设置窗口大小
     if (m_isDesktopWidget) {
         emit widthChanged(400);
+        updateWidgetHeight(); // 动态计算高度
     } else {
         emit widthChanged(640);
         emit heightChanged(480);
     }
 }
 
+void MainWindow::updateWidgetHeight() {
+    if (!m_isDesktopWidget) return;
+    
+    int totalHeight = 50; // 标题栏高度
+    int popupSpacing = 6; // 弹窗间距
+    
+    // 计算需要显示的弹窗总高度
+    if (m_isShowSetting) {
+        totalHeight += 250 + popupSpacing;
+    }
+    if (m_isShowAddTask) {
+        totalHeight += 250 + popupSpacing;
+    }
+    if (m_isShowTodos) {
+        totalHeight += 200 + popupSpacing;
+    }
+    
+    // 设置最小高度和额外边距
+    int minHeight = 100;
+    int extraMargin = 60;
+    int finalHeight = qMax(minHeight, totalHeight + extraMargin);
+    
+    emit heightChanged(finalHeight);
+}
+
 void MainWindow::toggleAddTaskVisible() {
     setIsShowAddTask(!m_isShowAddTask);
+    updateWidgetHeight(); // 动态更新高度
 }
 
 void MainWindow::toggleTodosVisible() {
     setIsShowTodos(!m_isShowTodos);
+    updateWidgetHeight(); // 动态更新高度
 }
 
 void MainWindow::toggleSettingsVisible() {
     setIsShowSetting(!m_isShowSetting);
+    updateWidgetHeight(); // 动态更新高度
 }

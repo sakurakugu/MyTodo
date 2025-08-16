@@ -13,6 +13,10 @@ Item {
     property bool isDarkMode: false
     property bool preventDragging: false
     
+    // 自定义信号定义
+    signal preventDraggingToggled(bool value)
+    signal darkModeToggled(bool value)
+    
     // 颜色主题
     property color primaryColor: isDarkMode ? "#2c3e50" : "#4a86e8"
     property color backgroundColor: isDarkMode ? "#1e272e" : "white"
@@ -56,12 +60,10 @@ Item {
                     text: "深色模式"
                     checked: isDarkMode
                     onCheckedChanged: {
-                        // 通过父组件更新属性
-                        if (widgetMode.parent && widgetMode.parent.isDarkMode !== checked) {
-                            widgetMode.parent.isDarkMode = checked;
-                            // 保存设置到配置文件
-                            settings.save("isDarkMode", checked);
-                        }
+                        // 保存设置到配置文件
+                        settings.save("isDarkMode", checked);
+                        // 发出信号通知父组件
+                        widgetMode.darkModeToggled(checked);
                     }
                 }
 
@@ -71,12 +73,10 @@ Item {
                     checked: preventDragging
                     enabled: isDesktopWidget
                     onCheckedChanged: {
-                        // 通过父组件更新属性
-                        if (widgetMode.parent && widgetMode.parent.preventDragging !== checked) {
-                            widgetMode.parent.preventDragging = checked;
-                            // 保存设置到配置文件
-                            settings.save("preventDragging", checked);
-                        }
+                        // 保存设置到配置文件
+                        settings.save("preventDragging", checked);
+                        // 发出信号通知父组件
+                        widgetMode.preventDraggingToggled(checked);
                     }
                 }
 
@@ -96,7 +96,7 @@ Item {
     // 小组件模式的添加任务弹出窗口
     Popup {
         id: addTaskPopup
-        y: settingsPopup.visible ? settingsPopup.y + settingsPopup.height + 6 : 50
+        y: settingsPopup.visible ? settingsPopup.y + 250 + 6 : 50
         width: 400
         height: 250
         modal: false // 非模态，允许同时打开多个弹出窗口
@@ -165,18 +165,28 @@ Item {
     Popup {
         id: mainContentPopup
 
+        property int baseHeight: 200
+        property int calculatedY: {
+            var baseY = 50;
+            if (addTaskPopup.visible) {
+                baseY = addTaskPopup.y + 250 + 6; // 使用固定高度避免循环依赖
+            } else if (settingsPopup.visible) {
+                baseY = settingsPopup.y + 250 + 6; // 使用固定高度避免循环依赖
+            }
+            return baseY;
+        }
+
         // 根据其他弹出窗口的可见性动态计算位置
         y: {
-            if (addTaskPopup.visible) {
-                return addTaskPopup.y + addTaskPopup.height + 6;
-            } else if (settingsPopup.visible) {
-                return settingsPopup.y + settingsPopup.height + 6;
-            }
-            return 50;
+            var maxY = widgetMode.parent ? widgetMode.parent.height - baseHeight - 10 : calculatedY;
+            return Math.min(calculatedY, maxY);
         }
 
         width: 400
-        height: 200
+        height: {
+            var availableHeight = widgetMode.parent ? widgetMode.parent.height - calculatedY - 60 : baseHeight;
+            return Math.min(baseHeight, availableHeight);
+        }
         modal: false // 非模态，允许同时打开多个弹出窗口
         focus: true
         closePolicy: Popup.NoAutoClose

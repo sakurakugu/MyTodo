@@ -65,7 +65,7 @@ Window {
 
             onPositionChanged: function(mouse) {
                 // 只有在非小组件模式或小组件模式但未启用防止拖动时才允许拖动
-                if (pressed && (!isDesktopWidget || (isDesktopWidget && !preventDragging))) {
+                if (pressed && ((!isDesktopWidget) || (isDesktopWidget && !preventDragging))) {
                     var delta = Qt.point(mouse.x - clickPos.x, mouse.y - clickPos.y);
                     root.x += delta.x;
                     root.y += delta.y;
@@ -385,6 +385,15 @@ Window {
         isDarkMode: root.isDarkMode
         preventDragging: root.preventDragging
         visible: isDesktopWidget
+        
+        // 连接信号
+        onPreventDraggingToggled: function(value) {
+            root.preventDragging = value;
+        }
+        
+        onDarkModeToggled: function(value) {
+            root.isDarkMode = value;
+        }
     }
 
     // 顶部用户菜单（从头像处点击弹出）

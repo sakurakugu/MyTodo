@@ -33,6 +33,9 @@ class MainWindow : public QObject {
     void toggleTodosVisible();
     void toggleSettingsVisible();
 
+  private:
+    void updateWidgetHeight(); // 动态更新小组件模式高度
+
   signals:
     void isDesktopWidgetChanged();
     void isShowAddTaskChanged();
