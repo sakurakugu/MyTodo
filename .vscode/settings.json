@@ -56,7 +56,8 @@
         "numbers": "cpp",
         "iostream": "cpp",
         "qguiapplication": "cpp",
-        "qicon": "cpp"
+        "qicon": "cpp",
+        "string": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

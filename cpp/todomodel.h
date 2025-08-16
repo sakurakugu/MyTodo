@@ -85,6 +85,10 @@ class TodoModel : public QAbstractListModel {
     // 导出导入功能
     Q_INVOKABLE bool exportTodos(const QString &filePath); // 导出待办事项到文件
     Q_INVOKABLE bool importTodos(const QString &filePath); // 从文件导入待办事项
+    Q_INVOKABLE QVariantList checkImportConflicts(const QString &filePath); // 检查导入冲突
+    Q_INVOKABLE bool importTodosWithConflictResolution(const QString &filePath, const QString &conflictResolution); // 带冲突处理的导入
+    Q_INVOKABLE bool importTodosWithIndividualResolution(const QString &filePath, const QVariantMap &resolutions); // 带个别冲突处理的导入
+    Q_INVOKABLE QVariantList importTodosWithAutoResolution(const QString &filePath); // 自动导入无冲突项目，返回冲突项目列表
 
     // 获取设置对象
     Q_INVOKABLE Settings* settings() const { return m_settings; }

@@ -1248,6 +1248,143 @@ bool TodoModel::exportTodos(const QString &filePath) {
     return true;
 }
 
+QVariantList TodoModel::importTodosWithAutoResolution(const QString &filePath) {
+    QVariantList conflicts;
+    
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "无法打开文件进行读取:" << filePath;
+        return conflicts;
+    }
+    
+    QByteArray data = file.readAll();
+    file.close();
+    
+    QJsonParseError error;
+    QJsonDocument doc = QJsonDocument::fromJson(data, &error);
+    
+    if (error.error != QJsonParseError::NoError) {
+        qWarning() << "JSON解析错误:" << error.errorString();
+        return conflicts;
+    }
+    
+    QJsonObject rootObj = doc.object();
+    
+    // 检查版本兼容性
+    QString version = rootObj["version"].toString();
+    if (version != "1.0") {
+        qWarning() << "不支持的文件版本:" << version;
+        return conflicts;
+    }
+    
+    QJsonArray todosArray = rootObj["todos"].toArray();
+    
+    // 分离冲突和非冲突项目
+    QJsonArray nonConflictTodos;
+    
+    qDebug() << "开始检查导入冲突，现有项目数量:" << m_todos.size() << "，导入项目数量:" << todosArray.size();
+    
+    // 打印现有项目的ID
+    for (int i = 0; i < m_todos.size(); ++i) {
+        qDebug() << "现有项目" << i << "ID:" << m_todos[i]->id() << "标题:" << m_todos[i]->title();
+    }
+    
+    for (const QJsonValue &value : todosArray) {
+        QJsonObject todoObj = value.toObject();
+        QString id = todoObj["id"].toString();
+        
+        bool hasConflict = false;
+        bool shouldSkip = false;
+        TodoItem* existingTodo = nullptr;
+        
+        // 查找是否存在相同ID的待办事项
+        for (TodoItem *todo : m_todos) {
+            if (todo->id() == id) {
+                // 检查内容是否真的不同
+                QString importTitle = todoObj["title"].toString();
+                QString importDescription = todoObj["description"].toString();
+                QString importCategory = todoObj["category"].toString();
+                QString importStatus = todoObj["status"].toString();
+                
+                if (todo->title() != importTitle || 
+                    todo->description() != importDescription ||
+                    todo->category() != importCategory ||
+                    todo->status() != importStatus) {
+                    hasConflict = true;
+                    existingTodo = todo;
+                    qDebug() << "发现真正冲突项目 ID:" << id << "现有标题:" << todo->title() << "导入标题:" << importTitle;
+                } else {
+                    qDebug() << "ID相同且内容一致，直接跳过 ID:" << id << "标题:" << importTitle;
+                    // 内容完全一致的项目直接跳过，既不导入也不显示冲突
+                    shouldSkip = true;
+                }
+                break;
+            }
+        }
+        
+        if (shouldSkip) {
+            // 跳过内容完全一致的项目
+            continue;
+        } else if (hasConflict) {
+            // 发现冲突，添加到冲突列表
+            QVariantMap conflictInfo;
+            conflictInfo["id"] = id;
+            conflictInfo["existingTitle"] = existingTodo->title();
+            conflictInfo["existingDescription"] = existingTodo->description();
+            conflictInfo["existingCategory"] = existingTodo->category();
+            conflictInfo["existingStatus"] = existingTodo->status();
+            conflictInfo["existingUpdatedAt"] = existingTodo->updatedAt();
+            
+            conflictInfo["importTitle"] = todoObj["title"].toString();
+            conflictInfo["importDescription"] = todoObj["description"].toString();
+            conflictInfo["importCategory"] = todoObj["category"].toString();
+            conflictInfo["importStatus"] = todoObj["status"].toString();
+            conflictInfo["importUpdatedAt"] = QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate);
+            
+            conflicts.append(conflictInfo);
+        } else {
+            // 无冲突，添加到非冲突列表
+            qDebug() << "无冲突项目 ID:" << id << "标题:" << todoObj["title"].toString();
+            nonConflictTodos.append(value);
+        }
+    }
+    
+    qDebug() << "冲突检查完成，冲突项目数量:" << conflicts.size() << "，无冲突项目数量:" << nonConflictTodos.size();
+    
+    // 导入无冲突的项目
+    if (nonConflictTodos.size() > 0) {
+        beginInsertRows(QModelIndex(), m_todos.size(), m_todos.size() + nonConflictTodos.size() - 1);
+        
+        for (const QJsonValue &value : nonConflictTodos) {
+            QJsonObject todoObj = value.toObject();
+            
+            TodoItem *newTodo = new TodoItem(
+                todoObj["id"].toString(),
+                todoObj["title"].toString(),
+                todoObj["description"].toString(),
+                todoObj["category"].toString(),
+                todoObj["urgency"].toString(),
+                todoObj["importance"].toString(),
+                todoObj["status"].toString(),
+                QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),
+                QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate),
+                false // 导入的项目标记为未同步
+            );
+            
+            m_todos.append(newTodo);
+        }
+        
+        endInsertRows();
+    }
+    
+    // 保存到本地存储
+    if (nonConflictTodos.size() > 0) {
+        saveToLocalStorage();
+    }
+    
+    return conflicts;
+}
+
 bool TodoModel::importTodos(const QString &filePath) {
     QFile file(filePath);
     
@@ -1324,5 +1461,285 @@ bool TodoModel::importTodos(const QString &filePath) {
     saveToLocalStorage();
     
     qDebug() << "导入完成 - 新增:" << importedCount << "个，跳过:" << skippedCount << "个";
+    return true;
+}
+
+QVariantList TodoModel::checkImportConflicts(const QString &filePath) {
+    QVariantList conflicts;
+    
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "无法打开文件进行读取:" << filePath;
+        return conflicts;
+    }
+    
+    QByteArray data = file.readAll();
+    file.close();
+    
+    QJsonParseError error;
+    QJsonDocument doc = QJsonDocument::fromJson(data, &error);
+    
+    if (error.error != QJsonParseError::NoError) {
+        qWarning() << "JSON解析错误:" << error.errorString();
+        return conflicts;
+    }
+    
+    QJsonObject rootObj = doc.object();
+    
+    // 检查版本兼容性
+    QString version = rootObj["version"].toString();
+    if (version != "1.0") {
+        qWarning() << "不支持的文件版本:" << version;
+        return conflicts;
+    }
+    
+    QJsonArray todosArray = rootObj["todos"].toArray();
+    
+    for (const QJsonValue &value : todosArray) {
+        QJsonObject todoObj = value.toObject();
+        QString id = todoObj["id"].toString();
+        
+        // 查找是否存在相同ID的待办事项
+        for (const TodoItem *existingTodo : m_todos) {
+            if (existingTodo->id() == id) {
+                // 发现冲突，创建冲突信息
+                QVariantMap conflictInfo;
+                conflictInfo["id"] = id;
+                conflictInfo["existingTitle"] = existingTodo->title();
+                conflictInfo["existingDescription"] = existingTodo->description();
+                conflictInfo["existingCategory"] = existingTodo->category();
+                conflictInfo["existingStatus"] = existingTodo->status();
+                conflictInfo["existingUpdatedAt"] = existingTodo->updatedAt();
+                
+                conflictInfo["importTitle"] = todoObj["title"].toString();
+                conflictInfo["importDescription"] = todoObj["description"].toString();
+                conflictInfo["importCategory"] = todoObj["category"].toString();
+                conflictInfo["importStatus"] = todoObj["status"].toString();
+                conflictInfo["importUpdatedAt"] = QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate);
+                
+                conflicts.append(conflictInfo);
+                break;
+            }
+        }
+    }
+    
+    return conflicts;
+}
+
+bool TodoModel::importTodosWithConflictResolution(const QString &filePath, const QString &conflictResolution) {
+    QFile file(filePath);
+    
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "无法打开文件进行读取:" << filePath;
+        return false;
+    }
+    
+    QByteArray data = file.readAll();
+    file.close();
+    
+    QJsonParseError error;
+    QJsonDocument doc = QJsonDocument::fromJson(data, &error);
+    
+    if (error.error != QJsonParseError::NoError) {
+        qWarning() << "JSON解析错误:" << error.errorString();
+        return false;
+    }
+    
+    QJsonObject rootObj = doc.object();
+    
+    // 检查版本兼容性
+    QString version = rootObj["version"].toString();
+    if (version != "1.0") {
+        qWarning() << "不支持的文件版本:" << version;
+        return false;
+    }
+    
+    QJsonArray todosArray = rootObj["todos"].toArray();
+    int importedCount = 0;
+    int skippedCount = 0;
+    int overwrittenCount = 0;
+    
+    beginResetModel();
+    
+    for (const QJsonValue &value : todosArray) {
+        QJsonObject todoObj = value.toObject();
+        QString id = todoObj["id"].toString();
+        
+        // 查找是否已存在相同ID的待办事项
+        bool exists = false;
+        int existingIndex = -1;
+        for (int i = 0; i < m_todos.size(); ++i) {
+            if (m_todos[i]->id() == id) {
+                exists = true;
+                existingIndex = i;
+                break;
+            }
+        }
+        
+        if (exists) {
+            if (conflictResolution == "overwrite") {
+                // 覆盖现有项目
+                TodoItem *existingItem = m_todos[existingIndex];
+                existingItem->setTitle(todoObj["title"].toString());
+                existingItem->setDescription(todoObj["description"].toString());
+                existingItem->setCategory(todoObj["category"].toString());
+                existingItem->setUrgency(todoObj["urgency"].toString());
+                existingItem->setImportance(todoObj["importance"].toString());
+                existingItem->setStatus(todoObj["status"].toString());
+                existingItem->setUpdatedAt(QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate));
+                existingItem->setSynced(todoObj["synced"].toBool());
+                overwrittenCount++;
+            } else if (conflictResolution == "merge") {
+                // 合并：保留较新的更新时间的版本
+                TodoItem *existingItem = m_todos[existingIndex];
+                QDateTime importUpdatedAt = QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate);
+                
+                if (importUpdatedAt > existingItem->updatedAt()) {
+                    // 导入的版本更新，使用导入的数据
+                    existingItem->setTitle(todoObj["title"].toString());
+                    existingItem->setDescription(todoObj["description"].toString());
+                    existingItem->setCategory(todoObj["category"].toString());
+                    existingItem->setUrgency(todoObj["urgency"].toString());
+                    existingItem->setImportance(todoObj["importance"].toString());
+                    existingItem->setStatus(todoObj["status"].toString());
+                    existingItem->setUpdatedAt(importUpdatedAt);
+                    existingItem->setSynced(todoObj["synced"].toBool());
+                    overwrittenCount++;
+                }
+                // 如果现有版本更新或相同，则保持不变
+            } else if (conflictResolution == "skip") {
+                // 跳过冲突项目
+                skippedCount++;
+            }
+        } else {
+            // 创建新的待办事项
+            TodoItem *newTodo = new TodoItem(
+                id,
+                todoObj["title"].toString(),
+                todoObj["description"].toString(),
+                todoObj["category"].toString(),
+                todoObj["urgency"].toString(),
+                todoObj["importance"].toString(),
+                todoObj["status"].toString(),
+                QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),
+                QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate),
+                todoObj["synced"].toBool(),
+                this
+            );
+            
+            m_todos.append(newTodo);
+            importedCount++;
+        }
+    }
+    
+    endResetModel();
+    
+    // 保存到本地存储
+    saveToLocalStorage();
+    
+    qDebug() << "导入完成 - 新增:" << importedCount << "个，覆盖:" << overwrittenCount << "个，跳过:" << skippedCount << "个";
+    return true;
+}
+
+bool TodoModel::importTodosWithIndividualResolution(const QString &filePath, const QVariantMap &resolutions) {
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "无法打开文件进行读取:" << filePath;
+        return false;
+    }
+
+    QByteArray data = file.readAll();
+    file.close();
+
+    QJsonParseError error;
+    QJsonDocument doc = QJsonDocument::fromJson(data, &error);
+    if (error.error != QJsonParseError::NoError) {
+        qWarning() << "JSON解析错误:" << error.errorString();
+        return false;
+    }
+
+    if (!doc.isArray()) {
+        qWarning() << "JSON文档不是数组格式";
+        return false;
+    }
+
+    QJsonArray jsonArray = doc.array();
+    int importedCount = 0;
+    int updatedCount = 0;
+    int skippedCount = 0;
+
+    for (const QJsonValue &value : jsonArray) {
+        if (!value.isObject()) continue;
+
+        QJsonObject obj = value.toObject();
+        QString id = obj["id"].toString();
+        
+        // 查找是否存在相同ID的项目
+        TodoItem* existingItem = nullptr;
+        for (TodoItem* item : m_todos) {
+            if (item->id() == id) {
+                existingItem = item;
+                break;
+            }
+        }
+
+        if (existingItem) {
+            // 获取该项目的处理方式
+            QString resolution = resolutions.value(id, "skip").toString();
+            
+            if (resolution == "overwrite") {
+                // 覆盖现有数据
+                existingItem->setTitle(obj["title"].toString());
+                existingItem->setDescription(obj["description"].toString());
+                existingItem->setCategory(obj["category"].toString());
+                existingItem->setStatus(obj["status"].toString());
+                existingItem->setCreatedAt(QDateTime::fromString(obj["createdAt"].toString(), Qt::ISODate));
+                existingItem->setUpdatedAt(QDateTime::fromString(obj["updatedAt"].toString(), Qt::ISODate));
+                existingItem->setSynced(false); // 标记为未同步
+                updatedCount++;
+            } else if (resolution == "merge") {
+                // 智能合并：保留更新时间较新的版本
+                QDateTime existingUpdated = existingItem->updatedAt();
+                QDateTime importUpdated = QDateTime::fromString(obj["updatedAt"].toString(), Qt::ISODate);
+                
+                if (importUpdated > existingUpdated) {
+                    existingItem->setTitle(obj["title"].toString());
+                    existingItem->setDescription(obj["description"].toString());
+                    existingItem->setCategory(obj["category"].toString());
+                    existingItem->setStatus(obj["status"].toString());
+                    existingItem->setCreatedAt(QDateTime::fromString(obj["createdAt"].toString(), Qt::ISODate));
+                    existingItem->setUpdatedAt(importUpdated);
+                    existingItem->setSynced(false); // 标记为未同步
+                    updatedCount++;
+                } else {
+                    skippedCount++; // 现有数据更新，跳过导入
+                }
+            } else {
+                // skip - 跳过冲突项目
+                skippedCount++;
+            }
+        } else {
+            // 创建新项目（没有冲突的项目直接导入）
+            TodoItem* newItem = new TodoItem(this);
+            newItem->setId(id);
+            newItem->setTitle(obj["title"].toString());
+            newItem->setDescription(obj["description"].toString());
+            newItem->setCategory(obj["category"].toString());
+            newItem->setStatus(obj["status"].toString());
+            newItem->setCreatedAt(QDateTime::fromString(obj["createdAt"].toString(), Qt::ISODate));
+            newItem->setUpdatedAt(QDateTime::fromString(obj["updatedAt"].toString(), Qt::ISODate));
+            newItem->setSynced(false); // 标记为未同步
+            
+            beginInsertRows(QModelIndex(), m_todos.size(), m_todos.size());
+            m_todos.append(newItem);
+            endInsertRows();
+            importedCount++;
+        }
+    }
+
+    // 保存到本地存储
+    saveToLocalStorage();
+    
+    qDebug() << "个别冲突处理导入完成 - 新增:" << importedCount << "个，更新:" << updatedCount << "个，跳过:" << skippedCount << "个";
     return true;
 }
