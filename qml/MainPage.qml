@@ -177,12 +177,12 @@ Page {
 
                     Connections {
                         target: todoModel
-                        onSyncStarted: {
+                        function onSyncStarted() {
                             if (!todoListView.refreshing && todoListView.atYBeginning) {
                                 todoListView.refreshing = true;
                             }
                         }
-                        onSyncCompleted: function(success, errorMessage) {
+                        function onSyncCompleted(success, errorMessage) {
                             todoListView.refreshing = false;
                             todoListView.contentY = 0;
                         }

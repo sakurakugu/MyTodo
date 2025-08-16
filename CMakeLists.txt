@@ -48,6 +48,7 @@ set(MYQML_FILES
     qml/Main.qml
     qml/MainPage.qml
     qml/Setting.qml
+    qml/WidgetMode.qml
     ${MYQML_COMPONENTS}
 )
 

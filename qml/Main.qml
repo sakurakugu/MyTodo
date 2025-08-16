@@ -35,304 +35,11 @@ Window {
     // 监听mainWindow的宽度和高度变化
     Connections {
         target: mainWindow
-        function onWidthChanged() {
-            root.width = mainWindow.width;
+        function onWidthChanged(width) {
+            root.width = width;
         }
-        function onHeightChanged() {
-            root.height = mainWindow.height;
-        }
-    }
-
-    // 小组件模式的设置弹出窗口
-    Popup {
-        id: settingsPopup
-        y: 50
-        width: 400
-        height: 250
-
-        // implicitHeight: Math.min(600, contentItem.implicitHeight)
-        modal: false // 非模态，允许同时打开多个弹出窗口
-        focus: true
-        closePolicy: Popup.NoAutoClose
-        visible: isDesktopWidget && isShowSetting
-
-        contentItem: Rectangle {
-            color: secondaryBackgroundColor
-            border.color: borderColor
-            border.width: 1
-            radius: 5
-
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 10
-                spacing: 10
-
-                Label {
-                    text: "设置"
-                    font.bold: true
-                    font.pixelSize: 16
-                    color: textColor
-                }
-
-                // 设置内容
-                Switch {
-                    id: darkModeCheckBox
-                    text: "深色模式"
-                    checked: isDarkMode
-                    onCheckedChanged: {
-                        isDarkMode = checked;
-                        // 保存设置到配置文件
-                        settings.save("isDarkMode", isDarkMode);
-                    }
-                }
-
-                Switch {
-                    id: preventDraggingCheckBox
-                    text: "防止拖动窗口（小窗口模式）"
-                    checked: preventDragging
-                    enabled: isDesktopWidget
-                    onCheckedChanged: {
-                        preventDragging = checked;
-                        // 保存设置到配置文件
-                        settings.save("preventDragging", preventDragging);
-                    }
-                }
-
-                Switch {
-                    id: autoSyncSwitch
-                    text: "自动同步"
-                    checked: todoModel.isOnline
-                    onCheckedChanged: {
-                        todoModel.isOnline = checked;
-                        // 保存逻辑统一在C++ setIsOnline 中
-                    }
-                }
-            }
-        }
-    }
-
-    // 小组件模式的添加任务弹出窗口
-    Popup {
-        id: addTaskPopup
-        y: settingsPopup.visible ? settingsPopup.y + settingsPopup.height + 6 : 50
-        width: 400
-        height: 250
-        // implicitHeight: Math.min(600, contentItem.implicitHeight)
-        modal: false // 非模态，允许同时打开多个弹出窗口
-        focus: true
-        closePolicy: Popup.NoAutoClose
-        visible: isDesktopWidget && isShowAddTask
-
-        contentItem: Rectangle {
-            color: secondaryBackgroundColor
-            border.color: borderColor
-            border.width: 1
-            radius: 5
-
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 10
-                spacing: 10
-
-                Label {
-                    text: "添加任务"
-                    font.bold: true
-                    font.pixelSize: 16
-                }
-
-                TextField {
-                    id: newTaskField
-                    Layout.fillWidth: true
-                    placeholderText: "输入新任务..."
-                    onAccepted: {
-                        if (text.trim() !== "") {
-                            todoModel.addTodo(text.trim());
-                            text = "";
-                            addTaskPopup.close();
-                        }
-                    }
-                }
-
-                ComboBox {
-                    id: taskCategory
-                    Layout.fillWidth: true
-                    model: ["工作", "学习", "生活", "其他"]
-                    currentIndex: 0
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignRight
-
-                    Button {
-                        text: "添加"
-                        onClicked: {
-                            if (newTaskField.text.trim() !== "") {
-                                todoModel.addTodo(newTaskField.text.trim());
-                                newTaskField.text = "";
-                                addTaskPopup.close();
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // 小组件模式的主内容区弹出窗口
-    Popup {
-        id: mainContentPopup
-
-        // 根据其他弹出窗口的可见性动态计算位置
-        y: {
-            if (addTaskPopup.visible) {
-                return addTaskPopup.y + addTaskPopup.height + 6;
-            } else if (settingsPopup.visible) {
-                return settingsPopup.y + settingsPopup.height + 6;
-            }
-            return 50;
-        }
-
-        width: 400
-        height: 200
-        modal: false // 非模态，允许同时打开多个弹出窗口
-        focus: true
-        closePolicy: Popup.NoAutoClose
-        visible: isDesktopWidget && isShowTodos // 在小组件模式下且需要显示所有任务时显示
-
-        contentItem: Rectangle {
-            color: secondaryBackgroundColor
-            border.color: borderColor
-            border.width: 1
-            radius: 5
-
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 10
-                spacing: 10
-
-                Label {
-                    text: "待办任务"
-                    font.bold: true
-                    font.pixelSize: 16
-                }
-
-                // 待办列表
-                ListView {
-                    id: todoListPopupView
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
-                    model: todoModel
-
-                    // 下拉刷新相关属性与逻辑（在小组件模式的弹窗中）
-                    property bool refreshing: false
-                    property int pullThreshold: 50
-                    property real pullDistance: 0
-
-                    onContentYChanged: {
-                        pullDistance = contentY < 0 ? -contentY : 0;
-                    }
-                    onMovementEnded: {
-                        if (contentY < -pullThreshold && atYBeginning && !refreshing) {
-                            refreshing = true;
-                            todoModel.syncWithServer();
-                        }
-                    }
-
-                    header: Item {
-                        width: todoListPopupView.width
-                        height: todoListPopupView.refreshing ? 45 : Math.min(45, todoListPopupView.pullDistance)
-                        visible: height > 0 || todoListPopupView.refreshing
-                        Column {
-                            anchors.centerIn: parent
-                            spacing: 4
-                            BusyIndicator {
-                                running: todoListPopupView.refreshing
-                                visible: todoListPopupView.refreshing || todoListPopupView.pullDistance > 0
-                                width: 18
-                                height: 18
-                            }
-                            Label {
-                                text: todoListPopupView.refreshing ? qsTr("正在同步...") : (todoListPopupView.pullDistance >= todoListPopupView.pullThreshold ? qsTr("释放刷新") : qsTr("下拉刷新"))
-                                color: textColor
-                                font.pixelSize: 11
-                            }
-                        }
-                    }
-
-                    Connections {
-                        target: todoModel
-                        onSyncStarted: {
-                            if (!todoListPopupView.refreshing && todoListPopupView.atYBeginning) {
-                                todoListPopupView.refreshing = true;
-                            }
-                        }
-                        onSyncCompleted: function (success, errorMessage) {
-                            todoListPopupView.refreshing = false;
-                            todoListPopupView.contentY = 0;
-                        }
-                    }
-
-                    delegate: Rectangle {
-                        width: todoListPopupView.width
-                        height: 40
-                        color: index % 2 === 0 ? secondaryBackgroundColor : backgroundColor
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 5
-                            spacing: 5
-
-                            // 待办状态指示器
-                            Rectangle {
-                                width: 16
-                                height: 16
-                                radius: 8
-                                color: model.status === "done" ? "#4caf50" : model.urgency === "high" ? "#f44336" : model.urgency === "medium" ? "#ff9800" : "#8bc34a"
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: {
-                                        todoModel.markAsDone(index);
-                                        mouse.accepted = true;  // 阻止事件传播
-                                    }
-                                }
-                            }
-
-                            // 待办标题
-                            Label {
-                                text: model.title
-                                color: textColor
-                                Layout.fillWidth: true
-                            }
-
-                            // 删除按钮
-                            Rectangle {
-                                width: 30
-                                height: 30
-                                color: "transparent"
-                                border.width: 0
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "🗑"
-                                    color: "gray"
-                                    font.pixelSize: 14
-                                }
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: {
-                                        todoModel.removeTodo(index);
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // 为弹出列表添加滚动条
-                    ScrollBar.vertical: ScrollBar {}
-                }
-            }
+        function onHeightChanged(height) {
+            root.height = height;
         }
     }
 
@@ -352,11 +59,11 @@ Window {
             anchors.fill: parent
             property point clickPos: "0,0"
 
-            onPressed: {
+            onPressed: function(mouse) {
                 clickPos = Qt.point(mouse.x, mouse.y);
             }
 
-            onPositionChanged: {
+            onPositionChanged: function(mouse) {
                 // 只有在非小组件模式或小组件模式但未启用防止拖动时才允许拖动
                 if (pressed && (!isDesktopWidget || (isDesktopWidget && !preventDragging))) {
                     var delta = Qt.point(mouse.x - clickPos.x, mouse.y - clickPos.y);
@@ -436,20 +143,12 @@ Window {
 
                 Button {
                     text: "☰"
-                    onClicked: settingsPopup.visible ? settingsPopup.close() : settingsPopup.open()
+                    onClicked: mainWindow.toggleSettingsVisible()
                     flat: true
                     implicitWidth: 30
                     implicitHeight: 30
-                    background: Rectangle {
-                        color: "transparent"
-                    }
-                    contentItem: Text {
-                        text: parent.text
-                        color: "white"
-                        font.pixelSize: 16
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
+                    background: Rectangle { color: "transparent" }
+                    contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 16; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                 }
 
                 Button {
@@ -458,34 +157,18 @@ Window {
                     flat: true
                     implicitWidth: 30
                     implicitHeight: 30
-                    background: Rectangle {
-                        color: "transparent"
-                    }
-                    contentItem: Text {
-                        text: parent.text
-                        color: "white"
-                        font.pixelSize: 16
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
+                    background: Rectangle { color: "transparent" }
+                    contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 16; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                 }
 
                 Button {
                     text: "+"
-                    onClicked: addTaskPopup.visible ? addTaskPopup.close() : addTaskPopup.open()
+                    onClicked: mainWindow.toggleAddTaskVisible()
                     flat: true
                     implicitWidth: 30
                     implicitHeight: 30
-                    background: Rectangle {
-                        color: "transparent"
-                    }
-                    contentItem: Text {
-                        text: parent.text
-                        color: "white"
-                        font.pixelSize: 16
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
+                    background: Rectangle { color: "transparent" }
+                    contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 16; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                 }
 
                 Button {
@@ -493,7 +176,7 @@ Window {
                     onClicked: {
                         if (isDesktopWidget) {
                             mainWindow.toggleWidgetMode();
-                            mainWindow.setIsShowTodos(true);
+                            mainWindow.isShowTodos = true;
                         } else {
                             mainWindow.toggleWidgetMode();
                         }
@@ -501,16 +184,8 @@ Window {
                     flat: true
                     implicitWidth: 30
                     implicitHeight: 30
-                    background: Rectangle {
-                        color: "transparent"
-                    }
-                    contentItem: Text {
-                        text: parent.text
-                        color: "white"
-                        font.pixelSize: 14
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
+                    background: Rectangle { color: "transparent" }
+                    contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                 }
             }
 
@@ -525,23 +200,15 @@ Window {
                     onClicked: {
                         if (isDesktopWidget) {
                             mainWindow.toggleWidgetMode();
-                            mainWindow.setIsShowTodos(true);
+                            mainWindow.isShowTodos = true;
                         } else {
                             mainWindow.toggleWidgetMode();
                         }
                     }
                     flat: true
                     implicitWidth: 30
-                    background: Rectangle {
-                        color: "transparent"
-                    }
-                    contentItem: Text {
-                        text: parent.text
-                        color: "white"
-                        font.pixelSize: 14
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
+                    background: Rectangle { color: "transparent" }
+                    contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                 }
 
                 // 关闭按钮
@@ -550,16 +217,8 @@ Window {
                     onClicked: root.close()
                     flat: true
                     implicitWidth: 30
-                    background: Rectangle {
-                        color: "transparent"
-                    }
-                    contentItem: Text {
-                        text: parent.text
-                        color: "white"
-                        font.pixelSize: 14
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
+                    background: Rectangle { color: "transparent" }
+                    contentItem: Text { text: parent.text; color: "white"; font.pixelSize: 14; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                 }
             }
         }
@@ -713,6 +372,19 @@ Window {
         focus: true
         visible: !isDesktopWidget && depth > 0 // 小窗口模式时隐藏主页面
         initialItem: mainPageComponent
+    }
+
+    // 小组件模式组件
+    WidgetMode {
+        id: widgetModeComponent
+        anchors.fill: parent
+        isDesktopWidget: root.isDesktopWidget
+        isShowSetting: root.isShowSetting
+        isShowAddTask: root.isShowAddTask
+        isShowTodos: root.isShowTodos
+        isDarkMode: root.isDarkMode
+        preventDragging: root.preventDragging
+        visible: isDesktopWidget
     }
 
     // 顶部用户菜单（从头像处点击弹出）
