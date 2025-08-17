@@ -181,11 +181,17 @@ else()
     set(WIN32_EXEC_FLAG TRUE)           # 隐藏控制台窗口
 endif()
 
+# 安装路径配置
+if (WIN32)
+set(CMAKE_INSTALL_PREFIX "C:/Software/Apps/MyTodo" CACHE PATH "Install path prefix" FORCE)
+endif()
+
+
 # 目标平台属性配置
 set_target_properties(appMyTodo PROPERTIES
     # macOS Bundle 配置
     MACOSX_BUNDLE TRUE
-    MACOSX_BUNDLE_GUI_IDENTIFIER "com.mytodo.app"  # Bundle 标识符
+    MACOSX_BUNDLE_GUI_IDENTIFIER "com.sakurakugu.mytodo"  # Bundle 标识符
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
     MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/platforms/macos/Info.plist.in
@@ -268,10 +274,10 @@ if(ENABLE_PROFILING AND CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 # 构建信息输出
-message(STATUS "=== MyTodo 构建配置 ===")
+message(STATUS "====== MyTodo 构建配置 =====")
 message(STATUS "项目版本: ${PROJECT_VERSION}")
 message(STATUS "构建类型: ${CMAKE_BUILD_TYPE}")
 message(STATUS "C++ 标准: ${CMAKE_CXX_STANDARD}")
 message(STATUS "Qt6 版本: ${Qt6_VERSION}")
 message(STATUS "安装前缀: ${CMAKE_INSTALL_PREFIX}")
-message(STATUS "=========================")
+message(STATUS "===========================")

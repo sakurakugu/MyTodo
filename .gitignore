@@ -89,7 +89,7 @@ CMakeLists.txt.user*
 
 # 其他
 replacements.txt
-test/
+my-test/
 
 # 临时
 cmake-build-debug/

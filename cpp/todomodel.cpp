@@ -1,23 +1,31 @@
 #include "todoModel.h"
-#include "networkmanager.h"
+
 #include <QDateTime>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QUuid>
 #include <QNetworkProxy>
 #include <QProcess>
-#include <QFile>
-#include <QFileInfo>
-#include <QDir>
+#include <QUuid>
+#include <map>
+#include <algorithm>
+
+#include "networkmanager.h"
 
 TodoModel::TodoModel(QObject *parent, Settings *settings, Settings::StorageType storageType)
-    : QAbstractListModel(parent), m_filterCacheDirty(true), m_isOnline(false), m_currentCategory(""), m_currentFilter(""),
-      m_networkManager(new NetworkManager(this)), m_settings(settings ? settings : new Settings(this, storageType)) {
-
+    : QAbstractListModel(parent),
+      m_filterCacheDirty(true),
+      m_isOnline(false),
+      m_currentCategory(""),
+      m_currentFilter(""),
+      m_networkManager(new NetworkManager(this)),
+      m_settings(settings ? settings : new Settings(this, storageType)) {
     // 初始化默认服务器配置
     m_settings->initializeDefaultServerConfig();
-    
+
     // 初始化服务器配置
     initializeServerConfig();
 
@@ -32,26 +40,30 @@ TodoModel::TodoModel(QObject *parent, Settings *settings, Settings::StorageType 
         qWarning() << "无法从本地存储加载待办事项数据";
     }
 
-    // 从设置初始化在线状态（与原autoSync合并）
+    // 初始化在线状态
     m_isOnline = m_settings->get("autoSync", false).toBool();
     emit isOnlineChanged();
 
     // 尝试使用存储的令牌自动登录
-    if (m_settings->contains("accessToken")) {
-        m_accessToken = m_settings->get("accessToken").toString();
-        m_refreshToken = m_settings->get("refreshToken").toString();
-        m_username = m_settings->get("username").toString();
+    if (m_settings->contains("user/accessToken")) {
+        m_accessToken = m_settings->get("user/accessToken").toString();
+        m_refreshToken = m_settings->get("user/refreshToken").toString();
+        m_username = m_settings->get("user/username").toString();
 
         // TODO: 在这里验证令牌是否有效
         qDebug() << "使用存储的凭据自动登录用户：" << m_username;
     }
 }
 
+/**
+ * @brief 析构函数
+ *
+ * 清理资源，保存未同步的数据到本地存储。
+ */
 TodoModel::~TodoModel() {
     // 保存数据
     saveToLocalStorage();
 
-    // 智能指针会自动清理资源，无需手动删除
     m_todos.clear();
     m_filteredTodos.clear();
 }
@@ -62,8 +74,7 @@ TodoModel::~TodoModel() {
  * @return 待办事项数量
  */
 int TodoModel::rowCount(const QModelIndex &parent) const {
-    if (parent.isValid())
-        return 0;
+    if (parent.isValid()) return 0;
 
     // 如果没有设置过滤条件，返回所有项目
     if (m_currentCategory.isEmpty() && m_currentFilter.isEmpty()) {
@@ -71,7 +82,7 @@ int TodoModel::rowCount(const QModelIndex &parent) const {
     }
 
     // 使用缓存的过滤结果
-    const_cast<TodoModel*>(this)->updateFilterCache();
+    const_cast<TodoModel *>(this)->updateFilterCache();
     return m_filteredTodos.count();
 }
 
@@ -82,49 +93,46 @@ int TodoModel::rowCount(const QModelIndex &parent) const {
  * @return 请求的数据值
  */
 QVariant TodoModel::data(const QModelIndex &index, int role) const {
-    if (!index.isValid())
-        return QVariant();
+    if (!index.isValid()) return QVariant();
 
     // 如果没有设置过滤条件，直接返回对应索引的项目
     if (m_currentCategory.isEmpty() && m_currentFilter.isEmpty()) {
-        if (static_cast<size_t>(index.row()) >= m_todos.size())
-            return QVariant();
+        if (static_cast<size_t>(index.row()) >= m_todos.size()) return QVariant();
         return getItemData(m_todos[index.row()].get(), role);
     }
 
     // 使用缓存的过滤结果
-    const_cast<TodoModel*>(this)->updateFilterCache();
-    if (index.row() >= m_filteredTodos.size())
-        return QVariant();
-    
+    const_cast<TodoModel *>(this)->updateFilterCache();
+    if (index.row() >= m_filteredTodos.size()) return QVariant();
+
     return getItemData(m_filteredTodos[index.row()], role);
 }
 
 // 辅助方法，根据角色返回项目数据
-QVariant TodoModel::getItemData(const TodoItem* item, int role) const {
+QVariant TodoModel::getItemData(const TodoItem *item, int role) const {
     switch (role) {
-    case IdRole:
-        return item->id();
-    case TitleRole:
-        return item->title();
-    case DescriptionRole:
-        return item->description();
-    case CategoryRole:
-        return item->category();
-    case UrgencyRole:
-        return item->urgency();
-    case ImportanceRole:
-        return item->importance();
-    case StatusRole:
-        return item->status();
-    case CreatedAtRole:
-        return item->createdAt();
-    case UpdatedAtRole:
-        return item->updatedAt();
-    case SyncedRole:
-        return item->synced();
-    default:
-        return QVariant();
+        case IdRole:
+            return item->id();
+        case TitleRole:
+            return item->title();
+        case DescriptionRole:
+            return item->description();
+        case CategoryRole:
+            return item->category();
+        case UrgencyRole:
+            return item->urgency();
+        case ImportanceRole:
+            return item->importance();
+        case StatusRole:
+            return item->status();
+        case CreatedAtRole:
+            return item->createdAt();
+        case UpdatedAtRole:
+            return item->updatedAt();
+        case SyncedRole:
+            return item->synced();
+        default:
+            return QVariant();
     }
 }
 
@@ -155,37 +163,36 @@ QHash<int, QByteArray> TodoModel::roleNames() const {
  * @return 设置是否成功
  */
 bool TodoModel::setData(const QModelIndex &index, const QVariant &value, int role) {
-    if (!index.isValid() || static_cast<size_t>(index.row()) >= m_todos.size())
-        return false;
+    if (!index.isValid() || static_cast<size_t>(index.row()) >= m_todos.size()) return false;
 
     TodoItem *item = m_todos.at(index.row()).get();
     bool changed = false;
 
     switch (role) {
-    case TitleRole:
-        item->setTitle(value.toString());
-        changed = true;
-        break;
-    case DescriptionRole:
-        item->setDescription(value.toString());
-        changed = true;
-        break;
-    case CategoryRole:
-        item->setCategory(value.toString());
-        changed = true;
-        break;
-    case UrgencyRole:
-        item->setUrgency(value.toString());
-        changed = true;
-        break;
-    case ImportanceRole:
-        item->setImportance(value.toString());
-        changed = true;
-        break;
-    case StatusRole:
-        item->setStatus(value.toString());
-        changed = true;
-        break;
+        case TitleRole:
+            item->setTitle(value.toString());
+            changed = true;
+            break;
+        case DescriptionRole:
+            item->setDescription(value.toString());
+            changed = true;
+            break;
+        case CategoryRole:
+            item->setCategory(value.toString());
+            changed = true;
+            break;
+        case UrgencyRole:
+            item->setUrgency(value.toString());
+            changed = true;
+            break;
+        case ImportanceRole:
+            item->setImportance(value.toString());
+            changed = true;
+            break;
+        case StatusRole:
+            item->setStatus(value.toString());
+            changed = true;
+            break;
     }
 
     if (changed) {
@@ -203,11 +210,11 @@ bool TodoModel::setData(const QModelIndex &index, const QVariant &value, int rol
 // 性能优化相关方法实现
 void TodoModel::updateFilterCache() {
     if (!m_filterCacheDirty) {
-        return; // 缓存仍然有效
+        return;  // 缓存仍然有效
     }
-    
+
     m_filteredTodos.clear();
-    
+
     // 如果没有过滤条件，缓存所有项目
     if (m_currentCategory.isEmpty() && m_currentFilter.isEmpty()) {
         for (auto it = m_todos.begin(); it != m_todos.end(); ++it) {
@@ -221,42 +228,37 @@ void TodoModel::updateFilterCache() {
             }
         }
     }
-    
+
     m_filterCacheDirty = false;
 }
 
-bool TodoModel::itemMatchesFilter(const TodoItem* item) const {
+bool TodoModel::itemMatchesFilter(const TodoItem *item) const {
     if (!item) return false;
-    
+
     bool categoryMatch = m_currentCategory.isEmpty() || item->category() == m_currentCategory;
-    bool statusMatch = m_currentFilter.isEmpty() || 
-                     (m_currentFilter == "done" && item->status() == "done") ||
-                     (m_currentFilter == "todo" && item->status() == "todo");
-    
+    bool statusMatch = m_currentFilter.isEmpty() || (m_currentFilter == "done" && item->status() == "done") ||
+                       (m_currentFilter == "todo" && item->status() == "todo");
+
     return categoryMatch && statusMatch;
 }
 
-TodoItem* TodoModel::getFilteredItem(int index) const {
-    const_cast<TodoModel*>(this)->updateFilterCache();
-    
+TodoItem *TodoModel::getFilteredItem(int index) const {
+    const_cast<TodoModel *>(this)->updateFilterCache();
+
     if (index < 0 || index >= m_filteredTodos.size()) {
         return nullptr;
     }
-    
+
     return m_filteredTodos[index];
 }
 
-void TodoModel::invalidateFilterCache() {
-    m_filterCacheDirty = true;
-}
+void TodoModel::invalidateFilterCache() { m_filterCacheDirty = true; }
 
 /**
  * @brief 获取当前在线状态
  * @return 是否在线
  */
-bool TodoModel::isOnline() const {
-    return m_isOnline;
-}
+bool TodoModel::isOnline() const { return m_isOnline; }
 
 /**
  * @brief 设置在线状态
@@ -267,23 +269,25 @@ void TodoModel::setIsOnline(bool online) {
     if (m_isOnline == online) {
         return;
     }
-    
+
     if (online) {
+        // TODO: 这部分是不是可以复用
+
         // 尝试连接服务器，验证是否可以切换到在线模式
         NetworkManager::RequestConfig config;
         config.url = getApiUrl(m_todoApiEndpoint);
         config.requiresAuth = isLoggedIn();
-        config.timeout = 5000; // 5秒超时
-        
+        config.timeout = 5000;  // 5秒超时
+
         // 发送测试请求
         m_networkManager->sendRequest(NetworkManager::FetchTodos, config);
-        
-        // 暂时设置为在线状态，实际状态将在请求回调中确定
+
+        // TODO: 暂时设置为在线状态，实际状态将在请求回调中确定
         m_isOnline = online;
         emit isOnlineChanged();
         // 保存到设置，保持与autoSync一致
-        m_settings->save("autoSync", m_isOnline);
-        
+        m_settings->save("setting/autoSync", m_isOnline);
+
         if (m_isOnline && isLoggedIn()) {
             syncWithServer();
         }
@@ -292,7 +296,7 @@ void TodoModel::setIsOnline(bool online) {
         m_isOnline = online;
         emit isOnlineChanged();
         // 保存到设置，保持与autoSync一致
-        m_settings->save("autoSync", m_isOnline);
+        m_settings->save("setting/autoSync", m_isOnline);
     }
 }
 
@@ -300,9 +304,7 @@ void TodoModel::setIsOnline(bool online) {
  * @brief 获取当前激活的分类筛选器
  * @return 当前分类名称
  */
-QString TodoModel::currentCategory() const {
-    return m_currentCategory;
-}
+QString TodoModel::currentCategory() const { return m_currentCategory; }
 
 /**
  * @brief 设置分类筛选器
@@ -322,9 +324,7 @@ void TodoModel::setCurrentCategory(const QString &category) {
  * @brief 获取当前激活的筛选条件
  * @return 当前筛选条件
  */
-QString TodoModel::currentFilter() const {
-    return m_currentFilter;
-}
+QString TodoModel::currentFilter() const { return m_currentFilter; }
 
 /**
  * @brief 设置筛选条件
@@ -352,9 +352,9 @@ void TodoModel::addTodo(const QString &title, const QString &description, const 
                         const QString &urgency, const QString &importance) {
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
 
-    auto newItem = std::make_unique<TodoItem>(
-        QUuid::createUuid().toString(QUuid::WithoutBraces), title, description, category, urgency,
-        importance, "todo", QDateTime::currentDateTime(), QDateTime::currentDateTime(), false, this);
+    auto newItem = std::make_unique<TodoItem>(QUuid::createUuid().toString(QUuid::WithoutBraces), title, description,
+                                              category, urgency, importance, "todo", QDateTime::currentDateTime(),
+                                              QDateTime::currentDateTime(), false, this);
 
     m_todos.push_back(std::move(newItem));
     invalidateFilterCache();
@@ -384,7 +384,7 @@ bool TodoModel::updateTodo(int index, const QVariantMap &todoData) {
 
     QModelIndex modelIndex = createIndex(index, 0);
     bool anyUpdated = false;
-    TodoItem* item = m_todos[index].get();
+    TodoItem *item = m_todos[index].get();
     QVector<int> changedRoles;
 
     try {
@@ -448,10 +448,10 @@ bool TodoModel::updateTodo(int index, const QVariantMap &todoData) {
             item->setUpdatedAt(QDateTime::currentDateTime());
             item->setSynced(false);
             invalidateFilterCache();
-            
+
             // 只触发一次dataChanged信号
             emit dataChanged(modelIndex, modelIndex, changedRoles);
-            
+
             if (!saveToLocalStorage()) {
                 qWarning() << "更新待办事项后无法保存到本地存储";
             }
@@ -580,7 +580,7 @@ void TodoModel::syncWithServer() {
     NetworkManager::RequestConfig config;
     config.url = getApiUrl(m_todoApiEndpoint);
     config.requiresAuth = true;
-    
+
     // 发送同步请求
     m_networkManager->sendRequest(NetworkManager::Sync, config);
 }
@@ -605,11 +605,11 @@ void TodoModel::login(const QString &username, const QString &password) {
     NetworkManager::RequestConfig config;
     config.url = getApiUrl(m_authApiEndpoint) + "?action=login";
     config.requiresAuth = false;  // 登录请求不需要认证
-    
+
     // 创建登录数据
     config.data["username"] = username;
     config.data["password"] = password;
-    
+
     // 发送登录请求
     emit syncStarted();
     m_networkManager->sendRequest(NetworkManager::Login, config);
@@ -625,20 +625,20 @@ void TodoModel::logout() {
     m_refreshToken.clear();
     m_username.clear();
 
-    m_settings->remove("accessToken");
-    m_settings->remove("refreshToken");
-    m_settings->remove("username");
+    m_settings->remove("user/accessToken");
+    m_settings->remove("user/refreshToken");
+    m_settings->remove("user/username");
 
     // 标记所有项为未同步
     for (size_t i = 0; i < m_todos.size(); ++i) {
         m_todos[i]->setSynced(false);
     }
-    
+
     // 发出用户名变化信号
     emit usernameChanged();
     // 发出登录状态变化信号
     emit isLoggedInChanged();
-    
+
     // 发出退出登录成功信号
     emit logoutSuccessful();
 }
@@ -647,77 +647,69 @@ void TodoModel::logout() {
  * @brief 检查用户是否已登录
  * @return 是否已登录
  */
-bool TodoModel::isLoggedIn() const {
-    return !m_accessToken.isEmpty();
-}
+bool TodoModel::isLoggedIn() const { return !m_accessToken.isEmpty(); }
 
 /**
  * @brief 获取用户名
  * @return 用户名
  */
-QString TodoModel::getUsername() const {
-    return m_username;
-}
+QString TodoModel::getUsername() const { return m_username; }
 
 /**
  * @brief 获取邮箱
  * @return 邮箱
  */
-QString TodoModel::getEmail() const {
-    return m_email;
-}
-
-
-
+QString TodoModel::getEmail() const { return m_email; }
 
 void TodoModel::onNetworkRequestCompleted(NetworkManager::RequestType type, const QJsonObject &response) {
     switch (type) {
-    case NetworkManager::Login:
-        handleLoginSuccess(response);
-        break;
-    case NetworkManager::Sync:
-        handleSyncSuccess(response);
-        break;
-    case NetworkManager::FetchTodos:
-        handleFetchTodosSuccess(response);
-        break;
-    case NetworkManager::PushTodos:
-        handlePushChangesSuccess(response);
-        break;
-    case NetworkManager::Logout:
-        // 注销成功处理
-        emit logoutSuccessful();
-        break;
+        case NetworkManager::Login:
+            handleLoginSuccess(response);
+            break;
+        case NetworkManager::Sync:
+            handleSyncSuccess(response);
+            break;
+        case NetworkManager::FetchTodos:
+            handleFetchTodosSuccess(response);
+            break;
+        case NetworkManager::PushTodos:
+            handlePushChangesSuccess(response);
+            break;
+        case NetworkManager::Logout:
+            // 注销成功处理
+            emit logoutSuccessful();
+            break;
     }
 }
 
-void TodoModel::onNetworkRequestFailed(NetworkManager::RequestType type, NetworkManager::NetworkError error, const QString &errorMessage) {
+void TodoModel::onNetworkRequestFailed(NetworkManager::RequestType type, NetworkManager::NetworkError error,
+                                       const QString &errorMessage) {
     Q_UNUSED(error)  // 标记未使用的参数
-    
+
     QString typeStr;
     switch (type) {
-    case NetworkManager::Login:
-        typeStr = "登录";
-        emit loginFailed(errorMessage);
-        break;
-    case NetworkManager::Sync:
-        typeStr = "同步";
-        emit syncCompleted(false, errorMessage);
-        break;
-    case NetworkManager::FetchTodos:
-        typeStr = "获取待办事项";
-        emit syncCompleted(false, errorMessage);
-        break;
-    case NetworkManager::PushTodos:
-        typeStr = "推送更改";
-        emit syncCompleted(false, errorMessage);
-        break;
-    case NetworkManager::Logout:
-        typeStr = "注销";
-        emit logoutSuccessful();
-        break;
+        case NetworkManager::Login:
+            typeStr = "登录";
+            emit loginFailed(errorMessage);
+            break;
+        case NetworkManager::Sync:
+            typeStr = "同步";
+            emit syncCompleted(false, errorMessage);
+            break;
+        case NetworkManager::FetchTodos:
+            typeStr = "获取待办事项";
+            emit syncCompleted(false, errorMessage);
+            break;
+        case NetworkManager::PushTodos:
+            typeStr = "推送更改";
+            emit syncCompleted(false, errorMessage);
+            break;
+        case NetworkManager::Logout:
+            typeStr = "注销";
+            emit logoutSuccessful();
+            break;
     }
-    
+
     qWarning() << typeStr << "失败:" << errorMessage;
     logError(typeStr, errorMessage);
 }
@@ -738,34 +730,34 @@ void TodoModel::onAuthTokenExpired() {
 
 void TodoModel::handleLoginSuccess(const QJsonObject &response) {
     qDebug() << "登录成功";
-    
+
     // 验证响应中包含必要的字段
     if (!response.contains("access_token") || !response.contains("refresh_token") || !response.contains("user")) {
         emit loginFailed("服务器响应缺少必要字段");
         return;
     }
-    
+
     m_accessToken = response["access_token"].toString();
     m_refreshToken = response["refresh_token"].toString();
     m_username = response["user"].toObject()["username"].toString();
-    
+
     // 设置网络管理器的认证令牌
     m_networkManager->setAuthToken(m_accessToken);
-    
+
     // 保存令牌
-    m_settings->save("accessToken", m_accessToken);
-    m_settings->save("refreshToken", m_refreshToken);
-    m_settings->save("username", m_username);
-    
+    m_settings->save("user/accessToken", m_accessToken);
+    m_settings->save("user/refreshToken", m_refreshToken);
+    m_settings->save("user/username", m_username);
+
     qDebug() << "用户" << m_username << "登录成功";
-    
+
     // 发出用户名变化信号
     emit usernameChanged();
     // 发出登录状态变化信号
     emit isLoggedInChanged();
-    
+
     emit loginSuccessful(m_username);
-    
+
     // 登录成功后自动同步
     if (m_isOnline) {
         syncWithServer();
@@ -774,60 +766,60 @@ void TodoModel::handleLoginSuccess(const QJsonObject &response) {
 
 void TodoModel::handleSyncSuccess(const QJsonObject &response) {
     qDebug() << "同步成功";
-    
+
     // 处理同步响应数据
     if (response.contains("todos")) {
         QJsonArray todosArray = response["todos"].toArray();
         // 更新本地数据
         updateTodosFromServer(todosArray);
     }
-    
+
     emit syncCompleted(true, "同步完成");
 }
 
 void TodoModel::handleFetchTodosSuccess(const QJsonObject &response) {
     qDebug() << "获取待办事项成功";
-    
+
     if (response.contains("todos")) {
         QJsonArray todosArray = response["todos"].toArray();
         updateTodosFromServer(todosArray);
     }
-    
+
     // 成功获取数据后，推送本地更改
     pushLocalChangesToServer();
-    
+
     emit syncCompleted(true, "数据获取完成");
 }
 
 void TodoModel::handlePushChangesSuccess(const QJsonObject &response) {
     qDebug() << "推送更改成功";
-    
+
     // 标记待同步项目为已同步
     for (TodoItem *item : m_pendingUnsyncedItems) {
         item->setSynced(true);
     }
-    
+
     // 清空待同步项目列表
     m_pendingUnsyncedItems.clear();
-    
+
     // 保存到本地存储
     if (!saveToLocalStorage()) {
         qWarning() << "无法在同步后保存本地存储";
     }
-    
+
     // 处理推送响应
     if (response.contains("updated_count")) {
         int updatedCount = response["updated_count"].toInt();
         qDebug() << "已更新" << updatedCount << "个待办事项";
     }
-    
+
     emit syncCompleted(true, "更改推送完成");
 }
 
 void TodoModel::updateTodosFromServer(const QJsonArray &todosArray) {
     // TODO: 实现从服务器数据更新本地待办事项的逻辑
     qDebug() << "从服务器更新" << todosArray.size() << "个待办事项";
-    
+
     // 这里应该实现:
     // 1. 解析服务器返回的待办事项数据
     // 2. 与本地数据进行比较和合并
@@ -869,17 +861,11 @@ bool TodoModel::loadFromLocalStorage() {
             }
 
             auto item = std::make_unique<TodoItem>(
-                m_settings->get(prefix + "id").toString(),
-                m_settings->get(prefix + "title").toString(),
-                m_settings->get(prefix + "description").toString(),
-                m_settings->get(prefix + "category").toString(),
-                m_settings->get(prefix + "urgency").toString(),
-                m_settings->get(prefix + "importance").toString(),
-                m_settings->get(prefix + "status").toString(),
-                m_settings->get(prefix + "createdAt").toDateTime(),
-                m_settings->get(prefix + "updatedAt").toDateTime(),
-                m_settings->get(prefix + "synced").toBool(),
-                this);
+                m_settings->get(prefix + "id").toString(), m_settings->get(prefix + "title").toString(),
+                m_settings->get(prefix + "description").toString(), m_settings->get(prefix + "category").toString(),
+                m_settings->get(prefix + "urgency").toString(), m_settings->get(prefix + "importance").toString(),
+                m_settings->get(prefix + "status").toString(), m_settings->get(prefix + "createdAt").toDateTime(),
+                m_settings->get(prefix + "updatedAt").toDateTime(), m_settings->get(prefix + "synced").toBool(), this);
 
             m_todos.push_back(std::move(item));
         }
@@ -961,7 +947,7 @@ void TodoModel::fetchTodosFromServer() {
         NetworkManager::RequestConfig config;
         config.url = getApiUrl(m_todoApiEndpoint);
         config.requiresAuth = true;
-        
+
         m_networkManager->sendRequest(NetworkManager::FetchTodos, config);
     } catch (const std::exception &e) {
         qCritical() << "获取服务器数据时发生异常:" << e.what();
@@ -1008,7 +994,7 @@ void TodoModel::pushLocalChangesToServer() {
 
     if (unsyncedItems.isEmpty()) {
         qDebug() << "没有需要同步的项目";
-        return; // 没有未同步的项目
+        return;  // 没有未同步的项目
     }
 
     qDebug() << "推送" << unsyncedItems.size() << "个项目到服务器";
@@ -1035,10 +1021,10 @@ void TodoModel::pushLocalChangesToServer() {
         config.url = getApiUrl(m_todoApiEndpoint);
         config.requiresAuth = true;
         config.data["todos"] = jsonArray;
-        
+
         // 存储未同步项目的引用，用于成功后标记为已同步
         m_pendingUnsyncedItems = unsyncedItems;
-        
+
         m_networkManager->sendRequest(NetworkManager::PushTodos, config);
     } catch (const std::exception &e) {
         qCritical() << "推送更改时发生异常:" << e.what();
@@ -1057,7 +1043,7 @@ void TodoModel::initializeServerConfig() {
     m_serverBaseUrl = m_settings->get("server/baseUrl", "https://api.example.com").toString();
     m_todoApiEndpoint = m_settings->get("server/todoApiEndpoint", "/todo_api.php").toString();
     m_authApiEndpoint = m_settings->get("server/authApiEndpoint", "/auth_api.php").toString();
-    
+
     qDebug() << "服务器配置已初始化:";
     qDebug() << "  基础URL:" << m_serverBaseUrl;
     qDebug() << "  待办事项API:" << m_todoApiEndpoint;
@@ -1069,18 +1055,14 @@ void TodoModel::initializeServerConfig() {
  * @param endpoint API端点路径
  * @return 完整的API URL
  */
-QString TodoModel::getApiUrl(const QString &endpoint) const {
-    return m_serverBaseUrl + endpoint;
-}
+QString TodoModel::getApiUrl(const QString &endpoint) const { return m_serverBaseUrl + endpoint; }
 
 /**
  * @brief 检查URL是否使用HTTPS协议
  * @param url 要检查的URL
  * @return 如果使用HTTPS则返回true，否则返回false
  */
-bool TodoModel::isHttpsUrl(const QString &url) const {
-    return url.startsWith("https://", Qt::CaseInsensitive);
-}
+bool TodoModel::isHttpsUrl(const QString &url) const { return url.startsWith("https://", Qt::CaseInsensitive); }
 
 /**
  * @brief 更新服务器配置
@@ -1091,21 +1073,20 @@ void TodoModel::updateServerConfig(const QString &baseUrl) {
         qWarning() << "尝试设置空的服务器URL";
         return;
     }
-    
+
     // 更新内存中的配置
     m_serverBaseUrl = baseUrl;
-    
+
     // 保存到设置中
     m_settings->save("server/baseUrl", baseUrl);
-    m_settings->save("apiBaseUrl", baseUrl); // 兼容Setting.qml中的配置
-    
+
     qDebug() << "服务器配置已更新:" << baseUrl;
     qDebug() << "HTTPS状态:" << (isHttpsUrl(baseUrl) ? "安全" : "不安全");
 }
 
 bool TodoModel::exportTodos(const QString &filePath) {
     QJsonArray todosArray;
-    
+
     // 将所有待办事项转换为JSON格式
     for (const auto &todo : m_todos) {
         QJsonObject todoObj;
@@ -1119,88 +1100,88 @@ bool TodoModel::exportTodos(const QString &filePath) {
         todoObj["createdAt"] = todo->createdAt().toString(Qt::ISODate);
         todoObj["updatedAt"] = todo->updatedAt().toString(Qt::ISODate);
         todoObj["synced"] = todo->synced();
-        
+
         todosArray.append(todoObj);
     }
-    
+
     // 创建根JSON对象
     QJsonObject rootObj;
     rootObj["version"] = "1.0";
     rootObj["exportDate"] = QDateTime::currentDateTime().toString(Qt::ISODate);
     rootObj["todos"] = todosArray;
-    
+
     // 写入文件
     QJsonDocument doc(rootObj);
     QFile file(filePath);
-    
+
     // 确保目录存在
     QFileInfo fileInfo(filePath);
     QDir dir = fileInfo.absoluteDir();
     if (!dir.exists()) {
         dir.mkpath(".");
     }
-    
+
     if (!file.open(QIODevice::WriteOnly)) {
         qWarning() << "无法打开文件进行写入:" << filePath;
         return false;
     }
-    
+
     file.write(doc.toJson());
     file.close();
-    
+
     qDebug() << "成功导出" << m_todos.size() << "个待办事项到" << filePath;
     return true;
 }
 
 QVariantList TodoModel::importTodosWithAutoResolution(const QString &filePath) {
     QVariantList conflicts;
-    
+
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning() << "无法打开文件进行读取:" << filePath;
         return conflicts;
     }
-    
+
     QByteArray data = file.readAll();
     file.close();
-    
+
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(data, &error);
-    
+
     if (error.error != QJsonParseError::NoError) {
         qWarning() << "JSON解析错误:" << error.errorString();
         return conflicts;
     }
-    
+
     QJsonObject rootObj = doc.object();
-    
+
     // 检查版本兼容性
     QString version = rootObj["version"].toString();
     if (version != "1.0") {
         qWarning() << "不支持的文件版本:" << version;
         return conflicts;
     }
-    
+
     QJsonArray todosArray = rootObj["todos"].toArray();
-    
+
     // 分离冲突和非冲突项目
     QJsonArray nonConflictTodos;
-    
+
     qDebug() << "开始检查导入冲突，现有项目数量:" << m_todos.size() << "，导入项目数量:" << todosArray.size();
-    
+
     // 打印现有项目的ID
     for (size_t i = 0; i < m_todos.size(); ++i) {
         qDebug() << "现有项目" << i << "ID:" << m_todos[i]->id() << "标题:" << m_todos[i]->title();
     }
-    
+
     for (const QJsonValue &value : todosArray) {
         QJsonObject todoObj = value.toObject();
         QString id = todoObj["id"].toString();
-        
+
         bool hasConflict = false;
         bool shouldSkip = false;
-        TodoItem* existingTodo = nullptr;
-        
+        TodoItem *existingTodo = nullptr;
+
         // 查找是否存在相同ID的待办事项
         for (const auto &todo : m_todos) {
             if (todo->id() == id) {
@@ -1209,14 +1190,13 @@ QVariantList TodoModel::importTodosWithAutoResolution(const QString &filePath) {
                 QString importDescription = todoObj["description"].toString();
                 QString importCategory = todoObj["category"].toString();
                 QString importStatus = todoObj["status"].toString();
-                
-                if (todo->title() != importTitle || 
-                    todo->description() != importDescription ||
-                    todo->category() != importCategory ||
-                    todo->status() != importStatus) {
+
+                if (todo->title() != importTitle || todo->description() != importDescription ||
+                    todo->category() != importCategory || todo->status() != importStatus) {
                     hasConflict = true;
                     existingTodo = todo.get();
-                    qDebug() << "发现真正冲突项目 ID:" << id << "现有标题:" << todo->title() << "导入标题:" << importTitle;
+                    qDebug() << "发现真正冲突项目 ID:" << id << "现有标题:" << todo->title()
+                             << "导入标题:" << importTitle;
                 } else {
                     qDebug() << "ID相同且内容一致，直接跳过 ID:" << id << "标题:" << importTitle;
                     // 内容完全一致的项目直接跳过，既不导入也不显示冲突
@@ -1225,7 +1205,7 @@ QVariantList TodoModel::importTodosWithAutoResolution(const QString &filePath) {
                 break;
             }
         }
-        
+
         if (shouldSkip) {
             // 跳过内容完全一致的项目
             continue;
@@ -1238,13 +1218,13 @@ QVariantList TodoModel::importTodosWithAutoResolution(const QString &filePath) {
             conflictInfo["existingCategory"] = existingTodo->category();
             conflictInfo["existingStatus"] = existingTodo->status();
             conflictInfo["existingUpdatedAt"] = existingTodo->updatedAt();
-            
+
             conflictInfo["importTitle"] = todoObj["title"].toString();
             conflictInfo["importDescription"] = todoObj["description"].toString();
             conflictInfo["importCategory"] = todoObj["category"].toString();
             conflictInfo["importStatus"] = todoObj["status"].toString();
             conflictInfo["importUpdatedAt"] = QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate);
-            
+
             conflicts.append(conflictInfo);
         } else {
             // 无冲突，添加到非冲突列表
@@ -1252,83 +1232,77 @@ QVariantList TodoModel::importTodosWithAutoResolution(const QString &filePath) {
             nonConflictTodos.append(value);
         }
     }
-    
+
     qDebug() << "冲突检查完成，冲突项目数量:" << conflicts.size() << "，无冲突项目数量:" << nonConflictTodos.size();
-    
+
     // 导入无冲突的项目
     if (nonConflictTodos.size() > 0) {
         beginInsertRows(QModelIndex(), m_todos.size(), m_todos.size() + nonConflictTodos.size() - 1);
-        
+
         for (const QJsonValue &value : nonConflictTodos) {
             QJsonObject todoObj = value.toObject();
-            
+
             auto newTodo = std::make_unique<TodoItem>(
-                todoObj["id"].toString(),
-                todoObj["title"].toString(),
-                todoObj["description"].toString(),
-                todoObj["category"].toString(),
-                todoObj["urgency"].toString(),
-                todoObj["importance"].toString(),
-                todoObj["status"].toString(),
-                QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),
+                todoObj["id"].toString(), todoObj["title"].toString(), todoObj["description"].toString(),
+                todoObj["category"].toString(), todoObj["urgency"].toString(), todoObj["importance"].toString(),
+                todoObj["status"].toString(), QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),
                 QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate),
-                false, // 导入的项目标记为未同步
-                this
-            );
-            
+                false,  // 导入的项目标记为未同步
+                this);
+
             m_todos.push_back(std::move(newTodo));
         }
-        
+
         endInsertRows();
     }
-    
+
     // 保存到本地存储
     if (nonConflictTodos.size() > 0) {
         saveToLocalStorage();
     }
-    
+
     return conflicts;
 }
 
 bool TodoModel::importTodos(const QString &filePath) {
     QFile file(filePath);
-    
+
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning() << "无法打开文件进行读取:" << filePath;
         return false;
     }
-    
+
     QByteArray data = file.readAll();
     file.close();
-    
+
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(data, &error);
-    
+
     if (error.error != QJsonParseError::NoError) {
         qWarning() << "JSON解析错误:" << error.errorString();
         return false;
     }
-    
+
     QJsonObject rootObj = doc.object();
-    
+
     // 检查版本兼容性
     QString version = rootObj["version"].toString();
     if (version != "1.0") {
         qWarning() << "不支持的文件版本:" << version;
         return false;
     }
-    
+
     QJsonArray todosArray = rootObj["todos"].toArray();
     int importedCount = 0;
     int skippedCount = 0;
-    
+
     beginResetModel();
-    
+
     for (const QJsonValue &value : todosArray) {
         QJsonObject todoObj = value.toObject();
-        
+
         QString id = todoObj["id"].toString();
-        
+
         // 检查是否已存在相同ID的待办事项
         bool exists = false;
         for (const auto &existingTodo : m_todos) {
@@ -1338,72 +1312,64 @@ bool TodoModel::importTodos(const QString &filePath) {
                 break;
             }
         }
-        
+
         if (!exists) {
             // 创建新的待办事项
             auto newTodo = std::make_unique<TodoItem>(
-                id,
-                todoObj["title"].toString(),
-                todoObj["description"].toString(),
-                todoObj["category"].toString(),
-                todoObj["urgency"].toString(),
-                todoObj["importance"].toString(),
-                todoObj["status"].toString(),
+                id, todoObj["title"].toString(), todoObj["description"].toString(), todoObj["category"].toString(),
+                todoObj["urgency"].toString(), todoObj["importance"].toString(), todoObj["status"].toString(),
                 QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),
-                QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate),
-                todoObj["synced"].toBool(),
-                this
-            );
-            
+                QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate), todoObj["synced"].toBool(), this);
+
             m_todos.push_back(std::move(newTodo));
             importedCount++;
         }
     }
-    
+
     endResetModel();
-    
+
     // 保存到本地存储
     saveToLocalStorage();
-    
+
     qDebug() << "导入完成 - 新增:" << importedCount << "个，跳过:" << skippedCount << "个";
     return true;
 }
 
 QVariantList TodoModel::checkImportConflicts(const QString &filePath) {
     QVariantList conflicts;
-    
+
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning() << "无法打开文件进行读取:" << filePath;
         return conflicts;
     }
-    
+
     QByteArray data = file.readAll();
     file.close();
-    
+
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(data, &error);
-    
+
     if (error.error != QJsonParseError::NoError) {
         qWarning() << "JSON解析错误:" << error.errorString();
         return conflicts;
     }
-    
+
     QJsonObject rootObj = doc.object();
-    
+
     // 检查版本兼容性
     QString version = rootObj["version"].toString();
     if (version != "1.0") {
         qWarning() << "不支持的文件版本:" << version;
         return conflicts;
     }
-    
+
     QJsonArray todosArray = rootObj["todos"].toArray();
-    
+
     for (const QJsonValue &value : todosArray) {
         QJsonObject todoObj = value.toObject();
         QString id = todoObj["id"].toString();
-        
+
         // 查找是否存在相同ID的待办事项
         for (const auto &existingTodo : m_todos) {
             if (existingTodo->id() == id) {
@@ -1415,61 +1381,61 @@ QVariantList TodoModel::checkImportConflicts(const QString &filePath) {
                 conflictInfo["existingCategory"] = existingTodo->category();
                 conflictInfo["existingStatus"] = existingTodo->status();
                 conflictInfo["existingUpdatedAt"] = existingTodo->updatedAt();
-                
+
                 conflictInfo["importTitle"] = todoObj["title"].toString();
                 conflictInfo["importDescription"] = todoObj["description"].toString();
                 conflictInfo["importCategory"] = todoObj["category"].toString();
                 conflictInfo["importStatus"] = todoObj["status"].toString();
                 conflictInfo["importUpdatedAt"] = QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate);
-                
+
                 conflicts.append(conflictInfo);
                 break;
             }
         }
     }
-    
+
     return conflicts;
 }
 
 bool TodoModel::importTodosWithConflictResolution(const QString &filePath, const QString &conflictResolution) {
     QFile file(filePath);
-    
+
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning() << "无法打开文件进行读取:" << filePath;
         return false;
     }
-    
+
     QByteArray data = file.readAll();
     file.close();
-    
+
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(data, &error);
-    
+
     if (error.error != QJsonParseError::NoError) {
         qWarning() << "JSON解析错误:" << error.errorString();
         return false;
     }
-    
+
     QJsonObject rootObj = doc.object();
-    
+
     // 检查版本兼容性
     QString version = rootObj["version"].toString();
     if (version != "1.0") {
         qWarning() << "不支持的文件版本:" << version;
         return false;
     }
-    
+
     QJsonArray todosArray = rootObj["todos"].toArray();
     int importedCount = 0;
     int skippedCount = 0;
     int overwrittenCount = 0;
-    
+
     beginResetModel();
-    
+
     for (const QJsonValue &value : todosArray) {
         QJsonObject todoObj = value.toObject();
         QString id = todoObj["id"].toString();
-        
+
         // 查找是否已存在相同ID的待办事项
         bool exists = false;
         int existingIndex = -1;
@@ -1480,7 +1446,7 @@ bool TodoModel::importTodosWithConflictResolution(const QString &filePath, const
                 break;
             }
         }
-        
+
         if (exists) {
             if (conflictResolution == "overwrite") {
                 // 覆盖现有项目
@@ -1498,7 +1464,7 @@ bool TodoModel::importTodosWithConflictResolution(const QString &filePath, const
                 // 合并：保留较新的更新时间的版本
                 TodoItem *existingItem = m_todos[existingIndex].get();
                 QDateTime importUpdatedAt = QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate);
-                
+
                 if (importUpdatedAt > existingItem->updatedAt()) {
                     // 导入的版本更新，使用导入的数据
                     existingItem->setTitle(todoObj["title"].toString());
@@ -1519,30 +1485,23 @@ bool TodoModel::importTodosWithConflictResolution(const QString &filePath, const
         } else {
             // 创建新的待办事项
             auto newTodo = std::make_unique<TodoItem>(
-                id,
-                todoObj["title"].toString(),
-                todoObj["description"].toString(),
-                todoObj["category"].toString(),
-                todoObj["urgency"].toString(),
-                todoObj["importance"].toString(),
-                todoObj["status"].toString(),
+                id, todoObj["title"].toString(), todoObj["description"].toString(), todoObj["category"].toString(),
+                todoObj["urgency"].toString(), todoObj["importance"].toString(), todoObj["status"].toString(),
                 QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),
-                QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate),
-                todoObj["synced"].toBool(),
-                this
-            );
-            
+                QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate), todoObj["synced"].toBool(), this);
+
             m_todos.push_back(std::move(newTodo));
             importedCount++;
         }
     }
-    
+
     endResetModel();
-    
+
     // 保存到本地存储
     saveToLocalStorage();
-    
-    qDebug() << "导入完成 - 新增:" << importedCount << "个，覆盖:" << overwrittenCount << "个，跳过:" << skippedCount << "个";
+
+    qDebug() << "导入完成 - 新增:" << importedCount << "个，覆盖:" << overwrittenCount << "个，跳过:" << skippedCount
+             << "个";
     return true;
 }
 
@@ -1578,9 +1537,9 @@ bool TodoModel::importTodosWithIndividualResolution(const QString &filePath, con
 
         QJsonObject obj = value.toObject();
         QString id = obj["id"].toString();
-        
+
         // 查找是否存在相同ID的项目
-        TodoItem* existingItem = nullptr;
+        TodoItem *existingItem = nullptr;
         for (const auto &item : m_todos) {
             if (item->id() == id) {
                 existingItem = item.get();
@@ -1591,7 +1550,7 @@ bool TodoModel::importTodosWithIndividualResolution(const QString &filePath, con
         if (existingItem) {
             // 获取该项目的处理方式
             QString resolution = resolutions.value(id, "skip").toString();
-            
+
             if (resolution == "overwrite") {
                 // 覆盖现有数据
                 existingItem->setTitle(obj["title"].toString());
@@ -1600,13 +1559,13 @@ bool TodoModel::importTodosWithIndividualResolution(const QString &filePath, con
                 existingItem->setStatus(obj["status"].toString());
                 existingItem->setCreatedAt(QDateTime::fromString(obj["createdAt"].toString(), Qt::ISODate));
                 existingItem->setUpdatedAt(QDateTime::fromString(obj["updatedAt"].toString(), Qt::ISODate));
-                existingItem->setSynced(false); // 标记为未同步
+                existingItem->setSynced(false);  // 标记为未同步
                 updatedCount++;
             } else if (resolution == "merge") {
                 // 智能合并：保留更新时间较新的版本
                 QDateTime existingUpdated = existingItem->updatedAt();
                 QDateTime importUpdated = QDateTime::fromString(obj["updatedAt"].toString(), Qt::ISODate);
-                
+
                 if (importUpdated > existingUpdated) {
                     existingItem->setTitle(obj["title"].toString());
                     existingItem->setDescription(obj["description"].toString());
@@ -1614,10 +1573,10 @@ bool TodoModel::importTodosWithIndividualResolution(const QString &filePath, con
                     existingItem->setStatus(obj["status"].toString());
                     existingItem->setCreatedAt(QDateTime::fromString(obj["createdAt"].toString(), Qt::ISODate));
                     existingItem->setUpdatedAt(importUpdated);
-                    existingItem->setSynced(false); // 标记为未同步
+                    existingItem->setSynced(false);  // 标记为未同步
                     updatedCount++;
                 } else {
-                    skippedCount++; // 现有数据更新，跳过导入
+                    skippedCount++;  // 现有数据更新，跳过导入
                 }
             } else {
                 // skip - 跳过冲突项目
@@ -1633,8 +1592,8 @@ bool TodoModel::importTodosWithIndividualResolution(const QString &filePath, con
             newItem->setStatus(obj["status"].toString());
             newItem->setCreatedAt(QDateTime::fromString(obj["createdAt"].toString(), Qt::ISODate));
             newItem->setUpdatedAt(QDateTime::fromString(obj["updatedAt"].toString(), Qt::ISODate));
-            newItem->setSynced(false); // 标记为未同步
-            
+            newItem->setSynced(false);  // 标记为未同步
+
             beginInsertRows(QModelIndex(), m_todos.size(), m_todos.size());
             m_todos.push_back(std::move(newItem));
             endInsertRows();
@@ -1644,7 +1603,8 @@ bool TodoModel::importTodosWithIndividualResolution(const QString &filePath, con
 
     // 保存到本地存储
     saveToLocalStorage();
-    
-    qDebug() << "个别冲突处理导入完成 - 新增:" << importedCount << "个，更新:" << updatedCount << "个，跳过:" << skippedCount << "个";
+
+    qDebug() << "个别冲突处理导入完成 - 新增:" << importedCount << "个，更新:" << updatedCount
+             << "个，跳过:" << skippedCount << "个";
     return true;
 }

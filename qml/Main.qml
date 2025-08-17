@@ -1,14 +1,14 @@
 /**
  * @file Main.qml
  * @brief 应用程序主窗口
- * 
+ *
  * 该文件定义了MyTodo应用程序的主窗口界面，包括：
  * - 无边框窗口设计
  * - 桌面小组件模式支持
  * - 深色/浅色主题切换
  * - 窗口拖拽和调整大小功能
  * - 页面导航和状态管理
- * 
+ *
  * @author MyTodo Team
  * @date 2024
  */
@@ -21,7 +21,7 @@ import "components"
 
 /**
  * @brief 应用程序主窗口
- * 
+ *
  * 主窗口采用无边框设计，支持桌面小组件模式和普通窗口模式。
  * 提供了完整的主题系统和响应式布局。
  */
@@ -33,34 +33,33 @@ Window {
     minimumHeight: 480
     visible: true
     title: qsTr("我的待办")
-    
+
     // 背景透明度设置 - 必须保持透明，否则在Windows下会出现黑色背景问题
     color: "transparent"
-    
+
     // 窗口标志设置 - FramelessWindowHint必须始终存在，否则Windows下会出现背景变黑且无法恢复的问题
     flags: Qt.FramelessWindowHint | (isDesktopWidget ? Qt.Tool : Qt.Window)
 
     // 窗口调整相关属性
     property int resizeBorderWidth: 5     ///< 边框调整大小的边距宽度
-    
+
     // 显示模式控制属性
     property bool isDesktopWidget: mainWindow.isDesktopWidget  ///< 是否为桌面小组件模式
     property bool isShowTodos: mainWindow.isShowTodos         ///< 是否显示所有任务（小组件模式下）
     property bool isShowAddTask: mainWindow.isShowAddTask      ///< 是否显示添加任务界面
     property bool isShowSetting: mainWindow.isShowSetting      ///< 是否显示设置界面
-    
+
     // 主题相关属性
-    property bool isDarkMode: false                           ///< 深色模式开关
-    // property bool isDarkMode: settings.get("isDarkMode", false) // 从设置中读取深色模式状态
-    
+    property bool isDarkMode: false  ///< 深色模式开关，从配置文件读取
+
     // 交互控制属性
-    property bool preventDragging: settings.get("preventDragging", false) ///< 是否禁止窗口拖拽
+    property bool preventDragging: settings.get("setting/preventDragging", false) ///< 是否禁止窗口拖拽，从配置文件读取
 
     // 页面导航系统（使用StackView实现）
 
     /**
      * @brief 主题颜色系统
-     * 
+     *
      * 定义了深色和浅色两套主题的颜色方案，
      * 根据isDarkMode属性自动切换。
      */
@@ -72,27 +71,37 @@ Window {
 
     /**
      * @brief 窗口尺寸同步连接
-     * 
+     *
      * 监听C++端mainWindow对象的尺寸变化，
      * 确保QML窗口与C++窗口尺寸保持同步。
      */
     Connections {
         target: mainWindow
-        
+
         /// 处理窗口宽度变化
         function onWidthChanged(width) {
             root.width = width;
         }
-        
+
         /// 处理窗口高度变化
         function onHeightChanged(height) {
             root.height = height;
         }
     }
 
+    // 初始化页面时要读取配置文件中的设置
+    Component.onCompleted: {
+        // 立即执行初始化，避免延迟导致的时序问题
+        console.log("1初始化时读取配置文件中的设置");
+        isDarkMode = settings.get("setting/isDarkMode", false);
+        preventDragging = settings.get("setting/preventDragging", false);
+        console.log("2初始化时读取配置文件中的设置", isDarkMode, preventDragging);
+    }
+
+
     /**
      * @brief 应用程序标题栏
-     * 
+     *
      * 自定义标题栏，支持窗口拖拽功能。
      * 在桌面小组件模式和普通窗口模式下有不同的样式。
      */
@@ -108,7 +117,7 @@ Window {
 
         /**
          * @brief 窗口拖拽处理区域
-         * 
+         *
          * 处理标题栏的鼠标拖拽事件，实现窗口移动功能。
          * 支持防拖拽设置和不同模式下的拖拽控制。
          */
@@ -117,12 +126,12 @@ Window {
             property point clickPos: "0,0"  ///< 记录鼠标按下时的位置
 
             /// 鼠标按下事件处理
-            onPressed: function(mouse) {
+            onPressed: function (mouse) {
                 clickPos = Qt.point(mouse.x, mouse.y);
             }
 
             /// 鼠标移动事件处理 - 实现窗口拖拽
-            onPositionChanged: function(mouse) {
+            onPositionChanged: function (mouse) {
                 // 只有在非小组件模式或小组件模式但未启用防止拖动时才允许拖动
                 if (pressed && ((!isDesktopWidget) || (isDesktopWidget && !preventDragging))) {
                     var delta = Qt.point(mouse.x - clickPos.x, mouse.y - clickPos.y);
@@ -135,7 +144,7 @@ Window {
 
         /**
          * @brief 标题栏内容布局
-         * 
+         *
          * 包含用户信息区域和控制按钮组，
          * 根据不同模式显示不同的内容。
          */
@@ -145,8 +154,34 @@ Window {
             anchors.rightMargin: isDesktopWidget ? 5 : 10  ///< 右边距
 
             /**
+             * @brief 页面导航区域
+             *
+             * 当在子页面时显示返回按钮和页面标题
+             */
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                spacing: 10
+                visible: !isDesktopWidget && stackView.depth > 1  ///< 仅在非小组件模式且有子页面时显示
+
+                ToolButton {
+                    text: "<-"
+                    font.pixelSize: 16
+                    onClicked: stackView.pop()
+                }
+
+                Label {
+                    text: stackView.currentItem && stackView.currentItem.objectName === "settingPage" ? qsTr("设置") : ""
+                    font.bold: true
+                    font.pixelSize: 16
+                    color: textColor
+                    Layout.leftMargin: 10
+                }
+            }
+
+            /**
              * @brief 用户信息显示区域
-             * 
+             *
              * 仅在普通窗口模式下显示，包含用户头像和用户名。
              * 点击可弹出用户菜单。
              */
@@ -154,19 +189,20 @@ Window {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 spacing: 10
-                visible: !isDesktopWidget  ///< 仅在非小组件模式下显示
+                visible: !isDesktopWidget && stackView.depth <= 1  ///< 仅在非小组件模式且在主页面时显示
 
                 /**
                  * @brief 用户资料点击区域
-                 * 
+                 *
                  * 处理用户头像和信息的点击事件，弹出用户菜单。
                  */
                 MouseArea {
                     id: userProfileMouseArea
-                    Layout.preferredWidth: childrenRect.width
-                    Layout.preferredHeight: childrenRect.height
+                    Layout.preferredWidth: userProfileContent.width
+                    Layout.preferredHeight: userProfileContent.height
                     Layout.alignment: Qt.AlignVCenter
-                    
+                    z: 10  // 确保在拖拽MouseArea之上
+
                     /// 点击弹出用户菜单
                     onClicked: {
                         // 计算菜单位置，固定在用户头像下方
@@ -175,18 +211,19 @@ Window {
                     }
 
                     RowLayout {
+                        id: userProfileContent
                         spacing: 10
 
                         /**
                          * @brief 用户头像显示
-                         * 
+                         *
                          * 圆形头像容器，显示默认用户图标。
                          */
                         Rectangle {
                             width: 30
                             height: 30
                             radius: 15                          ///< 圆形头像
-                            color: "lightgray"                  ///< 头像背景色
+                            color: secondaryBackgroundColor     ///< 使用主题次要背景色
                             Layout.alignment: Qt.AlignVCenter  ///< 垂直居中对齐
 
                             /// 头像图标
@@ -199,15 +236,15 @@ Window {
 
                         /**
                          * @brief 用户名显示
-                         * 
+                         *
                          * 显示当前登录用户的用户名，未登录时显示提示文本。
                          */
                         Text {
                             text: todoModel.username !== "" ? todoModel.username : "未登录"
-                            color: "white"                      ///< 白色文本
-                            font.bold: true                    ///< 粗体字
-                            font.pixelSize: 14                 ///< 字体大小
-                            Layout.alignment: Qt.AlignVCenter  ///< 垂直居中对齐
+                            color: textColor                    ///< 使用主题文本颜色
+                            font.bold: true                     ///< 粗体字
+                            font.pixelSize: 14                  ///< 字体大小
+                            Layout.alignment: Qt.AlignVCenter   ///< 垂直居中对齐
                             horizontalAlignment: Text.AlignLeft ///< 水平左对齐
                         }
                     }
@@ -222,7 +259,7 @@ Window {
 
             /**
              * @brief 小组件模式控制按钮组
-             * 
+             *
              * 仅在桌面小组件模式下显示的功能按钮，
              * 包括设置、任务列表展开/收起、添加任务等功能。
              */
@@ -237,6 +274,7 @@ Window {
                     text: "☰"                                       ///< 汉堡菜单图标
                     onClicked: mainWindow.toggleSettingsVisible()  ///< 切换设置界面显示
                     fontSize: 16
+                    isDarkMode: root.isDarkMode
                 }
 
                 /// 任务列表展开/收起按钮
@@ -244,6 +282,7 @@ Window {
                     text: isShowTodos ? "^" : "v"                   ///< 根据状态显示箭头
                     onClicked: mainWindow.toggleTodosVisible()     ///< 切换任务列表显示
                     fontSize: 16
+                    isDarkMode: root.isDarkMode
                 }
 
                 /// 添加任务按钮
@@ -251,6 +290,7 @@ Window {
                     text: "+"                                       ///< 加号图标
                     onClicked: mainWindow.toggleAddTaskVisible()   ///< 切换添加任务界面显示
                     fontSize: 16
+                    isDarkMode: root.isDarkMode
                 }
 
                 CustomButton {
@@ -264,6 +304,7 @@ Window {
                         }
                     }
                     fontSize: 14
+                    isDarkMode: root.isDarkMode
                 }
             }
 
@@ -284,6 +325,29 @@ Window {
                         }
                     }
                     fontSize: 14
+                    isDarkMode: root.isDarkMode
+                }
+
+                // 最小化按钮
+                CustomButton {
+                    text: "−"
+                    onClicked: root.showMinimized()
+                    fontSize: 14
+                    isDarkMode: root.isDarkMode
+                }
+
+                // 最大化/恢复按钮
+                CustomButton {
+                    text: root.visibility === Window.Maximized ? "❐" : "□"
+                    onClicked: {
+                        if (root.visibility === Window.Maximized) {
+                            root.showNormal();
+                        } else {
+                            root.showMaximized();
+                        }
+                    }
+                    fontSize: 14
+                    isDarkMode: root.isDarkMode
                 }
 
                 // 关闭按钮
@@ -291,6 +355,7 @@ Window {
                     text: "✕"
                     onClicked: root.close()
                     fontSize: 14
+                    isDarkMode: root.isDarkMode
                 }
             }
         }
@@ -465,13 +530,13 @@ Window {
         isDarkMode: root.isDarkMode
         preventDragging: root.preventDragging
         visible: isDesktopWidget
-        
+
         // 连接信号
-        onPreventDraggingToggled: function(value) {
+        onPreventDraggingToggled: function (value) {
             root.preventDragging = value;
         }
-        
-        onDarkModeToggled: function(value) {
+
+        onDarkModeToggled: function (value) {
             root.isDarkMode = value;
         }
     }
@@ -479,23 +544,34 @@ Window {
     // 顶部用户菜单（从头像处点击弹出）
     Menu {
         id: topMenu
+        width: 200
+        height: implicitHeight
+        z: 10000  // 确保菜单显示在最上层
+
+        background: Rectangle {
+            color: root.isDarkMode ? "#2d3436" : "white"
+            border.color: root.isDarkMode ? "#34495e" : "#cccccc"
+            border.width: 1
+            radius: 4
+        }
 
         MenuItem {
             text: todoModel.isLoggedIn ? qsTr("退出登录") : qsTr("登录")
             onTriggered: {
                 if (todoModel.isLoggedIn) {
-                    logoutConfirmDialog.open()
+                    logoutConfirmDialog.open();
                 } else {
-                    loginDialog.open()
+                    loginDialog.open();
                 }
             }
         }
-        
+
         MenuItem {
             text: qsTr("设置")
             onTriggered: {
                 stackView.push(Qt.resolvedUrl("Setting.qml"), {
                     isDarkMode: root.isDarkMode,
+                    preventDragging: root.preventDragging,
                     rootWindow: root
                 });
             }
@@ -512,7 +588,21 @@ Window {
                 Switch {
                     id: darkModeSwitch
                     checked: root.isDarkMode
-                    onCheckedChanged: root.isDarkMode = checked
+                    
+                    property bool isInitialized: false
+                    
+                    Component.onCompleted: {
+                        isInitialized = true;
+                    }
+                    
+                    onCheckedChanged: {
+                        if (!isInitialized) {
+                            return; // 避免初始化时触发
+                        }
+                        root.isDarkMode = checked;
+                        console.log("顶部用户菜单-切换深色模式", checked);
+                        settings.save("setting/isDarkMode", checked);
+                    }
                 }
             }
         }
@@ -527,14 +617,25 @@ Window {
                 }
                 Switch {
                     id: onlineSwitch
-                    checked: todoModel.isOnline
+                    checked: settings.get("setting/autoSync", false)
+
+                    property bool isInitialized: false
+
+                    Component.onCompleted: {
+                        isInitialized = true;
+                    }
+
                     onCheckedChanged: {
+                        if (!isInitialized) {
+                            return; // 避免初始化时触发
+                        }
+
                         if (checked && !todoModel.isLoggedIn) {
                             // 如果要开启自动同步但未登录，显示提示并重置开关
                             onlineSwitch.checked = false;
                             loginRequiredDialog.open();
                         } else {
-                            todoModel.isOnline = checked;
+                            settings.save("setting/autoSync", checked);
                         }
                     }
                 }
@@ -542,7 +643,6 @@ Window {
             // 阻止点击整行触发默认切换
             onTriggered: {}
         }
-
     }
     // 通用确认对话框组件
     Component {
@@ -574,11 +674,39 @@ Window {
                     Button {
                         text: confirmDialog.noButtonText
                         onClicked: confirmDialog.reject()
+
+                        background: Rectangle {
+                            color: parent.pressed ? (root.isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (root.isDarkMode ? "#3c5a78" : "#e0e0e0") : (root.isDarkMode ? "#2c3e50" : "#f0f0f0")
+                            border.color: root.isDarkMode ? "#34495e" : "#cccccc"
+                            border.width: 1
+                            radius: 4
+                        }
+
+                        contentItem: Text {
+                            text: parent.text
+                            color: root.isDarkMode ? "#ecf0f1" : "black"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
                     }
 
                     Button {
                         text: confirmDialog.yesButtonText
                         onClicked: confirmDialog.accept()
+
+                        background: Rectangle {
+                            color: parent.pressed ? (root.isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (root.isDarkMode ? "#3c5a78" : "#e0e0e0") : (root.isDarkMode ? "#2c3e50" : "#f0f0f0")
+                            border.color: root.isDarkMode ? "#34495e" : "#cccccc"
+                            border.width: 1
+                            radius: 4
+                        }
+
+                        contentItem: Text {
+                            text: parent.text
+                            color: root.isDarkMode ? "#ecf0f1" : "black"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
                     }
                 }
             }
@@ -597,24 +725,24 @@ Window {
     // TodoModel信号连接
     Connections {
         target: todoModel
-        
+
         function onLoginSuccessful(username) {
-            loginDialog.isLoggingIn = false
-            loginDialog.close()
-            loginDialog.username = ""
-            loginDialog.password = ""
-            loginSuccessDialog.message = qsTr("欢迎回来，%1！").arg(username)
-            loginSuccessDialog.open()
+            loginDialog.isLoggingIn = false;
+            loginDialog.close();
+            loginDialog.username = "";
+            loginDialog.password = "";
+            loginSuccessDialog.message = qsTr("欢迎回来，%1！").arg(username);
+            loginSuccessDialog.open();
         }
-        
+
         function onLoginFailed(errorMessage) {
-            loginDialog.isLoggingIn = false
-            loginFailedDialog.message = qsTr("登录失败：%1").arg(errorMessage)
-            loginFailedDialog.open()
+            loginDialog.isLoggingIn = false;
+            loginFailedDialog.message = qsTr("登录失败：%1").arg(errorMessage);
+            loginFailedDialog.open();
         }
-        
+
         function onLogoutSuccessful() {
-            logoutSuccessDialog.open()
+            logoutSuccessDialog.open();
         }
     }
 
@@ -625,14 +753,14 @@ Window {
         modal: true
         anchors.centerIn: parent
         standardButtons: Dialog.Ok
-        
+
         property string message: ""
-        
+
         Label {
             text: loginSuccessDialog.message
             color: root.textColor
         }
-        
+
         background: Rectangle {
             color: root.backgroundColor
             border.color: root.borderColor
@@ -648,15 +776,15 @@ Window {
         modal: true
         anchors.centerIn: parent
         standardButtons: Dialog.Ok
-        
+
         property string message: ""
-        
+
         Label {
             text: loginFailedDialog.message
             color: root.textColor
             wrapMode: Text.WordWrap
         }
-        
+
         background: Rectangle {
             color: root.backgroundColor
             border.color: root.borderColor
@@ -665,96 +793,107 @@ Window {
         }
     }
 
-     // 退出登录确认对话框
-     Dialog {
-         id: logoutConfirmDialog
-         title: qsTr("确认退出")
-         modal: true
-         x: (parent.width - width) / 2
-         y: (parent.height - height) / 2
-         width: 300
-         height: 150
-         standardButtons: Dialog.NoButton
-         
-         background: Rectangle {
-             color: root.backgroundColor
-             border.color: root.borderColor
-             border.width: 1
-             radius: 8
-         }
-         
-         contentItem: ColumnLayout {
-             spacing: 20
-             
-             Label {
-                 text: qsTr("确定要退出登录吗？")
-                 color: root.textColor
-                 Layout.alignment: Qt.AlignHCenter
-             }
-             
-             RowLayout {
-                 Layout.alignment: Qt.AlignRight
-                 spacing: 10
-                 
-                 Button {
-                     text: qsTr("取消")
-                     onClicked: logoutConfirmDialog.close()
-                     background: Rectangle {
-                         color: root.secondaryBackgroundColor
-                         border.color: root.borderColor
-                         border.width: 1
-                         radius: 4
-                     }
-                 }
-                 
-                 Button {
-                     text: qsTr("确定")
-                     onClicked: {
-                         todoModel.logout()
-                         logoutConfirmDialog.close()
-                     }
-                     background: Rectangle {
-                         color: root.primaryColor
-                         border.color: root.borderColor
-                         border.width: 1
-                         radius: 4
-                     }
-                 }
-             }
-         }
-     }
+    // 退出登录确认对话框
+    Dialog {
+        id: logoutConfirmDialog
+        title: qsTr("确认退出")
+        modal: true
+        anchors.centerIn: parent
+        width: 300
+        height: 150
+        standardButtons: Dialog.NoButton
 
-     // 退出登录成功提示对话框
-     Dialog {
-         id: logoutSuccessDialog
-         title: qsTr("退出成功")
-         modal: true
-         x: (parent.width - width) / 2
-         y: (parent.height - height) / 2
-         width: 250
-         height: 120
-         standardButtons: Dialog.Ok
-         
-         Label {
-             text: qsTr("已成功退出登录")
-             color: root.textColor
-         }
-         
-         background: Rectangle {
-             color: root.backgroundColor
-             border.color: root.borderColor
-             border.width: 1
-             radius: 8
-         }
-     }
+        background: Rectangle {
+            color: root.backgroundColor
+            border.color: root.borderColor
+            border.width: 1
+            radius: 8
+        }
 
-     // 登录弹窗
+        contentItem: ColumnLayout {
+            spacing: 20
+
+            Label {
+                text: qsTr("确定要退出登录吗？")
+                color: root.textColor
+                Layout.alignment: Qt.AlignHCenter
+            }
+
+            RowLayout {
+                Layout.alignment: Qt.AlignRight
+                spacing: 10
+
+                Button {
+                    text: qsTr("取消")
+                    onClicked: logoutConfirmDialog.close()
+                    background: Rectangle {
+                        color: root.secondaryBackgroundColor
+                        border.color: root.borderColor
+                        border.width: 1
+                        radius: 4
+                    }
+
+                    contentItem: Text {
+                        text: parent.text
+                        color: root.textColor
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                }
+
+                Button {
+                    text: qsTr("确定")
+                    onClicked: {
+                        todoModel.logout();
+                        logoutConfirmDialog.close();
+                    }
+                    background: Rectangle {
+                        color: root.primaryColor
+                        border.color: root.borderColor
+                        border.width: 1
+                        radius: 4
+                    }
+
+                    contentItem: Text {
+                        text: parent.text
+                        color: "white"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                }
+            }
+        }
+    }
+
+    // 退出登录成功提示对话框
+    Dialog {
+        id: logoutSuccessDialog
+        title: qsTr("退出成功")
+        modal: true
+        anchors.centerIn: parent
+        width: 250
+        height: 120
+        standardButtons: Dialog.Ok
+
+        Label {
+            text: qsTr("已成功退出登录")
+            color: root.textColor
+        }
+
+        background: Rectangle {
+            color: root.backgroundColor
+            border.color: root.borderColor
+            border.width: 1
+            radius: 8
+        }
+    }
+
+    // 登录弹窗
     Dialog {
         id: loginDialog
         title: qsTr("用户登录")
         modal: true
-        x: (parent.width - width) / 2
-        y: (parent.height - height) / 2
+        anchors.centerIn: parent
         width: 350
         height: 280
         standardButtons: Dialog.NoButton
@@ -843,9 +982,9 @@ Window {
                 Button {
                     text: qsTr("取消")
                     onClicked: {
-                        loginDialog.close()
-                        usernameField.text = ""
-                        passwordField.text = ""
+                        loginDialog.close();
+                        usernameField.text = "";
+                        passwordField.text = "";
                     }
                     background: Rectangle {
                         color: root.secondaryBackgroundColor
@@ -853,20 +992,34 @@ Window {
                         border.width: 1
                         radius: 4
                     }
+
+                    contentItem: Text {
+                        text: parent.text
+                        color: root.textColor
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
 
                 Button {
                     text: loginDialog.isLoggingIn ? qsTr("登录中...") : qsTr("登录")
                     enabled: usernameField.text.length > 0 && passwordField.text.length > 0 && !loginDialog.isLoggingIn
                     onClicked: {
-                        loginDialog.isLoggingIn = true
-                        todoModel.login(usernameField.text, passwordField.text)
+                        loginDialog.isLoggingIn = true;
+                        todoModel.login(usernameField.text, passwordField.text);
                     }
                     background: Rectangle {
                         color: parent.enabled ? root.primaryColor : root.borderColor
                         border.color: root.borderColor
                         border.width: 1
                         radius: 4
+                    }
+
+                    contentItem: Text {
+                        text: parent.text
+                        color: parent.enabled ? "white" : root.textColor
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
                     }
                 }
             }
@@ -878,19 +1031,18 @@ Window {
         id: loginRequiredDialog
         title: qsTr("需要登录")
         modal: true
-        x: (parent.width - width) / 2
-        y: (parent.height - height) / 2
+        anchors.centerIn: parent
         width: 300
         height: 150
         standardButtons: Dialog.Ok
-        
+
         background: Rectangle {
             color: root.backgroundColor
             border.color: root.borderColor
             border.width: 1
             radius: 8
         }
-        
+
         Label {
             text: qsTr("开启自动同步功能需要先登录账户。\n请先登录后再开启自动同步。")
             wrapMode: Text.WordWrap

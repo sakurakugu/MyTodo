@@ -84,7 +84,8 @@
         "stdexcept": "cpp",
         "stdfloat": "cpp",
         "stop_token": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "qdebug": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

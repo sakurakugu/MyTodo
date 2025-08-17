@@ -1,16 +1,18 @@
 #include "settings.h"
+
 #include <QDebug>
 
-Settings::Settings(QObject *parent, StorageType storageType)
+Settings::Settings(QObject *parent, StorageType storageType)  // 构造函数
     : QObject(parent), m_storageType(storageType) {
+    // TODO: 在不同平台上的情况
     if (m_storageType == IniFile) {
         // 使用INI文件存储
         m_settings = new QSettings("config.ini", QSettings::IniFormat, this);
-        qDebug() << "配置已初始化为INI文件模式，位置:" << m_settings->fileName();
+        qDebug() << "配置存放在INI文件中，位置在:" << m_settings->fileName();
     } else {
         // 使用注册表存储
         m_settings = new QSettings("MyTodo", "TodoApp", this);
-        qDebug() << "配置已初始化为注册表模式，位置:" << m_settings->fileName();
+        qDebug() << "配置存放在注册表中，位置在:" << m_settings->fileName();
     }
 }
 
@@ -28,7 +30,12 @@ Settings::~Settings() {
  * @return 保存是否成功
  */
 bool Settings::save(const QString &key, const QVariant &value) {
+    qDebug() << "准备保存设置" << key << "，要保存的值为" << value;
     if (!m_settings) return false;
+    if (key == "setting/isDarkMode") {
+        qDebug() << "当前存储的设置值为" << m_settings->value(key, value);
+        qDebug() << "保存设置" << key << "，值为" << value;
+    }
     m_settings->setValue(key, value);
     return m_settings->status() == QSettings::NoError;
 }
@@ -40,8 +47,26 @@ bool Settings::save(const QString &key, const QVariant &value) {
  * @return 设置值
  */
 QVariant Settings::get(const QString &key, const QVariant &defaultValue) {
+    if (key == "setting/isDarkMode") {
+        qDebug() << "调用get方法, key为" << key << "，当前存储的设置值为" << m_settings->value(key, defaultValue);
+    }
     if (!m_settings) return defaultValue;
-    return m_settings->value(key, defaultValue);
+    
+    QVariant value = m_settings->value(key, defaultValue);
+    
+    // 对于布尔类型的设置，确保正确转换字符串
+    if (key == "setting/isDarkMode" || key == "setting/preventDragging" || key == "setting/autoSync") {
+        if (value.type() == QVariant::String) {
+            QString strValue = value.toString().toLower();
+            if (strValue == "true" || strValue == "1") {
+                return QVariant(true);
+            } else if (strValue == "false" || strValue == "0") {
+                return QVariant(false);
+            }
+        }
+    }
+    
+    return value;
 }
 
 /**
@@ -88,28 +113,21 @@ void Settings::initializeDefaultServerConfig() {
     // 检查并设置默认的服务器基础URL
     if (!contains("server/baseUrl")) {
         save("server/baseUrl", "https://api.example.com");
-        // qDebug() << "设置默认服务器基础URL: https://api.example.com";
     }
-    
+
     // 检查并设置默认的待办事项API端点
     if (!contains("server/todoApiEndpoint")) {
         save("server/todoApiEndpoint", "/todo_api.php");
-        // qDebug() << "设置默认待办事项API端点: /todo_api.php";
     }
-    
+
     // 检查并设置默认的认证API端点
     if (!contains("server/authApiEndpoint")) {
         save("server/authApiEndpoint", "/auth_api.php");
-        // qDebug() << "设置默认认证API端点: /auth_api.php";
     }
-    
-    // qDebug() << "服务器配置初始化完成";
 }
 
 /**
  * @brief 获取当前存储类型
  * @return 当前使用的存储类型
  */
-Settings::StorageType Settings::getStorageType() const {
-    return m_storageType;
-}
+Settings::StorageType Settings::getStorageType() const { return m_storageType; }

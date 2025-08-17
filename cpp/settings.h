@@ -22,13 +22,13 @@ class Settings : public QObject {
      * @brief 定义设置存储类型
      */
     enum StorageType {
-        IniFile,    ///< 使用INI配置文件存储
-        Registry    ///< 使用系统注册表存储
+        IniFile, ///< 使用INI配置文件存储
+        Registry ///< 使用系统注册表存储
     };
     Q_ENUM(StorageType)
 
-     explicit Settings(QObject *parent = nullptr, StorageType storageType = Registry);
-     ~Settings();
+    explicit Settings(QObject *parent = nullptr, StorageType storageType = Registry);
+    ~Settings();
 
     Q_INVOKABLE bool save(const QString &key, const QVariant &value); ///< 保存设置到配置文件
     Q_INVOKABLE QVariant get(const QString &key,
@@ -41,8 +41,8 @@ class Settings : public QObject {
     Q_INVOKABLE StorageType getStorageType() const;                      ///< 获取当前存储类型
 
   private:
-    QSettings *m_settings;      ///< 配置文件对象
-    StorageType m_storageType;  ///< 存储类型
+    QSettings *m_settings;     ///< 配置文件对象
+    StorageType m_storageType; ///< 存储类型
 };
 
 #endif // SETTINGS_H

@@ -57,10 +57,10 @@ set(TEST_SOURCES
 # 主项目源文件依赖
 # 注意：这些文件需要与测试一起编译
 set(PROJECT_SOURCES
-    ../cpp/todoitem.cpp      # Todo 项目数据模型
-    ../cpp/todomodel.cpp     # Todo 列表模型
+    ../cpp/todoitem.cpp       # Todo 项目数据模型
+    ../cpp/todomodel.cpp      # Todo 列表模型
     ../cpp/networkmanager.cpp # 网络管理器
-    ../cpp/settings.cpp      # 设置管理实现
+    ../cpp/settings.cpp       # 设置管理实现
 )
 
 # 包含目录配置
@@ -154,9 +154,9 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clan
 endif()
 
 # 测试配置总结
-message(STATUS "=== 测试配置总结 ===")
+message(STATUS "======= 测试配置总结 =======")
 message(STATUS "测试数量: ${CMAKE_CURRENT_LIST_DIR}")
 list(LENGTH TEST_SOURCES test_count)
 message(STATUS "测试数量: ${test_count}")
 message(STATUS "测试输出目录: ${CMAKE_BINARY_DIR}/tests")
-message(STATUS "===================")
+message(STATUS "===========================")

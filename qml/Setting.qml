@@ -7,10 +7,11 @@ import "components"
 
 Page {
     id: settingPage
+    objectName: "settingPage"  // 用于在Main.qml中识别当前页面
 
     // 从父栈传入的属性
-    property bool isDarkMode: false
-    property bool preventDragging: settings.get("preventDragging", false)
+    property bool isDarkMode: settings.get("setting/isDarkMode", false)
+    property bool preventDragging: false
     // 根窗口引用，用于更新全局属性
     property var rootWindow: null
 
@@ -24,30 +25,19 @@ Page {
         color: theme.backgroundColor
     }
 
-    header: ToolBar {
-        RowLayout {
-            anchors.fill: parent
-            ToolButton {
-                text: "<-"
-                onClicked: settingPage.StackView.view ? settingPage.StackView.view.pop() : null
-            }
-            Label {
-                text: qsTr("设置")
-                font.bold: true
-                font.pixelSize: 16
-                color: theme.textColor
-                Layout.leftMargin: 10
-            }
-        }
-    }
+    // header已移动到Main.qml的标题栏中
 
     ScrollView {
         anchors.fill: parent
         contentWidth: availableWidth
         
         ColumnLayout {
-            width: parent.width
-            anchors.margins: 20
+            width: parent.width - 40  // 减去左右边距
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            anchors.topMargin: 20
+            anchors.leftMargin: 20
+            anchors.rightMargin: 20
             spacing: 15
 
         Label {
@@ -61,9 +51,21 @@ Page {
             id: darkModeCheckBox
             text: qsTr("深色模式")
             checked: isDarkMode
+            
+            property bool isInitialized: false
+            
+            Component.onCompleted: {
+                isInitialized = true;
+            }
+            
             onCheckedChanged: {
+                if (!isInitialized) {
+                    return; // 避免初始化时触发
+                }
                 isDarkMode = checked;
-                settings.save("isDarkMode", isDarkMode);
+                // 保存设置到配置文件
+                console.log("设置页面-切换深色模式", checked);
+                settings.save("setting/isDarkMode", checked);
                 if (rootWindow) rootWindow.isDarkMode = isDarkMode;
             }
         }
@@ -75,7 +77,7 @@ Page {
             enabled: mainWindow.isDesktopWidget
             onCheckedChanged: {
                 preventDragging = checked;
-                settings.save("preventDragging", preventDragging);
+                settings.save("setting/preventDragging", preventDragging);
                 if (rootWindow) rootWindow.preventDragging = preventDragging;
             }
         }
@@ -92,15 +94,48 @@ Page {
         Switch {
             id: autoSyncSwitch
             text: qsTr("自动同步")
-            checked: todoModel.isOnline
+            checked: settings.get("setting/autoSync", false)
+            
+            property bool isInitialized: false
+            
+            Component.onCompleted: {
+                isInitialized = true;
+            }
+            
             onCheckedChanged: {
+                if (!isInitialized) {
+                    return; // 避免初始化时触发
+                }
+                
                 if (checked && !todoModel.isLoggedIn) {
                     // 如果要开启自动同步但未登录，显示提示并重置开关
                     autoSyncSwitch.checked = false;
                     loginRequiredDialog.open();
                 } else {
-                    todoModel.isOnline = checked;
+                    settings.save("setting/autoSync", checked);
+
                 }
+            }
+        }
+
+        // 在线状态显示（只读）
+        Row {
+            spacing: 10
+            Label {
+                text: qsTr("连接状态:")
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            Rectangle {
+                width: 12
+                height: 12
+                radius: 6
+                color: todoModel.isOnline ? "#4CAF50" : "#F44336"
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            Label {
+                text: todoModel.isOnline ? qsTr("在线") : qsTr("离线")
+                color: todoModel.isOnline ? "#4CAF50" : "#F44336"
+                anchors.verticalCenter: parent.verticalCenter
             }
         }
 
@@ -116,18 +151,20 @@ Page {
             spacing: 10
             
             CustomButton {
-                text: qsTr("导出待办事项")
-                textColor: "white"
-                backgroundColor: "#27ae60"
-                onClicked: exportFileDialog.open()
-            }
+            text: qsTr("导出待办事项")
+            textColor: "white"
+            backgroundColor: "#27ae60"
+            onClicked: exportFileDialog.open()
+            isDarkMode: settingPage.isDarkMode
+        }
             
             CustomButton {
-                text: qsTr("导入待办事项")
-                textColor: "white"
-                backgroundColor: "#3498db"
-                onClicked: importFileDialog.open()
-            }
+            text: qsTr("导入待办事项")
+            textColor: "white"
+            backgroundColor: "#3498db"
+            onClicked: importFileDialog.open()
+            isDarkMode: settingPage.isDarkMode
+        }
         }
 
         Label {
@@ -139,11 +176,12 @@ Page {
         }
 
         CustomButton {
-            text: qsTr("GitHub主页")
-            textColor: "white"
-            backgroundColor: "#0f85d3"
-            onClicked: Qt.openUrlExternally("https://github.com/sakurakugu/MyTodo")
-        }
+        text: qsTr("GitHub主页")
+        textColor: "white"
+        backgroundColor: "#0f85d3"
+        onClicked: Qt.openUrlExternally("https://github.com/sakurakugu/MyTodo")
+        isDarkMode: settingPage.isDarkMode
+    }
 
         Label {
             text: qsTr("服务器配置")
@@ -165,7 +203,7 @@ Page {
             TextField {
                 id: apiUrlField
                 Layout.fillWidth: true
-                placeholderText: qsTr("请输入API服务器地址")
+                // placeholderText: qsTr("请输入API服务器地址")
                 text: settings.get("server/baseUrl", "https://api.example.com")
                 color: theme.textColor
                 background: Rectangle {
@@ -180,37 +218,39 @@ Page {
                 spacing: 10
 
                 CustomButton {
-                    text: qsTr("保存配置")
-                    textColor: "white"
-                    backgroundColor: "#27ae60"
-                    enabled: apiUrlField.text.length > 0
-                    onClicked: {
-                        var url = apiUrlField.text.trim()
-                        if (!url.startsWith("http://") && !url.startsWith("https://")) {
-                            apiConfigErrorDialog.message = qsTr("请输入完整的URL地址（包含http://或https://）")
-                            apiConfigErrorDialog.open()
-                            return
-                        }
-                        
-                        if (!todoModel.isHttpsUrl(url)) {
-                            httpsWarningDialog.targetUrl = url
-                            httpsWarningDialog.open()
-                            return
-                        }
-                        
-                        todoModel.updateServerConfig(url)
-                        apiConfigSuccessDialog.open()
+                text: qsTr("保存配置")
+                textColor: "white"
+                backgroundColor: "#27ae60"
+                enabled: apiUrlField.text.length > 0
+                onClicked: {
+                    var url = apiUrlField.text.trim()
+                    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                        apiConfigErrorDialog.message = qsTr("请输入完整的URL地址（包含http://或https://）")
+                        apiConfigErrorDialog.open()
+                        return
                     }
+                    
+                    if (!todoModel.isHttpsUrl(url)) {
+                        httpsWarningDialog.targetUrl = url
+                        httpsWarningDialog.open()
+                        return
+                    }
+                    
+                    todoModel.updateServerConfig(url)
+                    apiConfigSuccessDialog.open()
                 }
+                isDarkMode: settingPage.isDarkMode
+            }
 
                 CustomButton {
-                    text: qsTr("重置为默认")
-                    textColor: "white"
-                    backgroundColor: "#95a5a6"
-                    onClicked: {
-                        apiUrlField.text = "https://api.example.com"
-                    }
+                text: qsTr("重置为默认")
+                textColor: "white"
+                backgroundColor: "#95a5a6"
+                onClicked: {
+                    apiUrlField.text = "https://api.example.com"
                 }
+                isDarkMode: settingPage.isDarkMode
+            }
             }
         }
 
@@ -687,8 +727,7 @@ Page {
         id: loginRequiredDialog
         title: qsTr("需要登录")
         modal: true
-        x: (parent.width - width) / 2
-        y: (parent.height - height) / 2
+        anchors.centerIn: parent
         width: 300
         height: 150
         standardButtons: Dialog.Ok

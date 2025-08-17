@@ -89,6 +89,23 @@ Page {
                     Button {
                         text: qsTr("同步")
                         Layout.fillWidth: true
+                        
+                        background: Rectangle {
+                            color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : 
+                                   parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : 
+                                   (isDarkMode ? "#2c3e50" : "#f0f0f0")
+                            border.color: isDarkMode ? "#34495e" : "#cccccc"
+                            border.width: 1
+                            radius: 4
+                        }
+                        
+                        contentItem: Text {
+                            text: parent.text
+                            color: isDarkMode ? "#ecf0f1" : "black"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        
                         onClicked: {
                             todoModel.syncWithServer();
                         }
@@ -127,6 +144,22 @@ Page {
                                 todoModel.addTodo(newTodoField.text.trim());
                                 newTodoField.text = "";
                             }
+                        }
+                        
+                        background: Rectangle {
+                            color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : 
+                                   parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : 
+                                   (isDarkMode ? "#2c3e50" : "#f0f0f0")
+                            border.color: isDarkMode ? "#34495e" : "#cccccc"
+                            border.width: 1
+                            radius: 4
+                        }
+                        
+                        contentItem: Text {
+                            text: parent.text
+                            color: isDarkMode ? "#ecf0f1" : "black"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
                         }
                     }
                 }
@@ -190,9 +223,12 @@ Page {
                     }
 
                     delegate: Rectangle {
+                        id: delegateItem
                         width: todoListView.width
                         height: 50
                         color: index % 2 === 0 ? secondaryBackgroundColor : backgroundColor
+
+                        property alias itemMouseArea: itemMouseArea
 
                         // 点击项目查看/编辑详情
                         MouseArea {
@@ -258,8 +294,10 @@ Page {
                                     id: deleteMouseArea
                                     anchors.fill: parent
                                     onClicked: {
-                                        // 禁用项目的MouseArea
-                                        itemMouseArea.enabled = false;
+                                        // 禁用当前项目的MouseArea
+                                        delegateItem.itemMouseArea.enabled = false;
+                                        // 设置当前项索引
+                                        todoListView.currentIndex = index;
                                         // 删除待办
                                         todoModel.removeTodo(index);
                                         // 延迟重新启用项目的MouseArea
@@ -275,7 +313,12 @@ Page {
                     Timer {
                         id: timer
                         interval: 10
-                        onTriggered: itemMouseArea.enabled = true
+                        onTriggered: {
+                            // 重新启用当前项的MouseArea
+                            if (todoListView.currentItem && todoListView.currentItem.itemMouseArea) {
+                                todoListView.currentItem.itemMouseArea.enabled = true;
+                            }
+                        }
                     }
 
                     // 将垂直滚动条附加到ListView本身
@@ -298,14 +341,19 @@ Page {
 
         function open(todo) {
             currentTodo = todo;
-            taskForm.setTodo(todo);
+            taskForm.setFormData(todo);
             visible = true;
         }
 
-        TaskForm {
-            id: taskForm
+        ScrollView {
             anchors.fill: parent
-            theme: mainPage.theme
+            clip: true
+            
+            TaskForm {
+                id: taskForm
+                width: parent.width
+                theme: mainPage.theme
+            }
         }
 
         onAccepted: {

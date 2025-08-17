@@ -59,9 +59,20 @@ Item {
                     id: darkModeCheckBox
                     text: "深色模式"
                     checked: isDarkMode
+
+                    property bool isInitialized: false
+                    
+                    Component.onCompleted: {
+                        isInitialized = true;
+                    }
+
                     onCheckedChanged: {
+                        if (!isInitialized) {
+                            return; // 避免初始化时触发
+                        }
                         // 保存设置到配置文件
-                        settings.save("isDarkMode", checked);
+                        console.log("小窗口页面-切换深色模式", checked);
+                        settings.save("setting/isDarkMode", checked);
                         // 发出信号通知父组件
                         widgetMode.darkModeToggled(checked);
                     }
@@ -74,7 +85,7 @@ Item {
                     enabled: isDesktopWidget
                     onCheckedChanged: {
                         // 保存设置到配置文件
-                        settings.save("preventDragging", checked);
+                        settings.save("setting/preventDragging", checked);
                         // 发出信号通知父组件
                         widgetMode.preventDraggingToggled(checked);
                     }
@@ -83,15 +94,25 @@ Item {
                 Switch {
                     id: autoSyncSwitch
                     text: "自动同步"
-                    checked: todoModel.isOnline
+                    checked: settings.get("setting/autoSync", false)
+
+                    property bool isInitialized: false
+                    
+                    Component.onCompleted: {
+                        isInitialized = true;
+                    }
+                    
                     onCheckedChanged: {
+                        if (!isInitialized) {
+                            return; // 避免初始化时触发
+                        }
+                        
                         if (checked && !todoModel.isLoggedIn) {
                             // 如果要开启自动同步但未登录，显示提示并重置开关
                             autoSyncSwitch.checked = false;
                             loginRequiredDialog.open();
                         } else {
-                            todoModel.isOnline = checked;
-                            // 保存逻辑统一在C++ setIsOnline 中
+                            settings.save("setting/autoSync", checked);
                         }
                     }
                 }
@@ -144,6 +165,7 @@ Item {
                         text: "添加"
                         textColor: "white"
                         backgroundColor: theme.primaryColor
+                        isDarkMode: widgetMode.isDarkMode
                         onClicked: {
                             if (addTaskForm.isValid()) {
                                 var todoData = addTaskForm.getTodoData();
@@ -174,16 +196,10 @@ Item {
         }
 
         // 根据其他弹出窗口的可见性动态计算位置
-        y: {
-            var maxY = widgetMode.parent ? widgetMode.parent.height - baseHeight - 10 : calculatedY;
-            return Math.min(calculatedY, maxY);
-        }
+        y: calculatedY
 
         width: 400
-        height: {
-            var availableHeight = widgetMode.parent ? widgetMode.parent.height - calculatedY - 60 : baseHeight;
-            return Math.min(baseHeight, availableHeight);
-        }
+        height: baseHeight
         modal: false // 非模态，允许同时打开多个弹出窗口
         focus: true
         closePolicy: Popup.NoAutoClose
@@ -269,6 +285,22 @@ Item {
                         height: 40
                         color: index % 2 === 0 ? theme.secondaryBackgroundColor : theme.backgroundColor
 
+                        // 点击项目查看/编辑详情
+                        MouseArea {
+                            anchors.fill: parent
+                            z: 0
+                            onClicked: {
+                                todoDetailsDialog.open({
+                                    title: model.title,
+                                    description: model.description,
+                                    category: model.category,
+                                    urgency: model.urgency,
+                                    importance: model.importance
+                                });
+                                todoListPopupView.currentIndex = index;
+                            }
+                        }
+
                         RowLayout {
                             anchors.fill: parent
                             anchors.margins: 5
@@ -331,8 +363,7 @@ Item {
         id: loginRequiredDialog
         title: qsTr("需要登录")
         modal: true
-        x: (parent.width - width) / 2
-        y: (parent.height - height) / 2
+        anchors.centerIn: parent
         width: 250
         height: 150
         standardButtons: Dialog.Ok
@@ -349,6 +380,50 @@ Item {
             wrapMode: Text.WordWrap
             color: theme.textColor
             anchors.centerIn: parent
+        }
+    }
+
+    // 待办详情/编辑对话框
+    Dialog {
+        id: todoDetailsDialog
+        title: qsTr("待办详情")
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        width: 400
+        height: Math.min(parent.height * 0.8, 500)
+        modal: true
+        anchors.centerIn: parent
+
+        property var currentTodo: null
+
+        function open(todo) {
+            currentTodo = todo;
+            taskForm.setFormData(todo);
+            visible = true;
+        }
+
+        background: Rectangle {
+            color: theme.backgroundColor
+            border.color: theme.borderColor
+            border.width: 1
+            radius: 8
+        }
+
+        ScrollView {
+            anchors.fill: parent
+            clip: true
+            
+            TaskForm {
+                id: taskForm
+                width: parent.width
+                theme: widgetMode.theme
+            }
+        }
+
+        onAccepted: {
+            if (currentTodo && taskForm.isValid()) {
+                var todoData = taskForm.getTodoData();
+                todoModel.updateTodo(todoListPopupView.currentIndex, todoData);
+            }
         }
     }
 }

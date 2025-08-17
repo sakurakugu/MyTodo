@@ -24,15 +24,18 @@ import QtQuick.Controls
 Button {
     id: customButton
     
+    // 主题支持
+    property bool isDarkMode: false             ///< 深色模式开关
+    
     // 自定义外观属性
-    property color textColor: "white"          ///< 文本颜色
+    property color textColor: isDarkMode ? "#ecf0f1" : "black"  ///< 文本颜色，支持主题
     property color backgroundColor: "transparent" ///< 背景颜色
     property int fontSize: 14                   ///< 字体大小
     property bool isFlat: true                  ///< 是否为扁平化样式
     
     flat: isFlat                ///< 应用扁平化样式
-    implicitWidth: 30           ///< 默认宽度
-    implicitHeight: 30          ///< 默认高度
+    implicitWidth: Math.max(80, contentItem.implicitWidth + 20)  ///< 自适应宽度，最小80px，内容宽度+20px边距
+    implicitHeight: 40          ///< 默认高度
     
     /**
      * @brief 按钮背景样式
