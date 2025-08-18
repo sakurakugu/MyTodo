@@ -22,9 +22,9 @@ TodoModel::TodoModel(QObject *parent, Config *config, Config::StorageType storag
       m_currentCategory(""),
       m_currentFilter(""),
       m_networkManager(new NetworkManager(this)),
-      m_settings(config ? config : new Config(this, storageType)) {
+      m_config(config ? config : new Config(this, storageType)) {
     // 初始化默认服务器配置
-    m_settings->initializeDefaultServerConfig();
+    m_config->initializeDefaultServerConfig();
 
     // 初始化服务器配置
     initializeServerConfig();
@@ -41,14 +41,14 @@ TodoModel::TodoModel(QObject *parent, Config *config, Config::StorageType storag
     }
 
     // 初始化在线状态
-    m_isOnline = m_settings->get("autoSync", false).toBool();
+    m_isOnline = m_config->get("autoSync", false).toBool();
     emit isOnlineChanged();
 
     // 尝试使用存储的令牌自动登录
-    if (m_settings->contains("user/accessToken")) {
-        m_accessToken = m_settings->get("user/accessToken").toString();
-        m_refreshToken = m_settings->get("user/refreshToken").toString();
-        m_username = m_settings->get("user/username").toString();
+    if (m_config->contains("user/accessToken")) {
+        m_accessToken = m_config->get("user/accessToken").toString();
+        m_refreshToken = m_config->get("user/refreshToken").toString();
+        m_username = m_config->get("user/username").toString();
 
         // TODO: 在这里验证令牌是否有效
         qDebug() << "使用存储的凭据自动登录用户：" << m_username;
@@ -286,7 +286,7 @@ void TodoModel::setIsOnline(bool online) {
         m_isOnline = online;
         emit isOnlineChanged();
         // 保存到设置，保持与autoSync一致
-        m_settings->save("setting/autoSync", m_isOnline);
+        m_config->save("setting/autoSync", m_isOnline);
 
         if (m_isOnline && isLoggedIn()) {
             syncWithServer();
@@ -296,7 +296,7 @@ void TodoModel::setIsOnline(bool online) {
         m_isOnline = online;
         emit isOnlineChanged();
         // 保存到设置，保持与autoSync一致
-        m_settings->save("setting/autoSync", m_isOnline);
+        m_config->save("setting/autoSync", m_isOnline);
     }
 }
 
@@ -625,9 +625,9 @@ void TodoModel::logout() {
     m_refreshToken.clear();
     m_username.clear();
 
-    m_settings->remove("user/accessToken");
-    m_settings->remove("user/refreshToken");
-    m_settings->remove("user/username");
+    m_config->remove("user/accessToken");
+    m_config->remove("user/refreshToken");
+    m_config->remove("user/username");
 
     // 标记所有项为未同步
     for (size_t i = 0; i < m_todos.size(); ++i) {
@@ -745,9 +745,9 @@ void TodoModel::handleLoginSuccess(const QJsonObject &response) {
     m_networkManager->setAuthToken(m_accessToken);
 
     // 保存令牌
-    m_settings->save("user/accessToken", m_accessToken);
-    m_settings->save("user/refreshToken", m_refreshToken);
-    m_settings->save("user/username", m_username);
+    m_config->save("user/accessToken", m_accessToken);
+    m_config->save("user/refreshToken", m_refreshToken);
+    m_config->save("user/username", m_username);
 
     qDebug() << "用户" << m_username << "登录成功";
 
@@ -842,30 +842,30 @@ bool TodoModel::loadFromLocalStorage() {
         invalidateFilterCache();
 
         // 检查设置是否可访问
-        if (!m_settings) {
+        if (!m_config) {
             qWarning() << "设置对象不可用";
             return false;
         }
 
         // 从设置中加载数据
-        int count = m_settings->get("todos/size", 0).toInt();
+        int count = m_config->get("todos/size", 0).toInt();
         qDebug() << "从本地存储加载" << count << "个待办事项";
 
         for (int i = 0; i < count; ++i) {
             QString prefix = QString("todos/%1/").arg(i);
 
             // 验证必要字段
-            if (!m_settings->contains(prefix + "id") || !m_settings->contains(prefix + "title")) {
+            if (!m_config->contains(prefix + "id") || !m_config->contains(prefix + "title")) {
                 qWarning() << "跳过无效的待办事项记录（索引" << i << "）：缺少必要字段";
                 continue;
             }
 
             auto item = std::make_unique<TodoItem>(
-                m_settings->get(prefix + "id").toString(), m_settings->get(prefix + "title").toString(),
-                m_settings->get(prefix + "description").toString(), m_settings->get(prefix + "category").toString(),
-                m_settings->get(prefix + "urgency").toString(), m_settings->get(prefix + "importance").toString(),
-                m_settings->get(prefix + "status").toString(), m_settings->get(prefix + "createdAt").toDateTime(),
-                m_settings->get(prefix + "updatedAt").toDateTime(), m_settings->get(prefix + "synced").toBool(), this);
+                m_config->get(prefix + "id").toString(), m_config->get(prefix + "title").toString(),
+                m_config->get(prefix + "description").toString(), m_config->get(prefix + "category").toString(),
+                m_config->get(prefix + "urgency").toString(), m_config->get(prefix + "importance").toString(),
+                m_config->get(prefix + "status").toString(), m_config->get(prefix + "createdAt").toDateTime(),
+                m_config->get(prefix + "updatedAt").toDateTime(), m_config->get(prefix + "synced").toBool(), this);
 
             m_todos.push_back(std::move(item));
         }
@@ -892,29 +892,29 @@ bool TodoModel::saveToLocalStorage() {
 
     try {
         // 检查设置对象是否可用
-        if (!m_settings) {
+        if (!m_config) {
             qWarning() << "设置对象不可用";
             return false;
         }
 
         // 保存待办事项数量
-        m_settings->save("todos/size", m_todos.size());
+        m_config->save("todos/size", m_todos.size());
 
         // 保存每个待办事项
         for (size_t i = 0; i < m_todos.size(); ++i) {
             const TodoItem *item = m_todos.at(i).get();
             QString prefix = QString("todos/%1/").arg(i);
 
-            m_settings->save(prefix + "id", item->id());
-            m_settings->save(prefix + "title", item->title());
-            m_settings->save(prefix + "description", item->description());
-            m_settings->save(prefix + "category", item->category());
-            m_settings->save(prefix + "urgency", item->urgency());
-            m_settings->save(prefix + "importance", item->importance());
-            m_settings->save(prefix + "status", item->status());
-            m_settings->save(prefix + "createdAt", item->createdAt());
-            m_settings->save(prefix + "updatedAt", item->updatedAt());
-            m_settings->save(prefix + "synced", item->synced());
+            m_config->save(prefix + "id", item->id());
+            m_config->save(prefix + "title", item->title());
+            m_config->save(prefix + "description", item->description());
+            m_config->save(prefix + "category", item->category());
+            m_config->save(prefix + "urgency", item->urgency());
+            m_config->save(prefix + "importance", item->importance());
+            m_config->save(prefix + "status", item->status());
+            m_config->save(prefix + "createdAt", item->createdAt());
+            m_config->save(prefix + "updatedAt", item->updatedAt());
+            m_config->save(prefix + "synced", item->synced());
         }
 
         qDebug() << "已成功保存" << m_todos.size() << "个待办事项到本地存储";
@@ -1040,9 +1040,9 @@ void TodoModel::pushLocalChangesToServer() {
  */
 void TodoModel::initializeServerConfig() {
     // 从设置中读取服务器配置，如果不存在则使用默认值
-    m_serverBaseUrl = m_settings->get("server/baseUrl", "https://api.example.com").toString();
-    m_todoApiEndpoint = m_settings->get("server/todoApiEndpoint", "/todo_api.php").toString();
-    m_authApiEndpoint = m_settings->get("server/authApiEndpoint", "/auth_api.php").toString();
+    m_serverBaseUrl = m_config->get("server/baseUrl", "https://api.example.com").toString();
+    m_todoApiEndpoint = m_config->get("server/todoApiEndpoint", "/todo_api.php").toString();
+    m_authApiEndpoint = m_config->get("server/authApiEndpoint", "/auth_api.php").toString();
 
     qDebug() << "服务器配置已初始化:";
     qDebug() << "  基础URL:" << m_serverBaseUrl;
@@ -1078,7 +1078,7 @@ void TodoModel::updateServerConfig(const QString &baseUrl) {
     m_serverBaseUrl = baseUrl;
 
     // 保存到设置中
-    m_settings->save("server/baseUrl", baseUrl);
+    m_config->save("server/baseUrl", baseUrl);
 
     qDebug() << "服务器配置已更新:" << baseUrl;
     qDebug() << "HTTPS状态:" << (isHttpsUrl(baseUrl) ? "安全" : "不安全");

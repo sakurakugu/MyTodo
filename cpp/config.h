@@ -1,9 +1,15 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
+#include <QDir>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QMetaType>
 #include <QObject>
 #include <QSettings>
 #include <QVariant>
+#include <toml.hpp>
 
 /**
  * @class Config
@@ -22,12 +28,13 @@ class Config : public QObject {
      * @brief 定义设置存储类型
      */
     enum StorageType {
-        IniFile, ///< 使用INI配置文件存储
-        Registry ///< 使用系统注册表存储
+        IniFile,  ///< 使用INI配置文件存储
+        Registry, ///< 使用系统注册表存储
+        TomlFile  ///< 使用TOML配置文件存储
     };
     Q_ENUM(StorageType)
 
-    explicit Config(QObject *parent = nullptr, StorageType storageType = Registry);
+    explicit Config(QObject *parent = nullptr, StorageType storageType = TomlFile);
     ~Config();
 
     Q_INVOKABLE bool save(const QString &key, const QVariant &value); ///< 保存设置到配置文件
@@ -41,8 +48,17 @@ class Config : public QObject {
     Q_INVOKABLE StorageType getStorageType() const;                      ///< 获取当前存储类型
 
   private:
-    QSettings *m_settings;     ///< 配置文件对象
     StorageType m_storageType; ///< 存储类型
+    QSettings *m_config;       ///< 配置文件对象
+    QString m_tomlFilePath;    ///< TOML配置文件路径
+    toml::value m_tomlData;    ///< TOML数据存储
+
+    // TOML相关私有方法
+    bool loadTomlFile();                                                                      ///< 加载TOML文件
+    bool saveTomlFile();                                                                      ///< 保存TOML文件
+    QVariant tomlValueToQVariant(const toml::value &value);                                   ///< TOML值转QVariant
+    toml::value qVariantToTomlValue(const QVariant &value);                                   ///< QVariant转TOML值
+    void collectTomlKeys(const toml::value &value, const QString &prefix, QStringList &keys); ///< 递归收集TOML键
 };
 
 #endif // SETTINGS_H

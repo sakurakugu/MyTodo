@@ -13,8 +13,8 @@
 // 标准库头文件
 #include <iostream>
 // 自定义头文件
-#include "cpp/mainWindow.h"
 #include "cpp/config.h"
+#include "cpp/mainWindow.h"
 #include "cpp/todoModel.h"
 
 int main(int argc, char *argv[]) {
@@ -45,19 +45,19 @@ int main(int argc, char *argv[]) {
 
     // 设置默认的 QQuickWindow 支持透明
     QSurfaceFormat fmt;
-    fmt.setAlphaBufferSize(8);  // 分配 alpha 通道
+    fmt.setAlphaBufferSize(8); // 分配 alpha 通道
     QSurfaceFormat::setDefaultFormat(fmt);
 
-    app.setWindowIcon(QIcon(":/image/icon.png"));  // 设置窗口图标
+    app.setWindowIcon(QIcon(":/image/icon.png")); // 设置窗口图标
 
     // 设置应用信息
     QGuiApplication::setApplicationName("MyTodo");
     QGuiApplication::setOrganizationName("MyTodo");
     QGuiApplication::setOrganizationDomain("mytodo.app");
 
-    Config config;                        // 创建Settings实例
-    TodoModel todoModel(nullptr, &config);  // 创建TodoModel实例
-    MainWindow mainWindow;                    // 创建MainWindow实例
+    Config config;                         // 创建Config实例
+    TodoModel todoModel(nullptr, &config); // 创建TodoModel实例
+    MainWindow mainWindow;                 // 创建MainWindow实例
 
     // 检查是否通过开机自启动启动
     QStringList arguments = app.arguments();

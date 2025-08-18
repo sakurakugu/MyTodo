@@ -139,7 +139,7 @@ class TodoModel : public QAbstractListModel {
     importTodosWithAutoResolution(const QString &filePath);  // 自动导入无冲突项目，返回冲突项目列表
 
     // 获取设置对象
-    Q_INVOKABLE Config *config() const { return m_settings; }
+    Q_INVOKABLE Config *config() const { return m_config; }
 
     // 服务器配置相关
     Q_INVOKABLE bool isHttpsUrl(const QString &url) const;        // 检查URL是否使用HTTPS
@@ -193,7 +193,7 @@ class TodoModel : public QAbstractListModel {
     QString m_currentCategory;                       ///< 当前分类筛选器
     QString m_currentFilter;                         ///< 当前筛选条件
     NetworkManager *m_networkManager;                ///< 网络管理器
-    Config *m_settings;                            ///< 应用设置
+    Config *m_config;                            ///< 应用设置
 
     QString m_accessToken;   ///< 访问令牌
     QString m_refreshToken;  ///< 刷新令牌
