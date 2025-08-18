@@ -542,17 +542,27 @@ Window {
 
         MenuItem {
             text: todoModel.isLoggedIn ? qsTr("退出登录") : qsTr("登录")
+            contentItem: Text {
+                text: parent.text
+                color: theme.textColor
+                font: parent.font
+            }
             onTriggered: {
                 if (todoModel.isLoggedIn) {
-                    logoutConfirmDialog.open();
+                    loginStatusDialogs.showLogoutConfirm();
                 } else {
-                    loginDialog.open();
+                    loginDialog.openLogin();
                 }
             }
         }
 
         MenuItem {
             text: qsTr("设置")
+            contentItem: Text {
+                text: parent.text
+                color: theme.textColor
+                font: parent.font
+            }
             onTriggered: {
                 stackView.push(Qt.resolvedUrl("Setting.qml"), {
                     isDarkMode: root.isDarkMode,
@@ -618,7 +628,7 @@ Window {
                         if (checked && !todoModel.isLoggedIn) {
                             // 如果要开启自动同步但未登录，显示提示并重置开关
                             onlineSwitch.checked = false;
-                            loginRequiredDialog.open();
+                            loginStatusDialogs.showLoginRequired();
                         } else {
                             config.save("setting/autoSync", checked);
                         }
@@ -630,72 +640,9 @@ Window {
         }
     }
     // 通用确认对话框组件
-    Component {
-        id: confirmDialogComponent
-
-        Dialog {
-            id: confirmDialog
-            title: qsTr("确认")
-            standardButtons: Dialog.NoButton
-            modal: true
-
-            property string message: ""
-            property string yesButtonText: qsTr("确定")
-            property string noButtonText: qsTr("取消")
-
-            contentItem: ColumnLayout {
-                spacing: 20
-
-                Label {
-                    text: confirmDialog.message
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
-                }
-
-                RowLayout {
-                    Layout.alignment: Qt.AlignRight
-                    spacing: 10
-
-                    Button {
-                        text: confirmDialog.noButtonText
-                        onClicked: confirmDialog.reject()
-
-                        background: Rectangle {
-                            color: parent.pressed ? theme.buttonPressedColor : parent.hovered ? theme.buttonHoverColor : theme.buttonNormalColor
-                            border.color: theme.borderColor
-                            border.width: 1
-                            radius: 4
-                        }
-
-                        contentItem: Text {
-                            text: parent.text
-                            color: theme.textColor
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                    }
-
-                    Button {
-                        text: confirmDialog.yesButtonText
-                        onClicked: confirmDialog.accept()
-
-                        background: Rectangle {
-                            color: parent.pressed ? theme.buttonPressedColor : parent.hovered ? theme.buttonHoverColor : theme.buttonNormalColor
-                            border.color: theme.borderColor
-                            border.width: 1
-                            radius: 4
-                        }
-
-                        contentItem: Text {
-                            text: parent.text
-                            color: theme.textColor
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                    }
-                }
-            }
-        }
+    ConfirmDialog {
+        id: confirmDialog
+        isDarkMode: root.isDarkMode
     }
 
     Component {
@@ -712,302 +659,47 @@ Window {
         target: todoModel
 
         function onLoginSuccessful(username) {
-            loginDialog.isLoggingIn = false;
+            loginDialog.resetLoginState();
+            messageDialog.showSuccess(qsTr("欢迎回来，%1！").arg(username));
             loginDialog.close();
-            loginDialog.username = "";
-            loginDialog.password = "";
-            loginSuccessDialog.message = qsTr("欢迎回来，%1！").arg(username);
-            loginSuccessDialog.open();
         }
 
         function onLoginFailed(errorMessage) {
-            loginDialog.isLoggingIn = false;
-            loginFailedDialog.message = qsTr("登录失败：%1").arg(errorMessage);
-            loginFailedDialog.open();
+            loginDialog.setErrorMessage(qsTr("登录失败：%1").arg(errorMessage));
         }
 
         function onLogoutSuccessful() {
-            logoutSuccessDialog.open();
+            messageDialog.showSuccess(qsTr("已成功退出登录"));
         }
     }
 
-    // 登录成功提示对话框
-    Dialog {
-        id: loginSuccessDialog
-        title: qsTr("登录成功")
-        modal: true
-        anchors.centerIn: parent
-        standardButtons: Dialog.Ok
-
-        property string message: ""
-
-        Label {
-            text: loginSuccessDialog.message
-            color: theme.textColor
+    // 消息提示对话框组件
+    MessageDialog {
+        id: messageDialog
+        isDarkMode: root.isDarkMode
+    }
+    
+    // 登录状态相关对话框组件
+    LoginStatusDialogs {
+        id: loginStatusDialogs
+        isDarkMode: root.isDarkMode
+        
+        onLoginRequested: {
+            loginDialog.openLogin();
         }
-
-        background: Rectangle {
-            color: theme.backgroundColor
-            border.color: theme.borderColor
-            border.width: 1
-            radius: 8
+        
+        onLogoutConfirmed: {
+            todoModel.logout();
         }
     }
 
-    // 登录失败提示对话框
-    Dialog {
-        id: loginFailedDialog
-        title: qsTr("登录失败")
-        modal: true
-        anchors.centerIn: parent
-        standardButtons: Dialog.Ok
-
-        property string message: ""
-
-        Label {
-            text: loginFailedDialog.message
-            color: theme.textColor
-            wrapMode: Text.WordWrap
-        }
-
-        background: Rectangle {
-            color: theme.backgroundColor
-            border.color: theme.borderColor
-            border.width: 1
-            radius: 8
-        }
-    }
-
-    // 退出登录确认对话框
-    Dialog {
-        id: logoutConfirmDialog
-        title: qsTr("确认退出")
-        modal: true
-        anchors.centerIn: parent
-        width: 300
-        height: 150
-        standardButtons: Dialog.NoButton
-
-        background: Rectangle {
-            color: theme.backgroundColor
-            border.color: theme.borderColor
-            border.width: 1
-            radius: 8
-        }
-
-        contentItem: ColumnLayout {
-            spacing: 20
-
-            Label {
-                text: qsTr("确定要退出登录吗？")
-                color: theme.textColor
-                Layout.alignment: Qt.AlignHCenter
-            }
-
-            RowLayout {
-                Layout.alignment: Qt.AlignRight
-                spacing: 10
-
-                Button {
-                    text: qsTr("取消")
-                    onClicked: logoutConfirmDialog.close()
-                    background: Rectangle {
-                        color: theme.secondaryBackgroundColor
-                        border.color: theme.borderColor
-                        border.width: 1
-                        radius: 4
-                    }
-
-                    contentItem: Text {
-                        text: parent.text
-                        color: theme.textColor
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
-
-                Button {
-                    text: qsTr("确定")
-                    onClicked: {
-                        todoModel.logout();
-                        logoutConfirmDialog.close();
-                    }
-                    background: Rectangle {
-                        color: theme.primaryColor
-                        border.color: theme.borderColor
-                        border.width: 1
-                        radius: 4
-                    }
-
-                    contentItem: Text {
-                        text: parent.text
-                        color: theme.textColor  
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
-            }
-        }
-    }
-
-    // 退出登录成功提示对话框
-    Dialog {
-        id: logoutSuccessDialog
-        title: qsTr("退出成功")
-        modal: true
-        anchors.centerIn: parent
-        width: 250
-        height: 120
-        standardButtons: Dialog.Ok
-
-        Label {
-            text: qsTr("已成功退出登录")
-            color: theme.textColor
-        }
-
-        background: Rectangle {
-            color: theme.backgroundColor
-            border.color: theme.borderColor
-            border.width: 1
-            radius: 8
-        }
-    }
-
-    // 登录弹窗
-    Dialog {
+    // 登录对话框组件
+    LoginDialog {
         id: loginDialog
-        title: qsTr("用户登录")
-        modal: true
-        anchors.centerIn: parent
-        width: 350
-        height: 280
-        standardButtons: Dialog.NoButton
-
-        property alias username: usernameField.text
-        property alias password: passwordField.text
-        property bool isLoggingIn: false
-
-        background: Rectangle {
-            color: theme.backgroundColor
-            border.color: theme.borderColor
-            border.width: 1
-            radius: 8
-        }
-
-        contentItem: ColumnLayout {
-            spacing: 20
-            anchors.margins: 20
-
-            Label {
-                text: qsTr("请输入您的登录信息")
-                color: theme.textColor      
-                font.pixelSize: 16
-                Layout.alignment: Qt.AlignHCenter
-            }
-
-            ColumnLayout {
-                spacing: 15
-                Layout.fillWidth: true
-
-                // 用户名输入
-                ColumnLayout {
-                    spacing: 5
-                    Layout.fillWidth: true
-
-                    Label {
-                        text: qsTr("用户名:")
-                        color: theme.textColor
-                    }
-
-                    TextField {
-                        id: usernameField
-                        placeholderText: qsTr("请输入用户名")
-                        Layout.fillWidth: true
-                        color: theme.textColor
-                        background: Rectangle {
-                            color: theme.secondaryBackgroundColor
-                            border.color: theme.borderColor
-                            border.width: 1
-                            radius: 4
-                        }
-                    }
-                }
-
-                // 密码输入
-                ColumnLayout {
-                    spacing: 5
-                    Layout.fillWidth: true
-
-                    Label {
-                        text: qsTr("密码:")
-                        color: theme.textColor
-                    }
-
-                    TextField {
-                        id: passwordField
-                        placeholderText: qsTr("请输入密码")
-                        echoMode: TextInput.Password
-                        Layout.fillWidth: true
-                        color: theme.textColor
-                        background: Rectangle {
-                            color: theme.secondaryBackgroundColor
-                            border.color: theme.borderColor
-                            border.width: 1
-                            radius: 4
-                        }
-                    }
-                }
-            }
-
-            // 按钮区域
-            RowLayout {
-                Layout.alignment: Qt.AlignRight
-                spacing: 10
-
-                Button {
-                    text: qsTr("取消")
-                    onClicked: {
-                        loginDialog.close();
-                        usernameField.text = "";
-                        passwordField.text = "";
-                    }
-                    background: Rectangle {
-                        color: theme.secondaryBackgroundColor
-                        border.color: theme.borderColor
-                        border.width: 1
-                        radius: 4
-                    }
-
-                    contentItem: Text {
-                        text: parent.text
-                        color: theme.textColor
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
-
-                Button {
-                    text: loginDialog.isLoggingIn ? qsTr("登录中...") : qsTr("登录")
-                    enabled: usernameField.text.length > 0 && passwordField.text.length > 0 && !loginDialog.isLoggingIn
-                    onClicked: {
-                        loginDialog.isLoggingIn = true;
-                        todoModel.login(usernameField.text, passwordField.text);
-                    }
-                    background: Rectangle {
-                        color: parent.enabled ? theme.primaryColor : theme.borderColor
-                        border.color: theme.borderColor
-                        border.width: 1
-                        radius: 4
-                    }
-
-                    contentItem: Text {
-                        text: parent.text
-                        color: parent.enabled ? "white" : theme.textColor
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
-            }
+        isDarkMode: root.isDarkMode
+        
+        onLoginRequested: function(username, password) {
+            todoModel.login(username, password);
         }
     }
 

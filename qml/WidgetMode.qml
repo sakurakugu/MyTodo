@@ -111,7 +111,7 @@ Item {
                         if (checked && !todoModel.isLoggedIn) {
                             // 如果要开启自动同步但未登录，显示提示并重置开关
                             autoSyncSwitch.checked = false;
-                            loginRequiredDialog.open();
+                            loginStatusDialogs.showLoginRequired();
                         } else {
                             config.save("setting/autoSync", checked);
                         }
@@ -291,14 +291,13 @@ Item {
                             anchors.fill: parent
                             z: 0
                             onClicked: {
-                                todoDetailsDialog.open({
+                                todoDetailsDialog.openTodoDetails({
                                     title: model.title,
                                     description: model.description,
                                     category: model.category,
                                     urgency: model.urgency,
                                     importance: model.importance
-                                });
-                                todoListPopupView.currentIndex = index;
+                                }, index);
                             }
                         }
 
@@ -359,72 +358,19 @@ Item {
         }
     }
 
-    // 登录提示对话框
-    Dialog {
-        id: loginRequiredDialog
-        title: qsTr("需要登录")
-        modal: true
-        anchors.centerIn: parent
-        width: 250
-        height: 150
-        standardButtons: Dialog.Ok
-        
-        background: Rectangle {
-            color: theme.backgroundColor
-            border.color: theme.borderColor
-            border.width: 1
-            radius: 8
-        }
-        
-        Label {
-            text: qsTr("开启自动同步功能需要先登录账户。")
-            wrapMode: Text.WordWrap
-            color: theme.textColor
-            anchors.centerIn: parent
-        }
+    // 登录状态相关对话框组件
+    LoginStatusDialogs {
+        id: loginStatusDialogs
+        isDarkMode: widgetMode.isDarkMode
     }
 
-    // 待办详情/编辑对话框
-    Dialog {
+    // 待办详情/编辑对话框组件
+    TodoDetailsDialog {
         id: todoDetailsDialog
-        title: qsTr("待办详情")
-        standardButtons: Dialog.Ok | Dialog.Cancel
-        width: 400
-        height: Math.min(parent.height * 0.8, 500)
-        modal: true
-        anchors.centerIn: parent
-
-        property var currentTodo: null
-
-        function open(todo) {
-            currentTodo = todo;
-            taskForm.setFormData(todo);
-            visible = true;
-        }
-
-        background: Rectangle {
-            color: theme.backgroundColor
-            border.color: theme.borderColor
-            border.width: 1
-            radius: 8
-        }
-
-        ScrollView {
-            anchors.fill: parent
-            clip: true
-            
-            TaskForm {
-                id: taskForm
-                width: parent.width
-                theme: widgetMode.theme
-            }
-        }
-
-        onAccepted: {
-            if (currentTodo && taskForm.isValid()) {
-                var todoData = taskForm.getTodoData();
-                todoModel.updateTodo(todoListPopupView.currentIndex, todoData);
-            }
+        isDarkMode: widgetMode.isDarkMode
+        
+        onTodoUpdated: function(index, todoData) {
+            todoModel.updateTodo(index, todoData);
         }
     }
 }
