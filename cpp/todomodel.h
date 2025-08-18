@@ -22,7 +22,7 @@
 #include <vector>
 
 #include "networkmanager.h"
-#include "settings.h"
+#include "config.h"
 #include "todoItem.h"
 
 /**
@@ -50,7 +50,7 @@
  * - 支持在线/离线模式切换
  *
  * @note 该类是线程安全的，所有网络操作都在后台线程执行
- * @see TodoItem, NetworkManager, Settings
+ * @see TodoItem, NetworkManager, Config
  */
 class TodoModel : public QAbstractListModel {
     Q_OBJECT
@@ -85,11 +85,11 @@ class TodoModel : public QAbstractListModel {
      * 创建TodoModel实例，初始化网络管理器、设置对象和本地存储。
      *
      * @param parent 父对象指针，用于Qt对象树管理
-     * @param settings 设置对象指针，如果为nullptr则创建新的设置对象
+     * @param config 设置对象指针，如果为nullptr则创建新的设置对象
      * @param storageType 存储类型，默认使用注册表存储
      */
-    explicit TodoModel(QObject *parent = nullptr, Settings *settings = nullptr,
-                       Settings::StorageType storageType = Settings::Registry);
+    explicit TodoModel(QObject *parent = nullptr, Config *config = nullptr,
+                       Config::StorageType storageType = Config::Registry);
 
     ~TodoModel();
 
@@ -139,7 +139,7 @@ class TodoModel : public QAbstractListModel {
     importTodosWithAutoResolution(const QString &filePath);  // 自动导入无冲突项目，返回冲突项目列表
 
     // 获取设置对象
-    Q_INVOKABLE Settings *settings() const { return m_settings; }
+    Q_INVOKABLE Config *config() const { return m_settings; }
 
     // 服务器配置相关
     Q_INVOKABLE bool isHttpsUrl(const QString &url) const;        // 检查URL是否使用HTTPS
@@ -193,7 +193,7 @@ class TodoModel : public QAbstractListModel {
     QString m_currentCategory;                       ///< 当前分类筛选器
     QString m_currentFilter;                         ///< 当前筛选条件
     NetworkManager *m_networkManager;                ///< 网络管理器
-    Settings *m_settings;                            ///< 应用设置
+    Config *m_settings;                            ///< 应用设置
 
     QString m_accessToken;   ///< 访问令牌
     QString m_refreshToken;  ///< 刷新令牌

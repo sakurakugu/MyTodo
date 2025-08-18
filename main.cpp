@@ -14,7 +14,7 @@
 #include <iostream>
 // 自定义头文件
 #include "cpp/mainWindow.h"
-#include "cpp/settings.h"
+#include "cpp/config.h"
 #include "cpp/todoModel.h"
 
 int main(int argc, char *argv[]) {
@@ -55,8 +55,8 @@ int main(int argc, char *argv[]) {
     QGuiApplication::setOrganizationName("MyTodo");
     QGuiApplication::setOrganizationDomain("mytodo.app");
 
-    Settings settings;                        // 创建Settings实例
-    TodoModel todoModel(nullptr, &settings);  // 创建TodoModel实例
+    Config config;                        // 创建Settings实例
+    TodoModel todoModel(nullptr, &config);  // 创建TodoModel实例
     MainWindow mainWindow;                    // 创建MainWindow实例
 
     // 检查是否通过开机自启动启动
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
 
     // 将类注册到QML上下文
     engine.rootContext()->setContextProperty("todoModel", &todoModel);
-    engine.rootContext()->setContextProperty("settings", &settings);
+    engine.rootContext()->setContextProperty("config", &config);
     engine.rootContext()->setContextProperty("mainWindow", &mainWindow);
 
     QObject::connect(

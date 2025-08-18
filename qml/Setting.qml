@@ -10,7 +10,7 @@ Page {
     objectName: "settingPage"  // 用于在Main.qml中识别当前页面
 
     // 从父栈传入的属性
-    property bool isDarkMode: settings.get("setting/isDarkMode", false)
+    property bool isDarkMode: config.get("setting/isDarkMode", false)
     property bool preventDragging: false
     // 根窗口引用，用于更新全局属性
     property var rootWindow: null
@@ -65,7 +65,7 @@ Page {
                 isDarkMode = checked;
                 // 保存设置到配置文件
                 console.log("设置页面-切换深色模式", checked);
-                settings.save("setting/isDarkMode", checked);
+                config.save("setting/isDarkMode", checked);
                 if (rootWindow) rootWindow.isDarkMode = isDarkMode;
             }
         }
@@ -77,7 +77,7 @@ Page {
             enabled: mainWindow.isDesktopWidget
             onCheckedChanged: {
                 preventDragging = checked;
-                settings.save("setting/preventDragging", preventDragging);
+                config.save("setting/preventDragging", preventDragging);
                 if (rootWindow) rootWindow.preventDragging = preventDragging;
             }
         }
@@ -94,7 +94,7 @@ Page {
         Switch {
             id: autoSyncSwitch
             text: qsTr("自动同步")
-            checked: settings.get("setting/autoSync", false)
+            checked: config.get("setting/autoSync", false)
             
             property bool isInitialized: false
             
@@ -112,7 +112,7 @@ Page {
                     autoSyncSwitch.checked = false;
                     loginRequiredDialog.open();
                 } else {
-                    settings.save("setting/autoSync", checked);
+                    config.save("setting/autoSync", checked);
 
                 }
             }
@@ -204,7 +204,7 @@ Page {
                 id: apiUrlField
                 Layout.fillWidth: true
                 // placeholderText: qsTr("请输入API服务器地址")
-                text: settings.get("server/baseUrl", "https://api.example.com")
+                text: config.get("server/baseUrl", "https://api.example.com")
                 color: theme.textColor
                 background: Rectangle {
                     color: theme.secondaryBackgroundColor

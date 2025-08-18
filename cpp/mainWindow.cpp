@@ -106,23 +106,23 @@ void MainWindow::toggleSettingsVisible() {
 }
 
 bool MainWindow::isAutoStartEnabled() const {
-    QSettings settings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
-    return settings.contains("MyTodo");
+    QSettings config("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
+    return config.contains("MyTodo");
 }
 
 bool MainWindow::setAutoStart(bool enabled) {
-    QSettings settings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
+    QSettings config("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
     
     if (enabled) {
         QString applicationPath = QCoreApplication::applicationFilePath();
         applicationPath = QDir::toNativeSeparators(applicationPath);
         // 添加命令行参数标识开机自启动
         applicationPath += " --autostart";
-        settings.setValue("MyTodo", applicationPath);
+        config.setValue("MyTodo", applicationPath);
     } else {
-        settings.remove("MyTodo");
+        config.remove("MyTodo");
     }
     
-    settings.sync();
-    return settings.status() == QSettings::NoError;
+    config.sync();
+    return config.status() == QSettings::NoError;
 }

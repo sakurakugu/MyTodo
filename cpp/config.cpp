@@ -1,8 +1,8 @@
-#include "settings.h"
+#include "config.h"
 
 #include <QDebug>
 
-Settings::Settings(QObject *parent, StorageType storageType)  // 构造函数
+Config::Config(QObject *parent, StorageType storageType)  // 构造函数
     : QObject(parent), m_storageType(storageType) {
     // TODO: 在不同平台上的情况
     if (m_storageType == IniFile) {
@@ -16,7 +16,7 @@ Settings::Settings(QObject *parent, StorageType storageType)  // 构造函数
     }
 }
 
-Settings::~Settings() {
+Config::~Config() {
     // 确保所有设置都已保存
     if (m_settings) {
         m_settings->sync();
@@ -29,7 +29,7 @@ Settings::~Settings() {
  * @param value 设置值
  * @return 保存是否成功
  */
-bool Settings::save(const QString &key, const QVariant &value) {
+bool Config::save(const QString &key, const QVariant &value) {
     // qDebug() << "准备保存设置" << key << "，要保存的值为" << value;
     if (!m_settings) return false;
     // if (key == "setting/isDarkMode") {
@@ -46,7 +46,7 @@ bool Settings::save(const QString &key, const QVariant &value) {
  * @param defaultValue 默认值（如果设置不存在）
  * @return 设置值
  */
-QVariant Settings::get(const QString &key, const QVariant &defaultValue) {
+QVariant Config::get(const QString &key, const QVariant &defaultValue) {
     // if (key == "setting/isDarkMode") {
     //     qDebug() << "调用get方法, key为" << key << "，当前存储的设置值为" << m_settings->value(key, defaultValue);
     // }
@@ -74,7 +74,7 @@ QVariant Settings::get(const QString &key, const QVariant &defaultValue) {
  * @brief 移除设置
  * @param key 设置键名
  */
-void Settings::remove(const QString &key) {
+void Config::remove(const QString &key) {
     if (!m_settings) return;
     m_settings->remove(key);
 }
@@ -84,7 +84,7 @@ void Settings::remove(const QString &key) {
  * @param key 设置键名
  * @return 设置是否存在
  */
-bool Settings::contains(const QString &key) {
+bool Config::contains(const QString &key) {
     if (!m_settings) return false;
     return m_settings->contains(key);
 }
@@ -93,7 +93,7 @@ bool Settings::contains(const QString &key) {
  * @brief 获取所有设置的键名
  * @return 所有设置的键名列表
  */
-QStringList Settings::allKeys() {
+QStringList Config::allKeys() {
     if (!m_settings) return QStringList();
     return m_settings->allKeys();
 }
@@ -101,7 +101,7 @@ QStringList Settings::allKeys() {
 /**
  * @brief 清除所有设置
  */
-void Settings::clearSettings() {
+void Config::clearSettings() {
     if (!m_settings) return;
     m_settings->clear();
 }
@@ -110,7 +110,7 @@ void Settings::clearSettings() {
  * @brief 初始化默认服务器配置
  * 如果服务器配置不存在，则设置默认值
  */
-void Settings::initializeDefaultServerConfig() {
+void Config::initializeDefaultServerConfig() {
     // 检查并设置默认的服务器基础URL
     if (!contains("server/baseUrl")) {
         save("server/baseUrl", "https://api.example.com");
@@ -131,4 +131,4 @@ void Settings::initializeDefaultServerConfig() {
  * @brief 获取当前存储类型
  * @return 当前使用的存储类型
  */
-Settings::StorageType Settings::getStorageType() const { return m_storageType; }
+Config::StorageType Config::getStorageType() const { return m_storageType; }

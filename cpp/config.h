@@ -6,14 +6,14 @@
 #include <QVariant>
 
 /**
- * @class Settings
+ * @class Config
  * @brief 应用程序设置管理类
  *
  * Settings类提供了统一的接口来管理应用程序的设置，包括用户界面设置、
  * 网络设置和其他应用程序配置。所有设置都会持久化到本地存储。
  * 支持选择使用配置文件或注册表进行存储。
  */
-class Settings : public QObject {
+class Config : public QObject {
     Q_OBJECT
 
   public:
@@ -27,8 +27,8 @@ class Settings : public QObject {
     };
     Q_ENUM(StorageType)
 
-    explicit Settings(QObject *parent = nullptr, StorageType storageType = Registry);
-    ~Settings();
+    explicit Config(QObject *parent = nullptr, StorageType storageType = Registry);
+    ~Config();
 
     Q_INVOKABLE bool save(const QString &key, const QVariant &value); ///< 保存设置到配置文件
     Q_INVOKABLE QVariant get(const QString &key,

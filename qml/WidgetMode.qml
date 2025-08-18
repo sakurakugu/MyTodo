@@ -73,7 +73,7 @@ Item {
                         }
                         // 保存设置到配置文件
                         console.log("小窗口页面-切换深色模式", checked);
-                        settings.save("setting/isDarkMode", checked);
+                        config.save("setting/isDarkMode", checked);
                         // 发出信号通知父组件
                         widgetMode.darkModeToggled(checked);
                     }
@@ -86,7 +86,7 @@ Item {
                     enabled: isDesktopWidget
                     onCheckedChanged: {
                         // 保存设置到配置文件
-                        settings.save("setting/preventDragging", checked);
+                        config.save("setting/preventDragging", checked);
                         // 发出信号通知父组件
                         widgetMode.preventDraggingToggled(checked);
                     }
@@ -95,7 +95,7 @@ Item {
                 Switch {
                     id: autoSyncSwitch
                     text: "自动同步"
-                    checked: settings.get("setting/autoSync", false)
+                    checked: config.get("setting/autoSync", false)
 
                     property bool isInitialized: false
                     
@@ -113,7 +113,7 @@ Item {
                             autoSyncSwitch.checked = false;
                             loginRequiredDialog.open();
                         } else {
-                            settings.save("setting/autoSync", checked);
+                            config.save("setting/autoSync", checked);
                         }
                     }
                 }

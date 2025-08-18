@@ -15,14 +15,14 @@
 
 #include "networkmanager.h"
 
-TodoModel::TodoModel(QObject *parent, Settings *settings, Settings::StorageType storageType)
+TodoModel::TodoModel(QObject *parent, Config *config, Config::StorageType storageType)
     : QAbstractListModel(parent),
       m_filterCacheDirty(true),
       m_isOnline(false),
       m_currentCategory(""),
       m_currentFilter(""),
       m_networkManager(new NetworkManager(this)),
-      m_settings(settings ? settings : new Settings(this, storageType)) {
+      m_settings(config ? config : new Config(this, storageType)) {
     // 初始化默认服务器配置
     m_settings->initializeDefaultServerConfig();
 

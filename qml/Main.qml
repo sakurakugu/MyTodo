@@ -51,10 +51,10 @@ Window {
     property bool isShowSetting: mainWindow.isShowSetting      ///< 是否显示设置界面
 
     // 主题相关属性
-    property bool isDarkMode: settings.get("setting/isDarkMode", false)  ///< 深色模式开关，从配置文件读取
+    property bool isDarkMode: config.get("setting/isDarkMode", false)  ///< 深色模式开关，从配置文件读取
 
     // 交互控制属性
-    property bool preventDragging: settings.get("setting/preventDragging", false) ///< 是否禁止窗口拖拽，从配置文件读取
+    property bool preventDragging: config.get("setting/preventDragging", false) ///< 是否禁止窗口拖拽，从配置文件读取
 
     // 页面导航系统（使用StackView实现）
 
@@ -586,7 +586,7 @@ Window {
                         }
                         root.isDarkMode = checked;
                         console.log("顶部用户菜单-切换深色模式", checked);
-                        settings.save("setting/isDarkMode", checked);
+                        config.save("setting/isDarkMode", checked);
                     }
                 }
             }
@@ -602,7 +602,7 @@ Window {
                 }
                 Switch {
                     id: onlineSwitch
-                    checked: settings.get("setting/autoSync", false)
+                    checked: config.get("setting/autoSync", false)
 
                     property bool isInitialized: false
 
@@ -620,7 +620,7 @@ Window {
                             onlineSwitch.checked = false;
                             loginRequiredDialog.open();
                         } else {
-                            settings.save("setting/autoSync", checked);
+                            config.save("setting/autoSync", checked);
                         }
                     }
                 }

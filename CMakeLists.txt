@@ -86,8 +86,8 @@ set(UI_SOURCES
 
 set(UTILITY_SOURCES
     # 工具和设置模块
-    cpp/settings.cpp
-    cpp/settings.h
+    cpp/config.cpp
+    cpp/config.h
 )
 
 # 合并所有源文件
