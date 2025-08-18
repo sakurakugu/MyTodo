@@ -14,6 +14,7 @@
 #include <iostream>
 // 自定义头文件
 #include "cpp/config.h"
+#include "cpp/logger.h"
 #include "cpp/mainWindow.h"
 #include "cpp/todoModel.h"
 
@@ -40,6 +41,13 @@ int main(int argc, char *argv[]) {
 
     QGuiApplication app(argc, argv);
 
+    // 初始化日志系统
+    Logger &logger = Logger::GetInstance();
+    qInstallMessageHandler(Logger::messageHandler);
+
+    // 记录应用启动
+    qInfo() << "MyTodo 应用程序启动";
+
     // 设置应用样式为Material
     qputenv("QT_QUICK_CONTROLS_STYLE", "Material");
 
@@ -55,7 +63,16 @@ int main(int argc, char *argv[]) {
     QGuiApplication::setOrganizationName("MyTodo");
     QGuiApplication::setOrganizationDomain("mytodo.app");
 
-    Config config;                         // 创建Config实例
+    Config config; // 创建Config实例
+
+    // 应用日志设置
+    logger.setLogLevel(static_cast<Logger::LogLevel>(config.getLogLevel()));
+    logger.setLogToFile(config.getLogToFile());
+    logger.setLogToConsole(config.getLogToConsole());
+    logger.setMaxLogFileSize(config.getMaxLogFileSize());
+    logger.setMaxLogFiles(config.getMaxLogFiles());
+
+    qInfo() << "日志系统初始化完成，日志文件路径:" << config.getLogFilePath();
     TodoModel todoModel(nullptr, &config); // 创建TodoModel实例
     MainWindow mainWindow;                 // 创建MainWindow实例
 

@@ -1,4 +1,5 @@
 #include "config.h"
+#include "logger.h"
 
 #include <QDebug>
 #include <QStandardPaths>
@@ -17,7 +18,7 @@ Config::Config(QObject *parent, StorageType storageType) // 构造函数
     } else if (m_storageType == TomlFile) {
         // 使用TOML文件存储
         m_tomlFilePath = QDir::currentPath() + "/config.toml";
-        // QString appDataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+        // QString appDataPath = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
         // QDir().mkpath(appDataPath); // 确保目录存在
         // m_tomlFilePath = appDataPath + "/config.toml";
         loadTomlFile();
@@ -79,7 +80,7 @@ bool Config::save(const QString &key, const QVariant &value) {
  * @param defaultValue 默认值（如果设置不存在）
  * @return 设置值
  */
-QVariant Config::get(const QString &key, const QVariant &defaultValue) {
+QVariant Config::get(const QString &key, const QVariant &defaultValue) const {
     // if (key == "setting/isDarkMode") {
     //     qDebug() << "调用get方法, key为" << key << "，当前存储的设置值为" << m_config->value(key, defaultValue);
     // }
@@ -291,7 +292,7 @@ bool Config::saveTomlFile() {
  * @param value TOML值
  * @return QVariant值
  */
-QVariant Config::tomlValueToQVariant(const toml::value &value) {
+QVariant Config::tomlValueToQVariant(const toml::value &value) const {
     if (value.is_boolean()) {
         return QVariant(value.as_boolean());
     } else if (value.is_integer()) {
@@ -367,4 +368,58 @@ void Config::collectTomlKeys(const toml::value &value, const QString &prefix, QS
             }
         }
     }
+}
+
+// 日志配置相关方法实现
+void Config::setLogLevel(int level) {
+    save("log/level", level);
+    Logger::GetInstance().setLogLevel(static_cast<Logger::LogLevel>(level));
+}
+
+int Config::getLogLevel() const {
+    return get("log/level", static_cast<int>(Logger::Info)).toInt();
+}
+
+void Config::setLogToFile(bool enabled) {
+    save("log/toFile", enabled);
+    Logger::GetInstance().setLogToFile(enabled);
+}
+
+bool Config::getLogToFile() const {
+    return get("log/toFile", true).toBool();
+}
+
+void Config::setLogToConsole(bool enabled) {
+    save("log/toConsole", enabled);
+    Logger::GetInstance().setLogToConsole(enabled);
+}
+
+bool Config::getLogToConsole() const {
+    return get("log/toConsole", true).toBool();
+}
+
+void Config::setMaxLogFileSize(qint64 maxSize) {
+    save("log/maxFileSize", maxSize);
+    Logger::GetInstance().setMaxLogFileSize(maxSize);
+}
+
+qint64 Config::getMaxLogFileSize() const {
+    return get("log/maxFileSize", 10 * 1024 * 1024).toLongLong(); // 默认10MB
+}
+
+void Config::setMaxLogFiles(int maxFiles) {
+    save("log/maxFiles", maxFiles);
+    Logger::GetInstance().setMaxLogFiles(maxFiles);
+}
+
+int Config::getMaxLogFiles() const {
+    return get("log/maxFiles", 5).toInt(); // 默认保留5个文件
+}
+
+QString Config::getLogFilePath() const {
+    return Logger::GetInstance().getLogFilePath();
+}
+
+void Config::clearLogs() {
+    Logger::GetInstance().clearLogs();
 }

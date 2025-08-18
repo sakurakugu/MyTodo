@@ -91,7 +91,7 @@ Page {
                         Layout.fillWidth: true
 
                         background: Rectangle {
-                            color: parent.pressed ? theme.buttonPressedColor : parent.hovered ? theme.buttonHoverColor : theme.buttonNormalColor
+                            color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
                             border.color: theme.borderColor
                             border.width: 1
                             radius: 4
@@ -145,7 +145,7 @@ Page {
                         }
 
                         background: Rectangle {
-                            color: parent.pressed ? theme.buttonPressedColor : parent.hovered ? theme.buttonHoverColor : theme.buttonNormalColor
+                            color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
                             border.color: theme.borderColor
                             border.width: 1
                             radius: 4

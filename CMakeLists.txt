@@ -88,6 +88,8 @@ set(UTILITY_SOURCES
     # 工具和配置模块
     cpp/config.cpp
     cpp/config.h
+    cpp/logger.cpp
+    cpp/logger.h
 )
 
 # 合并所有源文件
@@ -162,7 +164,7 @@ qt_add_executable(appMyTodo
 # 设置目标属性
 set_target_properties(appMyTodo PROPERTIES
     OUTPUT_NAME "MyTodo"            # 输出文件名
-    DEBUG_POSTFIX "_d"              # Debug 版本后缀
+    DEBUG_POSTFIX "_debug"              # Debug 版本后缀
 )
 
 # 添加 QML 模块

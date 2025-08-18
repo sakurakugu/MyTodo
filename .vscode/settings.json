@@ -85,7 +85,13 @@
         "stdfloat": "cpp",
         "stop_token": "cpp",
         "typeinfo": "cpp",
-        "qdebug": "cpp"
+        "qdebug": "cpp",
+        "bitset": "cpp",
+        "qcoreapplication": "cpp",
+        "any": "cpp",
+        "expected": "cpp",
+        "source_location": "cpp",
+        "valarray": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }
