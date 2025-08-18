@@ -312,7 +312,7 @@ Item {
                                 width: 16
                                 height: 16
                                 radius: 8
-                                color: model.status === "done" ? "#4caf50" : model.urgency === "high" ? "#f44336" : model.urgency === "medium" ? "#ff9800" : "#8bc34a"
+                                color: model.status === "done" ? theme.completedColor : model.urgency === "high" ? theme.highUrgencyColor : model.urgency === "medium" ? theme.mediumUrgencyColor : theme.lowUrgencyColor
 
                                 MouseArea {
                                     anchors.fill: parent

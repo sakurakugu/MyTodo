@@ -85,7 +85,7 @@ set(UI_SOURCES
 )
 
 set(UTILITY_SOURCES
-    # 工具和设置模块
+    # 工具和配置模块
     cpp/config.cpp
     cpp/config.h
 )

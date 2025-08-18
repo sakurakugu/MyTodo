@@ -534,8 +534,8 @@ Window {
         z: 10000  // 确保菜单显示在最上层
 
         background: Rectangle {
-            color: root.isDarkMode ? "#2d3436" : "white"
-            border.color: root.isDarkMode ? "#34495e" : "#cccccc"
+            color: theme.backgroundColor
+            border.color: theme.borderColor
             border.width: 1
             radius: 4
         }
@@ -661,15 +661,15 @@ Window {
                         onClicked: confirmDialog.reject()
 
                         background: Rectangle {
-                            color: parent.pressed ? (root.isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (root.isDarkMode ? "#3c5a78" : "#e0e0e0") : (root.isDarkMode ? "#2c3e50" : "#f0f0f0")
-                            border.color: root.isDarkMode ? "#34495e" : "#cccccc"
+                            color: parent.pressed ? theme.buttonPressedColor : parent.hovered ? theme.buttonHoverColor : theme.buttonNormalColor
+                            border.color: theme.borderColor
                             border.width: 1
                             radius: 4
                         }
 
                         contentItem: Text {
                             text: parent.text
-                            color: root.isDarkMode ? "#ecf0f1" : "black"
+                            color: theme.textColor
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -680,15 +680,15 @@ Window {
                         onClicked: confirmDialog.accept()
 
                         background: Rectangle {
-                            color: parent.pressed ? (root.isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (root.isDarkMode ? "#3c5a78" : "#e0e0e0") : (root.isDarkMode ? "#2c3e50" : "#f0f0f0")
-                            border.color: root.isDarkMode ? "#34495e" : "#cccccc"
+                            color: parent.pressed ? theme.buttonPressedColor : parent.hovered ? theme.buttonHoverColor : theme.buttonNormalColor
+                            border.color: theme.borderColor
                             border.width: 1
                             radius: 4
                         }
 
                         contentItem: Text {
                             text: parent.text
-                            color: root.isDarkMode ? "#ecf0f1" : "black"
+                            color: theme.textColor
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }

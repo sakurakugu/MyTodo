@@ -91,15 +91,15 @@ Page {
                         Layout.fillWidth: true
 
                         background: Rectangle {
-                            color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
-                            border.color: isDarkMode ? "#34495e" : "#cccccc"
+                            color: parent.pressed ? theme.buttonPressedColor : parent.hovered ? theme.buttonHoverColor : theme.buttonNormalColor
+                            border.color: theme.borderColor
                             border.width: 1
                             radius: 4
                         }
 
                         contentItem: Text {
                             text: parent.text
-                            color: isDarkMode ? "#ecf0f1" : "black"
+                            color: theme.textColor
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -145,15 +145,15 @@ Page {
                         }
 
                         background: Rectangle {
-                            color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
-                            border.color: isDarkMode ? "#34495e" : "#cccccc"
+                            color: parent.pressed ? theme.buttonPressedColor : parent.hovered ? theme.buttonHoverColor : theme.buttonNormalColor
+                            border.color: theme.borderColor
                             border.width: 1
                             radius: 4
                         }
 
                         contentItem: Text {
                             text: parent.text
-                            color: isDarkMode ? "#ecf0f1" : "black"
+                            color: theme.textColor
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -255,7 +255,7 @@ Page {
                                 width: 16
                                 height: 16
                                 radius: 8
-                                color: model.status === "done" ? "#4caf50" : model.urgency === "high" ? "#f44336" : model.urgency === "medium" ? "#ff9800" : "#8bc34a"
+                                color: model.status === "done" ? theme.completedColor : model.urgency === "high" ? theme.highUrgencyColor : model.urgency === "medium" ? theme.mediumUrgencyColor : theme.lowUrgencyColor
 
                                 MouseArea {
                                     anchors.fill: parent
