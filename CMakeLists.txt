@@ -137,6 +137,15 @@ set(RESOURCE_FILES
     # resources/images/logo.png
 )
 
+# 添加外部库 toml11
+include(FetchContent)
+FetchContent_Declare(
+    toml11
+    GIT_REPOSITORY https://github.com/ToruNiina/toml11.git
+    GIT_TAG        v4.4.0
+)
+FetchContent_MakeAvailable(toml11)
+
 # 查找 Qt6 依赖
 find_package(Qt6 REQUIRED COMPONENTS ${QT_COMPONENTS})
 
@@ -155,15 +164,6 @@ set_target_properties(appMyTodo PROPERTIES
     OUTPUT_NAME "MyTodo"            # 输出文件名
     DEBUG_POSTFIX "_d"              # Debug 版本后缀
 )
-
-# 添加外部库 toml11
-include(FetchContent)
-FetchContent_Declare(
-    toml11
-    GIT_REPOSITORY https://github.com/ToruNiina/toml11.git
-    GIT_TAG        v4.4.0
-)
-FetchContent_MakeAvailable(toml11)
 
 # 添加 QML 模块
 qt_add_qml_module(appMyTodo
@@ -253,34 +253,6 @@ if(WIN32)
             )
         ")
     endif()
-endif()
-
-# 测试配置
-# 启用测试功能
-include(CTest)
-enable_testing()
-
-# 添加测试子目录
-if(BUILD_TESTING)
-    message(STATUS "构建测试已启用")
-    add_subdirectory(tests)
-else()
-    message(STATUS "构建测试已禁用，使用 -DBUILD_TESTING=ON 启用")
-endif()
-
-# 代码覆盖率配置（Debug 模式）
-if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    option(ENABLE_COVERAGE "启用代码覆盖率" OFF)
-    if(ENABLE_COVERAGE)
-        target_compile_options(appMyTodo PRIVATE --coverage)
-        target_link_libraries(appMyTodo PRIVATE --coverage)
-    endif()
-endif()
-
-# 性能分析配置（可选）
-option(ENABLE_PROFILING "启用性能分析" OFF)
-if(ENABLE_PROFILING AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_definitions(appMyTodo PRIVATE ENABLE_PROFILING)
 endif()
 
 # 构建信息输出
