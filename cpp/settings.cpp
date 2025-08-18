@@ -30,12 +30,12 @@ Settings::~Settings() {
  * @return 保存是否成功
  */
 bool Settings::save(const QString &key, const QVariant &value) {
-    qDebug() << "准备保存设置" << key << "，要保存的值为" << value;
+    // qDebug() << "准备保存设置" << key << "，要保存的值为" << value;
     if (!m_settings) return false;
-    if (key == "setting/isDarkMode") {
-        qDebug() << "当前存储的设置值为" << m_settings->value(key, value);
-        qDebug() << "保存设置" << key << "，值为" << value;
-    }
+    // if (key == "setting/isDarkMode") {
+    //     qDebug() << "当前存储的设置值为" << m_settings->value(key, value);
+    //     qDebug() << "保存设置" << key << "，值为" << value;
+    // }
     m_settings->setValue(key, value);
     return m_settings->status() == QSettings::NoError;
 }
@@ -47,10 +47,11 @@ bool Settings::save(const QString &key, const QVariant &value) {
  * @return 设置值
  */
 QVariant Settings::get(const QString &key, const QVariant &defaultValue) {
-    if (key == "setting/isDarkMode") {
-        qDebug() << "调用get方法, key为" << key << "，当前存储的设置值为" << m_settings->value(key, defaultValue);
-    }
+    // if (key == "setting/isDarkMode") {
+    //     qDebug() << "调用get方法, key为" << key << "，当前存储的设置值为" << m_settings->value(key, defaultValue);
+    // }
     if (!m_settings) return defaultValue;
+    // return m_settings->value(key, defaultValue);
     
     QVariant value = m_settings->value(key, defaultValue);
     

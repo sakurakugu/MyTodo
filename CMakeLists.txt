@@ -52,13 +52,14 @@ set(QT_COMPONENTS
     Concurrent          # 并发处理
 )
 
-# 链接库配置（去除重复项）
+# 链接库配置
 set(PRIVATE_LIBRARIES
     Qt6::Core
     Qt6::Widgets
     Qt6::Quick
     Qt6::Network
     Qt6::Concurrent
+    toml11::toml11
 )
 
 # 项目源文件配置
@@ -154,6 +155,15 @@ set_target_properties(appMyTodo PROPERTIES
     OUTPUT_NAME "MyTodo"            # 输出文件名
     DEBUG_POSTFIX "_d"              # Debug 版本后缀
 )
+
+# 添加外部库 toml11
+include(FetchContent)
+FetchContent_Declare(
+    toml11
+    GIT_REPOSITORY https://github.com/ToruNiina/toml11.git
+    GIT_TAG        v4.4.0
+)
+FetchContent_MakeAvailable(toml11)
 
 # 添加 QML 模块
 qt_add_qml_module(appMyTodo

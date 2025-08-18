@@ -30,6 +30,7 @@ Item {
         y: 50
         width: 400
         height: 250
+        padding: 0 // 消除Popup和contentItem之间的间隙
 
         modal: false // 非模态，允许同时打开多个弹出窗口
         focus: true

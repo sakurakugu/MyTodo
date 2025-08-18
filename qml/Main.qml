@@ -38,7 +38,8 @@ Window {
     color: "transparent"
 
     // 窗口标志设置 - FramelessWindowHint必须始终存在，否则Windows下会出现背景变黑且无法恢复的问题
-    flags: Qt.FramelessWindowHint | (isDesktopWidget ? Qt.Tool : Qt.Window)
+    // Qt.WindowStaysOnTopHint 只在 Debug 模式下启用
+    flags: Qt.FramelessWindowHint | (isDesktopWidget ? Qt.Tool : Qt.Window) | Qt.WindowStaysOnTopHint
 
     // 窗口调整相关属性
     property int resizeBorderWidth: 5     ///< 边框调整大小的边距宽度
@@ -50,24 +51,18 @@ Window {
     property bool isShowSetting: mainWindow.isShowSetting      ///< 是否显示设置界面
 
     // 主题相关属性
-    property bool isDarkMode: false  ///< 深色模式开关，从配置文件读取
+    property bool isDarkMode: settings.get("setting/isDarkMode", false)  ///< 深色模式开关，从配置文件读取
 
     // 交互控制属性
     property bool preventDragging: settings.get("setting/preventDragging", false) ///< 是否禁止窗口拖拽，从配置文件读取
 
     // 页面导航系统（使用StackView实现）
 
-    /**
-     * @brief 主题颜色系统
-     *
-     * 定义了深色和浅色两套主题的颜色方案，
-     * 根据isDarkMode属性自动切换。
-     */
-    property color primaryColor: isDarkMode ? "#2c3e50" : "#4a86e8"              ///< 主色调
-    property color backgroundColor: isDarkMode ? "#1e272e" : "white"             ///< 主背景色
-    property color secondaryBackgroundColor: isDarkMode ? "#2d3436" : "#f5f5f5"  ///< 次要背景色
-    property color textColor: isDarkMode ? "#ecf0f1" : "black"                  ///< 文本颜色
-    property color borderColor: isDarkMode ? "#34495e" : "#cccccc"              ///< 边框颜色
+    // 主题管理器
+    ThemeManager {
+        id: theme
+        isDarkMode: root.isDarkMode
+    }
 
     /**
      * @brief 窗口尺寸同步连接
@@ -89,16 +84,6 @@ Window {
         }
     }
 
-    // 初始化页面时要读取配置文件中的设置
-    Component.onCompleted: {
-        // 立即执行初始化，避免延迟导致的时序问题
-        console.log("1初始化时读取配置文件中的设置");
-        isDarkMode = settings.get("setting/isDarkMode", false);
-        preventDragging = settings.get("setting/preventDragging", false);
-        console.log("2初始化时读取配置文件中的设置", isDarkMode, preventDragging);
-    }
-
-
     /**
      * @brief 应用程序标题栏
      *
@@ -110,8 +95,8 @@ Window {
         anchors.top: parent.top
         width: isDesktopWidget ? 400 : parent.width     ///< 小组件模式固定宽度，普通模式填充父容器
         height: isDesktopWidget ? 35 : 45               ///< 小组件模式较小高度，普通模式较大高度
-        color: primaryColor                             ///< 使用主题主色调
-        border.color: isDesktopWidget ? borderColor : "transparent"  ///< 小组件模式显示边框
+        color: theme.primaryColor                       ///< 使用主题主色调
+        border.color: theme.borderColor                 ///< 小组件模式显示边框
         border.width: isDesktopWidget ? 1 : 0           ///< 边框宽度
         radius: isDesktopWidget ? 5 : 0                 ///< 小组件模式圆角
 
@@ -174,7 +159,7 @@ Window {
                     text: stackView.currentItem && stackView.currentItem.objectName === "settingPage" ? qsTr("设置") : ""
                     font.bold: true
                     font.pixelSize: 16
-                    color: textColor
+                    color: theme.textColor
                     Layout.leftMargin: 10
                 }
             }
@@ -223,7 +208,7 @@ Window {
                             width: 30
                             height: 30
                             radius: 15                          ///< 圆形头像
-                            color: secondaryBackgroundColor     ///< 使用主题次要背景色
+                            color: theme.secondaryBackgroundColor     ///< 使用主题次要背景色
                             Layout.alignment: Qt.AlignVCenter  ///< 垂直居中对齐
 
                             /// 头像图标
@@ -241,7 +226,7 @@ Window {
                          */
                         Text {
                             text: todoModel.username !== "" ? todoModel.username : "未登录"
-                            color: textColor                    ///< 使用主题文本颜色
+                            color: theme.textColor                    ///< 使用主题文本颜色
                             font.bold: true                     ///< 粗体字
                             font.pixelSize: 14                  ///< 字体大小
                             Layout.alignment: Qt.AlignVCenter   ///< 垂直居中对齐
@@ -583,18 +568,18 @@ Window {
                 spacing: 12
                 Label {
                     text: qsTr("深色模式")
-                    color: root.textColor
+                    color: theme.textColor
                 }
                 Switch {
                     id: darkModeSwitch
                     checked: root.isDarkMode
-                    
+
                     property bool isInitialized: false
-                    
+
                     Component.onCompleted: {
                         isInitialized = true;
                     }
-                    
+
                     onCheckedChanged: {
                         if (!isInitialized) {
                             return; // 避免初始化时触发
@@ -613,7 +598,7 @@ Window {
                 spacing: 12
                 Label {
                     text: qsTr("自动同步")
-                    color: root.textColor
+                    color: theme.textColor
                 }
                 Switch {
                     id: onlineSwitch
@@ -758,12 +743,12 @@ Window {
 
         Label {
             text: loginSuccessDialog.message
-            color: root.textColor
+            color: theme.textColor
         }
 
         background: Rectangle {
-            color: root.backgroundColor
-            border.color: root.borderColor
+            color: theme.backgroundColor
+            border.color: theme.borderColor
             border.width: 1
             radius: 8
         }
@@ -781,13 +766,13 @@ Window {
 
         Label {
             text: loginFailedDialog.message
-            color: root.textColor
+            color: theme.textColor
             wrapMode: Text.WordWrap
         }
 
         background: Rectangle {
-            color: root.backgroundColor
-            border.color: root.borderColor
+            color: theme.backgroundColor
+            border.color: theme.borderColor
             border.width: 1
             radius: 8
         }
@@ -804,8 +789,8 @@ Window {
         standardButtons: Dialog.NoButton
 
         background: Rectangle {
-            color: root.backgroundColor
-            border.color: root.borderColor
+            color: theme.backgroundColor
+            border.color: theme.borderColor
             border.width: 1
             radius: 8
         }
@@ -815,7 +800,7 @@ Window {
 
             Label {
                 text: qsTr("确定要退出登录吗？")
-                color: root.textColor
+                color: theme.textColor
                 Layout.alignment: Qt.AlignHCenter
             }
 
@@ -827,15 +812,15 @@ Window {
                     text: qsTr("取消")
                     onClicked: logoutConfirmDialog.close()
                     background: Rectangle {
-                        color: root.secondaryBackgroundColor
-                        border.color: root.borderColor
+                        color: theme.secondaryBackgroundColor
+                        border.color: theme.borderColor
                         border.width: 1
                         radius: 4
                     }
 
                     contentItem: Text {
                         text: parent.text
-                        color: root.textColor
+                        color: theme.textColor
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -848,15 +833,15 @@ Window {
                         logoutConfirmDialog.close();
                     }
                     background: Rectangle {
-                        color: root.primaryColor
-                        border.color: root.borderColor
+                        color: theme.primaryColor
+                        border.color: theme.borderColor
                         border.width: 1
                         radius: 4
                     }
 
                     contentItem: Text {
                         text: parent.text
-                        color: "white"
+                        color: theme.textColor  
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -877,12 +862,12 @@ Window {
 
         Label {
             text: qsTr("已成功退出登录")
-            color: root.textColor
+            color: theme.textColor
         }
 
         background: Rectangle {
-            color: root.backgroundColor
-            border.color: root.borderColor
+            color: theme.backgroundColor
+            border.color: theme.borderColor
             border.width: 1
             radius: 8
         }
@@ -903,8 +888,8 @@ Window {
         property bool isLoggingIn: false
 
         background: Rectangle {
-            color: root.backgroundColor
-            border.color: root.borderColor
+            color: theme.backgroundColor
+            border.color: theme.borderColor
             border.width: 1
             radius: 8
         }
@@ -915,7 +900,7 @@ Window {
 
             Label {
                 text: qsTr("请输入您的登录信息")
-                color: root.textColor
+                color: theme.textColor      
                 font.pixelSize: 16
                 Layout.alignment: Qt.AlignHCenter
             }
@@ -931,17 +916,17 @@ Window {
 
                     Label {
                         text: qsTr("用户名:")
-                        color: root.textColor
+                        color: theme.textColor
                     }
 
                     TextField {
                         id: usernameField
                         placeholderText: qsTr("请输入用户名")
                         Layout.fillWidth: true
-                        color: root.textColor
+                        color: theme.textColor
                         background: Rectangle {
-                            color: root.secondaryBackgroundColor
-                            border.color: root.borderColor
+                            color: theme.secondaryBackgroundColor
+                            border.color: theme.borderColor
                             border.width: 1
                             radius: 4
                         }
@@ -955,7 +940,7 @@ Window {
 
                     Label {
                         text: qsTr("密码:")
-                        color: root.textColor
+                        color: theme.textColor
                     }
 
                     TextField {
@@ -963,10 +948,10 @@ Window {
                         placeholderText: qsTr("请输入密码")
                         echoMode: TextInput.Password
                         Layout.fillWidth: true
-                        color: root.textColor
+                        color: theme.textColor
                         background: Rectangle {
-                            color: root.secondaryBackgroundColor
-                            border.color: root.borderColor
+                            color: theme.secondaryBackgroundColor
+                            border.color: theme.borderColor
                             border.width: 1
                             radius: 4
                         }
@@ -987,15 +972,15 @@ Window {
                         passwordField.text = "";
                     }
                     background: Rectangle {
-                        color: root.secondaryBackgroundColor
-                        border.color: root.borderColor
+                        color: theme.secondaryBackgroundColor
+                        border.color: theme.borderColor
                         border.width: 1
                         radius: 4
                     }
 
                     contentItem: Text {
                         text: parent.text
-                        color: root.textColor
+                        color: theme.textColor
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -1009,15 +994,15 @@ Window {
                         todoModel.login(usernameField.text, passwordField.text);
                     }
                     background: Rectangle {
-                        color: parent.enabled ? root.primaryColor : root.borderColor
-                        border.color: root.borderColor
+                        color: parent.enabled ? theme.primaryColor : theme.borderColor
+                        border.color: theme.borderColor
                         border.width: 1
                         radius: 4
                     }
 
                     contentItem: Text {
                         text: parent.text
-                        color: parent.enabled ? "white" : root.textColor
+                        color: parent.enabled ? "white" : theme.textColor
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -1037,8 +1022,8 @@ Window {
         standardButtons: Dialog.Ok
 
         background: Rectangle {
-            color: root.backgroundColor
-            border.color: root.borderColor
+            color: theme.backgroundColor
+            border.color: theme.borderColor
             border.width: 1
             radius: 8
         }
@@ -1046,7 +1031,7 @@ Window {
         Label {
             text: qsTr("开启自动同步功能需要先登录账户。\n请先登录后再开启自动同步。")
             wrapMode: Text.WordWrap
-            color: root.textColor
+            color: theme.textColor
             anchors.centerIn: parent
         }
     }

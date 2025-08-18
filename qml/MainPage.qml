@@ -5,7 +5,7 @@ import "components"
 
 Page {
     id: mainPage
-    
+
     // 属性绑定外部上下文
     property bool isDarkMode: false
     property bool isDesktopWidget: false
@@ -89,23 +89,21 @@ Page {
                     Button {
                         text: qsTr("同步")
                         Layout.fillWidth: true
-                        
+
                         background: Rectangle {
-                            color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : 
-                                   parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : 
-                                   (isDarkMode ? "#2c3e50" : "#f0f0f0")
+                            color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
                             border.color: isDarkMode ? "#34495e" : "#cccccc"
                             border.width: 1
                             radius: 4
                         }
-                        
+
                         contentItem: Text {
                             text: parent.text
                             color: isDarkMode ? "#ecf0f1" : "black"
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
-                        
+
                         onClicked: {
                             todoModel.syncWithServer();
                         }
@@ -145,16 +143,14 @@ Page {
                                 newTodoField.text = "";
                             }
                         }
-                        
+
                         background: Rectangle {
-                            color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : 
-                                   parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : 
-                                   (isDarkMode ? "#2c3e50" : "#f0f0f0")
+                            color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
                             border.color: isDarkMode ? "#34495e" : "#cccccc"
                             border.width: 1
                             radius: 4
                         }
-                        
+
                         contentItem: Text {
                             text: parent.text
                             color: isDarkMode ? "#ecf0f1" : "black"
@@ -199,11 +195,12 @@ Page {
                             BusyIndicator {
                                 running: todoListView.refreshing
                                 visible: todoListView.refreshing || todoListView.pullDistance > 0
-                                width: 20; height: 20
+                                width: 20
+                                height: 20
                             }
                             Label {
                                 text: todoListView.refreshing ? qsTr("正在同步...") : (todoListView.pullDistance >= todoListView.pullThreshold ? qsTr("释放刷新") : qsTr("下拉刷新"))
-                                color: textColor
+                                color: theme.textColor
                                 font.pixelSize: 12
                             }
                         }
@@ -226,7 +223,7 @@ Page {
                         id: delegateItem
                         width: todoListView.width
                         height: 50
-                        color: index % 2 === 0 ? secondaryBackgroundColor : backgroundColor
+                        color: index % 2 === 0 ? theme.secondaryBackgroundColor : theme.backgroundColor
 
                         property alias itemMouseArea: itemMouseArea
 
@@ -273,7 +270,7 @@ Page {
                             Label {
                                 text: model.title
                                 font.strikeout: model.status === "done"
-                                color: textColor
+                                color: theme.textColor
                                 Layout.fillWidth: true
                             }
 
@@ -326,7 +323,6 @@ Page {
                 }
             }
         }
-
     }
 
     // 待办详情/编辑对话框
@@ -348,7 +344,7 @@ Page {
         ScrollView {
             anchors.fill: parent
             clip: true
-            
+
             TaskForm {
                 id: taskForm
                 width: parent.width
