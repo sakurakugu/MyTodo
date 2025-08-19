@@ -17,7 +17,7 @@
 
 TodoModel::TodoModel(QObject *parent, Config *config, Config::StorageType storageType)
     : QAbstractListModel(parent), m_filterCacheDirty(true), m_isOnline(false), m_currentCategory(""),
-      m_currentFilter(""), m_currentImportance(""), m_networkManager(new NetworkManager(this)),
+      m_currentFilter(""), m_currentImportant(false), m_networkManager(new NetworkManager(this)),
       m_config(config ? config : new Config(this, storageType)) {
     // 初始化默认服务器配置
     m_config->initializeDefaultServerConfig();
@@ -120,8 +120,8 @@ QVariant TodoModel::getItemData(const TodoItem *item, int role) const {
     case CategoryRole:
         return item->category();
 
-    case ImportanceRole:
-        return item->importance();
+    case ImportantRole:
+        return item->important();
     case StatusRole:
         return item->status();
     case CreatedAtRole:
@@ -130,6 +130,8 @@ QVariant TodoModel::getItemData(const TodoItem *item, int role) const {
         return item->updatedAt();
     case SyncedRole:
         return item->synced();
+    case DeadlineRole:
+        return item->deadline();
     default:
         return QVariant();
     }
@@ -146,11 +148,12 @@ QHash<int, QByteArray> TodoModel::roleNames() const {
     roles[DescriptionRole] = "description";
     roles[CategoryRole] = "category";
 
-    roles[ImportanceRole] = "importance";
+    roles[ImportantRole] = "important";
     roles[StatusRole] = "status";
     roles[CreatedAtRole] = "createdAt";
     roles[UpdatedAtRole] = "updatedAt";
     roles[SyncedRole] = "synced";
+    roles[DeadlineRole] = "deadline";
     return roles;
 }
 
@@ -181,8 +184,8 @@ bool TodoModel::setData(const QModelIndex &index, const QVariant &value, int rol
         item->setCategory(value.toString());
         changed = true;
         break;
-    case ImportanceRole:
-        item->setImportance(value.toString());
+    case ImportantRole:
+        item->setImportant(value.toBool());
         changed = true;
         break;
     case StatusRole:
@@ -232,12 +235,21 @@ bool TodoModel::itemMatchesFilter(const TodoItem *item) const {
     if (!item)
         return false;
 
-    bool categoryMatch = m_currentCategory.isEmpty() || item->category() == m_currentCategory;
+    bool categoryMatch = m_currentCategory.isEmpty() || item->category() == m_currentCategory ||
+                         (m_currentCategory == "uncategorized" && (item->category().isEmpty() || item->category() == "uncategorized"));
     bool statusMatch = m_currentFilter.isEmpty() || (m_currentFilter == "done" && item->status() == "done") ||
                        (m_currentFilter == "todo" && item->status() == "todo");
-    bool importanceMatch = m_currentImportance.isEmpty() || item->importance() == m_currentImportance;
+    
+    // 重要性筛选逻辑：
+    // - 如果m_currentImportant为false且m_currentFilter不是"important"，则显示所有项目
+    // - 如果m_currentImportant为true，则只显示重要的项目
+    // - 如果m_currentImportant为false且需要筛选，则只显示不重要的项目
+    bool importantMatch = true; // 默认显示所有
+    if (m_currentFilter == "important") {
+        importantMatch = (item->important() == m_currentImportant);
+    }
 
-    return categoryMatch && statusMatch && importanceMatch;
+    return categoryMatch && statusMatch && importantMatch;
 }
 
 TodoItem *TodoModel::getFilteredItem(int index) const {
@@ -350,21 +362,21 @@ void TodoModel::setCurrentFilter(const QString &filter) {
  * @brief 获取当前激活的重要程度筛选器
  * @return 当前重要程度筛选器
  */
-QString TodoModel::currentImportance() const {
-    return m_currentImportance;
+bool TodoModel::currentImportant() const {
+    return m_currentImportant;
 }
 
 /**
  * @brief 设置重要程度筛选器
- * @param importance 重要程度筛选器（如"高"、"中"、"低"等）
+ * @param important 重要程度筛选器（true表示重要，false表示不重要）
  */
-void TodoModel::setCurrentImportance(const QString &importance) {
-    if (m_currentImportance != importance) {
+void TodoModel::setCurrentImportant(bool important) {
+    if (m_currentImportant != important) {
         beginResetModel();
-        m_currentImportance = importance;
+        m_currentImportant = important;
         invalidateFilterCache();
         endResetModel();
-        emit currentImportanceChanged();
+        emit currentImportantChanged();
     }
 }
 
@@ -373,14 +385,14 @@ void TodoModel::setCurrentImportance(const QString &importance) {
  * @param title 任务标题（必填）
  * @param description 任务描述（可选）
  * @param category 任务分类（默认为"default"）
- * @param importance 重要程度（默认为"medium"）
+ * @param important 重要程度（默认为"medium"）
  */
 void TodoModel::addTodo(const QString &title, const QString &description, const QString &category,
-                        const QString &importance) {
+                        bool important, const QString &deadline) {
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
 
     auto newItem = std::make_unique<TodoItem>(QUuid::createUuid().toString(QUuid::WithoutBraces), title, description,
-                                              category, importance, "todo", QDateTime::currentDateTime(),
+                                              category, important, "todo", deadline, QDateTime::currentDateTime(),
                                               QDateTime::currentDateTime(), false, this);
 
     m_todos.push_back(std::move(newItem));
@@ -443,11 +455,20 @@ bool TodoModel::updateTodo(int index, const QVariantMap &todoData) {
             }
         }
 
-        if (todoData.contains("importance")) {
-            QString newImportance = todoData["importance"].toString();
-            if (item->importance() != newImportance) {
-                item->setImportance(newImportance);
-                changedRoles << ImportanceRole;
+        if (todoData.contains("important")) {
+            bool newImportant = todoData["important"].toBool();
+            if (item->important() != newImportant) {
+                item->setImportant(newImportant);
+                changedRoles << ImportantRole;
+                anyUpdated = true;
+            }
+        }
+
+        if (todoData.contains("deadline")) {
+            QString newDeadline = todoData["deadline"].toString();
+            if (item->deadline() != newDeadline) {
+                item->setDeadline(newDeadline);
+                changedRoles << DeadlineRole;
                 anyUpdated = true;
             }
         }
@@ -887,9 +908,14 @@ bool TodoModel::loadFromLocalStorage() {
             auto item = std::make_unique<TodoItem>(
                 m_config->get(prefix + "id").toString(), m_config->get(prefix + "title").toString(),
                 m_config->get(prefix + "description").toString(), m_config->get(prefix + "category").toString(),
-                m_config->get(prefix + "importance").toString(), m_config->get(prefix + "status").toString(),
-                m_config->get(prefix + "createdAt").toDateTime(), m_config->get(prefix + "updatedAt").toDateTime(),
-                m_config->get(prefix + "synced").toBool(), this);
+                m_config->get(prefix + "important").toBool(), m_config->get(prefix + "status").toString(),
+                m_config->get(prefix + "deadline").toString(), m_config->get(prefix + "createdAt").toDateTime(),
+                m_config->get(prefix + "updatedAt").toDateTime(), m_config->get(prefix + "synced").toBool(), this);
+
+            // 设置deadline字段（如果存在）
+            if (m_config->contains(prefix + "deadline")) {
+                item->setDeadline(m_config->get(prefix + "deadline").toString());
+            }
 
             m_todos.push_back(std::move(item));
         }
@@ -933,11 +959,12 @@ bool TodoModel::saveToLocalStorage() {
             m_config->save(prefix + "title", item->title());
             m_config->save(prefix + "description", item->description());
             m_config->save(prefix + "category", item->category());
-            m_config->save(prefix + "importance", item->importance());
+            m_config->save(prefix + "important", item->important());
             m_config->save(prefix + "status", item->status());
             m_config->save(prefix + "createdAt", item->createdAt());
             m_config->save(prefix + "updatedAt", item->updatedAt());
             m_config->save(prefix + "synced", item->synced());
+            m_config->save(prefix + "deadline", item->deadline());
         }
 
         qDebug() << "已成功保存" << m_todos.size() << "个待办事项到本地存储";
@@ -1031,7 +1058,7 @@ void TodoModel::pushLocalChangesToServer() {
             obj["title"] = item->title();
             obj["description"] = item->description();
             obj["category"] = item->category();
-            obj["importance"] = item->importance();
+            obj["important"] = item->important();
             obj["status"] = item->status();
             obj["created_at"] = item->createdAt().toString(Qt::ISODate);
             obj["updated_at"] = item->updatedAt().toString(Qt::ISODate);
@@ -1120,11 +1147,12 @@ bool TodoModel::exportTodos(const QString &filePath) {
         todoObj["title"] = todo->title();
         todoObj["description"] = todo->description();
         todoObj["category"] = todo->category();
-        todoObj["importance"] = todo->importance();
+        todoObj["important"] = todo->important();
         todoObj["status"] = todo->status();
         todoObj["createdAt"] = todo->createdAt().toString(Qt::ISODate);
         todoObj["updatedAt"] = todo->updatedAt().toString(Qt::ISODate);
         todoObj["synced"] = todo->synced();
+        todoObj["deadline"] = todo->deadline();
 
         todosArray.append(todoObj);
     }
@@ -1269,11 +1297,17 @@ QVariantList TodoModel::importTodosWithAutoResolution(const QString &filePath) {
 
             auto newTodo = std::make_unique<TodoItem>(
                 todoObj["id"].toString(), todoObj["title"].toString(), todoObj["description"].toString(),
-                todoObj["category"].toString(), todoObj["importance"].toString(),
-                todoObj["status"].toString(), QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),
+                todoObj["category"].toString(), todoObj["important"].toBool(),
+                todoObj["status"].toString(), todoObj["deadline"].toString(),
+                QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),
                 QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate),
                 false, // 导入的项目标记为未同步
                 this);
+
+            // 设置deadline字段（如果存在）
+            if (todoObj.contains("deadline")) {
+                newTodo->setDeadline(todoObj["deadline"].toString());
+            }
 
             m_todos.push_back(std::move(newTodo));
         }
@@ -1341,9 +1375,14 @@ bool TodoModel::importTodos(const QString &filePath) {
         if (!exists) {
             // 创建新的待办事项
             auto newTodo = std::make_unique<TodoItem>(
-                id, todoObj["title"].toString(), todoObj["description"].toString(), todoObj["category"].toString(), todoObj["importance"].toString(), todoObj["status"].toString(),
-                QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),
+                id, todoObj["title"].toString(), todoObj["description"].toString(), todoObj["category"].toString(), todoObj["important"].toBool(), todoObj["status"].toString(),
+                todoObj["deadline"].toString(), QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),
                 QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate), todoObj["synced"].toBool(), this);
+
+            // 设置deadline字段（如果存在）
+            if (todoObj.contains("deadline")) {
+                newTodo->setDeadline(todoObj["deadline"].toString());
+            }
 
             m_todos.push_back(std::move(newTodo));
             importedCount++;
@@ -1478,7 +1517,7 @@ bool TodoModel::importTodosWithConflictResolution(const QString &filePath, const
                 existingItem->setTitle(todoObj["title"].toString());
                 existingItem->setDescription(todoObj["description"].toString());
                 existingItem->setCategory(todoObj["category"].toString());
-                existingItem->setImportance(todoObj["importance"].toString());
+                existingItem->setImportant(todoObj["important"].toBool());
                 existingItem->setStatus(todoObj["status"].toString());
                 existingItem->setUpdatedAt(QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate));
                 existingItem->setSynced(todoObj["synced"].toBool());
@@ -1493,7 +1532,7 @@ bool TodoModel::importTodosWithConflictResolution(const QString &filePath, const
                     existingItem->setTitle(todoObj["title"].toString());
                     existingItem->setDescription(todoObj["description"].toString());
                     existingItem->setCategory(todoObj["category"].toString());
-                    existingItem->setImportance(todoObj["importance"].toString());
+                    existingItem->setImportant(todoObj["important"].toBool());
                     existingItem->setStatus(todoObj["status"].toString());
                     existingItem->setUpdatedAt(importUpdatedAt);
                     existingItem->setSynced(todoObj["synced"].toBool());
@@ -1507,9 +1546,14 @@ bool TodoModel::importTodosWithConflictResolution(const QString &filePath, const
         } else {
             // 创建新的待办事项
             auto newTodo = std::make_unique<TodoItem>(
-                id, todoObj["title"].toString(), todoObj["description"].toString(), todoObj["category"].toString(), todoObj["importance"].toString(), todoObj["status"].toString(),
-                QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),
+                id, todoObj["title"].toString(), todoObj["description"].toString(), todoObj["category"].toString(), todoObj["important"].toBool(), todoObj["status"].toString(),
+                todoObj["deadline"].toString(), QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),
                 QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate), todoObj["synced"].toBool(), this);
+
+            // 设置deadline字段（如果存在）
+            if (todoObj.contains("deadline")) {
+                newTodo->setDeadline(todoObj["deadline"].toString());
+            }
 
             m_todos.push_back(std::move(newTodo));
             importedCount++;

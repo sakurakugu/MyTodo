@@ -33,7 +33,7 @@ TodoItem::TodoItem(QObject *parent) : QObject(parent), m_synced(false) {
  * @param title 待办事项标题
  * @param description 待办事项详细描述
  * @param category 待办事项分类
- * @param importance 重要程度
+ * @param important 重要程度
  * @param status 当前状态（如：待处理、进行中、已完成）
  * @param createdAt 创建时间
  * @param updatedAt 最后更新时间
@@ -41,16 +41,18 @@ TodoItem::TodoItem(QObject *parent) : QObject(parent), m_synced(false) {
  * @param parent 父对象指针
  */
 TodoItem::TodoItem(const QString &id, const QString &title, const QString &description, //
-                   const QString &category, const QString &importance,                  //
-                   const QString &status, const QDateTime &createdAt,                   //
-                   const QDateTime &updatedAt, bool synced, QObject *parent)            //
+                   const QString &category, bool important,                            //
+                   const QString &status, const QString &deadline,                      //
+                   const QDateTime &createdAt, const QDateTime &updatedAt,              //
+                   bool synced, QObject *parent)                                        //
     : QObject(parent),                                                                  // 初始化父对象
       m_id(id),                                                                         // 初始化待办事项ID
       m_title(title),                                                                   // 初始化待办事项标题
       m_description(description),                                                       // 初始化待办事项描述
       m_category(category),                                                             // 初始化待办事项分类
-      m_importance(importance),                                                         // 初始化待办事项重要程度
+      m_important(important),                                                         // 初始化待办事项重要程度
       m_status(status),                                                                 // 初始化待办事项状态
+      m_deadline(deadline),                                                             // 初始化待办事项截止日期
       m_createdAt(createdAt),                                                           // 初始化待办事项创建时间
       m_updatedAt(updatedAt),                                                           // 初始化待办事项更新时间
       m_synced(synced) {
@@ -156,24 +158,48 @@ void TodoItem::setCategory(const QString &category) {
  * @brief 获取待办事项重要程度
  * @return 重要程度
  */
-QString TodoItem::importance() const {
-    return m_importance;
+bool TodoItem::important() const {
+    return m_important;
 }
 
 /**
  * @brief 设置待办事项重要程度
  *
  * 如果新重要程度与当前重要程度相同，则不执行任何操作。
- * 否则更新重要程度并发出importanceChanged信号。
+ * 否则更新重要程度并发出importantChanged信号。
  *
- * @param importance 新的重要程度
+ * @param important 新的重要程度
  */
-void TodoItem::setImportance(const QString &importance) {
-    if (m_importance == importance)
+void TodoItem::setImportant(bool important) {
+    if (m_important == important)
         return;
 
-    m_importance = importance;
-    emit importanceChanged();
+    m_important = important;
+    emit importantChanged();
+}
+
+/**
+ * @brief 获取待办事项截止日期
+ * @return 截止日期
+ */
+QString TodoItem::deadline() const {
+    return m_deadline;
+}
+
+/**
+ * @brief 设置待办事项截止日期
+ *
+ * 如果新截止日期与当前截止日期相同，则不执行任何操作。
+ * 否则更新截止日期并发出deadlineChanged信号。
+ *
+ * @param deadline 新的截止日期
+ */
+void TodoItem::setDeadline(const QString &deadline) {
+    if (m_deadline == deadline)
+        return;
+
+    m_deadline = deadline;
+    emit deadlineChanged();
 }
 
 /**

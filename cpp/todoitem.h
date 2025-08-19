@@ -37,7 +37,8 @@ class TodoItem : public QObject {
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)
     Q_PROPERTY(QString description READ description WRITE setDescription NOTIFY descriptionChanged)
     Q_PROPERTY(QString category READ category WRITE setCategory NOTIFY categoryChanged)
-    Q_PROPERTY(QString importance READ importance WRITE setImportance NOTIFY importanceChanged)
+    Q_PROPERTY(bool important READ important WRITE setImportant NOTIFY importantChanged)
+    Q_PROPERTY(QString deadline READ deadline WRITE setDeadline NOTIFY deadlineChanged)
     Q_PROPERTY(QString status READ status WRITE setStatus NOTIFY statusChanged)
     Q_PROPERTY(QDateTime createdAt READ createdAt WRITE setCreatedAt NOTIFY createdAtChanged)
     Q_PROPERTY(QDateTime updatedAt READ updatedAt WRITE setUpdatedAt NOTIFY updatedAtChanged)
@@ -59,64 +60,70 @@ class TodoItem : public QObject {
      * @param title 待办事项标题
      * @param description 待办事项详细描述
      * @param category 待办事项分类
-     * @param importance 重要程度
+     * @param important 重要程度
      * @param status 当前状态
      * @param createdAt 创建时间
      * @param updatedAt 最后更新时间
      * @param synced 是否已与服务器同步
      * @param parent 父对象指针
      */
-    TodoItem(const QString &id, const QString &title, const QString &description, const QString &category, const QString &importance, const QString &status, const QDateTime &createdAt,
+    TodoItem(const QString &id, const QString &title, const QString &description, const QString &category,
+             bool important, const QString &status, const QString &deadline, const QDateTime &createdAt,
              const QDateTime &updatedAt, bool synced, QObject *parent = nullptr);
 
-    QString id() const;             // 获取ID
-    void setId(const QString &id);  // 设置ID
+    QString id() const;            // 获取ID
+    void setId(const QString &id); // 设置ID
 
-    QString title() const;                // 获取标题
-    void setTitle(const QString &title);  // 设置标题
+    QString title() const;               // 获取标题
+    void setTitle(const QString &title); // 设置标题
 
-    QString description() const;                      // 获取描述
-    void setDescription(const QString &description);  // 设置描述
+    QString description() const;                     // 获取描述
+    void setDescription(const QString &description); // 设置描述
 
-    QString category() const;                   // 获取分类
-    void setCategory(const QString &category);  // 设置分类
+    QString category() const;                  // 获取分类
+    void setCategory(const QString &category); // 设置分类
 
-    QString importance() const;                     // 获取重要程度
-    void setImportance(const QString &importance);  // 设置重要程度
+    bool important() const;            // 获取重要程度
+    void setImportant(bool important); // 设置重要程度
 
-    QString status() const;                 // 获取状态
-    void setStatus(const QString &status);  // 设置状态
+    QString deadline() const;                  // 获取截止日期
+    void setDeadline(const QString &deadline); // 设置截止日期
 
-    QDateTime createdAt() const;                    // 获取创建时间
-    void setCreatedAt(const QDateTime &createdAt);  // 设置创建时间
+    QString status() const;                // 获取状态
+    void setStatus(const QString &status); // 设置状态
 
-    QDateTime updatedAt() const;                    // 获取更新时间
-    void setUpdatedAt(const QDateTime &updatedAt);  // 设置更新时间
+    QDateTime createdAt() const;                   // 获取创建时间
+    void setCreatedAt(const QDateTime &createdAt); // 设置创建时间
 
-    bool synced() const;          // 获取是否已同步
-    void setSynced(bool synced);  // 设置是否已同步
+    QDateTime updatedAt() const;                   // 获取更新时间
+    void setUpdatedAt(const QDateTime &updatedAt); // 设置更新时间
+
+    bool synced() const;         // 获取是否已同步
+    void setSynced(bool synced); // 设置是否已同步
 
   signals:
-    void idChanged();           // ID改变信号
-    void titleChanged();        // 标题改变信号
-    void descriptionChanged();  // 描述改变信号
-    void categoryChanged();     // 分类改变信号
-    void importanceChanged();   // 重要程度改变信号
-    void statusChanged();       // 状态改变信号
-    void createdAtChanged();    // 创建时间改变信号
-    void updatedAtChanged();    // 更新时间改变信号
-    void syncedChanged();       // 同步状态改变信号
+    void idChanged();          // ID改变信号
+    void titleChanged();       // 标题改变信号
+    void descriptionChanged(); // 描述改变信号
+    void categoryChanged();    // 分类改变信号
+    void importantChanged();   // 重要程度改变信号
+    void deadlineChanged();    // 截止日期改变信号
+    void statusChanged();      // 状态改变信号
+    void createdAtChanged();   // 创建时间改变信号
+    void updatedAtChanged();   // 更新时间改变信号
+    void syncedChanged();      // 同步状态改变信号
 
   private:
-    QString m_id;           // 任务ID
-    QString m_title;        // 任务标题
-    QString m_description;  // 任务描述
-    QString m_category;     // 任务分类
-    QString m_importance;   // 任务重要程度
-    QString m_status;       // 任务状态
-    QDateTime m_createdAt;  // 任务创建时间
-    QDateTime m_updatedAt;  // 任务更新时间
-    bool m_synced;          // 任务是否已同步
+    QString m_id;          // 任务ID
+    QString m_title;       // 任务标题
+    QString m_description; // 任务描述
+    QString m_category;    // 任务分类
+    bool m_important;      // 任务重要程度
+    QString m_status;      // 任务状态
+    QString m_deadline;    // 任务截止日期
+    QDateTime m_createdAt; // 任务创建时间
+    QDateTime m_updatedAt; // 任务更新时间
+    bool m_synced;         // 任务是否已同步
 };
 
-#endif  // TODOITEM_H
+#endif // TODOITEM_H

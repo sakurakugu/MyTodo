@@ -76,9 +76,13 @@ Page {
                     ComboBox {
                         id: categoryFilter
                         Layout.fillWidth: true
-                        model: ["全部", "工作", "学习", "生活", "其他"]
+                        model: ["全部", "工作", "学习", "生活", "其他", "未分类"]
                         onCurrentTextChanged: {
-                            todoModel.currentCategory = (currentText === "全部" ? "" : currentText);
+                            if (currentText === "全部") {
+                                todoModel.currentCategory = "";
+                            } else {
+                                todoModel.currentCategory = currentText;
+                            }
                         }
                     }
 
@@ -89,11 +93,19 @@ Page {
                     }
 
                     ComboBox {
-                        id: importanceFilter
+                        id: importantFilter
                         Layout.fillWidth: true
-                        model: ["全部", "高", "中", "低"]
+                        model: ["全部", "重要", "普通"]
                         onCurrentTextChanged: {
-                            todoModel.currentImportance = (currentText === "全部" ? "" : currentText);
+                            if (currentText === "全部") {
+                                todoModel.currentFilter = ""; // 清除筛选
+                            } else if (currentText === "重要") {
+                                todoModel.currentFilter = "important";
+                                todoModel.currentImportant = true;
+                            } else { // "普通"
+                                todoModel.currentFilter = "important";
+                                todoModel.currentImportant = false;
+                            }
                         }
                     }
 
@@ -252,7 +264,7 @@ Page {
                                     title: model.title,
                                     description: model.description,
                                     category: model.category,
-                                    importance: model.importance
+                                    important: model.important
                                 });
                                 todoListView.currentIndex = index;
                             }
@@ -269,7 +281,7 @@ Page {
                                 width: 16
                                 height: 16
                                 radius: 8
-                                color: model.status === "done" ? theme.completedColor : model.importance === "高" ? theme.highImportanceColor : model.importance === "中" ? theme.mediumImportanceColor : theme.lowImportanceColor
+                                color: model.status === "done" ? theme.completedColor : model.important ? theme.highImportantColor : theme.lowImportantColor
 
 
                                 MouseArea {

@@ -31,10 +31,10 @@ ColumnLayout {
     property alias descriptionText: descriptionField.text  ///< 任务描述文本
     property alias categoryIndex: categoryCombo.currentIndex    ///< 分类选择索引
 
-    property alias importanceIndex: importanceCombo.currentIndex ///< 重要程度索引
+    property alias importantIndex: importantCombo.currentIndex ///< 重要程度索引
     property alias categoryText: categoryCombo.currentText      ///< 分类文本
 
-    property alias importanceText: importanceCombo.currentText  ///< 重要程度文本
+    property alias importantText: importantCombo.currentText  ///< 重要程度文本
     
     // 外观和行为属性
     property color textColor: "black"      ///< 文本颜色
@@ -112,10 +112,27 @@ ColumnLayout {
             color: textColor
         }
         ComboBox {
-            id: importanceCombo
-            model: ["高", "中", "低"]
+            id: importantCombo
+            model: ["普通", "重要"]
             Layout.fillWidth: true
-            currentIndex: 1 // 默认选择"中"
+            currentIndex: 0 // 默认选择"普通"
+        }
+    }
+    
+    // 截止日期字段
+    ColumnLayout {
+        Layout.fillWidth: true
+        visible: !isCompactMode
+        
+        Label {
+            text: qsTr("截止日期")
+            color: textColor
+        }
+        TextField {
+            id: deadlineField
+            Layout.fillWidth: true
+            placeholderText: qsTr("YYYY-MM-DD HH:MM")
+            color: textColor
         }
     }
     
@@ -124,17 +141,33 @@ ColumnLayout {
         titleField.text = ""
         descriptionField.text = ""
         categoryCombo.currentIndex = 0
-        importanceCombo.currentIndex = 1
+        importantCombo.currentIndex = 0
+        deadlineField.text = ""
     }
     
     function setFormData(todo) {
         titleField.text = todo.title || ""
         descriptionField.text = todo.description || ""
         categoryCombo.currentIndex = Math.max(0, categoryCombo.model.indexOf(todo.category))
-        importanceCombo.currentIndex = Math.max(0, importanceCombo.model.indexOf(todo.importance))
+        importantCombo.currentIndex = todo.important ? 1 : 0
+        deadlineField.text = todo.deadline || ""
     }
     
     function focusTitle() {
         titleField.forceActiveFocus()
+    }
+    
+    function getTodoData() {
+        return {
+            title: titleField.text.trim(),
+            description: descriptionField.text.trim(),
+            category: categoryCombo.currentText,
+            important: importantCombo.currentIndex === 1, // true if "重要", false if "普通"
+            deadline: deadlineField.text.trim()
+        }
+    }
+    
+    function isValid() {
+        return titleField.text.trim() !== ""
     }
 }

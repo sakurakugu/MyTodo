@@ -170,7 +170,7 @@ Item {
                         onClicked: {
                             if (addTaskForm.isValid()) {
                                 var todoData = addTaskForm.getTodoData();
-                                todoModel.addTodo(todoData.title, todoData.description, todoData.category, todoData.importance);
+                                todoModel.addTodo(todoData.title, todoData.description, todoData.category, todoData.important);
                                 addTaskForm.clear();
                                 mainWindow.isShowAddTask = false;
                             }
@@ -295,7 +295,7 @@ Item {
                                     title: model.title,
                                     description: model.description,
                                     category: model.category,
-                                    importance: model.importance
+                                    important: model.important
                                 }, index);
                             }
                         }
@@ -310,7 +310,7 @@ Item {
                                 width: 16
                                 height: 16
                                 radius: 8
-                                color: model.status === "done" ? theme.completedColor : model.importance === "高" ? theme.highImportanceColor : model.importance === "中" ? theme.mediumImportanceColor : theme.lowImportanceColor
+                                color: model.status === "done" ? theme.completedColor : model.important === "高" ? theme.highImportantColor : model.important === "中" ? theme.mediumImportantColor : theme.lowImportantColor
 
 
                                 MouseArea {
