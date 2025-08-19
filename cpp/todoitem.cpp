@@ -43,6 +43,8 @@ TodoItem::TodoItem(QObject *parent) : QObject(parent), m_synced(false) {
 TodoItem::TodoItem(const QString &id, const QString &title, const QString &description, //
                    const QString &category, bool important,                            //
                    const QString &status, const QString &deadline,                      //
+                   int recurrenceInterval, int recurrenceCount,                        //
+                   const QString &recurrenceStartDate,                                 //
                    const QDateTime &createdAt, const QDateTime &updatedAt,              //
                    bool synced, QObject *parent)                                        //
     : QObject(parent),                                                                  // 初始化父对象
@@ -53,6 +55,9 @@ TodoItem::TodoItem(const QString &id, const QString &title, const QString &descr
       m_important(important),                                                         // 初始化待办事项重要程度
       m_status(status),                                                                 // 初始化待办事项状态
       m_deadline(deadline),                                                             // 初始化待办事项截止日期
+      m_recurrenceInterval(recurrenceInterval),                                        // 初始化循环间隔
+      m_recurrenceCount(recurrenceCount),                                              // 初始化循环次数
+      m_recurrenceStartDate(recurrenceStartDate),                                      // 初始化循环开始日期
       m_createdAt(createdAt),                                                           // 初始化待办事项创建时间
       m_updatedAt(updatedAt),                                                           // 初始化待办事项更新时间
       m_synced(synced) {
@@ -296,4 +301,73 @@ void TodoItem::setSynced(bool synced) {
 
     m_synced = synced;
     emit syncedChanged();
+}
+
+/**
+ * @brief 获取循环间隔
+ *
+ * @return 循环间隔（天数）
+ */
+int TodoItem::recurrenceInterval() const {
+    return m_recurrenceInterval;
+}
+
+/**
+ * @brief 设置循环间隔
+ *
+ * 设置待办事项的循环间隔，并发出recurrenceIntervalChanged信号。
+ *
+ * @param recurrenceInterval 新的循环间隔
+ */
+void TodoItem::setRecurrenceInterval(int recurrenceInterval) {
+    if (m_recurrenceInterval != recurrenceInterval) {
+        m_recurrenceInterval = recurrenceInterval;
+        emit recurrenceIntervalChanged();
+    }
+}
+
+/**
+ * @brief 获取循环次数
+ *
+ * @return 循环次数
+ */
+int TodoItem::recurrenceCount() const {
+    return m_recurrenceCount;
+}
+
+/**
+ * @brief 设置循环次数
+ *
+ * 设置待办事项的循环次数，并发出recurrenceCountChanged信号。
+ *
+ * @param recurrenceCount 新的循环次数
+ */
+void TodoItem::setRecurrenceCount(int recurrenceCount) {
+    if (m_recurrenceCount != recurrenceCount) {
+        m_recurrenceCount = recurrenceCount;
+        emit recurrenceCountChanged();
+    }
+}
+
+/**
+ * @brief 获取循环开始日期
+ *
+ * @return 循环开始日期
+ */
+QString TodoItem::recurrenceStartDate() const {
+    return m_recurrenceStartDate;
+}
+
+/**
+ * @brief 设置循环开始日期
+ *
+ * 设置待办事项的循环开始日期，并发出recurrenceStartDateChanged信号。
+ *
+ * @param recurrenceStartDate 新的循环开始日期
+ */
+void TodoItem::setRecurrenceStartDate(const QString &recurrenceStartDate) {
+    if (m_recurrenceStartDate != recurrenceStartDate) {
+        m_recurrenceStartDate = recurrenceStartDate;
+        emit recurrenceStartDateChanged();
+    }
 }

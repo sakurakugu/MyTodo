@@ -39,6 +39,9 @@ class TodoItem : public QObject {
     Q_PROPERTY(QString category READ category WRITE setCategory NOTIFY categoryChanged)
     Q_PROPERTY(bool important READ important WRITE setImportant NOTIFY importantChanged)
     Q_PROPERTY(QString deadline READ deadline WRITE setDeadline NOTIFY deadlineChanged)
+    Q_PROPERTY(int recurrenceInterval READ recurrenceInterval WRITE setRecurrenceInterval NOTIFY recurrenceIntervalChanged)
+    Q_PROPERTY(int recurrenceCount READ recurrenceCount WRITE setRecurrenceCount NOTIFY recurrenceCountChanged)
+    Q_PROPERTY(QString recurrenceStartDate READ recurrenceStartDate WRITE setRecurrenceStartDate NOTIFY recurrenceStartDateChanged)
     Q_PROPERTY(QString status READ status WRITE setStatus NOTIFY statusChanged)
     Q_PROPERTY(QDateTime createdAt READ createdAt WRITE setCreatedAt NOTIFY createdAtChanged)
     Q_PROPERTY(QDateTime updatedAt READ updatedAt WRITE setUpdatedAt NOTIFY updatedAtChanged)
@@ -68,7 +71,8 @@ class TodoItem : public QObject {
      * @param parent 父对象指针
      */
     TodoItem(const QString &id, const QString &title, const QString &description, const QString &category,
-             bool important, const QString &status, const QString &deadline, const QDateTime &createdAt,
+             bool important, const QString &status, const QString &deadline, int recurrenceInterval,
+             int recurrenceCount, const QString &recurrenceStartDate, const QDateTime &createdAt,
              const QDateTime &updatedAt, bool synced, QObject *parent = nullptr);
 
     QString id() const;            // 获取ID
@@ -89,6 +93,15 @@ class TodoItem : public QObject {
     QString deadline() const;                  // 获取截止日期
     void setDeadline(const QString &deadline); // 设置截止日期
 
+    int recurrenceInterval() const;                    // 获取循环间隔
+    void setRecurrenceInterval(int recurrenceInterval); // 设置循环间隔
+
+    int recurrenceCount() const;                  // 获取循环次数
+    void setRecurrenceCount(int recurrenceCount); // 设置循环次数
+
+    QString recurrenceStartDate() const;                            // 获取循环开始日期
+    void setRecurrenceStartDate(const QString &recurrenceStartDate); // 设置循环开始日期
+
     QString status() const;                // 获取状态
     void setStatus(const QString &status); // 设置状态
 
@@ -107,11 +120,14 @@ class TodoItem : public QObject {
     void descriptionChanged(); // 描述改变信号
     void categoryChanged();    // 分类改变信号
     void importantChanged();   // 重要程度改变信号
-    void deadlineChanged();    // 截止日期改变信号
-    void statusChanged();      // 状态改变信号
-    void createdAtChanged();   // 创建时间改变信号
-    void updatedAtChanged();   // 更新时间改变信号
-    void syncedChanged();      // 同步状态改变信号
+    void deadlineChanged();           // 截止日期改变信号
+    void recurrenceIntervalChanged(); // 循环间隔改变信号
+    void recurrenceCountChanged();    // 循环次数改变信号
+    void recurrenceStartDateChanged(); // 循环开始日期改变信号
+    void statusChanged();             // 状态改变信号
+    void createdAtChanged();          // 创建时间改变信号
+    void updatedAtChanged();          // 更新时间改变信号
+    void syncedChanged();             // 同步状态改变信号
 
   private:
     QString m_id;          // 任务ID
@@ -120,10 +136,13 @@ class TodoItem : public QObject {
     QString m_category;    // 任务分类
     bool m_important;      // 任务重要程度
     QString m_status;      // 任务状态
-    QString m_deadline;    // 任务截止日期
-    QDateTime m_createdAt; // 任务创建时间
-    QDateTime m_updatedAt; // 任务更新时间
-    bool m_synced;         // 任务是否已同步
+    QString m_deadline;           // 任务截止日期
+    int m_recurrenceInterval;     // 循环间隔（天）
+    int m_recurrenceCount;        // 循环次数
+    QString m_recurrenceStartDate; // 循环开始日期
+    QDateTime m_createdAt;        // 任务创建时间
+    QDateTime m_updatedAt;        // 任务更新时间
+    bool m_synced;                // 任务是否已同步
 };
 
 #endif // TODOITEM_H

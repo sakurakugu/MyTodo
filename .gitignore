@@ -92,4 +92,4 @@ replacements.txt
 my-test/
 
 # 临时
-cmake-build-debug/
+服务器文件/

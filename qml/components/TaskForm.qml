@@ -136,6 +136,59 @@ ColumnLayout {
         }
     }
     
+    // 循环间隔字段
+    ColumnLayout {
+        Layout.fillWidth: true
+        visible: !isCompactMode
+        
+        Label {
+            text: qsTr("循环间隔（天）")
+            color: textColor
+        }
+        TextField {
+            id: recurrenceIntervalField
+            Layout.fillWidth: true
+            placeholderText: qsTr("0表示不循环")
+            color: textColor
+            validator: IntValidator { bottom: 0; top: 9999 }
+        }
+    }
+    
+    // 循环次数字段
+    ColumnLayout {
+        Layout.fillWidth: true
+        visible: !isCompactMode
+        
+        Label {
+            text: qsTr("循环次数")
+            color: textColor
+        }
+        TextField {
+            id: recurrenceCountField
+            Layout.fillWidth: true
+            placeholderText: qsTr("-1表示无限循环")
+            color: textColor
+            validator: IntValidator { bottom: -1; top: 9999 }
+        }
+    }
+    
+    // 循环开始日期字段
+    ColumnLayout {
+        Layout.fillWidth: true
+        visible: !isCompactMode
+        
+        Label {
+            text: qsTr("循环开始日期")
+            color: textColor
+        }
+        TextField {
+            id: recurrenceStartDateField
+            Layout.fillWidth: true
+            placeholderText: qsTr("YYYY-MM-DD")
+            color: textColor
+        }
+    }
+    
     // 公开方法
     function clearForm() {
         titleField.text = ""
@@ -143,6 +196,9 @@ ColumnLayout {
         categoryCombo.currentIndex = 0
         importantCombo.currentIndex = 0
         deadlineField.text = ""
+        recurrenceIntervalField.text = ""
+        recurrenceCountField.text = ""
+        recurrenceStartDateField.text = ""
     }
     
     function setFormData(todo) {
@@ -151,6 +207,9 @@ ColumnLayout {
         categoryCombo.currentIndex = Math.max(0, categoryCombo.model.indexOf(todo.category))
         importantCombo.currentIndex = todo.important ? 1 : 0
         deadlineField.text = todo.deadline || ""
+        recurrenceIntervalField.text = todo.recurrence_interval || ""
+        recurrenceCountField.text = todo.recurrence_count || ""
+        recurrenceStartDateField.text = todo.recurrence_start_date || ""
     }
     
     function focusTitle() {
@@ -163,7 +222,10 @@ ColumnLayout {
             description: descriptionField.text.trim(),
             category: categoryCombo.currentText,
             important: importantCombo.currentIndex === 1, // true if "重要", false if "普通"
-            deadline: deadlineField.text.trim()
+            deadline: deadlineField.text.trim(),
+            recurrence_interval: recurrenceIntervalField.text.trim() ? parseInt(recurrenceIntervalField.text.trim()) : 0,
+            recurrence_count: recurrenceCountField.text.trim() ? parseInt(recurrenceCountField.text.trim()) : -1,
+            recurrence_start_date: recurrenceStartDateField.text.trim()
         }
     }
     
