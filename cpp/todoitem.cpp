@@ -46,7 +46,10 @@ TodoItem::TodoItem(const QString &id, const QString &title, const QString &descr
                    int recurrenceInterval, int recurrenceCount,                        //
                    const QString &recurrenceStartDate,                                 //
                    const QDateTime &createdAt, const QDateTime &updatedAt,              //
-                   bool synced, QObject *parent)                                        //
+                   bool synced, const QString &uuid, int userId,                       //
+                   bool isCompleted, const QDateTime &completedAt,                     //
+                   bool isDeleted, const QDateTime &deletedAt,                         //
+                   const QDateTime &lastModifiedAt, QObject *parent)                   //
     : QObject(parent),                                                                  // 初始化父对象
       m_id(id),                                                                         // 初始化待办事项ID
       m_title(title),                                                                   // 初始化待办事项标题
@@ -60,8 +63,15 @@ TodoItem::TodoItem(const QString &id, const QString &title, const QString &descr
       m_recurrenceStartDate(recurrenceStartDate),                                      // 初始化循环开始日期
       m_createdAt(createdAt),                                                           // 初始化待办事项创建时间
       m_updatedAt(updatedAt),                                                           // 初始化待办事项更新时间
-      m_synced(synced) {
-} // 初始化待办事项同步状态
+      m_synced(synced),                                                                 // 初始化待办事项同步状态
+      m_uuid(uuid),                                                                     // 初始化待办事项UUID
+      m_userId(userId),                                                                 // 初始化用户ID
+      m_isCompleted(isCompleted),                                                       // 初始化完成状态
+      m_completedAt(completedAt),                                                       // 初始化完成时间
+      m_isDeleted(isDeleted),                                                           // 初始化删除状态
+      m_deletedAt(deletedAt),                                                           // 初始化删除时间
+      m_lastModifiedAt(lastModifiedAt) {
+} // 初始化最后修改时间
 
 /**
  * @brief 获取待办事项的唯一标识符
@@ -369,5 +379,138 @@ void TodoItem::setRecurrenceStartDate(const QString &recurrenceStartDate) {
     if (m_recurrenceStartDate != recurrenceStartDate) {
         m_recurrenceStartDate = recurrenceStartDate;
         emit recurrenceStartDateChanged();
+    }
+}
+
+/**
+ * @brief 获取待办事项的UUID
+ * @return 待办事项UUID
+ */
+QString TodoItem::uuid() const {
+    return m_uuid;
+}
+
+/**
+ * @brief 设置待办事项的UUID
+ * @param uuid 新的UUID
+ */
+void TodoItem::setUuid(const QString &uuid) {
+    if (m_uuid != uuid) {
+        m_uuid = uuid;
+        emit uuidChanged();
+    }
+}
+
+/**
+ * @brief 获取用户ID
+ * @return 用户ID
+ */
+int TodoItem::userId() const {
+    return m_userId;
+}
+
+/**
+ * @brief 设置用户ID
+ * @param userId 新的用户ID
+ */
+void TodoItem::setUserId(int userId) {
+    if (m_userId != userId) {
+        m_userId = userId;
+        emit userIdChanged();
+    }
+}
+
+/**
+ * @brief 获取是否已完成
+ * @return 是否已完成
+ */
+bool TodoItem::isCompleted() const {
+    return m_isCompleted;
+}
+
+/**
+ * @brief 设置是否已完成
+ * @param completed 新的完成状态
+ */
+void TodoItem::setIsCompleted(bool completed) {
+    if (m_isCompleted != completed) {
+        m_isCompleted = completed;
+        emit isCompletedChanged();
+    }
+}
+
+/**
+ * @brief 获取完成时间
+ * @return 完成时间
+ */
+QDateTime TodoItem::completedAt() const {
+    return m_completedAt;
+}
+
+/**
+ * @brief 设置完成时间
+ * @param completedAt 新的完成时间
+ */
+void TodoItem::setCompletedAt(const QDateTime &completedAt) {
+    if (m_completedAt != completedAt) {
+        m_completedAt = completedAt;
+        emit completedAtChanged();
+    }
+}
+
+/**
+ * @brief 获取是否已删除
+ * @return 是否已删除
+ */
+bool TodoItem::isDeleted() const {
+    return m_isDeleted;
+}
+
+/**
+ * @brief 设置是否已删除
+ * @param deleted 新的删除状态
+ */
+void TodoItem::setIsDeleted(bool deleted) {
+    if (m_isDeleted != deleted) {
+        m_isDeleted = deleted;
+        emit isDeletedChanged();
+    }
+}
+
+/**
+ * @brief 获取删除时间
+ * @return 删除时间
+ */
+QDateTime TodoItem::deletedAt() const {
+    return m_deletedAt;
+}
+
+/**
+ * @brief 设置删除时间
+ * @param deletedAt 新的删除时间
+ */
+void TodoItem::setDeletedAt(const QDateTime &deletedAt) {
+    if (m_deletedAt != deletedAt) {
+        m_deletedAt = deletedAt;
+        emit deletedAtChanged();
+    }
+}
+
+/**
+ * @brief 获取最后修改时间
+ * @return 最后修改时间
+ */
+QDateTime TodoItem::lastModifiedAt() const {
+    return m_lastModifiedAt;
+}
+
+/**
+ * @brief 设置最后修改时间
+ * @param lastModifiedAt 新的最后修改时间
+ */
+void TodoItem::setLastModifiedAt(const QDateTime &lastModifiedAt) {
+    if (m_lastModifiedAt != lastModifiedAt) {
+        m_lastModifiedAt = lastModifiedAt;
+        emit lastModifiedAtChanged();
     }
 }

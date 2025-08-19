@@ -227,7 +227,7 @@ void Config::initializeDefaultServerConfig() {
 
     // 检查并设置默认的待办事项API端点
     if (!contains("server/todoApiEndpoint")) {
-        save("server/todoApiEndpoint", "/todo_api.php");
+        save("server/todoApiEndpoint", "/todo/todo_api.php");
     }
 
     // 检查并设置默认的认证API端点

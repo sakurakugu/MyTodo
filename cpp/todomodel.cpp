@@ -138,6 +138,20 @@ QVariant TodoModel::getItemData(const TodoItem *item, int role) const {
         return item->recurrenceCount();
     case RecurrenceStartDateRole:
         return item->recurrenceStartDate();
+    case UuidRole:
+        return item->uuid();
+    case UserIdRole:
+        return item->userId();
+    case IsCompletedRole:
+        return item->isCompleted();
+    case CompletedAtRole:
+        return item->completedAt();
+    case IsDeletedRole:
+        return item->isDeleted();
+    case DeletedAtRole:
+        return item->deletedAt();
+    case LastModifiedAtRole:
+        return item->lastModifiedAt();
     default:
         return QVariant();
     }
@@ -163,6 +177,13 @@ QHash<int, QByteArray> TodoModel::roleNames() const {
     roles[RecurrenceIntervalRole] = "recurrenceInterval";
     roles[RecurrenceCountRole] = "recurrenceCount";
     roles[RecurrenceStartDateRole] = "recurrenceStartDate";
+    roles[UuidRole] = "uuid";
+    roles[UserIdRole] = "userId";
+    roles[IsCompletedRole] = "isCompleted";
+    roles[CompletedAtRole] = "completedAt";
+    roles[IsDeletedRole] = "isDeleted";
+    roles[DeletedAtRole] = "deletedAt";
+    roles[LastModifiedAtRole] = "lastModifiedAt";
     return roles;
 }
 
@@ -413,9 +434,27 @@ void TodoModel::addTodo(const QString &title, const QString &description, const 
                         const QString &deadline) {
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
 
-    auto newItem = std::make_unique<TodoItem>(QUuid::createUuid().toString(QUuid::WithoutBraces), title, description,
-                                              category, important, "todo", deadline, 0, -1, QString(),
-                                              QDateTime::currentDateTime(), QDateTime::currentDateTime(), false, this);
+    auto newItem = std::make_unique<TodoItem>(QUuid::createUuid().toString(QUuid::WithoutBraces), // 任务ID
+                                              title,                                              // 标题
+                                              description,                                        // 描述
+                                              category,                                           // 分类
+                                              important,                                          // 重要程度
+                                              "todo",                                             // 状态
+                                              deadline,                                           // 截止日期
+                                              0,                                                  // 循环间隔
+                                              -1,                                                 // 循环次数
+                                              QString(),                                          // 循环开始日期
+                                              QDateTime::currentDateTime(),                       // 创建时间
+                                              QDateTime::currentDateTime(),                       // 更新时间
+                                              false,                                              // 是否同步
+                                              QString(),                                          // UUID
+                                              0,                                                  // 用户ID
+                                              false,                                              // 是否完成
+                                              QDateTime(),                                        // 完成时间
+                                              false,                                              // 是否删除
+                                              QDateTime(),                                        // 删除时间
+                                              QDateTime::currentDateTime(),                       // 最后修改时间
+                                              this);
 
     m_todos.push_back(std::move(newItem));
     invalidateFilterCache();
@@ -908,15 +947,78 @@ void TodoModel::handlePushChangesSuccess(const QJsonObject &response) {
 }
 
 void TodoModel::updateTodosFromServer(const QJsonArray &todosArray) {
-    // TODO: 实现从服务器数据更新本地待办事项的逻辑
     qDebug() << "从服务器更新" << todosArray.size() << "个待办事项";
 
-    // 这里应该实现:
-    // 1. 解析服务器返回的待办事项数据
-    // 2. 与本地数据进行比较和合并
-    // 3. 处理冲突解决
-    // 4. 更新模型数据
-    // 5. 保存到本地存储
+    beginResetModel();
+
+    // 解析服务器返回的待办事项数据
+    for (const QJsonValue &value : todosArray) {
+        QJsonObject todoObj = value.toObject();
+
+        // 查找是否已存在相同UUID的项目
+        QString uuid = todoObj["uuid"].toString();
+        TodoItem *existingItem = nullptr;
+
+        for (const auto &item : m_todos) {
+            if (item->uuid() == uuid) {
+                existingItem = item.get();
+                break;
+            }
+        }
+
+        if (existingItem) {
+            // 更新现有项目
+            existingItem->setTitle(todoObj["title"].toString());
+            existingItem->setDescription(todoObj["description"].toString());
+            existingItem->setCategory(todoObj["category"].toString());
+            existingItem->setImportant(todoObj["important"].toBool());
+            existingItem->setDeadline(todoObj["deadline"].toString());
+            existingItem->setRecurrenceInterval(todoObj["recurrence_interval"].toInt());
+            existingItem->setRecurrenceCount(todoObj["recurrence_count"].toInt());
+            existingItem->setRecurrenceStartDate(todoObj["recurrence_start_date"].toString());
+            existingItem->setIsCompleted(todoObj["is_completed"].toBool());
+            existingItem->setCompletedAt(QDateTime::fromString(todoObj["completed_at"].toString(), Qt::ISODate));
+            existingItem->setIsDeleted(todoObj["is_deleted"].toBool());
+            existingItem->setDeletedAt(QDateTime::fromString(todoObj["deleted_at"].toString(), Qt::ISODate));
+            existingItem->setUpdatedAt(QDateTime::fromString(todoObj["updated_at"].toString(), Qt::ISODate));
+            existingItem->setLastModifiedAt(QDateTime::fromString(todoObj["last_modified_at"].toString(), Qt::ISODate));
+            existingItem->setStatus(todoObj["status"].toString());
+            existingItem->setSynced(true);
+        } else {
+            // 创建新项目
+            auto newItem = std::make_unique<TodoItem>();
+            newItem->setId(QString::number(todoObj["id"].toInt()));
+            newItem->setUuid(uuid);
+            newItem->setUserId(todoObj["user_id"].toInt());
+            newItem->setTitle(todoObj["title"].toString());
+            newItem->setDescription(todoObj["description"].toString());
+            newItem->setCategory(todoObj["category"].toString());
+            newItem->setImportant(todoObj["important"].toBool());
+            newItem->setDeadline(todoObj["deadline"].toString());
+            newItem->setRecurrenceInterval(todoObj["recurrence_interval"].toInt());
+            newItem->setRecurrenceCount(todoObj["recurrence_count"].toInt());
+            newItem->setRecurrenceStartDate(todoObj["recurrence_start_date"].toString());
+            newItem->setIsCompleted(todoObj["is_completed"].toBool());
+            newItem->setCompletedAt(QDateTime::fromString(todoObj["completed_at"].toString(), Qt::ISODate));
+            newItem->setIsDeleted(todoObj["is_deleted"].toBool());
+            newItem->setDeletedAt(QDateTime::fromString(todoObj["deleted_at"].toString(), Qt::ISODate));
+            newItem->setCreatedAt(QDateTime::fromString(todoObj["created_at"].toString(), Qt::ISODate));
+            newItem->setUpdatedAt(QDateTime::fromString(todoObj["updated_at"].toString(), Qt::ISODate));
+            newItem->setLastModifiedAt(QDateTime::fromString(todoObj["last_modified_at"].toString(), Qt::ISODate));
+            newItem->setStatus(todoObj["status"].toString());
+            newItem->setSynced(true);
+
+            m_todos.push_back(std::move(newItem));
+        }
+    }
+
+    endResetModel();
+    invalidateFilterCache();
+
+    // 保存到本地存储
+    if (!saveToLocalStorage()) {
+        qWarning() << "无法在服务器更新后保存本地存储";
+    }
 }
 
 /**
@@ -952,14 +1054,27 @@ bool TodoModel::loadFromLocalStorage() {
             }
 
             auto item = std::make_unique<TodoItem>(
-                m_config->get(prefix + "id").toString(), m_config->get(prefix + "title").toString(),
-                m_config->get(prefix + "description").toString(), m_config->get(prefix + "category").toString(),
-                m_config->get(prefix + "important").toBool(), m_config->get(prefix + "status").toString(),
-                m_config->get(prefix + "deadline").toString(), m_config->get(prefix + "recurrenceInterval", 0).toInt(),
-                m_config->get(prefix + "recurrenceCount", -1).toInt(),
-                m_config->get(prefix + "recurrenceStartDate").toString(),
-                m_config->get(prefix + "createdAt").toDateTime(), m_config->get(prefix + "updatedAt").toDateTime(),
-                m_config->get(prefix + "synced").toBool(), this);
+                m_config->get(prefix + "id").toString(),                  // 从配置中获取ID
+                m_config->get(prefix + "title").toString(),               // 从配置中获取标题
+                m_config->get(prefix + "description").toString(),         // 从配置中获取描述
+                m_config->get(prefix + "category").toString(),            // 从配置中获取类别
+                m_config->get(prefix + "important").toBool(),             // 从配置中获取重要性
+                m_config->get(prefix + "status").toString(),              // 从配置中获取状态
+                m_config->get(prefix + "deadline").toString(),            // 从配置中获取截止日期
+                m_config->get(prefix + "recurrenceInterval", 0).toInt(),  // 从配置中获取重复间隔
+                m_config->get(prefix + "recurrenceCount", -1).toInt(),    // 从配置中获取重复次数
+                m_config->get(prefix + "recurrenceStartDate").toString(), // 从配置中获取重复开始日期
+                m_config->get(prefix + "createdAt").toDateTime(),         // 从配置中获取创建时间
+                m_config->get(prefix + "updatedAt").toDateTime(),         // 从配置中获取更新时间
+                m_config->get(prefix + "synced").toBool(),                // 从配置中获取同步状态
+                m_config->get(prefix + "uuid").toString(),                // 从配置中获取UUID
+                m_config->get(prefix + "userId", 0).toInt(),              // 从配置中获取用户ID
+                m_config->get(prefix + "isCompleted", false).toBool(),    // 从配置中获取是否完成
+                m_config->get(prefix + "completedAt").toDateTime(),       // 从配置中获取完成时间
+                m_config->get(prefix + "isDeleted", false).toBool(),      // 从配置中获取是否删除
+                m_config->get(prefix + "deletedAt").toDateTime(),         // 从配置中获取删除时间
+                m_config->get(prefix + "lastModifiedAt").toDateTime(),    // 从配置中获取最后修改时间
+                this);
 
             // 设置deadline字段（如果存在）
             if (m_config->contains(prefix + "deadline")) {
@@ -1005,6 +1120,8 @@ bool TodoModel::saveToLocalStorage() {
             QString prefix = QString("todos/%1/").arg(i);
 
             m_config->save(prefix + "id", item->id());
+            m_config->save(prefix + "uuid", item->uuid());
+            m_config->save(prefix + "userId", item->userId());
             m_config->save(prefix + "title", item->title());
             m_config->save(prefix + "description", item->description());
             m_config->save(prefix + "category", item->category());
@@ -1017,6 +1134,11 @@ bool TodoModel::saveToLocalStorage() {
             m_config->save(prefix + "recurrenceInterval", item->recurrenceInterval());
             m_config->save(prefix + "recurrenceCount", item->recurrenceCount());
             m_config->save(prefix + "recurrenceStartDate", item->recurrenceStartDate());
+            m_config->save(prefix + "isCompleted", item->isCompleted());
+            m_config->save(prefix + "completedAt", item->completedAt());
+            m_config->save(prefix + "isDeleted", item->isDeleted());
+            m_config->save(prefix + "deletedAt", item->deletedAt());
+            m_config->save(prefix + "lastModifiedAt", item->lastModifiedAt());
         }
 
         qDebug() << "已成功保存" << m_todos.size() << "个待办事项到本地存储";
@@ -1107,13 +1229,24 @@ void TodoModel::pushLocalChangesToServer() {
         for (TodoItem *item : std::as_const(unsyncedItems)) {
             QJsonObject obj;
             obj["id"] = item->id();
+            obj["uuid"] = item->uuid();
+            obj["user_id"] = item->userId();
             obj["title"] = item->title();
             obj["description"] = item->description();
             obj["category"] = item->category();
             obj["important"] = item->important();
-            obj["status"] = item->status();
+            obj["deadline"] = item->deadline();
+            obj["recurrence_interval"] = item->recurrenceInterval();
+            obj["recurrence_count"] = item->recurrenceCount();
+            obj["recurrence_start_date"] = item->recurrenceStartDate();
+            obj["is_completed"] = item->isCompleted();
+            obj["completed_at"] = item->completedAt().toString(Qt::ISODate);
+            obj["is_deleted"] = item->isDeleted();
+            obj["deleted_at"] = item->deletedAt().toString(Qt::ISODate);
             obj["created_at"] = item->createdAt().toString(Qt::ISODate);
             obj["updated_at"] = item->updatedAt().toString(Qt::ISODate);
+            obj["last_modified_at"] = item->lastModifiedAt().toString(Qt::ISODate);
+            obj["status"] = item->status();
 
             jsonArray.append(obj);
         }
@@ -1142,7 +1275,7 @@ void TodoModel::pushLocalChangesToServer() {
 void TodoModel::initializeServerConfig() {
     // 从设置中读取服务器配置，如果不存在则使用默认值
     m_serverBaseUrl = m_config->get("server/baseUrl", "https://api.example.com").toString();
-    m_todoApiEndpoint = m_config->get("server/todoApiEndpoint", "/todo_api.php").toString();
+    m_todoApiEndpoint = m_config->get("server/todoApiEndpoint", "/todo/todo_api.php").toString();
     m_authApiEndpoint = m_config->get("server/authApiEndpoint", "/auth_api.php").toString();
 
     qDebug() << "服务器配置已初始化:";
@@ -1348,15 +1481,26 @@ QVariantList TodoModel::importTodosWithAutoResolution(const QString &filePath) {
             QJsonObject todoObj = value.toObject();
 
             auto newTodo = std::make_unique<TodoItem>(
-                todoObj["id"].toString(), todoObj["title"].toString(), todoObj["description"].toString(),
-                todoObj["category"].toString(), todoObj["important"].toBool(), todoObj["status"].toString(),
-                todoObj["deadline"].toString(),
-                todoObj["recurrence_interval"].toInt(0),     // 循环间隔，默认0
-                todoObj["recurrence_count"].toInt(-1),       // 循环次数，默认-1
-                todoObj["recurrence_start_date"].toString(), // 循环开始日期
-                QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),
-                QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate),
-                false, // 导入的项目标记为未同步
+                todoObj["id"].toString(),                                                        // ID
+                todoObj["title"].toString(),                                                     // 标题
+                todoObj["description"].toString(),                                               // 描述
+                todoObj["category"].toString(),                                                  // 分类
+                todoObj["important"].toBool(),                                                   // 重要程度
+                todoObj["status"].toString(),                                                    // 状态
+                todoObj["deadline"].toString(),                                                  // 截止日期
+                todoObj["recurrence_interval"].toInt(0),                                        // 循环间隔
+                todoObj["recurrence_count"].toInt(-1),                                          // 循环次数
+                todoObj["recurrence_start_date"].toString(),                                    // 循环开始日期
+                QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),           // 创建时间
+                QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate),           // 更新时间
+                false,                                                                           // 是否同步
+                todoObj["uuid"].toString(),                                                     // UUID
+                todoObj["userId"].toInt(0),                                                     // 用户ID
+                todoObj["isCompleted"].toBool(false),                                           // 是否完成
+                QDateTime::fromString(todoObj["completedAt"].toString(), Qt::ISODate),         // 完成时间
+                todoObj["isDeleted"].toBool(false),                                             // 是否删除
+                QDateTime::fromString(todoObj["deletedAt"].toString(), Qt::ISODate),           // 删除时间
+                QDateTime::fromString(todoObj["lastModifiedAt"].toString(), Qt::ISODate),      // 最后修改时间
                 this);
 
             // 设置deadline字段（如果存在）
@@ -1430,13 +1574,27 @@ bool TodoModel::importTodos(const QString &filePath) {
         if (!exists) {
             // 创建新的待办事项
             auto newTodo = std::make_unique<TodoItem>(
-                id, todoObj["title"].toString(), todoObj["description"].toString(), todoObj["category"].toString(),
-                todoObj["important"].toBool(), todoObj["status"].toString(), todoObj["deadline"].toString(),
-                todoObj["recurrence_interval"].toInt(0), // 循环间隔，默认0
-                todoObj["recurrence_count"].toInt(-1), // 循环次数，默认-1
-                todoObj["recurrence_start_date"].toString(), // 循环开始日期
-                QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),
-                QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate), todoObj["synced"].toBool(), this);
+                id,                                                                      // ID
+                todoObj["title"].toString(),                                            // 标题
+                todoObj["description"].toString(),                                      // 描述
+                todoObj["category"].toString(),                                         // 分类
+                todoObj["important"].toBool(),                                          // 重要程度
+                todoObj["status"].toString(),                                           // 状态
+                todoObj["deadline"].toString(),                                         // 截止日期
+                todoObj["recurrence_interval"].toInt(0),                               // 循环间隔
+                todoObj["recurrence_count"].toInt(-1),                                 // 循环次数
+                todoObj["recurrence_start_date"].toString(),                           // 循环开始日期
+                QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),  // 创建时间
+                QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate),  // 更新时间
+                todoObj["synced"].toBool(),                                             // 是否同步
+                todoObj["uuid"].toString(),                                            // UUID
+                todoObj["userId"].toInt(0),                                            // 用户ID
+                todoObj["isCompleted"].toBool(false),                                  // 是否完成
+                QDateTime::fromString(todoObj["completedAt"].toString(), Qt::ISODate), // 完成时间
+                todoObj["isDeleted"].toBool(false),                                    // 是否删除
+                QDateTime::fromString(todoObj["deletedAt"].toString(), Qt::ISODate),  // 删除时间
+                QDateTime::fromString(todoObj["lastModifiedAt"].toString(), Qt::ISODate), // 最后修改时间
+                this);
 
             // 设置deadline字段（如果存在）
             if (todoObj.contains("deadline")) {
@@ -1605,13 +1763,27 @@ bool TodoModel::importTodosWithConflictResolution(const QString &filePath, const
         } else {
             // 创建新的待办事项
             auto newTodo = std::make_unique<TodoItem>(
-                id, todoObj["title"].toString(), todoObj["description"].toString(), todoObj["category"].toString(),
-                todoObj["important"].toBool(), todoObj["status"].toString(), todoObj["deadline"].toString(),
-                todoObj["recurrence_interval"].toInt(0), // 循环间隔，默认0
-                todoObj["recurrence_count"].toInt(-1), // 循环次数，默认-1
-                todoObj["recurrence_start_date"].toString(), // 循环开始日期
-                QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),
-                QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate), todoObj["synced"].toBool(), this);
+                id,                                                                      // ID
+                todoObj["title"].toString(),                                            // 标题
+                todoObj["description"].toString(),                                      // 描述
+                todoObj["category"].toString(),                                         // 分类
+                todoObj["important"].toBool(),                                          // 重要程度
+                todoObj["status"].toString(),                                           // 状态
+                todoObj["deadline"].toString(),                                         // 截止日期
+                todoObj["recurrence_interval"].toInt(0),                               // 循环间隔
+                todoObj["recurrence_count"].toInt(-1),                                 // 循环次数
+                todoObj["recurrence_start_date"].toString(),                           // 循环开始日期
+                QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),  // 创建时间
+                QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate),  // 更新时间
+                todoObj["synced"].toBool(),                                             // 是否同步
+                todoObj["uuid"].toString(),                                            // UUID
+                todoObj["userId"].toInt(0),                                            // 用户ID
+                todoObj["isCompleted"].toBool(false),                                  // 是否完成
+                QDateTime::fromString(todoObj["completedAt"].toString(), Qt::ISODate), // 完成时间
+                todoObj["isDeleted"].toBool(false),                                    // 是否删除
+                QDateTime::fromString(todoObj["deletedAt"].toString(), Qt::ISODate),  // 删除时间
+                QDateTime::fromString(todoObj["lastModifiedAt"].toString(), Qt::ISODate), // 最后修改时间
+                this);
 
             // 设置deadline字段（如果存在）
             if (todoObj.contains("deadline")) {

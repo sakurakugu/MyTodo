@@ -79,7 +79,14 @@ class TodoModel : public QAbstractListModel {
         DeadlineRole,              // 任务截止时间
         RecurrenceIntervalRole,    // 循环间隔
         RecurrenceCountRole,       // 循环次数
-        RecurrenceStartDateRole    // 循环开始日期
+        RecurrenceStartDateRole,   // 循环开始日期
+        UuidRole,                  // 任务UUID
+        UserIdRole,                // 用户ID
+        IsCompletedRole,           // 任务是否已完成
+        CompletedAtRole,           // 任务完成时间
+        IsDeletedRole,             // 任务是否已删除
+        DeletedAtRole,             // 任务删除时间
+        LastModifiedAtRole         // 任务最后修改时间
     };
     Q_ENUM(TodoRoles)
 
