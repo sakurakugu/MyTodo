@@ -4,7 +4,7 @@
  * 
  * 提供创建和编辑任务的表单界面，包括：
  * - 任务标题和描述输入
- * - 分类、紧急程度、重要程度选择
+ * - 分类、重要程度选择
  * - 紧凑模式和完整模式支持
  * - 主题色彩适配
  * - 表单验证和提交
@@ -30,10 +30,10 @@ ColumnLayout {
     property alias titleText: titleField.text              ///< 任务标题文本
     property alias descriptionText: descriptionField.text  ///< 任务描述文本
     property alias categoryIndex: categoryCombo.currentIndex    ///< 分类选择索引
-    property alias urgencyIndex: urgencyCombo.currentIndex      ///< 紧急程度索引
+
     property alias importanceIndex: importanceCombo.currentIndex ///< 重要程度索引
     property alias categoryText: categoryCombo.currentText      ///< 分类文本
-    property alias urgencyText: urgencyCombo.currentText        ///< 紧急程度文本
+
     property alias importanceText: importanceCombo.currentText  ///< 重要程度文本
     
     // 外观和行为属性
@@ -102,35 +102,20 @@ ColumnLayout {
         Layout.fillWidth: true
     }
     
-    // 优先级字段（可选）
-    RowLayout {
+    // 重要程度字段（可选）
+    ColumnLayout {
         Layout.fillWidth: true
         visible: showPriority && !isCompactMode
         
-        ColumnLayout {
-            Label {
-                text: qsTr("紧急程度")
-                color: textColor
-            }
-            ComboBox {
-                id: urgencyCombo
-                model: ["高", "中", "低"]
-                Layout.fillWidth: true
-                currentIndex: 1 // 默认选择"中"
-            }
+        Label {
+            text: qsTr("重要程度")
+            color: textColor
         }
-        
-        ColumnLayout {
-            Label {
-                text: qsTr("重要程度")
-                color: textColor
-            }
-            ComboBox {
-                id: importanceCombo
-                model: ["高", "中", "低"]
-                Layout.fillWidth: true
-                currentIndex: 1 // 默认选择"中"
-            }
+        ComboBox {
+            id: importanceCombo
+            model: ["高", "中", "低"]
+            Layout.fillWidth: true
+            currentIndex: 1 // 默认选择"中"
         }
     }
     
@@ -139,7 +124,6 @@ ColumnLayout {
         titleField.text = ""
         descriptionField.text = ""
         categoryCombo.currentIndex = 0
-        urgencyCombo.currentIndex = 1
         importanceCombo.currentIndex = 1
     }
     
@@ -147,7 +131,6 @@ ColumnLayout {
         titleField.text = todo.title || ""
         descriptionField.text = todo.description || ""
         categoryCombo.currentIndex = Math.max(0, categoryCombo.model.indexOf(todo.category))
-        urgencyCombo.currentIndex = Math.max(0, urgencyCombo.model.indexOf(todo.urgency))
         importanceCombo.currentIndex = Math.max(0, importanceCombo.model.indexOf(todo.importance))
     }
     

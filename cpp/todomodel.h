@@ -57,6 +57,7 @@ class TodoModel : public QAbstractListModel {
     Q_PROPERTY(bool isOnline READ isOnline WRITE setIsOnline NOTIFY isOnlineChanged)
     Q_PROPERTY(QString currentCategory READ currentCategory WRITE setCurrentCategory NOTIFY currentCategoryChanged)
     Q_PROPERTY(QString currentFilter READ currentFilter WRITE setCurrentFilter NOTIFY currentFilterChanged)
+    Q_PROPERTY(QString currentImportance READ currentImportance WRITE setCurrentImportance NOTIFY currentImportanceChanged)
     Q_PROPERTY(QString username READ getUsername NOTIFY usernameChanged)
     Q_PROPERTY(bool isLoggedIn READ isLoggedIn NOTIFY isLoggedInChanged)
 
@@ -70,7 +71,6 @@ class TodoModel : public QAbstractListModel {
         TitleRole,                  // 任务标题
         DescriptionRole,            // 任务描述
         CategoryRole,               // 任务分类
-        UrgencyRole,                // 任务紧急程度
         ImportanceRole,             // 任务重要程度
         StatusRole,                 // 任务状态
         CreatedAtRole,              // 任务创建时间
@@ -109,10 +109,12 @@ class TodoModel : public QAbstractListModel {
     void setCurrentCategory(const QString &category);  // 设置分类筛选器
     QString currentFilter() const;                     // 获取当前激活的筛选条件
     void setCurrentFilter(const QString &filter);      // 设置筛选条件
+    QString currentImportance() const;                 // 获取当前激活的重要程度筛选器
+    void setCurrentImportance(const QString &importance);  // 设置重要程度筛选器
 
     // CRUD操作
     Q_INVOKABLE void addTodo(const QString &title, const QString &description = QString(),
-                             const QString &category = "default", const QString &urgency = "medium",
+                             const QString &category = "default",
                              const QString &importance = "medium");       // 添加新的待办事项
     Q_INVOKABLE bool updateTodo(int index, const QVariantMap &todoData);  // 更新现有待办事项
     Q_INVOKABLE bool removeTodo(int index);                               // 删除待办事项
@@ -149,6 +151,7 @@ class TodoModel : public QAbstractListModel {
     void isOnlineChanged();                                                     // 在线状态变化信号
     void currentCategoryChanged();                                              // 当前分类筛选器变化信号
     void currentFilterChanged();                                                // 当前筛选条件变化信号
+    void currentImportanceChanged();                                            // 当前重要程度筛选器变化信号
     void usernameChanged();                                                     // 用户名变化信号
     void isLoggedInChanged();                                                   // 登录状态变化信号
     void syncStarted();                                                         // 同步操作开始信号
@@ -192,6 +195,7 @@ class TodoModel : public QAbstractListModel {
     bool m_isOnline;                                 ///< 是否在线
     QString m_currentCategory;                       ///< 当前分类筛选器
     QString m_currentFilter;                         ///< 当前筛选条件
+    QString m_currentImportance;                     ///< 当前重要程度筛选器
     NetworkManager *m_networkManager;                ///< 网络管理器
     Config *m_config;                            ///< 应用设置
 

@@ -21,7 +21,7 @@
  *
  * TodoItem类封装了一个待办事项的所有属性，包括：
  * - 基本信息：ID、标题、描述
- * - 分类信息：分类、紧急程度、重要程度
+ * - 分类信息：分类、重要程度
  * - 状态信息：当前状态、创建时间、更新时间
  * - 同步信息：是否已与服务器同步
  *
@@ -37,7 +37,6 @@ class TodoItem : public QObject {
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)
     Q_PROPERTY(QString description READ description WRITE setDescription NOTIFY descriptionChanged)
     Q_PROPERTY(QString category READ category WRITE setCategory NOTIFY categoryChanged)
-    Q_PROPERTY(QString urgency READ urgency WRITE setUrgency NOTIFY urgencyChanged)
     Q_PROPERTY(QString importance READ importance WRITE setImportance NOTIFY importanceChanged)
     Q_PROPERTY(QString status READ status WRITE setStatus NOTIFY statusChanged)
     Q_PROPERTY(QDateTime createdAt READ createdAt WRITE setCreatedAt NOTIFY createdAtChanged)
@@ -60,7 +59,6 @@ class TodoItem : public QObject {
      * @param title 待办事项标题
      * @param description 待办事项详细描述
      * @param category 待办事项分类
-     * @param urgency 紧急程度
      * @param importance 重要程度
      * @param status 当前状态
      * @param createdAt 创建时间
@@ -68,8 +66,7 @@ class TodoItem : public QObject {
      * @param synced 是否已与服务器同步
      * @param parent 父对象指针
      */
-    TodoItem(const QString &id, const QString &title, const QString &description, const QString &category,
-             const QString &urgency, const QString &importance, const QString &status, const QDateTime &createdAt,
+    TodoItem(const QString &id, const QString &title, const QString &description, const QString &category, const QString &importance, const QString &status, const QDateTime &createdAt,
              const QDateTime &updatedAt, bool synced, QObject *parent = nullptr);
 
     QString id() const;             // 获取ID
@@ -83,9 +80,6 @@ class TodoItem : public QObject {
 
     QString category() const;                   // 获取分类
     void setCategory(const QString &category);  // 设置分类
-
-    QString urgency() const;                  // 获取紧急程度
-    void setUrgency(const QString &urgency);  // 设置紧急程度
 
     QString importance() const;                     // 获取重要程度
     void setImportance(const QString &importance);  // 设置重要程度
@@ -107,7 +101,6 @@ class TodoItem : public QObject {
     void titleChanged();        // 标题改变信号
     void descriptionChanged();  // 描述改变信号
     void categoryChanged();     // 分类改变信号
-    void urgencyChanged();      // 紧急程度改变信号
     void importanceChanged();   // 重要程度改变信号
     void statusChanged();       // 状态改变信号
     void createdAtChanged();    // 创建时间改变信号
@@ -119,7 +112,6 @@ class TodoItem : public QObject {
     QString m_title;        // 任务标题
     QString m_description;  // 任务描述
     QString m_category;     // 任务分类
-    QString m_urgency;      // 任务紧急程度
     QString m_importance;   // 任务重要程度
     QString m_status;       // 任务状态
     QDateTime m_createdAt;  // 任务创建时间

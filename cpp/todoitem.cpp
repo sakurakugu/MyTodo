@@ -20,7 +20,8 @@
  *
  * @param parent 父对象指针，用于Qt的对象树管理
  */
-TodoItem::TodoItem(QObject *parent) : QObject(parent), m_synced(false) {}
+TodoItem::TodoItem(QObject *parent) : QObject(parent), m_synced(false) {
+}
 
 /**
  * @brief 带参数的构造函数
@@ -32,7 +33,6 @@ TodoItem::TodoItem(QObject *parent) : QObject(parent), m_synced(false) {}
  * @param title 待办事项标题
  * @param description 待办事项详细描述
  * @param category 待办事项分类
- * @param urgency 紧急程度
  * @param importance 重要程度
  * @param status 当前状态（如：待处理、进行中、已完成）
  * @param createdAt 创建时间
@@ -40,27 +40,29 @@ TodoItem::TodoItem(QObject *parent) : QObject(parent), m_synced(false) {}
  * @param synced 是否已与服务器同步
  * @param parent 父对象指针
  */
-TodoItem::TodoItem(const QString &id, const QString &title, const QString &description,         //
-                   const QString &category, const QString &urgency, const QString &importance,  //
-                   const QString &status, const QDateTime &createdAt,                           //
-                   const QDateTime &updatedAt, bool synced, QObject *parent)                    //
-    : QObject(parent),
-      m_id(id),
-      m_title(title),
-      m_description(description),
-      m_category(category),
-      m_urgency(urgency),
-      m_importance(importance),
-      m_status(status),
-      m_createdAt(createdAt),
-      m_updatedAt(updatedAt),
-      m_synced(synced) {}
+TodoItem::TodoItem(const QString &id, const QString &title, const QString &description, //
+                   const QString &category, const QString &importance,                  //
+                   const QString &status, const QDateTime &createdAt,                   //
+                   const QDateTime &updatedAt, bool synced, QObject *parent)            //
+    : QObject(parent),                                                                  // 初始化父对象
+      m_id(id),                                                                         // 初始化待办事项ID
+      m_title(title),                                                                   // 初始化待办事项标题
+      m_description(description),                                                       // 初始化待办事项描述
+      m_category(category),                                                             // 初始化待办事项分类
+      m_importance(importance),                                                         // 初始化待办事项重要程度
+      m_status(status),                                                                 // 初始化待办事项状态
+      m_createdAt(createdAt),                                                           // 初始化待办事项创建时间
+      m_updatedAt(updatedAt),                                                           // 初始化待办事项更新时间
+      m_synced(synced) {
+} // 初始化待办事项同步状态
 
 /**
  * @brief 获取待办事项的唯一标识符
  * @return 待办事项ID
  */
-QString TodoItem::id() const { return m_id; }
+QString TodoItem::id() const {
+    return m_id;
+}
 
 /**
  * @brief 设置待办事项的唯一标识符
@@ -71,7 +73,8 @@ QString TodoItem::id() const { return m_id; }
  * @param id 新的待办事项ID
  */
 void TodoItem::setId(const QString &id) {
-    if (m_id == id) return;
+    if (m_id == id)
+        return;
 
     m_id = id;
     emit idChanged();
@@ -81,7 +84,9 @@ void TodoItem::setId(const QString &id) {
  * @brief 获取待办事项标题
  * @return 待办事项标题
  */
-QString TodoItem::title() const { return m_title; }
+QString TodoItem::title() const {
+    return m_title;
+}
 
 /**
  * @brief 设置待办事项标题
@@ -92,7 +97,8 @@ QString TodoItem::title() const { return m_title; }
  * @param title 新的待办事项标题
  */
 void TodoItem::setTitle(const QString &title) {
-    if (m_title == title) return;
+    if (m_title == title)
+        return;
 
     m_title = title;
     emit titleChanged();
@@ -102,7 +108,9 @@ void TodoItem::setTitle(const QString &title) {
  * @brief 获取待办事项描述
  * @return 待办事项详细描述
  */
-QString TodoItem::description() const { return m_description; }
+QString TodoItem::description() const {
+    return m_description;
+}
 
 /**
  * @brief 设置待办事项描述
@@ -113,7 +121,8 @@ QString TodoItem::description() const { return m_description; }
  * @param description 新的待办事项描述
  */
 void TodoItem::setDescription(const QString &description) {
-    if (m_description == description) return;
+    if (m_description == description)
+        return;
 
     m_description = description;
     emit descriptionChanged();
@@ -123,7 +132,9 @@ void TodoItem::setDescription(const QString &description) {
  * @brief 获取待办事项分类
  * @return 待办事项分类
  */
-QString TodoItem::category() const { return m_category; }
+QString TodoItem::category() const {
+    return m_category;
+}
 
 /**
  * @brief 设置待办事项分类
@@ -134,38 +145,20 @@ QString TodoItem::category() const { return m_category; }
  * @param category 新的待办事项分类
  */
 void TodoItem::setCategory(const QString &category) {
-    if (m_category == category) return;
+    if (m_category == category)
+        return;
 
     m_category = category;
     emit categoryChanged();
 }
 
 /**
- * @brief 获取待办事项紧急程度
- * @return 紧急程度
- */
-QString TodoItem::urgency() const { return m_urgency; }
-
-/**
- * @brief 设置待办事项紧急程度
- *
- * 如果新紧急程度与当前紧急程度相同，则不执行任何操作。
- * 否则更新紧急程度并发出urgencyChanged信号。
- *
- * @param urgency 新的紧急程度
- */
-void TodoItem::setUrgency(const QString &urgency) {
-    if (m_urgency == urgency) return;
-
-    m_urgency = urgency;
-    emit urgencyChanged();
-}
-
-/**
  * @brief 获取待办事项重要程度
  * @return 重要程度
  */
-QString TodoItem::importance() const { return m_importance; }
+QString TodoItem::importance() const {
+    return m_importance;
+}
 
 /**
  * @brief 设置待办事项重要程度
@@ -176,7 +169,8 @@ QString TodoItem::importance() const { return m_importance; }
  * @param importance 新的重要程度
  */
 void TodoItem::setImportance(const QString &importance) {
-    if (m_importance == importance) return;
+    if (m_importance == importance)
+        return;
 
     m_importance = importance;
     emit importanceChanged();
@@ -186,7 +180,9 @@ void TodoItem::setImportance(const QString &importance) {
  * @brief 获取待办事项状态
  * @return 当前状态（如：待处理、进行中、已完成）
  */
-QString TodoItem::status() const { return m_status; }
+QString TodoItem::status() const {
+    return m_status;
+}
 
 /**
  * @brief 设置待办事项状态
@@ -197,7 +193,8 @@ QString TodoItem::status() const { return m_status; }
  * @param status 新的待办事项状态
  */
 void TodoItem::setStatus(const QString &status) {
-    if (m_status == status) return;
+    if (m_status == status)
+        return;
 
     m_status = status;
     emit statusChanged();
@@ -207,7 +204,9 @@ void TodoItem::setStatus(const QString &status) {
  * @brief 获取待办事项创建时间
  * @return 创建时间
  */
-QDateTime TodoItem::createdAt() const { return m_createdAt; }
+QDateTime TodoItem::createdAt() const {
+    return m_createdAt;
+}
 
 /**
  * @brief 设置待办事项创建时间
@@ -218,7 +217,8 @@ QDateTime TodoItem::createdAt() const { return m_createdAt; }
  * @param createdAt 新的创建时间
  */
 void TodoItem::setCreatedAt(const QDateTime &createdAt) {
-    if (m_createdAt == createdAt) return;
+    if (m_createdAt == createdAt)
+        return;
 
     m_createdAt = createdAt;
     emit createdAtChanged();
@@ -228,7 +228,9 @@ void TodoItem::setCreatedAt(const QDateTime &createdAt) {
  * @brief 获取待办事项最后更新时间
  * @return 最后更新时间
  */
-QDateTime TodoItem::updatedAt() const { return m_updatedAt; }
+QDateTime TodoItem::updatedAt() const {
+    return m_updatedAt;
+}
 
 /**
  * @brief 设置待办事项最后更新时间
@@ -239,7 +241,8 @@ QDateTime TodoItem::updatedAt() const { return m_updatedAt; }
  * @param updatedAt 新的更新时间
  */
 void TodoItem::setUpdatedAt(const QDateTime &updatedAt) {
-    if (m_updatedAt == updatedAt) return;
+    if (m_updatedAt == updatedAt)
+        return;
 
     m_updatedAt = updatedAt;
     emit updatedAtChanged();
@@ -249,7 +252,9 @@ void TodoItem::setUpdatedAt(const QDateTime &updatedAt) {
  * @brief 获取待办事项同步状态
  * @return 是否已与服务器同步
  */
-bool TodoItem::synced() const { return m_synced; }
+bool TodoItem::synced() const {
+    return m_synced;
+}
 
 /**
  * @brief 设置待办事项同步状态
@@ -260,7 +265,8 @@ bool TodoItem::synced() const { return m_synced; }
  * @param synced 新的同步状态
  */
 void TodoItem::setSynced(bool synced) {
-    if (m_synced == synced) return;
+    if (m_synced == synced)
+        return;
 
     m_synced = synced;
     emit syncedChanged();

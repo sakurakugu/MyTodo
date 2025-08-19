@@ -82,6 +82,21 @@ Page {
                         }
                     }
 
+                    Label {
+                        text: "重要程度"
+                        font.pixelSize: 14
+                        color: theme.textColor
+                    }
+
+                    ComboBox {
+                        id: importanceFilter
+                        Layout.fillWidth: true
+                        model: ["全部", "高", "中", "低"]
+                        onCurrentTextChanged: {
+                            todoModel.currentImportance = (currentText === "全部" ? "" : currentText);
+                        }
+                    }
+
                     Item {
                         Layout.fillHeight: true
                     }
@@ -237,7 +252,6 @@ Page {
                                     title: model.title,
                                     description: model.description,
                                     category: model.category,
-                                    urgency: model.urgency,
                                     importance: model.importance
                                 });
                                 todoListView.currentIndex = index;
@@ -255,7 +269,8 @@ Page {
                                 width: 16
                                 height: 16
                                 radius: 8
-                                color: model.status === "done" ? theme.completedColor : model.urgency === "high" ? theme.highUrgencyColor : model.urgency === "medium" ? theme.mediumUrgencyColor : theme.lowUrgencyColor
+                                color: model.status === "done" ? theme.completedColor : model.importance === "高" ? theme.highImportanceColor : model.importance === "中" ? theme.mediumImportanceColor : theme.lowImportanceColor
+
 
                                 MouseArea {
                                     anchors.fill: parent
