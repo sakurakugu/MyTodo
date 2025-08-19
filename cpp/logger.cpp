@@ -40,15 +40,32 @@ Logger::~Logger() {
     }
 }
 
+/**
+ * @brief 消息处理函数
+ * 
+ * @param type 消息类型
+ * @param context 消息上下文
+ * @param msg 消息内容
+ */
 void Logger::messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
     Logger::GetInstance().writeLog(type, context, msg);
 }
 
+/**
+ * @brief 设置日志级别
+ * 
+ * @param level 日志级别
+ */
 void Logger::setLogLevel(LogLevel level) {
     QMutexLocker locker(&m_mutex);
     m_logLevel = level;
 }
 
+/**
+ * @brief 设置是否将日志输出到文件
+ * 
+ * @param enabled 是否输出到文件
+ */
 void Logger::setLogToFile(bool enabled) {
     QMutexLocker locker(&m_mutex);
     m_logToFile = enabled;
@@ -65,25 +82,49 @@ void Logger::setLogToFile(bool enabled) {
     }
 }
 
+/**
+ * @brief 设置是否将日志输出到控制台
+ * 
+ * @param enabled 是否输出到控制台
+ */
 void Logger::setLogToConsole(bool enabled) {
     QMutexLocker locker(&m_mutex);
     m_logToConsole = enabled;
 }
 
+/**
+ * @brief 设置最大日志文件大小
+ * 
+ * @param maxSize 最大日志文件大小（字节）
+ */
 void Logger::setMaxLogFileSize(qint64 maxSize) {
     QMutexLocker locker(&m_mutex);
     m_maxLogFileSize = maxSize;
 }
 
+/**
+ * @brief 设置最大日志文件
+ * 
+ * @param maxFiles 最大日志文件
+ */
 void Logger::setMaxLogFiles(int maxFiles) {
     QMutexLocker locker(&m_mutex);
     m_maxLogFiles = maxFiles;
 }
 
+/**
+ * @brief 设置最大日志文件数量
+ * 
+ * @param maxFiles 最大日志文件数量
+ */
 QString Logger::getLogFilePath() const {
     return m_logDir + "/" + m_logFileName;
 }
 
+/**
+ * @brief 清空日志文件
+ * 
+ */
 void Logger::clearLogs() {
     QMutexLocker locker(&m_mutex);
 
@@ -111,11 +152,23 @@ void Logger::clearLogs() {
     }
 }
 
+/**
+ * @brief 轮转日志文件
+ * 
+ * 检查日志文件是否超过最大大小限制，如果超过则进行轮转。
+ */
 void Logger::rotateLogFile() {
     QMutexLocker locker(&m_mutex);
     checkLogRotation();
 }
 
+/**
+ * @brief 写入日志
+ * 
+ * @param type 日志类型
+ * @param context 日志上下文
+ * @param msg 日志消息
+ */
 void Logger::writeLog(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
     QMutexLocker locker(&m_mutex);
 
@@ -162,6 +215,11 @@ void Logger::writeLog(QtMsgType type, const QMessageLogContext &context, const Q
     }
 }
 
+/**
+ * @brief 初始化日志文件
+ * 
+ * 初始化日志文件，创建日志文件目录和文件流。
+ */
 void Logger::initLogFile() {
     if (!m_logToFile) {
         return;
@@ -186,6 +244,11 @@ void Logger::initLogFile() {
     }
 }
 
+/**
+ * @brief 检查日志文件是否需要轮转
+ * 
+ * 检查日志文件是否超过最大大小限制，如果超过则进行轮转。
+ */
 void Logger::checkLogRotation() {
     if (!m_logFile || !m_logToFile) {
         return;
@@ -223,6 +286,14 @@ void Logger::checkLogRotation() {
     }
 }
 
+/**
+ * @brief 格式化日志消息
+ * 
+ * @param type 日志类型
+ * @param context 日志上下文
+ * @param msg 日志消息
+ * @return QString 格式化后的日志消息
+ */
 QString Logger::formatLogMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
     QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz");
     QString typeStr = messageTypeToString(type);
@@ -231,6 +302,12 @@ QString Logger::formatLogMessage(QtMsgType type, const QMessageLogContext &conte
     return QString("[%1] [%2] [%3:%4] %5").arg(timestamp).arg(typeStr).arg(fileName).arg(context.line).arg(msg);
 }
 
+/**
+ * @brief 将日志类型转换为字符串
+ * 
+ * @param type 日志类型
+ * @return QString 日志类型的字符串表示
+ */
 QString Logger::messageTypeToString(QtMsgType type) {
     switch (type) {
     case QtDebugMsg:
