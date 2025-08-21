@@ -55,7 +55,7 @@ void Setting::setLogLevel(int level) {
 }
 
 int Setting::getLogLevel() const {
-    return m_config.get("log/level", static_cast<int>(Logger::Info)).toInt();
+    return m_config.get("log/level", static_cast<int>(Logger::LogLevel::Info)).toInt();
 }
 
 void Setting::setLogToFile(bool enabled) {

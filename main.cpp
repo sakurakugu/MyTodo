@@ -34,7 +34,6 @@ int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
 
     // 初始化日志系统
-    Logger &logger = Logger::GetInstance();
     qInstallMessageHandler(Logger::messageHandler);
 
     // 记录应用启动
@@ -58,7 +57,7 @@ int main(int argc, char *argv[]) {
     Setting &setting = Setting::GetInstance(); // 创建Setting实例
 
     // 应用日志设置
-    setting.setLogLevel(static_cast<Logger::LogLevel>(setting.getLogLevel()));
+    setting.setLogLevel(setting.getLogLevel());
     setting.setLogToFile(setting.getLogToFile());
     setting.setLogToConsole(setting.getLogToConsole());
     setting.setMaxLogFileSize(setting.getMaxLogFileSize());
