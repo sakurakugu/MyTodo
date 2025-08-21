@@ -1,21 +1,29 @@
+/**
+ * @file default_value.h
+ * @brief C++23 优化的默认值定义
+ *
+ * 该文件定义了应用程序的默认配置值和常量，使用 C++23 特性进行优化。
+ *
+ * @author Sakurakugu
+ * @date 2025
+ */
 #pragma once
 
-#include <QSet>
-#include <QString>
+#include <array>
+#include <string_view>
 
 namespace DefaultValues {
-    constexpr auto baseUrl = "https://api.example.com";
-    constexpr auto todoApiEndpoint = "/todo/todo_api.php";
-    constexpr auto userApiEndpoint = "/user/user_api.php";
-
-    const QSet<QString> booleanKeys = {
+    inline constexpr std::string_view baseUrl{"https://api.example.com"};
+    inline constexpr std::string_view todoApiEndpoint{"/todo/todo_api.php"};
+    inline constexpr std::string_view userApiEndpoint{"/user/user_api.php"};
+    
+    inline constexpr std::array<std::string_view, 5> booleanKeys{
         "setting/isDarkMode",      // 是否启用深色模式
         "setting/preventDragging", // 是否防止窗口拖动
         "setting/autoSync",        // 是否自动同步
         "log/logToFile",           // 是否记录到文件
         "log/logToConsole"         // 是否输出到控制台
     };
-
-    constexpr auto logFileName = "MyTodo"; // 日志文件名（不包括后缀 ".log")
-
-}
+    
+    inline constexpr std::string_view logFileName{"MyTodo"}; // 日志文件名（不包括后缀 ".log")
+} // namespace DefaultValues
