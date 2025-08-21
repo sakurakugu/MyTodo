@@ -20,8 +20,8 @@
 #include <memory>
 #include <vector>
 
-#include "config.h"
 #include "networkmanager.h"
+#include "setting.h"
 #include "todoItem.h"
 
 /**
@@ -208,7 +208,8 @@ class TodoModel : public QAbstractListModel {
     QString m_currentFilter;                        ///< 当前筛选条件
     bool m_currentImportant;                        ///< 当前重要程度筛选器
     NetworkManager *m_networkManager;               ///< 网络管理器
-    Config &m_config;                               ///< 应用设置
+    Config &m_config;                               ///< 应用配置
+    Setting &m_setting;                             ///< 应用设置
 
     QString m_accessToken;  ///< 访问令牌
     QString m_refreshToken; ///< 刷新令牌
@@ -226,4 +227,3 @@ class TodoModel : public QAbstractListModel {
     // 辅助方法
     QString getApiUrl(const QString &endpoint) const; ///< 获取完整的API URL
 };
-

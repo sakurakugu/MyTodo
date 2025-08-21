@@ -91,6 +91,7 @@ set(UTILITY_SOURCES
     cpp/logger.h
     cpp/setting.cpp
     cpp/setting.h
+    cpp/default_value.h
 )
 
 # 合并所有源文件

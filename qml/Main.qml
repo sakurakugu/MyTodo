@@ -51,10 +51,10 @@ Window {
     property bool isShowSetting: mainWindow.isShowSetting      ///< 是否显示设置界面
 
     // 主题相关属性
-    property bool isDarkMode: config.get("setting/isDarkMode", false)  ///< 深色模式开关，从配置文件读取
+    property bool isDarkMode: setting.get("setting/isDarkMode", false)  ///< 深色模式开关，从配置文件读取
 
     // 交互控制属性
-    property bool preventDragging: config.get("setting/preventDragging", false) ///< 是否禁止窗口拖拽，从配置文件读取
+    property bool preventDragging: setting.get("setting/preventDragging", false) ///< 是否禁止窗口拖拽，从配置文件读取
 
     // 页面导航系统（使用StackView实现）
 
@@ -596,7 +596,7 @@ Window {
                         }
                         root.isDarkMode = checked;
                         console.log("顶部用户菜单-切换深色模式", checked);
-                        config.save("setting/isDarkMode", checked);
+                        setting.save("setting/isDarkMode", checked);
                     }
                 }
             }
@@ -612,7 +612,7 @@ Window {
                 }
                 Switch {
                     id: onlineSwitch
-                    checked: config.get("setting/autoSync", false)
+                    checked: setting.get("setting/autoSync", false)
 
                     property bool isInitialized: false
 
@@ -630,7 +630,7 @@ Window {
                             onlineSwitch.checked = false;
                             loginStatusDialogs.showLoginRequired();
                         } else {
-                            config.save("setting/autoSync", checked);
+                            setting.save("setting/autoSync", checked);
                         }
                     }
                 }
@@ -678,16 +678,16 @@ Window {
         id: messageDialog
         isDarkMode: root.isDarkMode
     }
-    
+
     // 登录状态相关对话框组件
     LoginStatusDialogs {
         id: loginStatusDialogs
         isDarkMode: root.isDarkMode
-        
+
         onLoginRequested: {
             loginDialog.openLogin();
         }
-        
+
         onLogoutConfirmed: {
             todoModel.logout();
         }
@@ -697,8 +697,8 @@ Window {
     LoginDialog {
         id: loginDialog
         isDarkMode: root.isDarkMode
-        
-        onLoginRequested: function(username, password) {
+
+        onLoginRequested: function (username, password) {
             todoModel.login(username, password);
         }
     }

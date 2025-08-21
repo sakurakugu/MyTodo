@@ -18,9 +18,9 @@
 TodoModel::TodoModel(QObject *parent)
     : QAbstractListModel(parent), m_filterCacheDirty(true), m_isOnline(false), m_currentCategory(""),
       m_currentFilter(""), m_currentImportant(false), m_networkManager(new NetworkManager(this)),
-      m_config(Config::GetInstance()) {
+      m_config(Config::GetInstance()), m_setting(Setting::GetInstance()) {
     // 初始化默认服务器配置
-    m_config.initializeDefaultServerConfig();
+    m_setting.initializeDefaultServerConfig();
 
     // 初始化服务器配置
     initializeServerConfig();

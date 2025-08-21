@@ -30,8 +30,8 @@ class Logger : public QObject {
         Critical = 3,
         Fatal = 4
     };
-    Q_ENUM(LogLevel)
 
+    // 单例模式
     static Logger &GetInstance() {
         static Logger instance;
         return instance;
@@ -64,7 +64,6 @@ class Logger : public QObject {
     QString formatLogMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg); // 格式化日志消息
     QString messageTypeToString(QtMsgType type); // 消息类型转换为字符串
 
-    static Logger *s_instance; // 单例实例
     QFile *m_logFile;          // 日志文件
     QTextStream *m_logStream;  // 日志流
     QMutex m_mutex;            // 互斥锁

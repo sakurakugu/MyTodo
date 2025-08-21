@@ -21,7 +21,7 @@ Page {
     objectName: "settingPage"  // 用于在Main.qml中识别当前页面
 
     // 从父栈传入的属性
-    property bool isDarkMode: config.get("setting/isDarkMode", false)
+    property bool isDarkMode: setting.get("setting/isDarkMode", false)
     property bool preventDragging: false
     // 根窗口引用，用于更新全局属性
     property var rootWindow: null
@@ -76,7 +76,7 @@ Page {
                 isDarkMode = checked;
                 // 保存设置到配置文件
                 console.log("设置页面-切换深色模式", checked);
-                config.save("setting/isDarkMode", checked);
+                setting.save("setting/isDarkMode", checked);
                 if (rootWindow) rootWindow.isDarkMode = isDarkMode;
             }
         }
@@ -88,7 +88,7 @@ Page {
             enabled: mainWindow.isDesktopWidget
             onCheckedChanged: {
                 preventDragging = checked;
-                config.save("setting/preventDragging", preventDragging);
+                setting.save("setting/preventDragging", preventDragging);
                 if (rootWindow) rootWindow.preventDragging = preventDragging;
             }
         }
@@ -105,7 +105,7 @@ Page {
         Switch {
             id: autoSyncSwitch
             text: qsTr("自动同步")
-            checked: config.get("setting/autoSync", false)
+            checked: setting.get("setting/autoSync", false)
             
             property bool isInitialized: false
             
@@ -123,7 +123,7 @@ Page {
                     autoSyncSwitch.checked = false;
                     loginRequiredDialog.open();
                 } else {
-                    config.save("setting/autoSync", checked);
+                    setting.save("setting/autoSync", checked);
 
                 }
             }
@@ -219,7 +219,7 @@ Page {
                 TextField {
                     id: configPathField
                     Layout.fillWidth: true
-                    text: config.getConfigFilePath()
+                    text: setting.getConfigFilePath()
                     readOnly: true
                     color: theme.textColor
                     background: Rectangle {
@@ -238,7 +238,7 @@ Page {
                         textColor: "white"
                         backgroundColor: "#27ae60"
                         onClicked: {
-                            if (!config.openConfigFilePath()) {
+                            if (!setting.openConfigFilePath()) {
                                 openDirErrorDialog.open();
                             }
                         }
@@ -277,7 +277,7 @@ Page {
                 id: apiUrlField
                 Layout.fillWidth: true
                 // placeholderText: qsTr("请输入API服务器地址")
-                text: config.get("server/baseUrl", "https://api.example.com")
+                text: setting.get("server/baseUrl", "https://api.example.com")
                 color: theme.textColor
                 background: Rectangle {
                     color: theme.secondaryBackgroundColor
@@ -835,7 +835,7 @@ Page {
         }
         
         onAccepted: {
-            config.clearSettings();
+            setting.clearSettings();
             clearConfigSuccessDialog.open();
         }
     }

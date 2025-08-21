@@ -11,7 +11,6 @@
 #include <windows.h>
 #endif
 // 自定义头文件
-#include "cpp/config.h"
 #include "cpp/logger.h"
 #include "cpp/mainWindow.h"
 #include "cpp/setting.h"
@@ -56,17 +55,16 @@ int main(int argc, char *argv[]) {
     QGuiApplication::setOrganizationName("MyTodo");
     QGuiApplication::setOrganizationDomain("mytodo.app");
 
-    Config &config = Config::GetInstance();    // 创建Config实例
     Setting &setting = Setting::GetInstance(); // 创建Setting实例
 
     // 应用日志设置
-    logger.setLogLevel(static_cast<Logger::LogLevel>(config.getLogLevel()));
-    logger.setLogToFile(config.getLogToFile());
-    logger.setLogToConsole(config.getLogToConsole());
-    logger.setMaxLogFileSize(config.getMaxLogFileSize());
-    logger.setMaxLogFiles(config.getMaxLogFiles());
+    setting.setLogLevel(static_cast<Logger::LogLevel>(setting.getLogLevel()));
+    setting.setLogToFile(setting.getLogToFile());
+    setting.setLogToConsole(setting.getLogToConsole());
+    setting.setMaxLogFileSize(setting.getMaxLogFileSize());
+    setting.setMaxLogFiles(setting.getMaxLogFiles());
 
-    qInfo() << "日志系统初始化完成，日志文件路径:" << config.getLogFilePath();
+    qInfo() << "日志系统初始化完成，日志文件路径:" << setting.getLogFilePath();
     TodoModel todoModel(nullptr); // 创建TodoModel实例
     MainWindow mainWindow;        // 创建MainWindow实例
 
@@ -81,7 +79,6 @@ int main(int argc, char *argv[]) {
 
     // 将类注册到QML上下文
     engine.rootContext()->setContextProperty("todoModel", &todoModel);
-    engine.rootContext()->setContextProperty("config", &config);
     engine.rootContext()->setContextProperty("mainWindow", &mainWindow);
     engine.rootContext()->setContextProperty("setting", &setting);
 

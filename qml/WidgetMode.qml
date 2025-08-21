@@ -16,7 +16,7 @@ import "components"
 
 Item {
     id: widgetMode
-    
+
     // 从父组件传入的属性
     property bool isDesktopWidget: false
     property bool isShowSetting: false
@@ -24,17 +24,17 @@ Item {
     property bool isShowTodos: false
     property bool isDarkMode: false
     property bool preventDragging: false
-    
+
     // 自定义信号定义
     signal preventDraggingToggled(bool value)
     signal darkModeToggled(bool value)
-    
+
     // 主题管理器
     ThemeManager {
         id: theme
         isDarkMode: widgetMode.isDarkMode
     }
-    
+
     // 小组件模式的设置弹出窗口
     Popup {
         id: settingsPopup
@@ -73,7 +73,7 @@ Item {
                     checked: isDarkMode
 
                     property bool isInitialized: false
-                    
+
                     Component.onCompleted: {
                         isInitialized = true;
                     }
@@ -84,7 +84,7 @@ Item {
                         }
                         // 保存设置到配置文件
                         console.log("小窗口页面-切换深色模式", checked);
-                        config.save("setting/isDarkMode", checked);
+                        setting.save("setting/isDarkMode", checked);
                         // 发出信号通知父组件
                         widgetMode.darkModeToggled(checked);
                     }
@@ -97,7 +97,7 @@ Item {
                     enabled: isDesktopWidget
                     onCheckedChanged: {
                         // 保存设置到配置文件
-                        config.save("setting/preventDragging", checked);
+                        setting.save("setting/preventDragging", checked);
                         // 发出信号通知父组件
                         widgetMode.preventDraggingToggled(checked);
                     }
@@ -106,25 +106,25 @@ Item {
                 Switch {
                     id: autoSyncSwitch
                     text: "自动同步"
-                    checked: config.get("setting/autoSync", false)
+                    checked: setting.get("setting/autoSync", false)
 
                     property bool isInitialized: false
-                    
+
                     Component.onCompleted: {
                         isInitialized = true;
                     }
-                    
+
                     onCheckedChanged: {
                         if (!isInitialized) {
                             return; // 避免初始化时触发
                         }
-                        
+
                         if (checked && !todoModel.isLoggedIn) {
                             // 如果要开启自动同步但未登录，显示提示并重置开关
                             autoSyncSwitch.checked = false;
                             loginStatusDialogs.showLoginRequired();
                         } else {
-                            config.save("setting/autoSync", checked);
+                            setting.save("setting/autoSync", checked);
                         }
                     }
                 }
@@ -323,7 +323,6 @@ Item {
                                 radius: 8
                                 color: model.status === "done" ? theme.completedColor : model.important === "高" ? theme.highImportantColor : model.important === "中" ? theme.mediumImportantColor : theme.lowImportantColor
 
-
                                 MouseArea {
                                     anchors.fill: parent
                                     onClicked: {
@@ -379,8 +378,8 @@ Item {
     TodoDetailsDialog {
         id: todoDetailsDialog
         isDarkMode: widgetMode.isDarkMode
-        
-        onTodoUpdated: function(index, todoData) {
+
+        onTodoUpdated: function (index, todoData) {
             todoModel.updateTodo(index, todoData);
         }
     }
