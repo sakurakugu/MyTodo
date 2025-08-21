@@ -5,8 +5,8 @@
  * 提供一个可重用的确认对话框，支持自定义消息、按钮文本和主题。
  * 可用于各种需要用户确认的场景，如删除操作、退出登录等。
  *
- * @author MyTodo Team
- * @date 2024
+ * @author Sakurakugu
+ * @date 2025
  */
 
 import QtQuick

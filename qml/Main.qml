@@ -9,8 +9,8 @@
  * - 窗口拖拽和调整大小功能
  * - 页面导航和状态管理
  *
- * @author MyTodo Team
- * @date 2024
+ * @author Sakurakugu
+ * @date 2025
  */
 
 import QtQuick

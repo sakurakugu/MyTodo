@@ -6,27 +6,21 @@
 #include <QSettings>
 #include <QSurfaceFormat>
 #include <QtQuickControls2/QQuickStyle>
-// Windows 相关头文件·
+// Windows 相关头文件
 #ifdef Q_OS_WIN
 #include <windows.h>
 #endif
-// 标准库头文件
-#include <iostream>
 // 自定义头文件
 #include "cpp/config.h"
 #include "cpp/logger.h"
 #include "cpp/mainWindow.h"
+#include "cpp/setting.h"
 #include "cpp/todoModel.h"
 
 int main(int argc, char *argv[]) {
 #if defined(Q_OS_WIN) && defined(QT_DEBUG)
     // Windows平台
     UINT cp = GetACP();
-    // UINT inputCP = GetConsoleCP();
-    // UINT outputCP = GetConsoleOutputCP();
-    // std::cout << "控制台输入代码页: " << inputCP << std::endl;
-    // std::cout << "控制台输出代码页: " << outputCP << std::endl;
-
     if (cp == 65001) {
         // 设置 Windows 控制台输入输出为 UTF-8
         SetConsoleCP(CP_UTF8);
@@ -36,7 +30,6 @@ int main(int argc, char *argv[]) {
         SetConsoleCP(936);
         SetConsoleOutputCP(936);
     }
-
 #endif
 
     QGuiApplication app(argc, argv);
@@ -63,7 +56,8 @@ int main(int argc, char *argv[]) {
     QGuiApplication::setOrganizationName("MyTodo");
     QGuiApplication::setOrganizationDomain("mytodo.app");
 
-    Config config; // 创建Config实例
+    Config &config = Config::GetInstance();    // 创建Config实例
+    Setting &setting = Setting::GetInstance(); // 创建Setting实例
 
     // 应用日志设置
     logger.setLogLevel(static_cast<Logger::LogLevel>(config.getLogLevel()));
@@ -73,8 +67,8 @@ int main(int argc, char *argv[]) {
     logger.setMaxLogFiles(config.getMaxLogFiles());
 
     qInfo() << "日志系统初始化完成，日志文件路径:" << config.getLogFilePath();
-    TodoModel todoModel(nullptr, &config); // 创建TodoModel实例
-    MainWindow mainWindow;                 // 创建MainWindow实例
+    TodoModel todoModel(nullptr); // 创建TodoModel实例
+    MainWindow mainWindow;        // 创建MainWindow实例
 
     // 检查是否通过开机自启动启动
     QStringList arguments = app.arguments();
@@ -89,6 +83,7 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("todoModel", &todoModel);
     engine.rootContext()->setContextProperty("config", &config);
     engine.rootContext()->setContextProperty("mainWindow", &mainWindow);
+    engine.rootContext()->setContextProperty("setting", &setting);
 
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app, []() { QCoreApplication::exit(-1); },

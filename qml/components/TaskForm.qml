@@ -9,8 +9,8 @@
  * - 主题色彩适配
  * - 表单验证和提交
  * 
- * @author MyTodo Team
- * @date 2024
+ * @author Sakurakugu
+ * @date 2025
  */
 
 import QtQuick

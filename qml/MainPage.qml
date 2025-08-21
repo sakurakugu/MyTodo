@@ -1,3 +1,14 @@
+/**
+ * @file MainPage.qml
+ * @brief 主页面组件
+ *
+ * 该文件定义了应用程序的主页面组件，包含侧边栏、任务列表和任务详情等功能。
+ * 它是应用程序的主要界面，用户可以在其中查看和管理待办事项。
+ *
+ * @author Sakurakugu
+ * @date 2025
+ */
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts

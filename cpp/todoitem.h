@@ -4,12 +4,11 @@
  *
  * 该文件定义了TodoItem类，用于表示待办事项的数据模型。
  *
- * @author MyTodo Team
- * @date 2024
+ * @author Sakurakugu
+ * @date 2025
  */
 
-#ifndef TODOITEM_H
-#define TODOITEM_H
+#pragma once
 
 #include <QDateTime>
 #include <QObject>
@@ -206,4 +205,3 @@ class TodoItem : public QObject {
     QDateTime m_lastModifiedAt;    // 任务最后修改时间
 };
 
-#endif // TODOITEM_H

@@ -4,12 +4,11 @@
  *
  * 该文件定义了NetworkManager类，用于管理应用程序的网络请求。
  *
- * @author MyTodo Team
- * @date 2024
+ * @author Sakurakugu
+ * @date 2025
  */
 
-#ifndef NETWORKMANAGER_H
-#define NETWORKMANAGER_H
+#pragma once
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -179,5 +178,3 @@ class NetworkManager : public QObject {
 
     QTimer *m_connectivityTimer; // 连接定时器
 };
-
-#endif // NETWORKMANAGER_H

@@ -5,8 +5,8 @@
  * 提供一个可重用的消息提示对话框，支持不同类型的消息显示，
  * 如成功、错误、警告、信息等，并支持自定义图标和按钮。
  *
- * @author MyTodo Team
- * @date 2024
+ * @author Sakurakugu
+ * @date 2025
  */
 
 import QtQuick

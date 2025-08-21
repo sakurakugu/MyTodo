@@ -1,5 +1,13 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+/**
+ * @file mainWindow.h
+ * @brief MainWindow类的头文件
+ *
+ * 该文件定义了MainWindow类，用于管理应用程序的主窗口。
+ *
+ * @author Sakurakugu
+ * @date 2025
+ */
+#pragma once
 
 #include <QObject>
 
@@ -54,5 +62,3 @@ class MainWindow : public QObject {
     bool m_isShowTodos;
     bool m_isShowSetting;
 };
-
-#endif // MAINWINDOW_H

@@ -8,8 +8,8 @@
  * - 可配置的字体大小
  * - 扁平化设计风格
  * 
- * @author MyTodo Team
- * @date 2024
+ * @author Sakurakugu
+ * @date 2025
  */
 
 import QtQuick

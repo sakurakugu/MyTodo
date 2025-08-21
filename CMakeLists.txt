@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.16)
 # 项目基本信息
 project(MyTodo 
     VERSION 0.1.0
-    DESCRIPTION "现代化的待办事项管理应用"
+    DESCRIPTION "待办事项管理应用"
     HOMEPAGE_URL "https://github.com/sakurakugu/MyTodo"
     LANGUAGES CXX
 )
@@ -23,7 +23,7 @@ set(CMAKE_AUTOUIC ON)                      # 自动处理 UIC
 
 # 构建类型优化
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build" FORCE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "选择构建类型" FORCE)
 endif()
 
 # 编译器特定优化
@@ -59,7 +59,6 @@ set(PRIVATE_LIBRARIES
     Qt6::Quick
     Qt6::Network
     Qt6::Concurrent
-    toml11::toml11
 )
 
 # 项目源文件配置
@@ -90,6 +89,8 @@ set(UTILITY_SOURCES
     cpp/config.h
     cpp/logger.cpp
     cpp/logger.h
+    cpp/setting.cpp
+    cpp/setting.h
 )
 
 # 合并所有源文件
@@ -144,20 +145,11 @@ set(RESOURCE_FILES
     # resources/images/logo.png
 )
 
-# 添加外部库 toml11
-include(FetchContent)
-FetchContent_Declare(
-    toml11
-    GIT_REPOSITORY https://github.com/ToruNiina/toml11.git
-    GIT_TAG        v4.4.0
-)
-FetchContent_MakeAvailable(toml11)
-
 # 查找 Qt6 依赖
 find_package(Qt6 REQUIRED COMPONENTS ${QT_COMPONENTS})
 
 # Qt6 项目标准设置
-qt_standard_project_setup(REQUIRES 6.8)
+qt_standard_project_setup(REQUIRES 6.9)
 
 # 创建可执行文件目标
 qt_add_executable(appMyTodo
@@ -187,7 +179,7 @@ qt_add_qml_module(appMyTodo
 # qt_add_translations(appMyTodo
 #     RESOURCE_PREFIX /qt/qml/MyTodo/i18n  # 资源前缀
 #     TS_FILES ${TRANSLATION_FILES}        # 翻译文件
-#     QM_FILES_OUTPUT_VARIABLE qm_files    # 输出变量
+#    # QM_FILES_OUTPUT_VARIABLE qm_files    # 输出变量
 # )
 
 # 平台特定配置
@@ -200,7 +192,7 @@ endif()
 
 # 安装路径配置
 if (WIN32)
-set(CMAKE_INSTALL_PREFIX "C:/Software/Apps/MyTodo" CACHE PATH "Install path prefix" FORCE)
+set(CMAKE_INSTALL_PREFIX "C:/Software/Apps/MyTodo" CACHE PATH "安装路径前缀" FORCE)
 endif()
 
 
@@ -227,13 +219,6 @@ target_link_libraries(appMyTodo PRIVATE ${PRIVATE_LIBRARIES})
 # 包含目录配置
 target_include_directories(appMyTodo PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp     # C++ 头文件目录
-)
-
-# 编译定义
-target_compile_definitions(appMyTodo PRIVATE
-    QT_QML_DEBUG                        # QML 调试支持
-    $<$<CONFIG:Debug>:DEBUG_BUILD>      # Debug 构建标志
-    $<$<CONFIG:Release>:RELEASE_BUILD>  # Release 构建标志
 )
 
 # 安装配置

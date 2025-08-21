@@ -1,3 +1,14 @@
+/**
+ * @file ThemeManager.qml
+ * @brief 主题管理组件
+ *
+ * 该文件定义了一个主题管理组件，用于管理应用程序的主题颜色和样式。
+ * 它提供了切换主题、获取当前主题颜色和样式的功能。
+ *
+ * @author Sakurakugu
+ * @date 2025
+ */
+
 import QtQuick
 
 QtObject {

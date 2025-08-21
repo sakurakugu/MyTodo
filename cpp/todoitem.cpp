@@ -6,7 +6,7 @@
  * TodoItem包含了待办事项的所有属性，如标题、描述、分类、优先级等，
  * 并提供了相应的getter和setter方法，支持Qt的属性系统和信号槽机制。
  *
- * @author MyTodo Team
+ * @author Sakurakugu
  * @date 2024
  */
 

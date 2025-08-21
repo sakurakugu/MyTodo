@@ -5,8 +5,8 @@
  * 提供用户登录界面，包含用户名和密码输入框，
  * 以及登录状态处理和错误提示功能。
  *
- * @author MyTodo Team
- * @date 2024
+ * @author Sakurakugu
+ * @date 2025
  */
 
 import QtQuick

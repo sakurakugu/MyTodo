@@ -5,8 +5,8 @@
  * 包含与用户登录状态相关的各种对话框，如登录需要提示、
  * 登录成功、登录失败、退出登录确认等对话框。
  *
- * @author MyTodo Team
- * @date 2024
+ * @author Sakurakugu
+ * @date 2025
  */
 
 import QtQuick

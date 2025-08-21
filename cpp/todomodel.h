@@ -4,12 +4,11 @@
  *
  * 该文件定义了TodoModel类，用于管理待办事项的数据模型。
  *
- * @author MyTodo Team
- * @date 2024
+ * @author Sakurakugu
+ * @date 2025
  */
 
-#ifndef TODOMODEL_H
-#define TODOMODEL_H
+#pragma once
 
 #include <QAbstractListModel>
 #include <QDebug>
@@ -99,8 +98,7 @@ class TodoModel : public QAbstractListModel {
      * @param config 设置对象指针，如果为nullptr则创建新的设置对象
      * @param storageType 存储类型，默认使用注册表存储
      */
-    explicit TodoModel(QObject *parent = nullptr, Config *config = nullptr,
-                       Config::StorageType storageType = Config::Registry);
+    explicit TodoModel(QObject *parent = nullptr);
 
     ~TodoModel();
 
@@ -152,7 +150,7 @@ class TodoModel : public QAbstractListModel {
     importTodosWithAutoResolution(const QString &filePath); // 自动导入无冲突项目，返回冲突项目列表
 
     // 获取设置对象
-    Q_INVOKABLE Config *config() const {
+    Q_INVOKABLE Config &config() {
         return m_config;
     }
 
@@ -210,7 +208,7 @@ class TodoModel : public QAbstractListModel {
     QString m_currentFilter;                        ///< 当前筛选条件
     bool m_currentImportant;                        ///< 当前重要程度筛选器
     NetworkManager *m_networkManager;               ///< 网络管理器
-    Config *m_config;                               ///< 应用设置
+    Config &m_config;                               ///< 应用设置
 
     QString m_accessToken;  ///< 访问令牌
     QString m_refreshToken; ///< 刷新令牌
@@ -229,4 +227,3 @@ class TodoModel : public QAbstractListModel {
     QString getApiUrl(const QString &endpoint) const; ///< 获取完整的API URL
 };
 
-#endif // TODOMODEL_H

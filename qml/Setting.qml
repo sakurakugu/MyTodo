@@ -1,3 +1,14 @@
+/**
+ * @file Setting.qml
+ * @brief 设置页面组件
+ *
+ * 该文件定义了应用程序的设置页面组件，包含外观设置、窗口行为设置等功能。
+ * 用户可以在该页面中调整应用程序的主题、窗口行为、自动启动等设置。
+ *
+ * @author Sakurakugu
+ * @date 2025
+ */
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -182,6 +193,68 @@ Page {
         onClicked: Qt.openUrlExternally("https://github.com/sakurakugu/MyTodo")
         isDarkMode: settingPage.isDarkMode
     }
+
+        Label {
+            text: qsTr("配置文件管理")
+            font.bold: true
+            font.pixelSize: 16
+            color: theme.textColor
+            Layout.topMargin: 10
+        }
+
+        ColumnLayout {
+            spacing: 10
+            Layout.fillWidth: true
+
+            // 配置文件路径显示（仅对文件类型显示）
+            ColumnLayout {
+                spacing: 5
+                Layout.fillWidth: true
+                
+                Label {
+                    text: qsTr("配置文件路径:")
+                    color: theme.textColor
+                }
+                
+                TextField {
+                    id: configPathField
+                    Layout.fillWidth: true
+                    text: config.getConfigFilePath()
+                    readOnly: true
+                    color: theme.textColor
+                    background: Rectangle {
+                        color: theme.secondaryBackgroundColor
+                        border.color: theme.borderColor
+                        border.width: 1
+                        radius: 4
+                    }
+                }
+                
+                RowLayout {
+                    spacing: 10
+                    
+                    CustomButton {
+                        text: qsTr("打开目录")
+                        textColor: "white"
+                        backgroundColor: "#27ae60"
+                        onClicked: {
+                            if (!config.openConfigFilePath()) {
+                                openDirErrorDialog.open();
+                            }
+                        }
+                        isDarkMode: settingPage.isDarkMode
+                    }
+                    
+                    CustomButton {
+                        text: qsTr("清空配置")
+                        textColor: "white"
+                        backgroundColor: "#e74c3c"
+                        onClicked: clearConfigDialog.open()
+                        isDarkMode: settingPage.isDarkMode
+                    }
+                }
+            }
+        }
 
         Label {
             text: qsTr("服务器配置")
@@ -746,4 +819,98 @@ Page {
             anchors.centerIn: parent
         }
     }
+    
+    // 清空配置确认对话框
+    Dialog {
+        id: clearConfigDialog
+        title: qsTr("清空所有配置")
+        modal: true
+        anchors.centerIn: parent
+        standardButtons: Dialog.Yes | Dialog.No
+        
+        Label {
+            text: qsTr("警告：此操作将清空所有配置设置！\n\n确定要继续吗？此操作无法撤销。")
+            wrapMode: Text.WordWrap
+            color: "#e74c3c"
+        }
+        
+        onAccepted: {
+            config.clearSettings();
+            clearConfigSuccessDialog.open();
+        }
+    }
+    
+    // 成功/错误提示对话框
+    Dialog {
+        id: storageChangeSuccessDialog
+        title: qsTr("操作成功")
+        standardButtons: Dialog.Ok
+        Label {
+            text: qsTr("存储类型已成功更改！")
+        }
+    }
+    
+    Dialog {
+        id: storageChangeErrorDialog
+        title: qsTr("操作失败")
+        standardButtons: Dialog.Ok
+        Label {
+            text: qsTr("更改存储类型时发生错误，请重试。")
+        }
+    }
+    
+    Dialog {
+        id: pathChangeSuccessDialog
+        title: qsTr("操作成功")
+        standardButtons: Dialog.Ok
+        Label {
+            text: qsTr("配置文件路径已成功更改！")
+        }
+    }
+    
+    Dialog {
+        id: pathChangeErrorDialog
+        title: qsTr("操作失败")
+        standardButtons: Dialog.Ok
+        Label {
+            text: qsTr("更改配置文件路径时发生错误，请检查路径是否有效。")
+        }
+    }
+    
+    Dialog {
+        id: pathResetSuccessDialog
+        title: qsTr("操作成功")
+        standardButtons: Dialog.Ok
+        Label {
+            text: qsTr("配置文件路径已重置为选定的默认位置！")
+        }
+    }
+    
+    Dialog {
+        id: pathResetErrorDialog
+        title: qsTr("操作失败")
+        standardButtons: Dialog.Ok
+        Label {
+            text: qsTr("重置配置文件路径时发生错误。")
+        }
+    }
+    
+    Dialog {
+        id: clearConfigSuccessDialog
+        title: qsTr("操作成功")
+        standardButtons: Dialog.Ok
+        Label {
+            text: qsTr("所有配置已清空！")
+        }
+    }
+    
+    Dialog {
+        id: openDirErrorDialog
+        title: qsTr("操作失败")
+        standardButtons: Dialog.Ok
+        Label {
+            text: qsTr("无法打开配置文件目录。")
+        }
+    }
+
 }

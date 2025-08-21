@@ -92,7 +92,8 @@
         "expected": "cpp",
         "source_location": "cpp",
         "valarray": "cpp",
-        "qobject": "cpp"
+        "qobject": "cpp",
+        "qjsondocument": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

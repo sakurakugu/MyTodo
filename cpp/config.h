@@ -1,5 +1,13 @@
-#ifndef SETTINGS_H
-#define SETTINGS_H
+/**
+ * @file config.h
+ * @brief Config类的头文件
+ *
+ * 该文件定义了Config类，用于管理应用程序的本地配置文件。
+ *
+ * @author Sakurakugu
+ * @date 2025
+ */
+#pragma once
 
 #include <QDir>
 #include <QFile>
@@ -9,7 +17,6 @@
 #include <QObject>
 #include <QSettings>
 #include <QVariant>
-#include <toml.hpp>
 
 /**
  * @class Config
@@ -23,19 +30,15 @@ class Config : public QObject {
     Q_OBJECT
 
   public:
-    /**
-     * @enum StorageType
-     * @brief 定义设置存储类型
-     */
-    enum StorageType {
-        IniFile,  ///< 使用INI配置文件存储
-        Registry, ///< 使用系统注册表存储
-        TomlFile  ///< 使用TOML配置文件存储
-    };
-    Q_ENUM(StorageType)
+    // 单例模式
+    static Config &GetInstance() {
+        static Config instance;
+        return instance;
+    }
 
-    explicit Config(QObject *parent = nullptr, StorageType storageType = TomlFile);
-    ~Config();
+    // 禁用拷贝构造和赋值操作
+    Config(const Config &) = delete;
+    Config &operator=(const Config &) = delete;
 
     Q_INVOKABLE bool save(const QString &key, const QVariant &value); ///< 保存设置到配置文件
     Q_INVOKABLE QVariant get(const QString &key,
@@ -45,7 +48,6 @@ class Config : public QObject {
     Q_INVOKABLE QStringList allKeys();                                         ///< 获取所有设置的键名
     Q_INVOKABLE void clearSettings();                                          ///< 清除所有设置
     Q_INVOKABLE void initializeDefaultServerConfig();                          ///< 初始化默认服务器配置
-    Q_INVOKABLE StorageType getStorageType() const;                            ///< 获取当前存储类型
 
     // 日志配置相关方法
     Q_INVOKABLE void setLogLevel(int level);            ///< 设置日志级别
@@ -61,18 +63,17 @@ class Config : public QObject {
     Q_INVOKABLE QString getLogFilePath() const;         ///< 获取日志文件路径
     Q_INVOKABLE void clearLogs();                       ///< 清除所有日志文件
 
+    // 存储类型和路径管理相关方法
+    Q_INVOKABLE bool openConfigFilePath() const;   ///< 打开配置文件所在目录
+    Q_INVOKABLE QString getConfigFilePath() const; ///< 获取配置文件路径
+
   private:
-    StorageType m_storageType; ///< 存储类型
-    QSettings *m_config;       ///< 配置文件对象
-    QString m_tomlFilePath;    ///< TOML配置文件路径
-    toml::value m_tomlData;    ///< TOML数据存储
+    explicit Config(QObject *parent = nullptr);
+    ~Config();
 
-    // TOML相关私有方法
-    bool loadTomlFile();                                                                      ///< 加载TOML文件
-    bool saveTomlFile();                                                                      ///< 保存TOML文件
-    QVariant tomlValueToQVariant(const toml::value &value) const;                             ///< TOML值转QVariant
-    toml::value qVariantToTomlValue(const QVariant &value);                                   ///< QVariant转TOML值
-    void collectTomlKeys(const toml::value &value, const QString &prefix, QStringList &keys); ///< 递归收集TOML键
+    QSettings *m_config;    ///< 配置文件对象
+    QString m_tomlFilePath; ///< TOML配置文件路径
+
+    // 存储初始化方法
+    void initializeStorage(); ///< 初始化存储
 };
-
-#endif // SETTINGS_H

@@ -1,3 +1,14 @@
+/**
+ * @file CustomPopup.qml
+ * @brief 自定义弹窗组件
+ *
+ * 该文件定义了一个自定义弹窗组件，用于在应用程序中显示自定义内容的弹窗。
+ * 弹窗可以包含标题、内容和关闭按钮，支持自定义样式和行为。
+ *
+ * @author Sakurakugu
+ * @date 2025
+ */
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts

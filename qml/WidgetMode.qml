@@ -1,3 +1,14 @@
+/**
+ * @file WidgetMode.qml
+ * @brief 小组件模式组件
+ *
+ * 该文件定义了应用程序的小组件模式组件，用于在桌面小组件中显示和管理待办事项。
+ * 它包含侧边栏、任务列表和任务详情等功能，用户可以在小组件中查看和管理待办事项。
+ *
+ * @author Sakurakugu
+ * @date 2025
+ */
+
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts

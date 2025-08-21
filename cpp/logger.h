@@ -1,5 +1,14 @@
-#ifndef LOGGER_H
-#define LOGGER_H
+/**
+ * @file logger.h
+ * @brief 日志记录器类的头文件
+ *
+ * 该文件定义了Logger类，用于记录应用程序的运行时日志信息。
+ *
+ * @author Sakurakugu
+ * @date 2025
+ */
+
+#pragma once
 
 #include <QDateTime>
 #include <QDir>
@@ -67,5 +76,3 @@ class Logger : public QObject {
     QString m_logDir;          // 日志目录
     QString m_logFileName;     // 日志文件名
 };
-
-#endif // LOGGER_H

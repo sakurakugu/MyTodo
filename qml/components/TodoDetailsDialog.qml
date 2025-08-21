@@ -1,3 +1,14 @@
+/**
+ * @file TodoDetailsDialog.qml
+ * @brief 待办详情对话框组件
+ *
+ * 该文件定义了一个待办详情对话框组件，用于显示和编辑待办事项的详细信息。
+ * 它包含一个任务表单组件，用于输入和编辑待办事项的标题、描述、截止日期等信息。
+ *
+ * @author Sakurakugu
+ * @date 2025
+ */
+ 
 import QtQuick
 import QtQuick.Controls
 
