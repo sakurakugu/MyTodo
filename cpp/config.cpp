@@ -18,25 +18,6 @@ Config::~Config() {
 }
 
 /**
- * @brief 保存设置到配置文件
- * @param key 设置键名
- * @param value 设置值
- * @return 保存是否成功
- */
-bool Config::save(const QString &key, const QVariant &value) noexcept {
-    if (!m_config) {
-        return false;
-    }
-
-    try {
-        m_config->setValue(key, value);
-        return m_config->status() == QSettings::NoError;
-    } catch (...) {
-        return false;
-    }
-}
-
-/**
  * @brief 从配置文件读取设置
  * @param key 设置键名
  * @param defaultValue 默认值（如果设置不存在）
@@ -61,30 +42,6 @@ std::expected<QVariant, ConfigError> Config::get(QStringView key, const QVariant
 }
 
 /**
- * @brief 从配置文件读取设置（向后兼容版本）
- * @param key 设置键名
- * @param defaultValue 默认值（如果设置不存在）
- * @return 设置值
- */
-QVariant Config::get(const QString &key, const QVariant &defaultValue) const noexcept {
-    if (!m_config) {
-        return defaultValue;
-    }
-
-    try {
-        QVariant value = m_config->value(key, defaultValue);
-
-        if (isBooleanKey(QStringView(key))) {
-            value = processBooleanValue(value);
-        }
-
-        return value;
-    } catch (...) {
-        return defaultValue;
-    }
-}
-
-/**
  * @brief 移除设置
  * @param key 设置键名
  * @return 操作结果或错误信息
@@ -103,22 +60,6 @@ std::expected<void, ConfigError> Config::remove(QStringView key) noexcept {
 }
 
 /**
- * @brief 移除设置（向后兼容版本）
- * @param key 设置键名
- */
-void Config::remove(const QString &key) noexcept {
-    if (!m_config) {
-        return;
-    }
-
-    try {
-        m_config->remove(key);
-    } catch (...) {
-        // 忽略异常
-    }
-}
-
-/**
  * @brief 检查设置是否存在
  * @param key 设置键名
  * @return 设置是否存在
@@ -128,18 +69,6 @@ bool Config::contains(QStringView key) const noexcept {
         return false;
     }
     return m_config->contains(key.toString());
-}
-
-/**
- * @brief 检查设置是否存在（向后兼容版本）
- * @param key 设置键名
- * @return 设置是否存在
- */
-bool Config::contains(const QString &key) const noexcept {
-    if (!m_config) {
-        return false;
-    }
-    return m_config->contains(key);
 }
 
 /**
@@ -157,7 +86,7 @@ QStringList Config::allKeys() const noexcept {
  * @brief 清除所有设置
  * @return 操作结果或错误信息
  */
-std::expected<void, ConfigError> Config::clearSettings() noexcept {
+std::expected<void, ConfigError> Config::clear() noexcept {
     if (!m_config) {
         return std::unexpected(ConfigError::InvalidConfig);
     }
@@ -167,21 +96,6 @@ std::expected<void, ConfigError> Config::clearSettings() noexcept {
         return {};
     } catch (...) {
         return std::unexpected(ConfigError::SaveFailed);
-    }
-}
-
-/**
- * @brief 清除所有设置（向后兼容版本）
- */
-void Config::clear() noexcept {
-    if (!m_config) {
-        return;
-    }
-
-    try {
-        m_config->clear();
-    } catch (...) {
-        // 忽略异常
     }
 }
 

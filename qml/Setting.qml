@@ -835,7 +835,7 @@ Page {
         }
         
         onAccepted: {
-            setting.clearSettings();
+            setting.clear();
             clearConfigSuccessDialog.open();
         }
     }

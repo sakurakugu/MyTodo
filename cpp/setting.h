@@ -37,7 +37,7 @@ class Setting : public QObject {
     Q_INVOKABLE void remove(const QString &key);                               ///< 移除设置
     Q_INVOKABLE bool contains(const QString &key);                             ///< 检查设置是否存在
     Q_INVOKABLE QStringList allKeys();                                         ///< 获取所有设置的键名
-    Q_INVOKABLE void clearSettings();                                          ///< 清除所有设置
+    Q_INVOKABLE void clear();                                          ///< 清除所有设置
 
     // 存储类型和路径管理相关方法
     bool openConfigFilePath() const;   ///< 打开配置文件所在目录

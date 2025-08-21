@@ -37,14 +37,14 @@ TodoModel::TodoModel(QObject *parent)
     }
 
     // 初始化在线状态
-    m_isOnline = m_config.get("autoSync", false).toBool();
+    m_isOnline = m_config.get(QStringLiteral("autoSync"), false).value().toBool();
     emit isOnlineChanged();
 
     // 尝试使用存储的令牌自动登录
-    if (m_config.contains("user/accessToken")) {
-        m_accessToken = m_config.get("user/accessToken").toString();
-        m_refreshToken = m_config.get("user/refreshToken").toString();
-        m_username = m_config.get("user/username").toString();
+    if (m_config.contains(QStringLiteral("user/accessToken"))) {
+        m_accessToken = m_config.get(QStringLiteral("user/accessToken")).value().toString();
+        m_refreshToken = m_config.get(QStringLiteral("user/refreshToken")).value().toString();
+        m_username = m_config.get(QStringLiteral("user/username")).value().toString();
 
         // TODO: 在这里验证令牌是否有效
         qDebug() << "使用存储的凭据自动登录用户：" << m_username;
@@ -343,7 +343,7 @@ void TodoModel::setIsOnline(bool online) {
         m_isOnline = online;
         emit isOnlineChanged();
         // 保存到设置，保持与autoSync一致
-        m_config.save("setting/autoSync", m_isOnline);
+        m_config.save(QStringLiteral("setting/autoSync"), m_isOnline);
 
         if (m_isOnline && isLoggedIn()) {
             syncWithServer();
@@ -353,7 +353,7 @@ void TodoModel::setIsOnline(bool online) {
         m_isOnline = online;
         emit isOnlineChanged();
         // 保存到设置，保持与autoSync一致
-        m_config.save("setting/autoSync", m_isOnline);
+        m_config.save(QStringLiteral("setting/autoSync"), m_isOnline);
     }
 }
 
@@ -749,9 +749,9 @@ void TodoModel::logout() {
     m_refreshToken.clear();
     m_username.clear();
 
-    m_config.remove("user/accessToken");
-    m_config.remove("user/refreshToken");
-    m_config.remove("user/username");
+    m_config.remove(QStringLiteral("user/accessToken"));
+    m_config.remove(QStringLiteral("user/refreshToken"));
+    m_config.remove(QStringLiteral("user/username"));
 
     // 标记所有项为未同步
     for (size_t i = 0; i < m_todos.size(); ++i) {
@@ -875,9 +875,9 @@ void TodoModel::handleLoginSuccess(const QJsonObject &response) {
     m_networkManager->setAuthToken(m_accessToken);
 
     // 保存令牌
-    m_config.save("user/accessToken", m_accessToken);
-    m_config.save("user/refreshToken", m_refreshToken);
-    m_config.save("user/username", m_username);
+    m_config.save(QStringLiteral("user/accessToken"), m_accessToken);
+    m_config.save(QStringLiteral("user/refreshToken"), m_refreshToken);
+    m_config.save(QStringLiteral("user/username"), m_username);
 
     qDebug() << "用户" << m_username << "登录成功";
 
@@ -1036,7 +1036,7 @@ bool TodoModel::loadFromLocalStorage() {
 
 
         // 从设置中加载数据
-        int count = m_config.get("todos/size", 0).toInt();
+        int count = m_config.get(QStringLiteral("todos/size"), 0).value().toInt();
         qDebug() << "从本地存储加载" << count << "个待办事项";
 
         for (int i = 0; i < count; ++i) {
@@ -1049,31 +1049,31 @@ bool TodoModel::loadFromLocalStorage() {
             }
 
             auto item = std::make_unique<TodoItem>(
-                m_config.get(prefix + "id").toString(),                  // 从配置中获取ID
-                m_config.get(prefix + "title").toString(),               // 从配置中获取标题
-                m_config.get(prefix + "description").toString(),         // 从配置中获取描述
-                m_config.get(prefix + "category").toString(),            // 从配置中获取类别
-                m_config.get(prefix + "important").toBool(),             // 从配置中获取重要性
-                m_config.get(prefix + "status").toString(),              // 从配置中获取状态
-                m_config.get(prefix + "deadline").toString(),            // 从配置中获取截止日期
-                m_config.get(prefix + "recurrenceInterval", 0).toInt(),  // 从配置中获取重复间隔
-                m_config.get(prefix + "recurrenceCount", -1).toInt(),    // 从配置中获取重复次数
-                m_config.get(prefix + "recurrenceStartDate").toString(), // 从配置中获取重复开始日期
-                m_config.get(prefix + "createdAt").toDateTime(),         // 从配置中获取创建时间
-                m_config.get(prefix + "updatedAt").toDateTime(),         // 从配置中获取更新时间
-                m_config.get(prefix + "synced").toBool(),                // 从配置中获取同步状态
-                m_config.get(prefix + "uuid").toString(),                // 从配置中获取UUID
-                m_config.get(prefix + "userId", 0).toInt(),              // 从配置中获取用户ID
-                m_config.get(prefix + "isCompleted", false).toBool(),    // 从配置中获取是否完成
-                m_config.get(prefix + "completedAt").toDateTime(),       // 从配置中获取完成时间
-                m_config.get(prefix + "isDeleted", false).toBool(),      // 从配置中获取是否删除
-                m_config.get(prefix + "deletedAt").toDateTime(),         // 从配置中获取删除时间
-                m_config.get(prefix + "lastModifiedAt").toDateTime(),    // 从配置中获取最后修改时间
+                m_config.get(prefix + "id").value().toString(),                  // 从配置中获取ID
+                m_config.get(prefix + "title").value().toString(),               // 从配置中获取标题
+                m_config.get(prefix + "description").value().toString(),         // 从配置中获取描述
+                m_config.get(prefix + "category").value().toString(),            // 从配置中获取类别
+                m_config.get(prefix + "important").value().toBool(),             // 从配置中获取重要性
+                m_config.get(prefix + "status").value().toString(),              // 从配置中获取状态
+                m_config.get(prefix + "deadline").value().toString(),            // 从配置中获取截止日期
+                m_config.get(prefix + "recurrenceInterval", 0).value().toInt(),  // 从配置中获取重复间隔
+                m_config.get(prefix + "recurrenceCount", -1).value().toInt(),    // 从配置中获取重复次数
+                m_config.get(prefix + "recurrenceStartDate").value().toString(), // 从配置中获取重复开始日期
+                m_config.get(prefix + "createdAt").value().toDateTime(),         // 从配置中获取创建时间
+                m_config.get(prefix + "updatedAt").value().toDateTime(),         // 从配置中获取更新时间
+                m_config.get(prefix + "synced").value().toBool(),                // 从配置中获取同步状态
+                m_config.get(prefix + "uuid").value().toString(),                // 从配置中获取UUID
+                m_config.get(prefix + "userId", 0).value().toInt(),              // 从配置中获取用户ID
+                m_config.get(prefix + "isCompleted", false).value().toBool(),    // 从配置中获取是否完成
+                m_config.get(prefix + "completedAt").value().toDateTime(),       // 从配置中获取完成时间
+                m_config.get(prefix + "isDeleted", false).value().toBool(),      // 从配置中获取是否删除
+                m_config.get(prefix + "deletedAt").value().toDateTime(),         // 从配置中获取删除时间
+                m_config.get(prefix + "lastModifiedAt").value().toDateTime(),    // 从配置中获取最后修改时间
                 this);
 
             // 设置deadline字段（如果存在）
             if (m_config.contains(prefix + "deadline")) {
-                item->setDeadline(m_config.get(prefix + "deadline").toString());
+                item->setDeadline(m_config.get(prefix + "deadline").value().toString());
             }
 
             m_todos.push_back(std::move(item));
@@ -1102,7 +1102,7 @@ bool TodoModel::saveToLocalStorage() {
     try {
 
         // 保存待办事项数量
-        m_config.save("todos/size", m_todos.size());
+        m_config.save(QStringLiteral("todos/size"), m_todos.size());
 
         // 保存每个待办事项
         for (size_t i = 0; i < m_todos.size(); ++i) {
@@ -1264,9 +1264,9 @@ void TodoModel::pushLocalChangesToServer() {
  */
 void TodoModel::initializeServerConfig() {
     // 从设置中读取服务器配置，如果不存在则使用默认值
-    m_serverBaseUrl = m_config.get("server/baseUrl", "https://api.example.com").toString();
-    m_todoApiEndpoint = m_config.get("server/todoApiEndpoint", "/todo/todo_api.php").toString();
-    m_authApiEndpoint = m_config.get("server/authApiEndpoint", "/auth_api.php").toString();
+    m_serverBaseUrl = m_config.get(QStringLiteral("server/baseUrl"), "https://api.example.com").value().toString();
+    m_todoApiEndpoint = m_config.get(QStringLiteral("server/todoApiEndpoint"), "/todo/todo_api.php").value().toString();
+    m_authApiEndpoint = m_config.get(QStringLiteral("server/authApiEndpoint"), "/auth_api.php").value().toString();
 
     qDebug() << "服务器配置已初始化:";
     qDebug() << "  基础URL:" << m_serverBaseUrl;
@@ -1306,7 +1306,7 @@ void TodoModel::updateServerConfig(const QString &baseUrl) {
     m_serverBaseUrl = baseUrl;
 
     // 保存到设置中
-    m_config.save("server/baseUrl", baseUrl);
+    m_config.save(QStringLiteral("server/baseUrl"), baseUrl);
 
     qDebug() << "服务器配置已更新:" << baseUrl;
     qDebug() << "HTTPS状态:" << (isHttpsUrl(baseUrl) ? "安全" : "不安全");
