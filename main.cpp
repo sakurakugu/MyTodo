@@ -12,7 +12,7 @@
 #endif
 // 自定义头文件
 #include "cpp/logger.h"
-#include "cpp/mainWindow.h"
+#include "cpp/main_window.h"
 #include "cpp/setting.h"
 #include "cpp/todoModel.h"
 

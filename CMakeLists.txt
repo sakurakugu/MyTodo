@@ -79,8 +79,8 @@ set(NETWORK_SOURCES
 
 set(UI_SOURCES
     # 用户界面模块
-    cpp/mainWindow.cpp
-    cpp/mainWindow.h
+    cpp/main_window.cpp
+    cpp/main_window.h
 )
 
 set(UTILITY_SOURCES

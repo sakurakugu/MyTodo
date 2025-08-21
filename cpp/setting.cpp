@@ -22,10 +22,7 @@ bool Setting::save(const QString &key, const QVariant &value) {
 
 QVariant Setting::get(const QString &key, const QVariant &defaultValue) const {
     auto result = m_config.get(key, defaultValue);
-    if (result.has_value()) {
-        return result.value();
-    }
-    return defaultValue;
+    return result.has_value() ? result.value() : defaultValue;
 }
 
 void Setting::remove(const QString &key) {
@@ -69,10 +66,7 @@ void Setting::setLogLevel(int level) {
 
 int Setting::getLogLevel() const {
     auto result = m_config.get(QStringLiteral("log/level"), static_cast<int>(Logger::LogLevel::Info));
-    if (result.has_value()) {
-        return result.value().toInt();
-    }
-    return static_cast<int>(Logger::LogLevel::Info);
+    return result.has_value() ? result.value().toInt() : static_cast<int>(Logger::LogLevel::Info);
 }
 
 void Setting::setLogToFile(bool enabled) {
@@ -85,10 +79,7 @@ void Setting::setLogToFile(bool enabled) {
 
 bool Setting::getLogToFile() const {
     auto result = m_config.get(QStringLiteral("log/toFile"), true);
-    if (result.has_value()) {
-        return result.value().toBool();
-    }
-    return true;
+    return result.has_value() ? result.value().toBool() : true;
 }
 
 void Setting::setLogToConsole(bool enabled) {
@@ -101,10 +92,7 @@ void Setting::setLogToConsole(bool enabled) {
 
 bool Setting::getLogToConsole() const {
     auto result = m_config.get(QStringLiteral("log/toConsole"), true);
-    if (result.has_value()) {
-        return result.value().toBool();
-    }
-    return true;
+    return result.has_value() ? result.value().toBool() : true;
 }
 
 void Setting::setMaxLogFileSize(qint64 maxSize) {
@@ -116,11 +104,9 @@ void Setting::setMaxLogFileSize(qint64 maxSize) {
 }
 
 qint64 Setting::getMaxLogFileSize() const {
-    auto result = m_config.get(QStringLiteral("log/maxFileSize"), 10 * 1024 * 1024);
-    if (result.has_value()) {
-        return result.value().toLongLong();
-    }
-    return 10 * 1024 * 1024; // 默认10MB
+    constexpr qint64 defaultSize = 10 * 1024 * 1024; // 默认10MB
+    auto result = m_config.get(QStringLiteral("log/maxFileSize"), defaultSize);
+    return result.has_value() ? result.value().toLongLong() : defaultSize;
 }
 
 void Setting::setMaxLogFiles(int maxFiles) {
@@ -132,11 +118,9 @@ void Setting::setMaxLogFiles(int maxFiles) {
 }
 
 int Setting::getMaxLogFiles() const {
-    auto result = m_config.get(QStringLiteral("log/maxFiles"), 5);
-    if (result.has_value()) {
-        return result.value().toInt();
-    }
-    return 5; // 默认保留5个文件
+    constexpr int defaultFiles = 5; // 默认保留5个文件
+    auto result = m_config.get(QStringLiteral("log/maxFiles"), defaultFiles);
+    return result.has_value() ? result.value().toInt() : defaultFiles;
 }
 
 QString Setting::getLogFilePath() const {
