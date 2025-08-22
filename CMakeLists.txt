@@ -50,6 +50,7 @@ set(QT_COMPONENTS
     Quick               # QML 引擎
     Network             # 网络功能
     Concurrent          # 并发处理
+    LinguistTools       # 国际化工具
 )
 
 # 链接库配置
@@ -139,19 +140,24 @@ set(QML_FILES
     ${QML_COMPONENT_FILES}
 )
 
-# 国际化配置（预留）
-set(TRANSLATION_FILES
-    # 未来支持的翻译文件
-    # i18n/MyTodo_en.ts      # 英文
-    # i18n/MyTodo_zh_CN.ts   # 简体中文
-    # i18n/MyTodo_ja.ts      # 日文
+# 国际化翻译的语言列表
+set(QT_I18N_TRANSLATED_LANGUAGES 
+en
+zh_CN
+ja
 )
+# 国际化翻译文件的路径
+set(I18N_FILES
+i18n/MyTodo_en.ts
+i18n/MyTodo_zh_CN.ts
+i18n/MyTodo_ja.ts
+)
+# 然后在主目录输入：`cmake --build build --target update_translations` 以更新翻译文件
 
 # 资源文件配置
 set(RESOURCE_FILES
     # 图标、图片等资源文件
-    # resources/icons/app.ico
-    # resources/images/logo.png
+   "./image/app_icon/icon.ico"
 )
 
 # 查找 Qt6 依赖
@@ -161,20 +167,20 @@ find_package(Qt6 REQUIRED COMPONENTS ${QT_COMPONENTS})
 qt_standard_project_setup(REQUIRES 6.9)
 
 # 创建可执行文件目标
-qt_add_executable(appMyTodo
+qt_add_executable(MyTodo
     main.cpp                        # 主入口文件
     ${PROJECT_SOURCES}              # 所有 C++ 源文件
-    # "./resources/icon.rc"         # Windows 图标资源（可选）
+    "./image/app_icon/icon.rc"      # Windows 图标资源
 )
 
 # 设置目标属性
-set_target_properties(appMyTodo PROPERTIES
+set_target_properties(MyTodo PROPERTIES
     OUTPUT_NAME "MyTodo"            # 输出文件名
     DEBUG_POSTFIX "_debug"              # Debug 版本后缀
 )
 
 # 添加 QML 模块
-qt_add_qml_module(appMyTodo
+qt_add_qml_module(MyTodo
     URI MyTodo                      # QML 模块 URI
     VERSION 1.0                     # 模块版本
     QML_FILES ${QML_FILES}          # QML 文件列表
@@ -183,13 +189,12 @@ qt_add_qml_module(appMyTodo
     OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml/MyTodo  # 输出目录
 )
 
-# 国际化翻译配置（预留）
-# 当需要支持多语言时，取消注释以下配置
-# qt_add_translations(appMyTodo
-#     RESOURCE_PREFIX /qt/qml/MyTodo/i18n  # 资源前缀
-#     TS_FILES ${TRANSLATION_FILES}        # 翻译文件
-#    # QM_FILES_OUTPUT_VARIABLE qm_files    # 输出变量
-# )
+# 国际化翻译配置
+qt_add_translations(MyTodo
+    # 最终路径：qrc:/i18n/MyTodo_*.qm
+    RESOURCE_PREFIX /i18n                # 资源前缀
+    TS_FILES ${I18N_FILES}               # 翻译文件
+)
 
 # 平台特定配置
 # Windows 调试配置：在 VSCode + Ninja + Debug 模式下显示控制台
@@ -206,7 +211,7 @@ endif()
 
 
 # 目标平台属性配置
-set_target_properties(appMyTodo PROPERTIES
+set_target_properties(MyTodo PROPERTIES
     # macOS Bundle 配置
     MACOSX_BUNDLE TRUE
     MACOSX_BUNDLE_GUI_IDENTIFIER "com.sakurakugu.mytodo"  # Bundle 标识符
@@ -223,10 +228,10 @@ set_target_properties(appMyTodo PROPERTIES
 )
 
 # 链接库配置
-target_link_libraries(appMyTodo PRIVATE ${PRIVATE_LIBRARIES})
+target_link_libraries(MyTodo PRIVATE ${PRIVATE_LIBRARIES})
 
 # 包含目录配置
-target_include_directories(appMyTodo PRIVATE
+target_include_directories(MyTodo PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp     # C++ 头文件目录
 )
 
@@ -234,7 +239,7 @@ target_include_directories(appMyTodo PRIVATE
 include(GNUInstallDirs)
 
 # 安装目标文件
-install(TARGETS appMyTodo
+install(TARGETS MyTodo
     BUNDLE DESTINATION .                                    # macOS Bundle 安装位置
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}             # 可执行文件安装位置
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}             # 库文件安装位置
@@ -249,7 +254,7 @@ if(WIN32)
         # 添加部署命令
         install(CODE "
             execute_process(
-                COMMAND ${QT_DEPLOY_TOOL} --qmldir ${CMAKE_SOURCE_DIR}/qml $<TARGET_FILE:appMyTodo>
+                COMMAND ${QT_DEPLOY_TOOL} --qmldir ${CMAKE_SOURCE_DIR}/qml $<TARGET_FILE:MyTodo>
                 WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}
             )
         ")
