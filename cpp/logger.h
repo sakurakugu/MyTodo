@@ -65,7 +65,7 @@ class Logger : public QObject {
     }
 
     // 单例模式
-    [[nodiscard]] static Logger &GetInstance() noexcept {
+    static Logger &GetInstance() noexcept {
         static Logger instance;
         return instance;
     }
@@ -79,39 +79,39 @@ class Logger : public QObject {
     static void messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) noexcept;
 
     // C++23 优化的配置方法 - 使用 std::expected 错误处理
-    [[nodiscard]] std::expected<void, LogError> setLogLevel(LogLevel level) noexcept;   // 设置日志级别
-    [[nodiscard]] std::expected<void, LogError> setLogToFile(bool enabled) noexcept;    // 设置是否将日志输出到文件
-    [[nodiscard]] std::expected<void, LogError> setLogToConsole(bool enabled) noexcept; // 设置是否将日志输出到控制台
+    std::expected<void, LogError> setLogLevel(LogLevel level) noexcept;   // 设置日志级别
+    std::expected<void, LogError> setLogToFile(bool enabled) noexcept;    // 设置是否将日志输出到文件
+    std::expected<void, LogError> setLogToConsole(bool enabled) noexcept; // 设置是否将日志输出到控制台
 
     template <FileSizeType T>
-    [[nodiscard]] std::expected<void, LogError> setMaxLogFileSize(T maxSize) noexcept; // 最大日志文件大小（字节）
+    std::expected<void, LogError> setMaxLogFileSize(T maxSize) noexcept; // 最大日志文件大小（字节）
     template <std::integral T>
-    [[nodiscard]] std::expected<void, LogError> setMaxLogFiles(T maxFiles) noexcept; // 最大日志文件数量
+    std::expected<void, LogError> setMaxLogFiles(T maxFiles) noexcept; // 最大日志文件数量
 
-    [[nodiscard]] QString getLogFilePath() const noexcept;            // 获取日志文件路径
-    [[nodiscard]] std::expected<void, LogError> clearLogs() noexcept; // 清空日志文件
+    QString getLogFilePath() const noexcept;            // 获取日志文件路径
+    std::expected<void, LogError> clearLogs() noexcept; // 清空日志文件
 
   public slots:
-    [[nodiscard]] std::expected<void, LogError> rotateLogFile() noexcept; // 轮转日志文件
+    std::expected<void, LogError> rotateLogFile() noexcept; // 轮转日志文件
 
   private:
     explicit Logger(QObject *parent = nullptr) noexcept;
     ~Logger() noexcept override;
 
     void writeLog(QtMsgType type, const QMessageLogContext &context, const QString &msg) noexcept; // 写入日志
-    [[nodiscard]] std::expected<void, LogError> initLogFile() noexcept;                            // 初始化日志文件
-    [[nodiscard]] std::expected<void, LogError> checkLogRotation() noexcept;                       // 检查日志轮转
+    std::expected<void, LogError> initLogFile() noexcept;                            // 初始化日志文件
+    std::expected<void, LogError> checkLogRotation() noexcept;                       // 检查日志轮转
 
     // 格式化日志消息
     template <StringLike... Args>
-    [[nodiscard]] QString formatLogMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg,
+    QString formatLogMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg,
                                            Args &&...args) const noexcept;
 
     // 基础版本的 formatLogMessage 声明
-    [[nodiscard]] QString formatLogMessage(QtMsgType type, const QMessageLogContext &context,
+    QString formatLogMessage(QtMsgType type, const QMessageLogContext &context,
                                            const QString &msg) const noexcept;
 
-    [[nodiscard]] static QString messageTypeToString(QtMsgType type) noexcept;
+    static QString messageTypeToString(QtMsgType type) noexcept;
 
     std::unique_ptr<QFile> m_logFile;         // 日志文件
     std::unique_ptr<QTextStream> m_logStream; // 日志流
@@ -126,7 +126,7 @@ class Logger : public QObject {
 };
 
 // 最大日志文件大小（字节）
-template <FileSizeType T> [[nodiscard]] std::expected<void, LogError> Logger::setMaxLogFileSize(T maxSize) noexcept {
+template <FileSizeType T> std::expected<void, LogError> Logger::setMaxLogFileSize(T maxSize) noexcept {
     if constexpr (std::is_signed_v<T>) {
         if (maxSize <= 0) {
             return std::unexpected(LogError::InvalidLogLevel);
@@ -138,7 +138,7 @@ template <FileSizeType T> [[nodiscard]] std::expected<void, LogError> Logger::se
 }
 
 // 最大日志文件数量
-template <std::integral T> [[nodiscard]] std::expected<void, LogError> Logger::setMaxLogFiles(T maxFiles) noexcept {
+template <std::integral T> std::expected<void, LogError> Logger::setMaxLogFiles(T maxFiles) noexcept {
     if constexpr (std::is_signed_v<T>) {
         if (maxFiles <= 0) {
             return std::unexpected(LogError::InvalidLogLevel);
@@ -151,7 +151,7 @@ template <std::integral T> [[nodiscard]] std::expected<void, LogError> Logger::s
 
 // 格式化日志消息
 template <StringLike... Args>
-[[nodiscard]] QString Logger::formatLogMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg,
+QString Logger::formatLogMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg,
                                                Args &&...args) const noexcept {
     try {
         auto timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz");

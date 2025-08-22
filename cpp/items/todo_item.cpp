@@ -269,7 +269,7 @@ void TodoItem::setSynced(bool synced) {
  * @brief 检查待办事项是否已过期
  * @return 如果已过期返回true，否则返回false
  */
-bool TodoItem::isOverdue() const {
+bool TodoItem::isOverdue() const noexcept {
     return m_deadline.isValid() && m_deadline < QDateTime::currentDateTime() && !m_isCompleted;
 }
 
@@ -277,7 +277,7 @@ bool TodoItem::isOverdue() const {
  * @brief 检查待办事项是否为循环任务
  * @return 如果是循环任务返回true，否则返回false
  */
-bool TodoItem::isRecurring() const {
+constexpr bool TodoItem::isRecurring() const noexcept {
     return m_recurrenceInterval > 0;
 }
 
@@ -285,7 +285,7 @@ bool TodoItem::isRecurring() const {
  * @brief 检查待办事项是否即将到期（24小时内）
  * @return 如果即将到期返回true，否则返回false
  */
-bool TodoItem::isDue(const QDateTime &checkTime) const {
+bool TodoItem::isDue(const QDateTime &checkTime) const noexcept {
     if (!m_deadline.isValid() || m_isCompleted) {
         return false;
     }
@@ -297,7 +297,7 @@ bool TodoItem::isDue(const QDateTime &checkTime) const {
  * @param checkTime 检查时间
  * @return 距离截止日期的天数，负数表示已过期
  */
-int TodoItem::daysUntilDeadline() const {
+int TodoItem::daysUntilDeadline() const noexcept {
     if (!m_deadline.isValid()) {
         return INT_MAX; // 表示无截止日期
     }

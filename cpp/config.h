@@ -30,7 +30,7 @@ class Config : public QObject {
 
   public:
     // 单例模式 - 使用C++23的constexpr改进
-    [[nodiscard]] static constexpr Config &GetInstance() noexcept {
+    static Config &GetInstance() noexcept {
         static Config instance;
         return instance;
     }
@@ -41,16 +41,16 @@ class Config : public QObject {
     Config &operator=(Config &&) = delete;
 
     std::expected<void, ConfigError> save(QStringView key, const QVariant &value) noexcept;
-    [[nodiscard]] std::expected<QVariant, ConfigError> get(QStringView key,
+    std::expected<QVariant, ConfigError> get(QStringView key,
                                                            const QVariant &defaultValue = QVariant{}) const noexcept;
     std::expected<void, ConfigError> remove(QStringView key) noexcept;
-    [[nodiscard]] bool contains(QStringView key) const noexcept;
-    [[nodiscard]] QStringList allKeys() const noexcept;
-    [[nodiscard]] std::expected<void, ConfigError> clear() noexcept;
+    bool contains(QStringView key) const noexcept;
+    QStringList allKeys() const noexcept;
+    std::expected<void, ConfigError> clear() noexcept;
 
     // 存储类型和路径管理相关方法
-    [[nodiscard]] std::expected<void, ConfigError> openConfigFilePath() const noexcept;
-    [[nodiscard]] QString getConfigFilePath() const noexcept;
+    std::expected<void, ConfigError> openConfigFilePath() const noexcept;
+    QString getConfigFilePath() const noexcept;
 
   private:
     explicit Config(QObject *parent = nullptr);
@@ -60,12 +60,12 @@ class Config : public QObject {
     static constexpr auto booleanKeys = DefaultValues::booleanKeys;
 
     // 辅助方法
-    [[nodiscard]] bool isBooleanKey(QStringView key) const noexcept;
-    [[nodiscard]] QVariant processBooleanValue(const QVariant &value) const noexcept;
+    bool isBooleanKey(QStringView key) const noexcept;
+    QVariant processBooleanValue(const QVariant &value) const noexcept;
 };
 
 // 模板实现
-inline std::expected<void, ConfigError> Config::save(QStringView key, const QVariant &value) noexcept {
+std::expected<void, ConfigError> Config::save(QStringView key, const QVariant &value) noexcept {
     if (!m_config) {
         return std::unexpected(ConfigError::InvalidConfig);
     }
