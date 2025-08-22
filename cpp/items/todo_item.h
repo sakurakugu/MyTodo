@@ -144,10 +144,11 @@ class TodoItem : public QObject {
     void setSynced(bool synced);                      // 设置是否已同步
 
     // 便利方法
-    bool isOverdue() const noexcept;                                                      // 检查是否已过期
-    constexpr bool isRecurring() const noexcept;                                          // 检查是否为重复任务
-    bool isDue(const QDateTime &checkTime = QDateTime::currentDateTime()) const noexcept; // 检查是否到期
-    int daysUntilDeadline() const noexcept;                                               // 距离截止日期的天数
+    bool isOverdue() const noexcept;                                                         // 检查是否已过期
+    constexpr bool isRecurring() const noexcept;                                             // 检查是否为重复任务
+    bool isDue(const QDateTime &checkTime = QDateTime::currentDateTime()) const noexcept;    // 检查是否到期
+    int daysUntilDeadline() const noexcept;                                                  // 距离截止日期的天数
+    bool isInRecurrencePeriod(const QDate &checkDate = QDate::currentDate()) const noexcept; // 检查指定日期是否在重复周期内
 
     // 比较操作符
     bool operator==(const TodoItem &other) const;

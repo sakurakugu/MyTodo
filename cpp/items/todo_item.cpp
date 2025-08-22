@@ -11,6 +11,8 @@
  */
 
 #include "todo_item.h"
+#include <utility>
+#include <utility>
 
 /**
  * @brief 默认构造函数
@@ -116,7 +118,13 @@ void TodoItem::setUserId(int userId) {
  * @param title 新的待办事项标题
  */
 void TodoItem::setTitle(const QString &title) {
-    setProperty(m_title, title, &TodoItem::titleChanged);
+    QString title_;
+    if (title.length() > 255) {
+        title_ = title.left(240) + "......";
+    } else [[likely]] {
+        title_ = title;
+    }
+    setProperty(m_title, title_, &TodoItem::titleChanged);
 }
 
 /**
@@ -132,7 +140,13 @@ void TodoItem::setDescription(const QString &description) {
  * @param category 新的待办事项分类
  */
 void TodoItem::setCategory(const QString &category) {
-    setProperty(m_category, category, &TodoItem::categoryChanged);
+    QString category_;
+    if (category.length() > 50) {
+        category_ = category.left(40) + "......";
+    } else [[likely]] {
+        category_ = category;
+    }
+    setProperty(m_category, category_, &TodoItem::categoryChanged);
 }
 
 /**
@@ -156,7 +170,14 @@ void TodoItem::setDeadline(const QDateTime &deadline) {
  * @param recurrenceInterval 新的循环间隔
  */
 void TodoItem::setRecurrenceInterval(int recurrenceInterval) {
-    setProperty(m_recurrenceInterval, recurrenceInterval, &TodoItem::recurrenceIntervalChanged);
+    int interval_ = recurrenceInterval;
+    if (interval_ < 0) {
+        if (interval_ == -1 || interval_ == -7 || interval_ == -30 || interval_ == -365) {
+        } else [[unlikely]] {
+            interval_ = 0;
+        }
+    }
+    setProperty(m_recurrenceInterval, interval_, &TodoItem::recurrenceIntervalChanged);
 }
 
 /**
@@ -302,6 +323,95 @@ int TodoItem::daysUntilDeadline() const noexcept {
         return INT_MAX; // 表示无截止日期
     }
     return QDateTime::currentDateTime().daysTo(m_deadline);
+}
+
+/**
+ * @brief 检查指定日期是否在重复周期内
+ * @param checkDate 要检查的日期，默认为当前日期
+ * @return 如果在重复周期内返回true，否则返回false
+ */
+bool TodoItem::isInRecurrencePeriod(const QDate &checkDate) const noexcept {
+    // 如果不是重复任务，返回false
+    if (!isRecurring()) {
+        return false;
+    }
+
+    // 如果重复开始日期无效，返回false
+    if (!m_recurrenceStartDate.isValid()) {
+        return false;
+    }
+
+    // 检查日期是否在重复开始日期之前
+    if (checkDate < m_recurrenceStartDate) {
+        return false;
+    }
+
+    // 如果有截止日期，检查是否超过截止日期
+    if (m_deadline.isValid() && checkDate > m_deadline.date()) {
+        return false;
+    }
+
+    // 计算从开始日期到检查日期的天数
+    int daysSinceStart = m_recurrenceStartDate.daysTo(checkDate);
+
+    bool isValidInterval = false; // 检查是否符合循环间隔
+    int occurrenceNumber = 0;     // 循环次数，从1开始计算
+
+    if (m_recurrenceInterval > 0) {
+        // 正数：按照天数间隔进行正常循环判断
+        if (daysSinceStart % m_recurrenceInterval == 0) {
+            isValidInterval = true;
+            occurrenceNumber = daysSinceStart / m_recurrenceInterval + 1;
+        }
+    } else if (m_recurrenceInterval < 0) {
+        // 负数：按照特定时间单位进行循环判断
+        switch (m_recurrenceInterval) {
+        case -1:
+            // 每天
+            isValidInterval = true;
+            occurrenceNumber = daysSinceStart + 1;
+            break;
+        case -7: // 每周（每7天）
+            if (daysSinceStart % 7 == 0) {
+                isValidInterval = true;
+                occurrenceNumber = daysSinceStart / 7 + 1;
+            }
+            break;
+        case -30: // 每月（检查是否为同一天）
+            const QDate &startDate = m_recurrenceStartDate;
+            if (checkDate.day() == startDate.day()) {
+                int monthsDiff = (checkDate.year() - startDate.year()) * 12 + (checkDate.month() - startDate.month());
+                if (monthsDiff >= 0) {
+                    isValidInterval = true;
+                    occurrenceNumber = monthsDiff + 1;
+                }
+            }
+            break;
+        case -365: // 每年（检查是否为同一月同一天）
+            const QDate &startDate = m_recurrenceStartDate;
+            if (checkDate.month() == startDate.month() && checkDate.day() == startDate.day()) {
+                int yearsDiff = checkDate.year() - startDate.year();
+                if (yearsDiff >= 0) {
+                    isValidInterval = true;
+                    occurrenceNumber = yearsDiff + 1;
+                }
+            }
+            break;
+        default:
+            break;
+        }
+    }
+
+    if (!isValidInterval) {
+        return false;
+    }
+
+    // 如果设置了重复次数，检查是否超过重复次数
+    if (m_recurrenceCount > 0 && occurrenceNumber > m_recurrenceCount) {
+        return false;
+    }
+
+    return true;
 }
 
 /**

@@ -95,5 +95,9 @@
         "qobject": "cpp",
         "qjsondocument": "cpp"
     },
-    "C_Cpp.errorSquiggles": "enabled"
+    "C_Cpp.errorSquiggles": "enabled",
+    "search.useIgnoreFiles": false, // 禁用git忽略文件
+    "search.exclude": { // 排除搜索范围
+        "**/build": true
+    }
 }
