@@ -121,15 +121,16 @@ set(QML_MAIN_FILES
 
 set(QML_COMPONENT_FILES
     # 可重用组件文件
-    qml/components/CustomButton.qml       # 自定义按钮
-    qml/components/CustomPopup.qml        # 自定义弹窗
-    qml/components/TaskForm.qml           # 任务表单
-    qml/components/ThemeManager.qml       # 主题管理器
-    qml/components/ConfirmDialog.qml      # 通用确认对话框
-    qml/components/LoginDialog.qml        # 登录对话框
-    qml/components/MessageDialog.qml      # 消息提示对话框
-    qml/components/LoginStatusDialogs.qml # 登录状态相关对话框
-    qml/components/TodoDetailsDialog.qml  # 待办详情对话框
+    qml/components/CustomButton.qml                 # 自定义按钮
+    qml/components/CustomPopup.qml                  # 自定义弹窗
+    qml/components/TaskForm.qml                     # 任务表单
+    qml/components/ThemeManager.qml                 # 主题管理器
+    qml/components/ConfirmDialog.qml                # 通用确认对话框
+    qml/components/LoginDialog.qml                  # 登录对话框
+    qml/components/MessageDialog.qml                # 消息提示对话框
+    qml/components/LoginStatusDialogs.qml           # 登录状态相关对话框
+    qml/components/TodoDetailsDialog.qml            # 待办详情对话框
+    qml/components/CategoryManagementDialog.qml     # 分类管理对话框
 )
 
 # 合并所有 QML 文件

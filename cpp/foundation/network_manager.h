@@ -66,11 +66,15 @@ class NetworkManager : public QObject {
 
     // 请求类型枚举
     enum RequestType {
-        Login,      // 登录请求
-        Sync,       // 同步请求
-        FetchTodos, // 获取待办事项请求
-        PushTodos,  // 推送待办事项请求
-        Logout,     // 退出登录请求
+        Login,           // 登录请求
+        Sync,            // 同步请求
+        FetchTodos,      // 获取待办事项请求
+        PushTodos,       // 推送待办事项请求
+        Logout,          // 退出登录请求
+        FetchCategories, // 获取类别列表请求
+        CreateCategory,  // 创建类别请求
+        UpdateCategory,  // 更新类别请求
+        DeleteCategory,  // 删除类别请求
     };
 
     /**

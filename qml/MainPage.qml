@@ -35,7 +35,7 @@ Page {
     // 主内容区域，使用ColumnLayout
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: isDesktopWidget ? 5 : 10
+        anchors.margins: mainPage.isDesktopWidget ? 5 : 10
         spacing: 10
 
         // 侧边栏和主内容区的分割
@@ -95,7 +95,7 @@ Page {
                     ComboBox {
                         id: categoryFilter
                         Layout.fillWidth: true
-                        model: ["全部", "工作", "学习", "生活", "其他", "未分类"]
+                        model: todoModel.categories
                         onCurrentTextChanged: {
                             if (currentText === "全部") {
                                 todoModel.currentCategory = "";
@@ -275,6 +275,27 @@ Page {
                                 todoModel.addTodo(newTodoField.text.trim());
                                 newTodoField.text = "";
                             }
+                        }
+
+                        background: Rectangle {
+                            color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
+                            border.color: theme.borderColor
+                            border.width: 1
+                            radius: 4
+                        }
+
+                        contentItem: Text {
+                            text: parent.text
+                            color: theme.textColor
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                    }
+                    
+                    Button {
+                        text: qsTr("类别管理")
+                        onClicked: {
+                            categoryManagementDialog.open()
                         }
 
                         background: Rectangle {
@@ -491,5 +512,11 @@ Page {
                 todoModel.updateTodo(todoListView.currentIndex, todoData);
             }
         }
+    }
+    
+    // 类别管理对话框
+    CategoryManagementDialog {
+        id: categoryManagementDialog
+        themeManager.isDarkMode: theme.isDarkMode
     }
 }

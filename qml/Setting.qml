@@ -61,7 +61,7 @@ Page {
         Switch {
             id: darkModeCheckBox
             text: qsTr("深色模式")
-            checked: isDarkMode
+            checked: settingPage.isDarkMode
             enabled: !followSystemThemeCheckBox.checked
             
             property bool isInitialized: false
@@ -74,11 +74,11 @@ Page {
                 if (!isInitialized) {
                     return; // 避免初始化时触发
                 }
-                isDarkMode = checked;
+                settingPage.isDarkMode = checked;
                 // 保存设置到配置文件
                 console.log("设置页面-切换深色模式", checked);
                 setting.save("setting/isDarkMode", checked);
-                if (rootWindow) rootWindow.isDarkMode = isDarkMode;
+                if (settingPage.rootWindow) settingPage.rootWindow.isDarkMode = settingPage.isDarkMode;
             }
         }
 
@@ -94,10 +94,10 @@ Page {
                 if (checked) {
                     // 如果启用跟随系统，立即同步系统主题
                     var systemDarkMode = mainWindow.isSystemDarkMode;
-                    if (isDarkMode !== systemDarkMode) {
-                        isDarkMode = systemDarkMode;
+                    if (settingPage.isDarkMode !== systemDarkMode) {
+                        settingPage.isDarkMode = systemDarkMode;
                         setting.save("setting/isDarkMode", systemDarkMode);
-                        if (rootWindow) rootWindow.isDarkMode = isDarkMode;
+                        if (settingPage.rootWindow) settingPage.rootWindow.isDarkMode = settingPage.isDarkMode;
                     }
                 }
             }
@@ -112,10 +112,10 @@ Page {
                 if (checked) {
                     // 启用跟随系统时，立即同步系统主题
                     var systemDarkMode = mainWindow.isSystemDarkMode;
-                    if (isDarkMode !== systemDarkMode) {
-                        isDarkMode = systemDarkMode;
+                    if (settingPage.isDarkMode !== systemDarkMode) {
+                        settingPage.isDarkMode = systemDarkMode;
                         setting.save("setting/isDarkMode", systemDarkMode);
-                        if (rootWindow) rootWindow.isDarkMode = isDarkMode;
+                        if (settingPage.rootWindow) settingPage.rootWindow.isDarkMode = settingPage.isDarkMode;
                     }
                 }
             }
@@ -126,10 +126,10 @@ Page {
                 function onSystemDarkModeChanged() {
                     if (followSystemThemeCheckBox.checked) {
                         var systemDarkMode = mainWindow.isSystemDarkMode;
-                        if (isDarkMode !== systemDarkMode) {
-                            isDarkMode = systemDarkMode;
+                        if (settingPage.isDarkMode !== systemDarkMode) {
+                            settingPage.isDarkMode = systemDarkMode;
                             setting.save("setting/isDarkMode", systemDarkMode);
-                            if (rootWindow) rootWindow.isDarkMode = isDarkMode;
+                            if (settingPage.rootWindow) settingPage.rootWindow.isDarkMode = settingPage.isDarkMode;
                         }
                     }
                 }
@@ -139,12 +139,12 @@ Page {
         Switch {
             id: preventDraggingCheckBox
             text: qsTr("防止拖动窗口（小窗口模式）")
-            checked: preventDragging
+            checked: settingPage.preventDragging
             enabled: mainWindow.isDesktopWidget
             onCheckedChanged: {
-                preventDragging = checked;
-                setting.save("setting/preventDragging", preventDragging);
-                if (rootWindow) rootWindow.preventDragging = preventDragging;
+                settingPage.preventDragging = checked;
+                setting.save("setting/preventDragging", settingPage.preventDragging);
+                if (settingPage.rootWindow) settingPage.rootWindow.preventDragging = settingPage.preventDragging;
             }
         }
 
@@ -861,8 +861,8 @@ Page {
         standardButtons: Dialog.Ok
         
         background: Rectangle {
-            color: isDarkMode ? "#2c3e50" : "white"
-            border.color: isDarkMode ? "#34495e" : "#bdc3c7"
+            color: settingPage.isDarkMode ? "#2c3e50" : "white"
+            border.color: settingPage.isDarkMode ? "#34495e" : "#bdc3c7"
             border.width: 1
             radius: 8
         }
@@ -870,7 +870,7 @@ Page {
         Label {
             text: qsTr("开启自动同步功能需要先登录账户。\n请先登录后再开启自动同步。")
             wrapMode: Text.WordWrap
-            color: isDarkMode ? "#ecf0f1" : "black"
+            color: settingPage.isDarkMode ? "#ecf0f1" : "black"
             anchors.centerIn: parent
         }
     }

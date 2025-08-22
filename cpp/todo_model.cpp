@@ -20,6 +20,9 @@ TodoModel::TodoModel(QObject *parent)
       m_currentFilter(""), m_currentImportant(false), m_dateFilterEnabled(false),
       m_networkManager(NetworkManager::GetInstance()),
       m_config(Config::GetInstance()), m_setting(Setting::GetInstance()) {
+    
+    // 初始化默认类别列表
+    m_categories << "全部" << "工作" << "学习" << "生活" << "其他" << "未分类";
     // 初始化默认服务器配置
     m_setting.initializeDefaultServerConfig();
 
@@ -49,6 +52,11 @@ TodoModel::TodoModel(QObject *parent)
 
         // TODO: 在这里验证令牌是否有效
         qDebug() << "使用存储的凭据自动登录用户：" << m_username;
+        
+        // 如果已登录，获取类别列表
+        if (m_isOnline) {
+            fetchCategories();
+        }
     }
 }
 
@@ -999,6 +1007,14 @@ void TodoModel::onNetworkRequestCompleted(NetworkManager::RequestType type, cons
         // 注销成功处理
         emit logoutSuccessful();
         break;
+    case NetworkManager::RequestType::FetchCategories:
+        handleFetchCategoriesSuccess(response);
+        break;
+    case NetworkManager::RequestType::CreateCategory:
+    case NetworkManager::RequestType::UpdateCategory:
+    case NetworkManager::RequestType::DeleteCategory:
+        handleCategoryOperationSuccess(response);
+        break;
     }
 }
 
@@ -1027,6 +1043,22 @@ void TodoModel::onNetworkRequestFailed(NetworkManager::RequestType type, Network
     case NetworkManager::RequestType::Logout:
         typeStr = "注销";
         emit logoutSuccessful();
+        break;
+    case NetworkManager::RequestType::FetchCategories:
+        typeStr = "获取类别";
+        emit categoryOperationCompleted(false, errorMessage);
+        break;
+    case NetworkManager::RequestType::CreateCategory:
+        typeStr = "创建类别";
+        emit categoryOperationCompleted(false, errorMessage);
+        break;
+    case NetworkManager::RequestType::UpdateCategory:
+        typeStr = "更新类别";
+        emit categoryOperationCompleted(false, errorMessage);
+        break;
+    case NetworkManager::RequestType::DeleteCategory:
+        typeStr = "删除类别";
+        emit categoryOperationCompleted(false, errorMessage);
         break;
     }
 
@@ -1078,8 +1110,9 @@ void TodoModel::handleLoginSuccess(const QJsonObject &response) {
 
     emit loginSuccessful(m_username);
 
-    // 登录成功后自动同步
+    // 登录成功后获取类别列表和自动同步
     if (m_isOnline) {
+        fetchCategories();
         syncWithServer();
     }
 }
@@ -1543,6 +1576,146 @@ bool TodoModel::exportTodos(const QString &filePath) {
 
     qDebug() << "成功导出" << m_todos.size() << "个待办事项到" << filePath;
     return true;
+}
+
+// 类别管理相关方法实现
+QStringList TodoModel::getCategories() const {
+    return m_categories;
+}
+
+void TodoModel::fetchCategories() {
+    if (!isLoggedIn()) {
+        qWarning() << "用户未登录，无法获取类别列表";
+        emit categoryOperationCompleted(false, "用户未登录");
+        return;
+    }
+
+    QJsonObject requestData;
+    requestData["action"] = "list";
+
+    NetworkManager::RequestConfig config;
+    config.url = getApiUrl("categories_api.php");
+    config.data = requestData;
+    config.requiresAuth = true;
+    config.headers["Authorization"] = "Bearer " + m_accessToken;
+
+    m_networkManager.sendRequest(NetworkManager::FetchCategories, config);
+}
+
+void TodoModel::createCategory(const QString &name) {
+    if (!isLoggedIn()) {
+        qWarning() << "用户未登录，无法创建类别";
+        emit categoryOperationCompleted(false, "用户未登录");
+        return;
+    }
+
+    if (name.trimmed().isEmpty()) {
+        emit categoryOperationCompleted(false, "类别名称不能为空");
+        return;
+    }
+
+    QJsonObject requestData;
+    requestData["action"] = "create";
+    requestData["name"] = name;
+
+    NetworkManager::RequestConfig config;
+    config.url = getApiUrl("categories_api.php");
+    config.data = requestData;
+    config.requiresAuth = true;
+    config.headers["Authorization"] = "Bearer " + m_accessToken;
+
+    m_networkManager.sendRequest(NetworkManager::CreateCategory, config);
+}
+
+void TodoModel::updateCategory(int id, const QString &name) {
+    if (!isLoggedIn()) {
+        qWarning() << "用户未登录，无法更新类别";
+        emit categoryOperationCompleted(false, "用户未登录");
+        return;
+    }
+
+    if (name.trimmed().isEmpty()) {
+        emit categoryOperationCompleted(false, "类别名称不能为空");
+        return;
+    }
+
+    QJsonObject requestData;
+    requestData["action"] = "update";
+    requestData["id"] = id;
+    requestData["name"] = name;
+
+    NetworkManager::RequestConfig config;
+    config.url = getApiUrl("categories_api.php");
+    config.data = requestData;
+    config.requiresAuth = true;
+    config.headers["Authorization"] = "Bearer " + m_accessToken;
+
+    m_networkManager.sendRequest(NetworkManager::UpdateCategory, config);
+}
+
+void TodoModel::deleteCategory(int id) {
+    if (!isLoggedIn()) {
+        qWarning() << "用户未登录，无法删除类别";
+        emit categoryOperationCompleted(false, "用户未登录");
+        return;
+    }
+
+    QJsonObject requestData;
+    requestData["action"] = "delete";
+    requestData["id"] = id;
+
+    NetworkManager::RequestConfig config;
+    config.url = getApiUrl("categories_api.php");
+    config.data = requestData;
+    config.requiresAuth = true;
+    config.headers["Authorization"] = "Bearer " + m_accessToken;
+
+    m_networkManager.sendRequest(NetworkManager::DeleteCategory, config);
+}
+
+void TodoModel::handleFetchCategoriesSuccess(const QJsonObject &response) {
+    if (response["success"].toBool()) {
+        QJsonArray categoriesArray = response["categories"].toArray();
+        QStringList newCategories;
+        
+        // 添加默认的"全部"选项
+        newCategories << "全部";
+        
+        // 添加从服务器获取的类别
+        for (const QJsonValue &value : categoriesArray) {
+            QJsonObject categoryObj = value.toObject();
+            QString categoryName = categoryObj["name"].toString();
+            if (!categoryName.isEmpty()) {
+                newCategories << categoryName;
+            }
+        }
+        
+        // 添加默认的"未分类"选项
+        if (!newCategories.contains("未分类")) {
+            newCategories << "未分类";
+        }
+        
+        m_categories = newCategories;
+        emit categoriesChanged();
+        
+        qDebug() << "成功获取类别列表:" << m_categories;
+    } else {
+        QString errorMessage = response["message"].toString();
+        qWarning() << "获取类别列表失败:" << errorMessage;
+        emit categoryOperationCompleted(false, errorMessage);
+    }
+}
+
+void TodoModel::handleCategoryOperationSuccess(const QJsonObject &response) {
+    bool success = response["success"].toBool();
+    QString message = response["message"].toString();
+    
+    if (success) {
+        // 操作成功后重新获取类别列表
+        fetchCategories();
+    }
+    
+    emit categoryOperationCompleted(success, message);
 }
 
 QVariantList TodoModel::importTodosWithAutoResolution(const QString &filePath) {

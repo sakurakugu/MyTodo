@@ -62,6 +62,7 @@ class TodoModel : public QAbstractListModel {
     Q_PROPERTY(bool dateFilterEnabled READ dateFilterEnabled WRITE setDateFilterEnabled NOTIFY dateFilterEnabledChanged)
     Q_PROPERTY(QString username READ getUsername NOTIFY usernameChanged)
     Q_PROPERTY(bool isLoggedIn READ isLoggedIn NOTIFY isLoggedInChanged)
+    Q_PROPERTY(QStringList categories READ getCategories NOTIFY categoriesChanged)
 
   public:
     /**
@@ -165,6 +166,13 @@ class TodoModel : public QAbstractListModel {
     Q_INVOKABLE bool isHttpsUrl(const QString &url) const;       // 检查URL是否使用HTTPS
     Q_INVOKABLE void updateServerConfig(const QString &baseUrl); // 更新服务器配置
 
+    // 类别管理相关
+    Q_INVOKABLE QStringList getCategories() const;                    // 获取类别列表
+    Q_INVOKABLE void fetchCategories();                               // 从服务器获取类别列表
+    Q_INVOKABLE void createCategory(const QString &name);             // 创建新类别
+    Q_INVOKABLE void updateCategory(int id, const QString &name);     // 更新类别名称
+    Q_INVOKABLE void deleteCategory(int id);                          // 删除类别
+
   signals:
     void isOnlineChanged();                                                    // 在线状态变化信号
     void currentCategoryChanged();                                             // 当前分类筛选器变化信号
@@ -181,6 +189,8 @@ class TodoModel : public QAbstractListModel {
     void loginFailed(const QString &errorMessage);                             // 登录失败信号
     void loginRequired();                                                      // 需要登录信号
     void logoutSuccessful();                                                   // 退出登录成功信号
+    void categoriesChanged();                                                  // 类别列表变化信号
+    void categoryOperationCompleted(bool success, const QString &message);    // 类别操作完成信号
 
   private slots:
     void onNetworkRequestCompleted(NetworkManager::RequestType type, const QJsonObject &response); // 处理网络请求成功
@@ -198,6 +208,8 @@ class TodoModel : public QAbstractListModel {
     void handlePushChangesSuccess(const QJsonObject &response);  // 处理推送更改成功
     void handleLoginSuccess(const QJsonObject &response);        // 处理登录成功
     void handleSyncSuccess(const QJsonObject &response);         // 处理同步成功
+    void handleFetchCategoriesSuccess(const QJsonObject &response);               // 处理获取类别列表成功响应
+    void handleCategoryOperationSuccess(const QJsonObject &response);             // 处理类别操作成功响应
     void updateTodosFromServer(const QJsonArray &todosArray);    // 从服务器数据更新待办事项
     void logError(const QString &context, const QString &error); // 记录错误信息
     QVariant getItemData(const TodoItem *item, int role) const;
@@ -236,6 +248,9 @@ class TodoModel : public QAbstractListModel {
 
     // 待同步项目的临时存储
     QList<TodoItem *> m_pendingUnsyncedItems; ///< 待同步项目列表
+
+    // 类别管理相关
+    QStringList m_categories; ///< 类别列表
 
     // 辅助方法
     QString getApiUrl(const QString &endpoint) const; ///< 获取完整的API URL
