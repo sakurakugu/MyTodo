@@ -10,10 +10,14 @@ Config::Config(QObject *parent) : QObject(parent), m_config(std::make_unique<QSe
     qDebug() << "配置存放在:" << m_config->fileName();
 }
 
-Config::~Config() {
+Config::~Config() noexcept {
     // 确保所有设置都已保存
-    if (m_config) {
-        m_config->sync();
+    try {
+        if (m_config) {
+            m_config->sync();
+        }
+    } catch (...) {
+        qWarning() << "配置文件保存失败";
     }
 }
 

@@ -1,4 +1,4 @@
-#include "todoModel.h"
+#include "todo_model.h"
 
 #include <QDateTime>
 #include <QDir>
@@ -13,7 +13,7 @@
 #include <algorithm>
 #include <map>
 
-#include "networkmanager.h"
+#include "network_manager.h"
 
 TodoModel::TodoModel(QObject *parent)
     : QAbstractListModel(parent), m_filterCacheDirty(true), m_isOnline(false), m_currentCategory(""),
@@ -113,6 +113,10 @@ QVariant TodoModel::getItemData(const TodoItem *item, int role) const {
     switch (role) {
     case IdRole:
         return item->id();
+    case UuidRole:
+        return item->uuid();
+    case UserIdRole:
+        return item->userId();
     case TitleRole:
         return item->title();
     case DescriptionRole:
@@ -121,14 +125,6 @@ QVariant TodoModel::getItemData(const TodoItem *item, int role) const {
         return item->category();
     case ImportantRole:
         return item->important();
-    case StatusRole:
-        return item->status();
-    case CreatedAtRole:
-        return item->createdAt();
-    case UpdatedAtRole:
-        return item->updatedAt();
-    case SyncedRole:
-        return item->synced();
     case DeadlineRole:
         return item->deadline();
     case RecurrenceIntervalRole:
@@ -137,10 +133,6 @@ QVariant TodoModel::getItemData(const TodoItem *item, int role) const {
         return item->recurrenceCount();
     case RecurrenceStartDateRole:
         return item->recurrenceStartDate();
-    case UuidRole:
-        return item->uuid();
-    case UserIdRole:
-        return item->userId();
     case IsCompletedRole:
         return item->isCompleted();
     case CompletedAtRole:
@@ -149,8 +141,14 @@ QVariant TodoModel::getItemData(const TodoItem *item, int role) const {
         return item->isDeleted();
     case DeletedAtRole:
         return item->deletedAt();
+    case CreatedAtRole:
+        return item->createdAt();
+    case UpdatedAtRole:
+        return item->updatedAt();
     case LastModifiedAtRole:
         return item->lastModifiedAt();
+    case SyncedRole:
+        return item->synced();
     default:
         return QVariant();
     }
@@ -163,26 +161,24 @@ QVariant TodoModel::getItemData(const TodoItem *item, int role) const {
 QHash<int, QByteArray> TodoModel::roleNames() const {
     QHash<int, QByteArray> roles;
     roles[IdRole] = "id";
+    roles[UuidRole] = "uuid";
+    roles[UserIdRole] = "userId";
     roles[TitleRole] = "title";
     roles[DescriptionRole] = "description";
     roles[CategoryRole] = "category";
-
     roles[ImportantRole] = "important";
-    roles[StatusRole] = "status";
-    roles[CreatedAtRole] = "createdAt";
-    roles[UpdatedAtRole] = "updatedAt";
-    roles[SyncedRole] = "synced";
     roles[DeadlineRole] = "deadline";
     roles[RecurrenceIntervalRole] = "recurrenceInterval";
     roles[RecurrenceCountRole] = "recurrenceCount";
     roles[RecurrenceStartDateRole] = "recurrenceStartDate";
-    roles[UuidRole] = "uuid";
-    roles[UserIdRole] = "userId";
     roles[IsCompletedRole] = "isCompleted";
     roles[CompletedAtRole] = "completedAt";
     roles[IsDeletedRole] = "isDeleted";
     roles[DeletedAtRole] = "deletedAt";
+    roles[CreatedAtRole] = "createdAt";
+    roles[UpdatedAtRole] = "updatedAt";
     roles[LastModifiedAtRole] = "lastModifiedAt";
+    roles[SyncedRole] = "synced";
     return roles;
 }
 
@@ -217,10 +213,6 @@ bool TodoModel::setData(const QModelIndex &index, const QVariant &value, int rol
         item->setImportant(value.toBool());
         changed = true;
         break;
-    case StatusRole:
-        item->setStatus(value.toString());
-        changed = true;
-        break;
     case RecurrenceIntervalRole:
         item->setRecurrenceInterval(value.toInt());
         changed = true;
@@ -230,7 +222,7 @@ bool TodoModel::setData(const QModelIndex &index, const QVariant &value, int rol
         changed = true;
         break;
     case RecurrenceStartDateRole:
-        item->setRecurrenceStartDate(value.toString());
+        item->setRecurrenceStartDate(value.toDate());
         changed = true;
         break;
     }

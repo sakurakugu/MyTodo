@@ -1,5 +1,5 @@
 /**
- * @file todomodel.h
+ * @file todo_model.h
  * @brief TodoModel类的头文件
  *
  * 该文件定义了TodoModel类，用于管理待办事项的数据模型。
@@ -20,9 +20,9 @@
 #include <memory>
 #include <vector>
 
-#include "networkmanager.h"
+#include "items/todo_item.h"
+#include "network_manager.h"
 #include "setting.h"
-#include "todoItem.h"
 
 /**
  * @class TodoModel
@@ -49,7 +49,7 @@
  * - 支持在线/离线模式切换
  *
  * @note 该类是线程安全的，所有网络操作都在后台线程执行
- * @see TodoItem, NetworkManager, Config
+ * @see TodoItem, CategorieItem, NetworkManager, Config
  */
 class TodoModel : public QAbstractListModel {
     Q_OBJECT
@@ -67,11 +67,12 @@ class TodoModel : public QAbstractListModel {
      */
     enum TodoRoles {
         IdRole = Qt::UserRole + 1, // 任务ID
+        UserIdRole,                // 用户ID
+        UuidRole,                  // 任务UUID
         TitleRole,                 // 任务标题
         DescriptionRole,           // 任务描述
         CategoryRole,              // 任务分类
         ImportantRole,             // 任务重要程度
-        StatusRole,                // 任务状态
         CreatedAtRole,             // 任务创建时间
         UpdatedAtRole,             // 任务更新时间
         SyncedRole,                // 任务是否已同步
@@ -79,8 +80,6 @@ class TodoModel : public QAbstractListModel {
         RecurrenceIntervalRole,    // 循环间隔
         RecurrenceCountRole,       // 循环次数
         RecurrenceStartDateRole,   // 循环开始日期
-        UuidRole,                  // 任务UUID
-        UserIdRole,                // 用户ID
         IsCompletedRole,           // 任务是否已完成
         CompletedAtRole,           // 任务完成时间
         IsDeletedRole,             // 任务是否已删除
@@ -93,13 +92,8 @@ class TodoModel : public QAbstractListModel {
      * @brief 构造函数
      *
      * 创建TodoModel实例，初始化网络管理器、设置对象和本地存储。
-     *
-     * @param parent 父对象指针，用于Qt对象树管理
-     * @param config 设置对象指针，如果为nullptr则创建新的设置对象
-     * @param storageType 存储类型，默认使用注册表存储
      */
     explicit TodoModel(QObject *parent = nullptr);
-
     ~TodoModel();
 
     // QAbstractListModel 必要的实现方法

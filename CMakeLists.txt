@@ -62,19 +62,25 @@ set(PRIVATE_LIBRARIES
 )
 
 # 项目源文件配置
-# 按功能模块组织源文件
+
+set(ITEM_SOURCES
+    # 数据库条目模块
+    cpp/items/todo_item.cpp
+    cpp/items/todo_item.h
+    cpp/items/categories.cpp
+    cpp/items/categories.h
+)
+
 set(CORE_SOURCES
     # 核心数据模型
-    cpp/todoItem.cpp
-    cpp/todoItem.h
-    cpp/todoModel.cpp
-    cpp/todoModel.h
+    cpp/todo_model.cpp
+    cpp/todo_model.h
 )
 
 set(NETWORK_SOURCES
     # 网络通信模块
-    cpp/networkmanager.cpp
-    cpp/networkmanager.h
+    cpp/network_manager.cpp
+    cpp/network_manager.h
 )
 
 set(UI_SOURCES

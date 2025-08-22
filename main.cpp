@@ -14,7 +14,7 @@
 #include "cpp/logger.h"
 #include "cpp/main_window.h"
 #include "cpp/setting.h"
-#include "cpp/todoModel.h"
+#include "cpp/todo_model.h"
 
 int main(int argc, char *argv[]) {
 #if defined(Q_OS_WIN) && defined(QT_DEBUG)

@@ -54,7 +54,7 @@ class Config : public QObject {
 
   private:
     explicit Config(QObject *parent = nullptr);
-    ~Config() override;
+    ~Config() noexcept override;
 
     std::unique_ptr<QSettings> m_config;
     static constexpr auto booleanKeys = DefaultValues::booleanKeys;
