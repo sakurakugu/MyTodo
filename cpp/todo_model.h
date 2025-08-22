@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "items/todo_item.h"
-#include "foundation/network_manager.h"
+#include "foundation/network_request.h"
 #include "setting.h"
 
 /**
@@ -49,7 +49,7 @@
  * - 支持在线/离线模式切换
  *
  * @note 该类是线程安全的，所有网络操作都在后台线程执行
- * @see TodoItem, CategorieItem, NetworkManager, Config
+ * @see TodoItem, CategorieItem, NetworkRequest, Config
  */
 class TodoModel : public QAbstractListModel {
     Q_OBJECT
@@ -193,8 +193,8 @@ class TodoModel : public QAbstractListModel {
     void categoryOperationCompleted(bool success, const QString &message);    // 类别操作完成信号
 
   private slots:
-    void onNetworkRequestCompleted(NetworkManager::RequestType type, const QJsonObject &response); // 处理网络请求成功
-    void onNetworkRequestFailed(NetworkManager::RequestType type, NetworkManager::NetworkError error,
+    void onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response); // 处理网络请求成功
+    void onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
                                 const QString &message); // 处理网络请求失败
     void onNetworkStatusChanged(bool isOnline);          // 处理网络状态变化
     void onAuthTokenExpired();                           // 处理认证令牌过期
@@ -232,7 +232,7 @@ class TodoModel : public QAbstractListModel {
     QDate m_dateFilterStart;                        ///< 日期筛选开始日期
     QDate m_dateFilterEnd;                          ///< 日期筛选结束日期
     bool m_dateFilterEnabled;                       ///< 日期筛选是否启用
-    NetworkManager &m_networkManager;               ///< 网络管理器
+    NetworkRequest &m_networkRequest;               ///< 网络管理器
     Config &m_config;                               ///< 应用配置
     Setting &m_setting;                             ///< 应用设置
 

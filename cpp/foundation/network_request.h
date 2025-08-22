@@ -1,8 +1,8 @@
 /**
- * @file networkmanager.h
- * @brief NetworkManager类的头文件
+ * @file networkrequest.h
+ * @brief NetworkRequest类的头文件
  *
- * 该文件定义了NetworkManager类，用于管理应用程序的网络请求。
+ * 该文件定义了NetworkRequest类，用于管理应用程序的网络请求。
  *
  * @author Sakurakugu
  * @date 2025
@@ -19,11 +19,14 @@
 #include <QTimer>
 #include <functional>
 
+// 前向声明
+class NetworkProxy;
+
 /**
- * @class NetworkManager
+ * @class NetworkRequest
  * @brief 网络请求管理器，提供统一的网络请求处理和错误管理
  *
- * NetworkManager类是应用程序网络层的核心组件，提供了完整的网络请求管理功能：
+ * NetworkRequest类是应用程序网络层的核心组件，提供了完整的网络请求管理功能：
  *
  * **核心功能：**
  * - HTTP请求的发送和响应处理
@@ -49,20 +52,20 @@
  * @note 所有网络操作都是异步的，通过信号槽机制通知结果
  * @see TodoModel
  */
-class NetworkManager : public QObject {
+class NetworkRequest : public QObject {
     Q_OBJECT
 
   public:
     // 单例模式
-    static NetworkManager &GetInstance() noexcept {
-        static NetworkManager instance;
+    static NetworkRequest &GetInstance() noexcept {
+        static NetworkRequest instance;
         return instance;
     }
     // 禁用拷贝构造和赋值操作
-    NetworkManager(const NetworkManager &) = delete;
-    NetworkManager &operator=(const NetworkManager &) = delete;
-    NetworkManager(NetworkManager &&) = delete;
-    NetworkManager &operator=(NetworkManager &&) = delete;
+    NetworkRequest(const NetworkRequest &) = delete;
+    NetworkRequest &operator=(const NetworkRequest &) = delete;
+    NetworkRequest(NetworkRequest &&) = delete;
+    NetworkRequest &operator=(NetworkRequest &&) = delete;
 
     // 请求类型枚举
     enum RequestType {
@@ -92,17 +95,7 @@ class NetworkManager : public QObject {
     };
     Q_ENUM(NetworkError)
 
-    /**
-     * @enum ProxyType
-     * @brief 代理类型枚举
-     */
-    enum ProxyType {
-        NoProxy,        // 不使用代理
-        SystemProxy,    // 使用系统代理
-        HttpProxy,      // HTTP代理
-        Socks5Proxy     // SOCKS5代理
-    };
-    Q_ENUM(ProxyType)
+
 
     /**
      * @struct RequestConfig
@@ -135,12 +128,8 @@ class NetworkManager : public QObject {
     bool isNetworkAvailable() const; // 检查网络是否可用
     void checkNetworkConnectivity(); // 检查网络连接状态
 
-    // 代理设置
-    void setProxyConfig(ProxyType type, const QString &host = QString(), int port = 0, 
-                       const QString &username = QString(), const QString &password = QString()); // 设置代理配置
-    ProxyType getProxyType() const; // 获取当前代理类型
-    QString getProxyHost() const;   // 获取代理主机
-    int getProxyPort() const;       // 获取代理端口
+    // 代理管理
+    NetworkProxy* getProxyManager() const; // 获取代理管理器
 
   signals:
     void requestCompleted(RequestType type, const QJsonObject &response);             // 请求完成信号
@@ -154,8 +143,8 @@ class NetworkManager : public QObject {
     void onSslErrors(const QList<QSslError> &errors); // SSL错误槽函数
 
   private:
-    explicit NetworkManager(QObject *parent = nullptr);
-    ~NetworkManager();
+    explicit NetworkRequest(QObject *parent = nullptr);
+    ~NetworkRequest();
     /**
      * @struct PendingRequest
      * @brief 待处理请求结构
@@ -183,8 +172,7 @@ class NetworkManager : public QObject {
     void setupDefaultHeaders(QNetworkRequest &request) const; // 设置默认请求头
     void addAuthHeader(QNetworkRequest &request) const;       // 添加认证头
 
-    // 代理配置加载
-    void loadProxyConfigFromSettings();                       // 从配置加载代理设置
+
 
     // 请求去重
     bool isDuplicateRequest(RequestType type) const;           // 检查是否为重复请求
@@ -192,17 +180,13 @@ class NetworkManager : public QObject {
     void removeActiveRequest(RequestType type);                // 移除活跃请求
 
     // 成员变量
-    QNetworkAccessManager *m_networkManager; // 网络访问管理器
+    QNetworkAccessManager *m_networkRequest; // 网络访问管理器
     QString m_authToken;                     // 认证令牌
     QString m_serverBaseUrl;                 // 服务器基础URL
     QString m_apiVersion;                    // API版本
 
-    // 代理配置
-    ProxyType m_proxyType;                   // 代理类型
-    QString m_proxyHost;                     // 代理主机
-    int m_proxyPort;                         // 代理端口
-    QString m_proxyUsername;                 // 代理用户名
-    QString m_proxyPassword;                 // 代理密码
+    // 代理管理器
+    NetworkProxy *m_proxyManager;     // 代理管理器
 
     QMap<qint64, PendingRequest> m_pendingRequests; // 待处理请求映射
     QMap<RequestType, qint64> m_activeRequests;     // 活跃请求映射（用于去重）

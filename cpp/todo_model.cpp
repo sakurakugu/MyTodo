@@ -13,12 +13,12 @@
 #include <algorithm>
 #include <map>
 
-#include "foundation/network_manager.h"
+#include "foundation/network_request.h"
 
 TodoModel::TodoModel(QObject *parent)
     : QAbstractListModel(parent), m_filterCacheDirty(true), m_isOnline(false), m_currentCategory(""),
       m_currentFilter(""), m_currentImportant(false), m_dateFilterEnabled(false),
-      m_networkManager(NetworkManager::GetInstance()),
+      m_networkRequest(NetworkRequest::GetInstance()),
       m_config(Config::GetInstance()), m_setting(Setting::GetInstance()) {
     
     // 初始化默认类别列表
@@ -30,10 +30,10 @@ TodoModel::TodoModel(QObject *parent)
     initializeServerConfig();
 
     // 连接网络管理器信号
-    connect(&m_networkManager, &NetworkManager::requestCompleted, this, &TodoModel::onNetworkRequestCompleted);
-    connect(&m_networkManager, &NetworkManager::requestFailed, this, &TodoModel::onNetworkRequestFailed);
-    connect(&m_networkManager, &NetworkManager::networkStatusChanged, this, &TodoModel::onNetworkStatusChanged);
-    connect(&m_networkManager, &NetworkManager::authTokenExpired, this, &TodoModel::onAuthTokenExpired);
+    connect(&m_networkRequest, &NetworkRequest::requestCompleted, this, &TodoModel::onNetworkRequestCompleted);
+    connect(&m_networkRequest, &NetworkRequest::requestFailed, this, &TodoModel::onNetworkRequestFailed);
+    connect(&m_networkRequest, &NetworkRequest::networkStatusChanged, this, &TodoModel::onNetworkStatusChanged);
+    connect(&m_networkRequest, &NetworkRequest::authTokenExpired, this, &TodoModel::onAuthTokenExpired);
 
     // 加载本地数据
     if (!loadFromLocalStorage()) {
@@ -362,13 +362,13 @@ void TodoModel::setIsOnline(bool online) {
         // TODO: 这部分是不是可以复用
 
         // 尝试连接服务器，验证是否可以切换到在线模式
-        NetworkManager::RequestConfig config;
+        NetworkRequest::RequestConfig config;
         config.url = getApiUrl(m_todoApiEndpoint);
         config.requiresAuth = isLoggedIn();
         config.timeout = 5000; // 5秒超时
 
         // 发送测试请求
-        m_networkManager.sendRequest(NetworkManager::FetchTodos, config);
+        m_networkRequest.sendRequest(NetworkRequest::FetchTodos, config);
 
         // TODO: 暂时设置为在线状态，实际状态将在请求回调中确定
         m_isOnline = online;
@@ -899,12 +899,12 @@ void TodoModel::syncWithServer() {
     emit syncStarted();
 
     // 准备同步请求配置
-    NetworkManager::RequestConfig config;
+    NetworkRequest::RequestConfig config;
     config.url = getApiUrl(m_todoApiEndpoint);
     config.requiresAuth = true;
 
     // 发送同步请求
-    m_networkManager.sendRequest(NetworkManager::RequestType::Sync, config);
+    m_networkRequest.sendRequest(NetworkRequest::RequestType::Sync, config);
 }
 
 /**
@@ -924,7 +924,7 @@ void TodoModel::login(const QString &username, const QString &password) {
     qDebug() << "尝试登录用户:" << username;
 
     // 准备请求配置
-    NetworkManager::RequestConfig config;
+    NetworkRequest::RequestConfig config;
     config.url = getApiUrl(m_authApiEndpoint) + "?action=login";
     config.requiresAuth = false; // 登录请求不需要认证
 
@@ -934,7 +934,7 @@ void TodoModel::login(const QString &username, const QString &password) {
 
     // 发送登录请求
     emit syncStarted();
-    m_networkManager.sendRequest(NetworkManager::RequestType::Login, config);
+    m_networkRequest.sendRequest(NetworkRequest::RequestType::Login, config);
 }
 
 /**
@@ -989,74 +989,74 @@ QString TodoModel::getEmail() const {
     return m_email;
 }
 
-void TodoModel::onNetworkRequestCompleted(NetworkManager::RequestType type, const QJsonObject &response) {
+void TodoModel::onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response) {
     switch (type) {
-    case NetworkManager::RequestType::Login:
+    case NetworkRequest::RequestType::Login:
         handleLoginSuccess(response);
         break;
-    case NetworkManager::RequestType::Sync:
+    case NetworkRequest::RequestType::Sync:
         handleSyncSuccess(response);
         break;
-    case NetworkManager::RequestType::FetchTodos:
+    case NetworkRequest::RequestType::FetchTodos:
         handleFetchTodosSuccess(response);
         break;
-    case NetworkManager::RequestType::PushTodos:
+    case NetworkRequest::RequestType::PushTodos:
         handlePushChangesSuccess(response);
         break;
-    case NetworkManager::RequestType::Logout:
+    case NetworkRequest::RequestType::Logout:
         // 注销成功处理
         emit logoutSuccessful();
         break;
-    case NetworkManager::RequestType::FetchCategories:
+    case NetworkRequest::RequestType::FetchCategories:
         handleFetchCategoriesSuccess(response);
         break;
-    case NetworkManager::RequestType::CreateCategory:
-    case NetworkManager::RequestType::UpdateCategory:
-    case NetworkManager::RequestType::DeleteCategory:
+    case NetworkRequest::RequestType::CreateCategory:
+    case NetworkRequest::RequestType::UpdateCategory:
+    case NetworkRequest::RequestType::DeleteCategory:
         handleCategoryOperationSuccess(response);
         break;
     }
 }
 
-void TodoModel::onNetworkRequestFailed(NetworkManager::RequestType type, NetworkManager::NetworkError error,
+void TodoModel::onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
                                        const QString &errorMessage) {
     Q_UNUSED(error) // 标记未使用的参数
 
     QString typeStr;
     switch (type) {
-    case NetworkManager::RequestType::Login:
+    case NetworkRequest::RequestType::Login:
         typeStr = "登录";
         emit loginFailed(errorMessage);
         break;
-    case NetworkManager::RequestType::Sync:
+    case NetworkRequest::RequestType::Sync:
         typeStr = "同步";
         emit syncCompleted(false, errorMessage);
         break;
-    case NetworkManager::RequestType::FetchTodos:
+    case NetworkRequest::RequestType::FetchTodos:
         typeStr = "获取待办事项";
         emit syncCompleted(false, errorMessage);
         break;
-    case NetworkManager::RequestType::PushTodos:
+    case NetworkRequest::RequestType::PushTodos:
         typeStr = "推送更改";
         emit syncCompleted(false, errorMessage);
         break;
-    case NetworkManager::RequestType::Logout:
+    case NetworkRequest::RequestType::Logout:
         typeStr = "注销";
         emit logoutSuccessful();
         break;
-    case NetworkManager::RequestType::FetchCategories:
+    case NetworkRequest::RequestType::FetchCategories:
         typeStr = "获取类别";
         emit categoryOperationCompleted(false, errorMessage);
         break;
-    case NetworkManager::RequestType::CreateCategory:
+    case NetworkRequest::RequestType::CreateCategory:
         typeStr = "创建类别";
         emit categoryOperationCompleted(false, errorMessage);
         break;
-    case NetworkManager::RequestType::UpdateCategory:
+    case NetworkRequest::RequestType::UpdateCategory:
         typeStr = "更新类别";
         emit categoryOperationCompleted(false, errorMessage);
         break;
-    case NetworkManager::RequestType::DeleteCategory:
+    case NetworkRequest::RequestType::DeleteCategory:
         typeStr = "删除类别";
         emit categoryOperationCompleted(false, errorMessage);
         break;
@@ -1094,7 +1094,7 @@ void TodoModel::handleLoginSuccess(const QJsonObject &response) {
     m_username = response["user"].toObject()["username"].toString();
 
     // 设置网络管理器的认证令牌
-    m_networkManager.setAuthToken(m_accessToken);
+    m_networkRequest.setAuthToken(m_accessToken);
 
     // 保存令牌
     m_config.save(QStringLiteral("user/accessToken"), m_accessToken);
@@ -1375,11 +1375,11 @@ void TodoModel::fetchTodosFromServer() {
     qDebug() << "从服务器获取待办事项...";
 
     try {
-        NetworkManager::RequestConfig config;
+        NetworkRequest::RequestConfig config;
         config.url = getApiUrl(m_todoApiEndpoint);
         config.requiresAuth = true;
 
-        m_networkManager.sendRequest(NetworkManager::RequestType::FetchTodos, config);
+        m_networkRequest.sendRequest(NetworkRequest::RequestType::FetchTodos, config);
     } catch (const std::exception &e) {
         qCritical() << "获取服务器数据时发生异常:" << e.what();
         logError("获取服务器数据", QString("异常: %1").arg(e.what()));
@@ -1458,7 +1458,7 @@ void TodoModel::pushLocalChangesToServer() {
             jsonArray.append(obj);
         }
 
-        NetworkManager::RequestConfig config;
+        NetworkRequest::RequestConfig config;
         config.url = getApiUrl(m_todoApiEndpoint);
         config.requiresAuth = true;
         config.data["todos"] = jsonArray;
@@ -1466,7 +1466,7 @@ void TodoModel::pushLocalChangesToServer() {
         // 存储未同步项目的引用，用于成功后标记为已同步
         m_pendingUnsyncedItems = unsyncedItems;
 
-        m_networkManager.sendRequest(NetworkManager::RequestType::PushTodos, config);
+        m_networkRequest.sendRequest(NetworkRequest::RequestType::PushTodos, config);
     } catch (const std::exception &e) {
         qCritical() << "推送更改时发生异常:" << e.what();
         logError("推送更改", QString("异常: %1").arg(e.what()));
@@ -1593,13 +1593,13 @@ void TodoModel::fetchCategories() {
     QJsonObject requestData;
     requestData["action"] = "list";
 
-    NetworkManager::RequestConfig config;
+    NetworkRequest::RequestConfig config;
     config.url = getApiUrl("categories_api.php");
     config.data = requestData;
     config.requiresAuth = true;
     config.headers["Authorization"] = "Bearer " + m_accessToken;
 
-    m_networkManager.sendRequest(NetworkManager::FetchCategories, config);
+    m_networkRequest.sendRequest(NetworkRequest::FetchCategories, config);
 }
 
 void TodoModel::createCategory(const QString &name) {
@@ -1618,13 +1618,13 @@ void TodoModel::createCategory(const QString &name) {
     requestData["action"] = "create";
     requestData["name"] = name;
 
-    NetworkManager::RequestConfig config;
+    NetworkRequest::RequestConfig config;
     config.url = getApiUrl("categories_api.php");
     config.data = requestData;
     config.requiresAuth = true;
     config.headers["Authorization"] = "Bearer " + m_accessToken;
 
-    m_networkManager.sendRequest(NetworkManager::CreateCategory, config);
+    m_networkRequest.sendRequest(NetworkRequest::CreateCategory, config);
 }
 
 void TodoModel::updateCategory(int id, const QString &name) {
@@ -1644,13 +1644,13 @@ void TodoModel::updateCategory(int id, const QString &name) {
     requestData["id"] = id;
     requestData["name"] = name;
 
-    NetworkManager::RequestConfig config;
+    NetworkRequest::RequestConfig config;
     config.url = getApiUrl("categories_api.php");
     config.data = requestData;
     config.requiresAuth = true;
     config.headers["Authorization"] = "Bearer " + m_accessToken;
 
-    m_networkManager.sendRequest(NetworkManager::UpdateCategory, config);
+    m_networkRequest.sendRequest(NetworkRequest::UpdateCategory, config);
 }
 
 void TodoModel::deleteCategory(int id) {
@@ -1664,13 +1664,13 @@ void TodoModel::deleteCategory(int id) {
     requestData["action"] = "delete";
     requestData["id"] = id;
 
-    NetworkManager::RequestConfig config;
+    NetworkRequest::RequestConfig config;
     config.url = getApiUrl("categories_api.php");
     config.data = requestData;
     config.requiresAuth = true;
     config.headers["Authorization"] = "Bearer " + m_accessToken;
 
-    m_networkManager.sendRequest(NetworkManager::DeleteCategory, config);
+    m_networkRequest.sendRequest(NetworkRequest::DeleteCategory, config);
 }
 
 void TodoModel::handleFetchCategoriesSuccess(const QJsonObject &response) {

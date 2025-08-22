@@ -36,7 +36,7 @@ Page {
     function applyProxySettings() {
         if (!setting.getProxyEnabled()) {
             // 禁用代理
-            networkManager.setProxyConfig(0, "", 0, "", ""); // NoProxy
+            networkRequest.setProxyConfig(0, "", 0, "", ""); // NoProxy
         } else {
             var proxyType = setting.getProxyType();
             var host = setting.getProxyHost();
@@ -44,7 +44,7 @@ Page {
             var username = setting.getProxyUsername();
             var password = setting.getProxyPassword();
 
-            networkManager.setProxyConfig(proxyType, host, port, username, password);
+            networkRequest.setProxyConfig(proxyType, host, port, username, password);
         }
     }
 

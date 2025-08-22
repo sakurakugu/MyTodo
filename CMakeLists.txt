@@ -80,8 +80,10 @@ set(CORE_SOURCES
 
 set(NETWORK_SOURCES
     # 网络通信模块
-    cpp/foundation/network_manager.cpp
-    cpp/foundation/network_manager.h
+    cpp/foundation/network_request.cpp
+    cpp/foundation/network_request.h
+    cpp/foundation/network_proxy.cpp
+    cpp/foundation/network_proxy.h
 )
 
 set(UI_SOURCES

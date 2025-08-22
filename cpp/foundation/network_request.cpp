@@ -1,4 +1,5 @@
-#include "network_manager.h"
+#include "network_request.h"
+#include "network_proxy.h"
 #include "config.h"
 
 #include <QCoreApplication>
@@ -8,37 +9,37 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QSslError>
+#include <QTimer>
 // QNetworkConfigurationManager已在Qt 6中弃用
 #include <QUrl>
 
 /**
  * @brief 构造函数
  *
- * 创建NetworkManager实例，初始化网络访问管理器和连接监控定时器。
+ * 创建NetworkRequest实例，初始化网络访问管理器和连接监控定时器。
  *
  * @param parent 父对象指针，用于Qt对象树管理
  */
-NetworkManager::NetworkManager(QObject *parent)
+NetworkRequest::NetworkRequest(QObject *parent)
     : QObject(parent),
-      m_networkManager(new QNetworkAccessManager(this)),
+      m_networkRequest(new QNetworkAccessManager(this)),
       m_nextRequestId(1),
       m_isOnline(false),
       m_connectivityTimer(new QTimer(this)),
-      m_proxyType(NoProxy),
-      m_proxyPort(0) {
+      m_proxyManager(new NetworkProxy(this)) {
     // 设置默认配置
-    m_networkManager->setProxy(QNetworkProxy::NoProxy);
+    m_networkRequest->setProxy(QNetworkProxy::NoProxy);
 
     // 设置网络连接检查定时器
     m_connectivityTimer->setInterval(CONNECTIVITY_CHECK_INTERVAL);
-    connect(m_connectivityTimer, &QTimer::timeout, this, &NetworkManager::checkNetworkConnectivity);
+    connect(m_connectivityTimer, &QTimer::timeout, this, &NetworkRequest::checkNetworkConnectivity);
     m_connectivityTimer->start();
 
     // 初始网络状态检查
     checkNetworkConnectivity();
     
-    // 从配置加载代理设置
-    loadProxyConfigFromSettings();
+    // 应用代理配置到网络管理器
+    m_proxyManager->applyProxyToManager(m_networkRequest);
 }
 
 /**
@@ -46,31 +47,31 @@ NetworkManager::NetworkManager(QObject *parent)
  *
  * 清理所有待处理的请求，停止定时器，释放网络资源。
  */
-NetworkManager::~NetworkManager() { cancelAllRequests(); }
+NetworkRequest::~NetworkRequest() { cancelAllRequests(); }
 
 /**
  * @brief 设置认证令牌
  * @param token 访问令牌字符串
  */
-void NetworkManager::setAuthToken(const QString &token) { m_authToken = token; }
+void NetworkRequest::setAuthToken(const QString &token) { m_authToken = token; }
 
 /**
  * @brief 清除认证令牌
  */
-void NetworkManager::clearAuthToken() { m_authToken.clear(); }
+void NetworkRequest::clearAuthToken() { m_authToken.clear(); }
 
 /**
  * @brief 检查是否有有效的认证信息
  * @return 如果有有效认证令牌返回true，否则返回false
  */
-bool NetworkManager::hasValidAuth() const { return !m_authToken.isEmpty(); }
+bool NetworkRequest::hasValidAuth() const { return !m_authToken.isEmpty(); }
 
 /**
  * @brief 设置服务器地址与api版本
  * @param baseUrl 服务器基础URL
  * @param apiVersion API版本，默认为"v1"
  */
-void NetworkManager::setServerConfig(const QString &baseUrl, const QString &apiVersion) {
+void NetworkRequest::setServerConfig(const QString &baseUrl, const QString &apiVersion) {
     m_serverBaseUrl = baseUrl;
     m_apiVersion = apiVersion;
 
@@ -85,7 +86,7 @@ void NetworkManager::setServerConfig(const QString &baseUrl, const QString &apiV
  * @param endpoint API端点路径
  * @return 完整的API URL
  */
-QString NetworkManager::getApiUrl(const QString &endpoint) const {
+QString NetworkRequest::getApiUrl(const QString &endpoint) const {
     QString url = m_serverBaseUrl;
     if (!m_apiVersion.isEmpty()) {
         url += QString("api/%1/").arg(m_apiVersion);
@@ -94,7 +95,7 @@ QString NetworkManager::getApiUrl(const QString &endpoint) const {
     return url;
 }
 
-void NetworkManager::sendRequest(RequestType type, const RequestConfig &config) {
+void NetworkRequest::sendRequest(RequestType type, const RequestConfig &config) {
     // 检查网络连接
     if (!m_isOnline) {
         emit requestFailed(type, ConnectionError, "网络连接不可用");
@@ -124,7 +125,7 @@ void NetworkManager::sendRequest(RequestType type, const RequestConfig &config) 
     request.timeoutTimer = new QTimer(this);
     request.timeoutTimer->setSingleShot(true);
     request.timeoutTimer->setInterval(config.timeout);
-    connect(request.timeoutTimer, &QTimer::timeout, this, &NetworkManager::onRequestTimeout);
+    connect(request.timeoutTimer, &QTimer::timeout, this, &NetworkRequest::onRequestTimeout);
 
     // 存储请求
     m_pendingRequests[request.requestId] = request;
@@ -134,7 +135,7 @@ void NetworkManager::sendRequest(RequestType type, const RequestConfig &config) 
     executeRequest(m_pendingRequests[request.requestId]);
 }
 
-void NetworkManager::onReplyFinished() {
+void NetworkRequest::onReplyFinished() {
     QNetworkReply *reply = qobject_cast<QNetworkReply *>(sender());
     if (!reply) {
         return;
@@ -218,7 +219,7 @@ void NetworkManager::onReplyFinished() {
     reply->deleteLater();
 }
 
-void NetworkManager::onRequestTimeout() {
+void NetworkRequest::onRequestTimeout() {
     QTimer *timer = qobject_cast<QTimer *>(sender());
     if (!timer) {
         return;
@@ -265,7 +266,7 @@ void NetworkManager::onRequestTimeout() {
     completeRequest(requestId, false, QJsonObject(), "请求超时");
 }
 
-void NetworkManager::onSslErrors(const QList<QSslError> &errors) {
+void NetworkRequest::onSslErrors(const QList<QSslError> &errors) {
     QNetworkReply *reply = qobject_cast<QNetworkReply *>(sender());
     if (!reply) {
         return;
@@ -280,7 +281,7 @@ void NetworkManager::onSslErrors(const QList<QSslError> &errors) {
     reply->ignoreSslErrors();
 }
 
-void NetworkManager::executeRequest(PendingRequest &request) {
+void NetworkRequest::executeRequest(PendingRequest &request) {
     QNetworkRequest networkRequest = createNetworkRequest(request.config);
 
     // 发送POST请求
@@ -291,17 +292,17 @@ void NetworkManager::executeRequest(PendingRequest &request) {
 
     qDebug() << "发送网络请求:" << request.type << "到" << networkRequest.url().toString();
 
-    request.reply = m_networkManager->post(networkRequest, requestData);
+    request.reply = m_networkRequest->post(networkRequest, requestData);
 
     // 连接信号
-    connect(request.reply, &QNetworkReply::finished, this, &NetworkManager::onReplyFinished);
-    connect(request.reply, &QNetworkReply::sslErrors, this, &NetworkManager::onSslErrors);
+    connect(request.reply, &QNetworkReply::finished, this, &NetworkRequest::onReplyFinished);
+    connect(request.reply, &QNetworkReply::sslErrors, this, &NetworkRequest::onSslErrors);
 
     // 启动超时定时器
     request.timeoutTimer->start();
 }
 
-void NetworkManager::completeRequest(qint64 requestId, bool success, const QJsonObject &response,
+void NetworkRequest::completeRequest(qint64 requestId, bool success, const QJsonObject &response,
                                      const QString &error) {
     if (!m_pendingRequests.contains(requestId)) {
         return;
@@ -323,7 +324,7 @@ void NetworkManager::completeRequest(qint64 requestId, bool success, const QJson
     cleanupRequest(requestId);
 }
 
-void NetworkManager::cleanupRequest(qint64 requestId) {
+void NetworkRequest::cleanupRequest(qint64 requestId) {
     if (!m_pendingRequests.contains(requestId)) {
         return;
     }
@@ -342,7 +343,7 @@ void NetworkManager::cleanupRequest(qint64 requestId) {
     m_pendingRequests.remove(requestId);
 }
 
-void NetworkManager::cancelRequest(RequestType type) {
+void NetworkRequest::cancelRequest(RequestType type) {
     if (!m_activeRequests.contains(type)) {
         return;
     }
@@ -357,7 +358,7 @@ void NetworkManager::cancelRequest(RequestType type) {
     }
 }
 
-void NetworkManager::cancelAllRequests() {
+void NetworkRequest::cancelAllRequests() {
     QList<qint64> requestIds = m_pendingRequests.keys();
     for (qint64 requestId : requestIds) {
         PendingRequest &request = m_pendingRequests[requestId];
@@ -368,9 +369,9 @@ void NetworkManager::cancelAllRequests() {
     }
 }
 
-bool NetworkManager::isNetworkAvailable() const { return m_isOnline; }
+bool NetworkRequest::isNetworkAvailable() const { return m_isOnline; }
 
-void NetworkManager::checkNetworkConnectivity() {
+void NetworkRequest::checkNetworkConnectivity() {
     // TODO: 检查网络连接状态
     bool online = true;  // 简化实现，实际应用中可以发送测试请求
 
@@ -381,7 +382,7 @@ void NetworkManager::checkNetworkConnectivity() {
     }
 }
 
-QNetworkRequest NetworkManager::createNetworkRequest(const RequestConfig &config) const {
+QNetworkRequest NetworkRequest::createNetworkRequest(const RequestConfig &config) const {
     QNetworkRequest request(QUrl(config.url));
 
     // 设置默认头部
@@ -400,7 +401,7 @@ QNetworkRequest NetworkManager::createNetworkRequest(const RequestConfig &config
     return request;
 }
 
-void NetworkManager::setupDefaultHeaders(QNetworkRequest &request) const {
+void NetworkRequest::setupDefaultHeaders(QNetworkRequest &request) const {
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     // TODO: 应用名 / 版本 (平台)
     request.setRawHeader("User-Agent", "MyTodoApp/1.0 (Qt)");
@@ -409,13 +410,13 @@ void NetworkManager::setupDefaultHeaders(QNetworkRequest &request) const {
     request.setRawHeader("Origin", "https://example.com");
 }
 
-void NetworkManager::addAuthHeader(QNetworkRequest &request) const {
+void NetworkRequest::addAuthHeader(QNetworkRequest &request) const {
     if (!m_authToken.isEmpty()) {
         request.setRawHeader("Authorization", QString("Bearer %1").arg(m_authToken).toUtf8());
     }
 }
 
-NetworkManager::NetworkError NetworkManager::mapQNetworkError(QNetworkReply::NetworkError error) const {
+NetworkRequest::NetworkError NetworkRequest::mapQNetworkError(QNetworkReply::NetworkError error) const {
     switch (error) {
         case QNetworkReply::TimeoutError:
             return TimeoutError;
@@ -435,7 +436,7 @@ NetworkManager::NetworkError NetworkManager::mapQNetworkError(QNetworkReply::Net
     }
 }
 
-QString NetworkManager::getErrorMessage(NetworkError error, const QString &details) const {
+QString NetworkRequest::getErrorMessage(NetworkError error, const QString &details) const {
     QString baseMessage;
     switch (error) {
         case TimeoutError:
@@ -464,120 +465,21 @@ QString NetworkManager::getErrorMessage(NetworkError error, const QString &detai
     return baseMessage;
 }
 
-bool NetworkManager::shouldRetry(NetworkError error) const {
+bool NetworkRequest::shouldRetry(NetworkError error) const {
     // 只对特定类型的错误进行重试
     return error == TimeoutError || error == ConnectionError || error == ServerError;
 }
 
-bool NetworkManager::isDuplicateRequest(RequestType type) const { return m_activeRequests.contains(type); }
+bool NetworkRequest::isDuplicateRequest(RequestType type) const { return m_activeRequests.contains(type); }
 
-void NetworkManager::addActiveRequest(RequestType type, qint64 requestId) { m_activeRequests[type] = requestId; }
+void NetworkRequest::addActiveRequest(RequestType type, qint64 requestId) { m_activeRequests[type] = requestId; }
 
-void NetworkManager::removeActiveRequest(RequestType type) { m_activeRequests.remove(type); }
-
-/**
- * @brief 设置代理配置
- * @param type 代理类型
- * @param host 代理主机地址
- * @param port 代理端口
- * @param username 代理用户名（可选）
- * @param password 代理密码（可选）
- */
-void NetworkManager::setProxyConfig(ProxyType type, const QString &host, int port, 
-                                   const QString &username, const QString &password) {
-    m_proxyType = type;
-    m_proxyHost = host;
-    m_proxyPort = port;
-    m_proxyUsername = username;
-    m_proxyPassword = password;
-
-    QNetworkProxy proxy;
-    
-    switch (type) {
-    case NoProxy:
-        proxy.setType(QNetworkProxy::NoProxy);
-        break;
-    case SystemProxy:
-        proxy.setType(QNetworkProxy::DefaultProxy);
-        break;
-    case HttpProxy:
-        proxy.setType(QNetworkProxy::HttpProxy);
-        proxy.setHostName(host);
-        proxy.setPort(port);
-        if (!username.isEmpty()) {
-            proxy.setUser(username);
-            proxy.setPassword(password);
-        }
-        break;
-    case Socks5Proxy:
-        proxy.setType(QNetworkProxy::Socks5Proxy);
-        proxy.setHostName(host);
-        proxy.setPort(port);
-        if (!username.isEmpty()) {
-            proxy.setUser(username);
-            proxy.setPassword(password);
-        }
-        break;
-    }
-    
-    m_networkManager->setProxy(proxy);
-    qDebug() << "代理配置已更新:" << type << host << port;
-}
+void NetworkRequest::removeActiveRequest(RequestType type) { m_activeRequests.remove(type); }
 
 /**
- * @brief 获取当前代理类型
- * @return 代理类型
+ * @brief 获取代理管理器
+ * @return 代理管理器指针
  */
-NetworkManager::ProxyType NetworkManager::getProxyType() const {
-    return m_proxyType;
-}
-
-/**
- * @brief 获取代理主机地址
- * @return 代理主机地址
- */
-QString NetworkManager::getProxyHost() const {
-    return m_proxyHost;
-}
-
-/**
- * @brief 获取代理端口
- * @return 代理端口
- */
-int NetworkManager::getProxyPort() const {
-    return m_proxyPort;
-}
-
-/**
- * @brief 从配置文件加载代理设置
- */
-void NetworkManager::loadProxyConfigFromSettings() {
-    Config &config = Config::GetInstance();
-    
-    // 检查是否启用代理
-    auto enabledResult = config.get(QStringLiteral("proxy/enabled"), false);
-    bool proxyEnabled = enabledResult.has_value() ? enabledResult.value().toBool() : false;
-    
-    if (!proxyEnabled) {
-        setProxyConfig(NoProxy);
-        return;
-    }
-    
-    // 获取代理配置
-    auto typeResult = config.get(QStringLiteral("proxy/type"), 0);
-    auto hostResult = config.get(QStringLiteral("proxy/host"), QString());
-    auto portResult = config.get(QStringLiteral("proxy/port"), 8080);
-    auto usernameResult = config.get(QStringLiteral("proxy/username"), QString());
-    auto passwordResult = config.get(QStringLiteral("proxy/password"), QString());
-    
-    ProxyType type = static_cast<ProxyType>(typeResult.has_value() ? typeResult.value().toInt() : 0);
-    QString host = hostResult.has_value() ? hostResult.value().toString() : QString();
-    int port = portResult.has_value() ? portResult.value().toInt() : 8080;
-    QString username = usernameResult.has_value() ? usernameResult.value().toString() : QString();
-    QString password = passwordResult.has_value() ? passwordResult.value().toString() : QString();
-    
-    // 应用代理配置
-    setProxyConfig(type, host, port, username, password);
-    
-    qDebug() << "已从配置加载代理设置:" << type << host << port;
+NetworkProxy* NetworkRequest::getProxyManager() const {
+    return m_proxyManager;
 }
