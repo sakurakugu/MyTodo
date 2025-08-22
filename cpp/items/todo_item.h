@@ -44,8 +44,8 @@ class TodoItem : public QObject {
     Q_PROPERTY(
         int recurrenceInterval READ recurrenceInterval WRITE setRecurrenceInterval NOTIFY recurrenceIntervalChanged)
     Q_PROPERTY(int recurrenceCount READ recurrenceCount WRITE setRecurrenceCount NOTIFY recurrenceCountChanged)
-    Q_PROPERTY(
-        QDate recurrenceStartDate READ recurrenceStartDate WRITE setRecurrenceStartDate NOTIFY recurrenceStartDateChanged)
+    Q_PROPERTY(QDate recurrenceStartDate READ recurrenceStartDate WRITE setRecurrenceStartDate NOTIFY
+                   recurrenceStartDateChanged)
     Q_PROPERTY(bool isCompleted READ isCompleted WRITE setIsCompleted NOTIFY isCompletedChanged)
     Q_PROPERTY(QDateTime completedAt READ completedAt WRITE setCompletedAt NOTIFY completedAtChanged)
     Q_PROPERTY(bool isDeleted READ isDeleted WRITE setIsDeleted NOTIFY isDeletedChanged)
@@ -56,84 +56,96 @@ class TodoItem : public QObject {
     Q_PROPERTY(bool synced READ synced WRITE setSynced NOTIFY syncedChanged)
 
   public:
+    TodoItem(const TodoItem &) = delete;
+    TodoItem &operator=(const TodoItem &) = delete;
     explicit TodoItem(QObject *parent = nullptr);
-    TodoItem(const int &id,                    ///< 待办事项唯一标识符
+    TodoItem(int id,                           ///< 待办事项唯一标识符
              const QUuid &uuid,                ///< 唯一标识符
-             const int &userId,                ///< 用户ID
+             int userId,                       ///< 用户ID
              const QString &title,             ///< 待办事项标题
              const QString &description,       ///< 待办事项详细描述
              const QString &category,          ///< 待办事项分类
-             const bool &important,            ///< 重要程度
+             bool important,                   ///< 重要程度
              const QDateTime &deadline,        ///< 截止日期、重复结束日期
-             const int &recurrenceInterval,    ///< 重复间隔
-             const int &recurrenceCount,       ///< 重复次数
+             int recurrenceInterval,           ///< 重复间隔
+             int recurrenceCount,              ///< 重复次数
              const QDate &recurrenceStartDate, ///< 重复开始日期
-             const bool &isCompleted,          ///< 是否已完成
+             bool isCompleted,                 ///< 是否已完成
              const QDateTime &completedAt,     ///< 完成时间
-             const bool &isDeleted,            ///< 是否已删除
+             bool isDeleted,                   ///< 是否已删除
              const QDateTime &deletedAt,       ///< 删除时间
              const QDateTime &createdAt,       ///< 创建时间
              const QDateTime &updatedAt,       ///< 最后更新时间
              const QDateTime &lastModifiedAt,  ///< 最后修改时间
-             const bool &synced,               ///< 是否已与服务器同步
+             bool synced,                      ///< 是否已与服务器同步
              QObject *parent = nullptr);
 
-    int id() const;     // 获取ID
-    void setId(const int &id); // 设置ID
+    inline int id() const { return m_id; } // 获取ID
+    void setId(int id);                    // 设置ID
 
-    QUuid uuid() const;              // 获取UUID
-    void setUuid(const QUuid &uuid); // 设置UUID
+    inline QUuid uuid() const { return m_uuid; } // 获取UUID
+    void setUuid(const QUuid &uuid);             // 设置UUID
 
-    int userId() const;         // 获取用户ID
-    void setUserId(const int &userId); // 设置用户ID
+    inline int userId() const { return m_userId; } // 获取用户ID
+    void setUserId(int userId);                    // 设置用户ID
 
-    QString title() const;               // 获取标题
-    void setTitle(const QString &title); // 设置标题
+    inline QString title() const { return m_title; } // 获取标题
+    void setTitle(const QString &title);             // 设置标题
 
-    QString description() const;                     // 获取描述
-    void setDescription(const QString &description); // 设置描述
+    inline QString description() const { return m_description; } // 获取描述
+    void setDescription(const QString &description);             // 设置描述
 
-    QString category() const;                  // 获取分类
-    void setCategory(const QString &category); // 设置分类
+    inline QString category() const { return m_category; } // 获取分类
+    void setCategory(const QString &category);             // 设置分类
 
-    bool important() const;            // 获取重要程度
-    void setImportant(const bool &important); // 设置重要程度
+    inline bool important() const { return m_important; } // 获取重要程度
+    void setImportant(bool important);                    // 设置重要程度
 
-    QDateTime deadline() const;                  // 获取截止日期
-    void setDeadline(const QDateTime &deadline); // 设置截止日期
+    inline QDateTime deadline() const { return m_deadline; } // 获取截止日期
+    void setDeadline(const QDateTime &deadline);             // 设置截止日期
 
-    int recurrenceInterval() const;                     // 获取循环间隔
-    void setRecurrenceInterval(const int &recurrenceInterval); // 设置循环间隔
+    inline int recurrenceInterval() const { return m_recurrenceInterval; } // 获取循环间隔
+    void setRecurrenceInterval(int recurrenceInterval);                    // 设置循环间隔
 
-    int recurrenceCount() const;                  // 获取循环次数
-    void setRecurrenceCount(const int &recurrenceCount); // 设置循环次数
+    inline int recurrenceCount() const { return m_recurrenceCount; } // 获取循环次数
+    void setRecurrenceCount(int recurrenceCount);                    // 设置循环次数
 
-    QDate recurrenceStartDate() const;                             // 获取循环开始日期
-    void setRecurrenceStartDate(const QDate &recurrenceStartDate); // 设置循环开始日期
+    inline QDate recurrenceStartDate() const { return m_recurrenceStartDate; } // 获取循环开始日期
+    void setRecurrenceStartDate(const QDate &recurrenceStartDate);             // 设置循环开始日期
 
-    bool isCompleted() const;            // 获取是否已完成
-    void setIsCompleted(const bool &completed); // 设置是否已完成
+    inline bool isCompleted() const { return m_isCompleted; } // 获取是否已完成
+    void setIsCompleted(bool completed);                     // 设置是否已完成
 
-    QDateTime completedAt() const;                     // 获取完成时间
-    void setCompletedAt(const QDateTime &completedAt); // 设置完成时间
+    inline QDateTime completedAt() const { return m_completedAt; } // 获取完成时间
+    void setCompletedAt(const QDateTime &completedAt);             // 设置完成时间
 
-    bool isDeleted() const;          // 获取是否已删除
-    void setIsDeleted(const bool &deleted); // 设置是否已删除
+    inline bool isDeleted() const { return m_isDeleted; } // 获取是否已删除
+    void setIsDeleted(bool deleted);                     // 设置是否已删除
 
-    QDateTime deletedAt() const;                   // 获取删除时间
-    void setDeletedAt(const QDateTime &deletedAt); // 设置删除时间
+    inline QDateTime deletedAt() const { return m_deletedAt; } // 获取删除时间
+    void setDeletedAt(const QDateTime &deletedAt);             // 设置删除时间
 
-    QDateTime createdAt() const;                   // 获取创建时间
-    void setCreatedAt(const QDateTime &createdAt); // 设置创建时间
+    inline QDateTime createdAt() const { return m_createdAt; } // 获取创建时间
+    void setCreatedAt(const QDateTime &createdAt);             // 设置创建时间
 
-    QDateTime updatedAt() const;                   // 获取更新时间
-    void setUpdatedAt(const QDateTime &updatedAt); // 设置更新时间
+    inline QDateTime updatedAt() const { return m_updatedAt; } // 获取更新时间
+    void setUpdatedAt(const QDateTime &updatedAt);             // 设置更新时间
 
-    QDateTime lastModifiedAt() const;                        // 获取最后修改时间
-    void setLastModifiedAt(const QDateTime &lastModifiedAt); // 设置最后修改时间
+    inline QDateTime lastModifiedAt() const { return m_lastModifiedAt; } // 获取最后修改时间
+    void setLastModifiedAt(const QDateTime &lastModifiedAt);             // 设置最后修改时间
 
-    bool synced() const;         // 获取是否已同步
-    void setSynced(const bool &synced); // 设置是否已同步
+    inline bool synced() const { return m_synced; } // 获取是否已同步
+    void setSynced(bool synced);                    // 设置是否已同步
+
+    // 便利方法
+    bool isOverdue() const;                                                      // 检查是否已过期
+    bool isRecurring() const;                                                    // 检查是否为重复任务
+    bool isDue(const QDateTime &checkTime = QDateTime::currentDateTime()) const; // 检查是否到期
+    int daysUntilDeadline() const;                                               // 距离截止日期的天数
+
+    // 比较操作符
+    bool operator==(const TodoItem &other) const;
+    bool operator!=(const TodoItem &other) const;
 
   signals:
     void idChanged();                  ///< ID改变信号
@@ -157,6 +169,15 @@ class TodoItem : public QObject {
     void syncedChanged();              ///< 同步状态改变信号
 
   private:
+    // 通用setter实现模板
+    template <typename T> void setProperty(T &member, const T &value, void (TodoItem::*signal)()) {
+        if (member != value) {
+            member = value;
+            emit(this->*signal)();
+        }
+    }
+
+    // 成员变量
     int m_id;                    // 任务ID
     QUuid m_uuid;                // 任务UUID
     int m_userId;                // 用户ID
