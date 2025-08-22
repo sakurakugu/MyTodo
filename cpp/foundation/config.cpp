@@ -22,6 +22,28 @@ Config::~Config() noexcept {
 }
 
 /**
+ * @brief 保存设置到配置文件
+ * @param key 设置键名
+ * @param value 设置值
+ * @return 操作结果或错误信息
+ */
+std::expected<void, ConfigError> Config::save(QStringView key, const QVariant &value) noexcept {
+    if (!m_config) {
+        return std::unexpected(ConfigError::InvalidConfig);
+    }
+
+    try {
+        m_config->setValue(key.toString(), value);
+        if (m_config->status() != QSettings::NoError) {
+            return std::unexpected(ConfigError::SaveFailed);
+        }
+        return {};
+    } catch (...) {
+        return std::unexpected(ConfigError::SaveFailed);
+    }
+}
+
+/**
  * @brief 从配置文件读取设置
  * @param key 设置键名
  * @param defaultValue 默认值（如果设置不存在）

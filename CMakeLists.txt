@@ -67,8 +67,8 @@ set(ITEM_SOURCES
     # 数据库条目模块
     cpp/items/todo_item.cpp
     cpp/items/todo_item.h
-    cpp/items/categories.cpp
-    cpp/items/categories.h
+    cpp/items/categorie_item.cpp
+    cpp/items/categorie_item.h
 )
 
 set(CORE_SOURCES
@@ -79,8 +79,8 @@ set(CORE_SOURCES
 
 set(NETWORK_SOURCES
     # 网络通信模块
-    cpp/network_manager.cpp
-    cpp/network_manager.h
+    cpp/foundation/network_manager.cpp
+    cpp/foundation/network_manager.h
 )
 
 set(UI_SOURCES
@@ -91,10 +91,10 @@ set(UI_SOURCES
 
 set(UTILITY_SOURCES
     # 工具和配置模块
-    cpp/config.cpp
-    cpp/config.h
-    cpp/logger.cpp
-    cpp/logger.h
+    cpp/foundation/config.cpp
+    cpp/foundation/config.h
+    cpp/foundation/logger.cpp
+    cpp/foundation/logger.h
     cpp/setting.cpp
     cpp/setting.h
     cpp/default_value.h
@@ -102,6 +102,7 @@ set(UTILITY_SOURCES
 
 # 合并所有源文件
 set(PROJECT_SOURCES
+    ${ITEM_SOURCES}
     ${CORE_SOURCES}
     ${NETWORK_SOURCES}
     ${UI_SOURCES}

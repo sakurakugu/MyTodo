@@ -3,9 +3,14 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QStandardPaths>
+#include <QGuiApplication>
+#include <QPalette>
 
 MainWindow::MainWindow(QObject *parent)
     : QObject(parent), m_isDesktopWidget(false), m_isShowAddTask(false), m_isShowTodos(true), m_isShowSetting(false) {
+    
+    // 监听系统主题变化
+    connect(QGuiApplication::instance(), SIGNAL(paletteChanged(QPalette)), this, SIGNAL(systemDarkModeChanged()));
 }
 
 bool MainWindow::isDesktopWidget() const {
@@ -50,6 +55,15 @@ void MainWindow::setIsShowSetting(bool value) {
         m_isShowSetting = value;
         emit isShowSettingChanged();
     }
+}
+
+bool MainWindow::isSystemDarkMode() const {
+    QPalette palette = QGuiApplication::palette();
+    QColor windowColor = palette.color(QPalette::Window);
+    QColor textColor = palette.color(QPalette::WindowText);
+    
+    // 判断系统是否为深色模式：窗口背景色比文本色更暗
+    return windowColor.lightness() < textColor.lightness();
 }
 
 void MainWindow::toggleWidgetMode() {

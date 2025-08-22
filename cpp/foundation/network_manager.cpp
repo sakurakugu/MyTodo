@@ -1,4 +1,4 @@
-#include "networkmanager.h"
+#include "network_manager.h"
 
 #include <QCoreApplication>
 #include <QDebug>
@@ -60,7 +60,7 @@ void NetworkManager::clearAuthToken() { m_authToken.clear(); }
 bool NetworkManager::hasValidAuth() const { return !m_authToken.isEmpty(); }
 
 /**
- * @brief 设置服务器配置
+ * @brief 设置服务器地址与api版本
  * @param baseUrl 服务器基础URL
  * @param apiVersion API版本，默认为"v1"
  */

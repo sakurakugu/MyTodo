@@ -53,10 +53,18 @@ class NetworkManager : public QObject {
     Q_OBJECT
 
   public:
-    /**
-     * @enum RequestType
-     * @brief 请求类型枚举
-     */
+    // 单例模式 - 使用C++23的constexpr改进
+    static NetworkManager &GetInstance() noexcept {
+        static NetworkManager instance;
+        return instance;
+    }
+    // 禁用拷贝构造和赋值操作
+    NetworkManager(const NetworkManager &) = delete;
+    NetworkManager &operator=(const NetworkManager &) = delete;
+    NetworkManager(NetworkManager &&) = delete;
+    NetworkManager &operator=(NetworkManager &&) = delete;
+
+    // 请求类型枚举
     enum RequestType {
         Login,      // 登录请求
         Sync,       // 同步请求
@@ -64,7 +72,6 @@ class NetworkManager : public QObject {
         PushTodos,  // 推送待办事项请求
         Logout,     // 退出登录请求
     };
-    Q_ENUM(RequestType)
 
     /**
      * @enum NetworkError
@@ -94,16 +101,13 @@ class NetworkManager : public QObject {
         bool requiresAuth = true;       // 是否需要认证
     };
 
-    explicit NetworkManager(QObject *parent = nullptr);
-    ~NetworkManager();
-
     // 认证管理
     void setAuthToken(const QString &token); // 设置认证令牌
     void clearAuthToken();                   // 清除认证令牌
     bool hasValidAuth() const;               // 检查是否有有效的认证信息
 
     // 服务器配置
-    void setServerConfig(const QString &baseUrl, const QString &apiVersion = "v1"); // 设置服务器配置
+    void setServerConfig(const QString &baseUrl, const QString &apiVersion = "v1"); // 设置服务器地址与api版本
     QString getApiUrl(const QString &endpoint) const;                               // 获取完整的API URL
 
     // 网络请求方法
@@ -127,6 +131,8 @@ class NetworkManager : public QObject {
     void onSslErrors(const QList<QSslError> &errors); // SSL错误槽函数
 
   private:
+    explicit NetworkManager(QObject *parent = nullptr);
+    ~NetworkManager();
     /**
      * @struct PendingRequest
      * @brief 待处理请求结构

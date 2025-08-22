@@ -53,6 +53,12 @@ QtObject {
     // 透明度变体
     readonly property color overlayColor: isDarkMode ? "#00000080" : "#00000040"
     
+    // 任务状态和重要性颜色
+    readonly property color completedColor: successColor
+    readonly property color highImportantColor: errorColor
+    readonly property color mediumImportantColor: warningColor
+    readonly property color lowImportantColor: successColor
+    
     // 方法：切换主题
     function toggleTheme() {
         isDarkMode = !isDarkMode

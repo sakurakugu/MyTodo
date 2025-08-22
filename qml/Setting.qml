@@ -62,6 +62,7 @@ Page {
             id: darkModeCheckBox
             text: qsTr("深色模式")
             checked: isDarkMode
+            enabled: !followSystemThemeCheckBox.checked
             
             property bool isInitialized: false
             
@@ -78,6 +79,60 @@ Page {
                 console.log("设置页面-切换深色模式", checked);
                 setting.save("setting/isDarkMode", checked);
                 if (rootWindow) rootWindow.isDarkMode = isDarkMode;
+            }
+        }
+
+        Switch {
+            id: followSystemThemeCheckBox
+            text: qsTr("跟随系统深色模式")
+            checked: setting.get("setting/followSystemTheme", false)
+            
+            property bool isInitialized: false
+            
+            Component.onCompleted: {
+                isInitialized = true;
+                if (checked) {
+                    // 如果启用跟随系统，立即同步系统主题
+                    var systemDarkMode = mainWindow.isSystemDarkMode;
+                    if (isDarkMode !== systemDarkMode) {
+                        isDarkMode = systemDarkMode;
+                        setting.save("setting/isDarkMode", systemDarkMode);
+                        if (rootWindow) rootWindow.isDarkMode = isDarkMode;
+                    }
+                }
+            }
+            
+            onCheckedChanged: {
+                if (!isInitialized) {
+                    return; // 避免初始化时触发
+                }
+                
+                setting.save("setting/followSystemTheme", checked);
+                
+                if (checked) {
+                    // 启用跟随系统时，立即同步系统主题
+                    var systemDarkMode = mainWindow.isSystemDarkMode;
+                    if (isDarkMode !== systemDarkMode) {
+                        isDarkMode = systemDarkMode;
+                        setting.save("setting/isDarkMode", systemDarkMode);
+                        if (rootWindow) rootWindow.isDarkMode = isDarkMode;
+                    }
+                }
+            }
+            
+            // 监听系统主题变化
+            Connections {
+                target: mainWindow
+                function onSystemDarkModeChanged() {
+                    if (followSystemThemeCheckBox.checked) {
+                        var systemDarkMode = mainWindow.isSystemDarkMode;
+                        if (isDarkMode !== systemDarkMode) {
+                            isDarkMode = systemDarkMode;
+                            setting.save("setting/isDarkMode", systemDarkMode);
+                            if (rootWindow) rootWindow.isDarkMode = isDarkMode;
+                        }
+                    }
+                }
             }
         }
 

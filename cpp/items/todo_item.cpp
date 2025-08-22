@@ -229,27 +229,11 @@ void TodoItem::setDeletedAt(const QDateTime &deletedAt) {
 }
 
 /**
- * @brief 获取待办事项创建时间
- * @return 创建时间
- */
-QDateTime TodoItem::createdAt() const {
-    return m_createdAt;
-}
-
-/**
  * @brief 设置待办事项创建时间
  * @param createdAt 新的创建时间
  */
 void TodoItem::setCreatedAt(const QDateTime &createdAt) {
     setProperty(m_createdAt, createdAt, &TodoItem::createdAtChanged);
-}
-
-/**
- * @brief 获取待办事项最后更新时间
- * @return 最后更新时间
- */
-QDateTime TodoItem::updatedAt() const {
-    return m_updatedAt;
 }
 
 /**
@@ -266,14 +250,6 @@ void TodoItem::setUpdatedAt(const QDateTime &updatedAt) {
  */
 void TodoItem::setLastModifiedAt(const QDateTime &lastModifiedAt) {
     setProperty(m_lastModifiedAt, lastModifiedAt, &TodoItem::lastModifiedAtChanged);
-}
-
-/**
- * @brief 获取待办事项同步状态
- * @return 是否已与服务器同步
- */
-bool TodoItem::synced() const {
-    return m_synced;
 }
 
 /**
@@ -377,7 +353,7 @@ bool TodoItem::isInRecurrencePeriod(const QDate &checkDate) const noexcept {
                 occurrenceNumber = daysSinceStart / 7 + 1;
             }
             break;
-        case -30: // 每月（检查是否为同一天）
+        case -30: { // 每月（检查是否为同一天）
             const QDate &startDate = m_recurrenceStartDate;
             if (checkDate.day() == startDate.day()) {
                 int monthsDiff = (checkDate.year() - startDate.year()) * 12 + (checkDate.month() - startDate.month());
@@ -387,7 +363,8 @@ bool TodoItem::isInRecurrencePeriod(const QDate &checkDate) const noexcept {
                 }
             }
             break;
-        case -365: // 每年（检查是否为同一月同一天）
+        }
+        case -365: { // 每年（检查是否为同一月同一天）
             const QDate &startDate = m_recurrenceStartDate;
             if (checkDate.month() == startDate.month() && checkDate.day() == startDate.day()) {
                 int yearsDiff = checkDate.year() - startDate.year();
@@ -397,6 +374,7 @@ bool TodoItem::isInRecurrencePeriod(const QDate &checkDate) const noexcept {
                 }
             }
             break;
+        }
         default:
             break;
         }

@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "items/todo_item.h"
-#include "network_manager.h"
+#include "foundation/network_manager.h"
 #include "setting.h"
 
 /**
@@ -201,7 +201,7 @@ class TodoModel : public QAbstractListModel {
     QString m_currentCategory;                      ///< 当前分类筛选器
     QString m_currentFilter;                        ///< 当前筛选条件
     bool m_currentImportant;                        ///< 当前重要程度筛选器
-    NetworkManager *m_networkManager;               ///< 网络管理器
+    NetworkManager &m_networkManager;               ///< 网络管理器
     Config &m_config;                               ///< 应用配置
     Setting &m_setting;                             ///< 应用设置
 

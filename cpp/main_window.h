@@ -17,6 +17,7 @@ class MainWindow : public QObject {
     Q_PROPERTY(bool isShowAddTask READ isShowAddTask WRITE setIsShowAddTask NOTIFY isShowAddTaskChanged)
     Q_PROPERTY(bool isShowTodos READ isShowTodos WRITE setIsShowTodos NOTIFY isShowTodosChanged)
     Q_PROPERTY(bool isShowSetting READ isShowSetting WRITE setIsShowSetting NOTIFY isShowSettingChanged)
+    Q_PROPERTY(bool isSystemDarkMode READ isSystemDarkMode NOTIFY systemDarkModeChanged)
 
   public:
     explicit MainWindow(QObject *parent = nullptr);
@@ -33,6 +34,8 @@ class MainWindow : public QObject {
 
     bool isShowSetting() const;
     void setIsShowSetting(bool value);
+
+    bool isSystemDarkMode() const;
 
   public slots:
     // 从QML移动过来的函数
@@ -53,6 +56,7 @@ class MainWindow : public QObject {
     void isShowAddTaskChanged();
     void isShowTodosChanged();
     void isShowSettingChanged();
+    void systemDarkModeChanged();
     void widthChanged(int width);
     void heightChanged(int height);
 

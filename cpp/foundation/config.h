@@ -9,7 +9,7 @@
  */
 #pragma once
 
-#include "default_value.h"
+#include "../default_value.h"
 
 #include <QObject>
 #include <QSettings>
@@ -64,19 +64,3 @@ class Config : public QObject {
     QVariant processBooleanValue(const QVariant &value) const noexcept;
 };
 
-// 模板实现
-std::expected<void, ConfigError> Config::save(QStringView key, const QVariant &value) noexcept {
-    if (!m_config) {
-        return std::unexpected(ConfigError::InvalidConfig);
-    }
-
-    try {
-        m_config->setValue(key.toString(), value);
-        if (m_config->status() != QSettings::NoError) {
-            return std::unexpected(ConfigError::SaveFailed);
-        }
-        return {};
-    } catch (...) {
-        return std::unexpected(ConfigError::SaveFailed);
-    }
-}

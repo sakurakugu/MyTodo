@@ -10,9 +10,9 @@
 
 #pragma once
 
-#include "config.h"
 #include "default_value.h"
-#include "logger.h"
+#include "foundation/config.h"
+#include "foundation/logger.h"
 
 #include <QObject>
 
