@@ -40,6 +40,20 @@ class Setting : public QObject {
     Q_INVOKABLE bool openConfigFilePath() const;                                                  ///< 打开配置文件所在目录
     Q_INVOKABLE QString getConfigFilePath() const;                                                ///< 获取配置文件路径
 
+    // 代理配置相关方法
+    Q_INVOKABLE void setProxyType(int type);            ///< 设置代理类型
+    Q_INVOKABLE int getProxyType() const;               ///< 获取代理类型
+    Q_INVOKABLE void setProxyHost(const QString &host); ///< 设置代理主机
+    Q_INVOKABLE QString getProxyHost() const;           ///< 获取代理主机
+    Q_INVOKABLE void setProxyPort(int port);            ///< 设置代理端口
+    Q_INVOKABLE int getProxyPort() const;               ///< 获取代理端口
+    Q_INVOKABLE void setProxyUsername(const QString &username); ///< 设置代理用户名
+    Q_INVOKABLE QString getProxyUsername() const;       ///< 获取代理用户名
+    Q_INVOKABLE void setProxyPassword(const QString &password); ///< 设置代理密码
+    Q_INVOKABLE QString getProxyPassword() const;       ///< 获取代理密码
+    Q_INVOKABLE void setProxyEnabled(bool enabled);     ///< 设置是否启用代理
+    Q_INVOKABLE bool getProxyEnabled() const;           ///< 获取是否启用代理
+
     // 日志配置相关方法
     Q_INVOKABLE void setLogLevel(int level);            ///< 设置日志级别
     Q_INVOKABLE int getLogLevel() const;                ///< 获取日志级别

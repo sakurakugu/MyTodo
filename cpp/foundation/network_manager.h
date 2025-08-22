@@ -53,7 +53,7 @@ class NetworkManager : public QObject {
     Q_OBJECT
 
   public:
-    // 单例模式 - 使用C++23的constexpr改进
+    // 单例模式
     static NetworkManager &GetInstance() noexcept {
         static NetworkManager instance;
         return instance;
@@ -93,6 +93,18 @@ class NetworkManager : public QObject {
     Q_ENUM(NetworkError)
 
     /**
+     * @enum ProxyType
+     * @brief 代理类型枚举
+     */
+    enum ProxyType {
+        NoProxy,        // 不使用代理
+        SystemProxy,    // 使用系统代理
+        HttpProxy,      // HTTP代理
+        Socks5Proxy     // SOCKS5代理
+    };
+    Q_ENUM(ProxyType)
+
+    /**
      * @struct RequestConfig
      * @brief 请求配置结构
      */
@@ -122,6 +134,13 @@ class NetworkManager : public QObject {
     // 网络状态检查
     bool isNetworkAvailable() const; // 检查网络是否可用
     void checkNetworkConnectivity(); // 检查网络连接状态
+
+    // 代理设置
+    void setProxyConfig(ProxyType type, const QString &host = QString(), int port = 0, 
+                       const QString &username = QString(), const QString &password = QString()); // 设置代理配置
+    ProxyType getProxyType() const; // 获取当前代理类型
+    QString getProxyHost() const;   // 获取代理主机
+    int getProxyPort() const;       // 获取代理端口
 
   signals:
     void requestCompleted(RequestType type, const QJsonObject &response);             // 请求完成信号
@@ -164,6 +183,9 @@ class NetworkManager : public QObject {
     void setupDefaultHeaders(QNetworkRequest &request) const; // 设置默认请求头
     void addAuthHeader(QNetworkRequest &request) const;       // 添加认证头
 
+    // 代理配置加载
+    void loadProxyConfigFromSettings();                       // 从配置加载代理设置
+
     // 请求去重
     bool isDuplicateRequest(RequestType type) const;           // 检查是否为重复请求
     void addActiveRequest(RequestType type, qint64 requestId); // 添加活跃请求
@@ -174,6 +196,13 @@ class NetworkManager : public QObject {
     QString m_authToken;                     // 认证令牌
     QString m_serverBaseUrl;                 // 服务器基础URL
     QString m_apiVersion;                    // API版本
+
+    // 代理配置
+    ProxyType m_proxyType;                   // 代理类型
+    QString m_proxyHost;                     // 代理主机
+    int m_proxyPort;                         // 代理端口
+    QString m_proxyUsername;                 // 代理用户名
+    QString m_proxyPassword;                 // 代理密码
 
     QMap<qint64, PendingRequest> m_pendingRequests; // 待处理请求映射
     QMap<RequestType, qint64> m_activeRequests;     // 活跃请求映射（用于去重）

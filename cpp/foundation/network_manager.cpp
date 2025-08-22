@@ -1,4 +1,5 @@
 #include "network_manager.h"
+#include "config.h"
 
 #include <QCoreApplication>
 #include <QDebug>
@@ -22,7 +23,9 @@ NetworkManager::NetworkManager(QObject *parent)
       m_networkManager(new QNetworkAccessManager(this)),
       m_nextRequestId(1),
       m_isOnline(false),
-      m_connectivityTimer(new QTimer(this)) {
+      m_connectivityTimer(new QTimer(this)),
+      m_proxyType(NoProxy),
+      m_proxyPort(0) {
     // 设置默认配置
     m_networkManager->setProxy(QNetworkProxy::NoProxy);
 
@@ -33,6 +36,9 @@ NetworkManager::NetworkManager(QObject *parent)
 
     // 初始网络状态检查
     checkNetworkConnectivity();
+    
+    // 从配置加载代理设置
+    loadProxyConfigFromSettings();
 }
 
 /**
@@ -468,3 +474,110 @@ bool NetworkManager::isDuplicateRequest(RequestType type) const { return m_activ
 void NetworkManager::addActiveRequest(RequestType type, qint64 requestId) { m_activeRequests[type] = requestId; }
 
 void NetworkManager::removeActiveRequest(RequestType type) { m_activeRequests.remove(type); }
+
+/**
+ * @brief 设置代理配置
+ * @param type 代理类型
+ * @param host 代理主机地址
+ * @param port 代理端口
+ * @param username 代理用户名（可选）
+ * @param password 代理密码（可选）
+ */
+void NetworkManager::setProxyConfig(ProxyType type, const QString &host, int port, 
+                                   const QString &username, const QString &password) {
+    m_proxyType = type;
+    m_proxyHost = host;
+    m_proxyPort = port;
+    m_proxyUsername = username;
+    m_proxyPassword = password;
+
+    QNetworkProxy proxy;
+    
+    switch (type) {
+    case NoProxy:
+        proxy.setType(QNetworkProxy::NoProxy);
+        break;
+    case SystemProxy:
+        proxy.setType(QNetworkProxy::DefaultProxy);
+        break;
+    case HttpProxy:
+        proxy.setType(QNetworkProxy::HttpProxy);
+        proxy.setHostName(host);
+        proxy.setPort(port);
+        if (!username.isEmpty()) {
+            proxy.setUser(username);
+            proxy.setPassword(password);
+        }
+        break;
+    case Socks5Proxy:
+        proxy.setType(QNetworkProxy::Socks5Proxy);
+        proxy.setHostName(host);
+        proxy.setPort(port);
+        if (!username.isEmpty()) {
+            proxy.setUser(username);
+            proxy.setPassword(password);
+        }
+        break;
+    }
+    
+    m_networkManager->setProxy(proxy);
+    qDebug() << "代理配置已更新:" << type << host << port;
+}
+
+/**
+ * @brief 获取当前代理类型
+ * @return 代理类型
+ */
+NetworkManager::ProxyType NetworkManager::getProxyType() const {
+    return m_proxyType;
+}
+
+/**
+ * @brief 获取代理主机地址
+ * @return 代理主机地址
+ */
+QString NetworkManager::getProxyHost() const {
+    return m_proxyHost;
+}
+
+/**
+ * @brief 获取代理端口
+ * @return 代理端口
+ */
+int NetworkManager::getProxyPort() const {
+    return m_proxyPort;
+}
+
+/**
+ * @brief 从配置文件加载代理设置
+ */
+void NetworkManager::loadProxyConfigFromSettings() {
+    Config &config = Config::GetInstance();
+    
+    // 检查是否启用代理
+    auto enabledResult = config.get(QStringLiteral("proxy/enabled"), false);
+    bool proxyEnabled = enabledResult.has_value() ? enabledResult.value().toBool() : false;
+    
+    if (!proxyEnabled) {
+        setProxyConfig(NoProxy);
+        return;
+    }
+    
+    // 获取代理配置
+    auto typeResult = config.get(QStringLiteral("proxy/type"), 0);
+    auto hostResult = config.get(QStringLiteral("proxy/host"), QString());
+    auto portResult = config.get(QStringLiteral("proxy/port"), 8080);
+    auto usernameResult = config.get(QStringLiteral("proxy/username"), QString());
+    auto passwordResult = config.get(QStringLiteral("proxy/password"), QString());
+    
+    ProxyType type = static_cast<ProxyType>(typeResult.has_value() ? typeResult.value().toInt() : 0);
+    QString host = hostResult.has_value() ? hostResult.value().toString() : QString();
+    int port = portResult.has_value() ? portResult.value().toInt() : 8080;
+    QString username = usernameResult.has_value() ? usernameResult.value().toString() : QString();
+    QString password = passwordResult.has_value() ? passwordResult.value().toString() : QString();
+    
+    // 应用代理配置
+    setProxyConfig(type, host, port, username, password);
+    
+    qDebug() << "已从配置加载代理设置:" << type << host << port;
+}

@@ -156,3 +156,58 @@ void Setting::initializeDefaultServerConfig() {
                       QString::fromStdString(std::string{DefaultValues::userApiEndpoint}));
     }
 }
+
+// 代理配置相关方法实现
+void Setting::setProxyType(int type) {
+    m_config.save(QStringLiteral("proxy/type"), type);
+}
+
+int Setting::getProxyType() const {
+    auto result = m_config.get(QStringLiteral("proxy/type"), 0); // 默认为NoProxy
+    return result.has_value() ? result.value().toInt() : 0;
+}
+
+void Setting::setProxyHost(const QString &host) {
+    m_config.save(QStringLiteral("proxy/host"), host);
+}
+
+QString Setting::getProxyHost() const {
+    auto result = m_config.get(QStringLiteral("proxy/host"), QString());
+    return result.has_value() ? result.value().toString() : QString();
+}
+
+void Setting::setProxyPort(int port) {
+    m_config.save(QStringLiteral("proxy/port"), port);
+}
+
+int Setting::getProxyPort() const {
+    auto result = m_config.get(QStringLiteral("proxy/port"), 8080); // 默认端口8080
+    return result.has_value() ? result.value().toInt() : 8080;
+}
+
+void Setting::setProxyUsername(const QString &username) {
+    m_config.save(QStringLiteral("proxy/username"), username);
+}
+
+QString Setting::getProxyUsername() const {
+    auto result = m_config.get(QStringLiteral("proxy/username"), QString());
+    return result.has_value() ? result.value().toString() : QString();
+}
+
+void Setting::setProxyPassword(const QString &password) {
+    m_config.save(QStringLiteral("proxy/password"), password);
+}
+
+QString Setting::getProxyPassword() const {
+    auto result = m_config.get(QStringLiteral("proxy/password"), QString());
+    return result.has_value() ? result.value().toString() : QString();
+}
+
+void Setting::setProxyEnabled(bool enabled) {
+    m_config.save(QStringLiteral("proxy/enabled"), enabled);
+}
+
+bool Setting::getProxyEnabled() const {
+    auto result = m_config.get(QStringLiteral("proxy/enabled"), false);
+    return result.has_value() ? result.value().toBool() : false;
+}

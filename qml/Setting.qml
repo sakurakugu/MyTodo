@@ -32,6 +32,22 @@ Page {
         isDarkMode: settingPage.isDarkMode
     }
 
+    // 应用代理设置函数
+    function applyProxySettings() {
+        if (!setting.getProxyEnabled()) {
+            // 禁用代理
+            networkManager.setProxyConfig(0, "", 0, "", ""); // NoProxy
+        } else {
+            var proxyType = setting.getProxyType();
+            var host = setting.getProxyHost();
+            var port = setting.getProxyPort();
+            var username = setting.getProxyUsername();
+            var password = setting.getProxyPassword();
+
+            networkManager.setProxyConfig(proxyType, host, port, username, password);
+        }
+    }
+
     background: Rectangle {
         color: theme.backgroundColor
     }
@@ -41,7 +57,7 @@ Page {
     ScrollView {
         anchors.fill: parent
         contentWidth: availableWidth
-        
+
         ColumnLayout {
             width: parent.width - 40  // 减去左右边距
             anchors.horizontalCenter: parent.horizontalCenter
@@ -51,231 +67,457 @@ Page {
             anchors.rightMargin: 20
             spacing: 15
 
-        Label {
-            text: qsTr("外观设置")
-            font.bold: true
-            font.pixelSize: 16
-            color: theme.textColor
-        }
+            Label {
+                text: qsTr("外观设置")
+                font.bold: true
+                font.pixelSize: 16
+                color: theme.textColor
+            }
 
-        Switch {
-            id: darkModeCheckBox
-            text: qsTr("深色模式")
-            checked: settingPage.isDarkMode
-            enabled: !followSystemThemeCheckBox.checked
-            
-            property bool isInitialized: false
-            
-            Component.onCompleted: {
-                isInitialized = true;
-            }
-            
-            onCheckedChanged: {
-                if (!isInitialized) {
-                    return; // 避免初始化时触发
-                }
-                settingPage.isDarkMode = checked;
-                // 保存设置到配置文件
-                console.log("设置页面-切换深色模式", checked);
-                setting.save("setting/isDarkMode", checked);
-                if (settingPage.rootWindow) settingPage.rootWindow.isDarkMode = settingPage.isDarkMode;
-            }
-        }
+            Switch {
+                id: darkModeCheckBox
+                text: qsTr("深色模式")
+                checked: settingPage.isDarkMode
+                enabled: !followSystemThemeCheckBox.checked
 
-        Switch {
-            id: followSystemThemeCheckBox
-            text: qsTr("跟随系统深色模式")
-            checked: setting.get("setting/followSystemTheme", false)
-            
-            property bool isInitialized: false
-            
-            Component.onCompleted: {
-                isInitialized = true;
-                if (checked) {
-                    // 如果启用跟随系统，立即同步系统主题
-                    var systemDarkMode = mainWindow.isSystemDarkMode;
-                    if (settingPage.isDarkMode !== systemDarkMode) {
-                        settingPage.isDarkMode = systemDarkMode;
-                        setting.save("setting/isDarkMode", systemDarkMode);
-                        if (settingPage.rootWindow) settingPage.rootWindow.isDarkMode = settingPage.isDarkMode;
+                property bool isInitialized: false
+
+                Component.onCompleted: {
+                    isInitialized = true;
+                }
+
+                onCheckedChanged: {
+                    if (!isInitialized) {
+                        return; // 避免初始化时触发
                     }
+                    settingPage.isDarkMode = checked;
+                    // 保存设置到配置文件
+                    console.log("设置页面-切换深色模式", checked);
+                    setting.save("setting/isDarkMode", checked);
+                    if (settingPage.rootWindow)
+                        settingPage.rootWindow.isDarkMode = settingPage.isDarkMode;
                 }
             }
-            
-            onCheckedChanged: {
-                if (!isInitialized) {
-                    return; // 避免初始化时触发
-                }
-                
-                setting.save("setting/followSystemTheme", checked);
-                
-                if (checked) {
-                    // 启用跟随系统时，立即同步系统主题
-                    var systemDarkMode = mainWindow.isSystemDarkMode;
-                    if (settingPage.isDarkMode !== systemDarkMode) {
-                        settingPage.isDarkMode = systemDarkMode;
-                        setting.save("setting/isDarkMode", systemDarkMode);
-                        if (settingPage.rootWindow) settingPage.rootWindow.isDarkMode = settingPage.isDarkMode;
-                    }
-                }
-            }
-            
-            // 监听系统主题变化
-            Connections {
-                target: mainWindow
-                function onSystemDarkModeChanged() {
-                    if (followSystemThemeCheckBox.checked) {
+
+            Switch {
+                id: followSystemThemeCheckBox
+                text: qsTr("跟随系统深色模式")
+                checked: setting.get("setting/followSystemTheme", false)
+
+                property bool isInitialized: false
+
+                Component.onCompleted: {
+                    isInitialized = true;
+                    if (checked) {
+                        // 如果启用跟随系统，立即同步系统主题
                         var systemDarkMode = mainWindow.isSystemDarkMode;
                         if (settingPage.isDarkMode !== systemDarkMode) {
                             settingPage.isDarkMode = systemDarkMode;
                             setting.save("setting/isDarkMode", systemDarkMode);
-                            if (settingPage.rootWindow) settingPage.rootWindow.isDarkMode = settingPage.isDarkMode;
+                            if (settingPage.rootWindow)
+                                settingPage.rootWindow.isDarkMode = settingPage.isDarkMode;
+                        }
+                    }
+                }
+
+                onCheckedChanged: {
+                    if (!isInitialized) {
+                        return; // 避免初始化时触发
+                    }
+
+                    setting.save("setting/followSystemTheme", checked);
+
+                    if (checked) {
+                        // 启用跟随系统时，立即同步系统主题
+                        var systemDarkMode = mainWindow.isSystemDarkMode;
+                        if (settingPage.isDarkMode !== systemDarkMode) {
+                            settingPage.isDarkMode = systemDarkMode;
+                            setting.save("setting/isDarkMode", systemDarkMode);
+                            if (settingPage.rootWindow)
+                                settingPage.rootWindow.isDarkMode = settingPage.isDarkMode;
+                        }
+                    }
+                }
+
+                // 监听系统主题变化
+                Connections {
+                    target: mainWindow
+                    function onSystemDarkModeChanged() {
+                        if (followSystemThemeCheckBox.checked) {
+                            var systemDarkMode = mainWindow.isSystemDarkMode;
+                            if (settingPage.isDarkMode !== systemDarkMode) {
+                                settingPage.isDarkMode = systemDarkMode;
+                                setting.save("setting/isDarkMode", systemDarkMode);
+                                if (settingPage.rootWindow)
+                                    settingPage.rootWindow.isDarkMode = settingPage.isDarkMode;
+                            }
                         }
                     }
                 }
             }
-        }
 
-        Switch {
-            id: preventDraggingCheckBox
-            text: qsTr("防止拖动窗口（小窗口模式）")
-            checked: settingPage.preventDragging
-            enabled: mainWindow.isDesktopWidget
-            onCheckedChanged: {
-                settingPage.preventDragging = checked;
-                setting.save("setting/preventDragging", settingPage.preventDragging);
-                if (settingPage.rootWindow) settingPage.rootWindow.preventDragging = settingPage.preventDragging;
-            }
-        }
-
-        Switch {
-            id: autoStartSwitch
-            text: qsTr("开机自启动")
-            checked: mainWindow.isAutoStartEnabled()
-            onCheckedChanged: {
-                mainWindow.setAutoStart(checked);
-            }
-        }
-
-        Switch {
-            id: autoSyncSwitch
-            text: qsTr("自动同步")
-            checked: setting.get("setting/autoSync", false)
-            
-            property bool isInitialized: false
-            
-            Component.onCompleted: {
-                isInitialized = true;
-            }
-            
-            onCheckedChanged: {
-                if (!isInitialized) {
-                    return; // 避免初始化时触发
-                }
-                
-                if (checked && !todoModel.isLoggedIn) {
-                    // 如果要开启自动同步但未登录，显示提示并重置开关
-                    autoSyncSwitch.checked = false;
-                    loginRequiredDialog.open();
-                } else {
-                    setting.save("setting/autoSync", checked);
-
+            Switch {
+                id: preventDraggingCheckBox
+                text: qsTr("防止拖动窗口（小窗口模式）")
+                checked: settingPage.preventDragging
+                enabled: mainWindow.isDesktopWidget
+                onCheckedChanged: {
+                    settingPage.preventDragging = checked;
+                    setting.save("setting/preventDragging", settingPage.preventDragging);
+                    if (settingPage.rootWindow)
+                        settingPage.rootWindow.preventDragging = settingPage.preventDragging;
                 }
             }
-        }
 
-        // 在线状态显示（只读）
-        Row {
-            spacing: 10
-            Label {
-                text: qsTr("连接状态:")
-                anchors.verticalCenter: parent.verticalCenter
+            Switch {
+                id: autoStartSwitch
+                text: qsTr("开机自启动")
+                checked: mainWindow.isAutoStartEnabled()
+                onCheckedChanged: {
+                    mainWindow.setAutoStart(checked);
+                }
             }
-            Rectangle {
-                width: 12
-                height: 12
-                radius: 6
-                color: todoModel.isOnline ? "#4CAF50" : "#F44336"
-                anchors.verticalCenter: parent.verticalCenter
+
+            Switch {
+                id: autoSyncSwitch
+                text: qsTr("自动同步")
+                checked: setting.get("setting/autoSync", false)
+
+                property bool isInitialized: false
+
+                Component.onCompleted: {
+                    isInitialized = true;
+                }
+
+                onCheckedChanged: {
+                    if (!isInitialized) {
+                        return; // 避免初始化时触发
+                    }
+
+                    if (checked && !todoModel.isLoggedIn) {
+                        // 如果要开启自动同步但未登录，显示提示并重置开关
+                        autoSyncSwitch.checked = false;
+                        loginRequiredDialog.open();
+                    } else {
+                        setting.save("setting/autoSync", checked);
+                    }
+                }
             }
-            Label {
-                text: todoModel.isOnline ? qsTr("在线") : qsTr("离线")
-                color: todoModel.isOnline ? "#4CAF50" : "#F44336"
-                anchors.verticalCenter: parent.verticalCenter
-            }
-        }
 
-        Label {
-            text: qsTr("数据管理")
-            font.bold: true
-            font.pixelSize: 16
-            color: theme.textColor
-            Layout.topMargin: 10
-        }
-
-        RowLayout {
-            spacing: 10
-            
-            CustomButton {
-            text: qsTr("导出待办事项")
-            textColor: "white"
-            backgroundColor: "#27ae60"
-            onClicked: exportFileDialog.open()
-            isDarkMode: settingPage.isDarkMode
-        }
-            
-            CustomButton {
-            text: qsTr("导入待办事项")
-            textColor: "white"
-            backgroundColor: "#3498db"
-            onClicked: importFileDialog.open()
-            isDarkMode: settingPage.isDarkMode
-        }
-        }
-
-        Label {
-            text: qsTr("关于")
-            font.bold: true
-            font.pixelSize: 16
-            color: theme.textColor
-            Layout.topMargin: 10
-        }
-
-        CustomButton {
-        text: qsTr("GitHub主页")
-        textColor: "white"
-        backgroundColor: "#0f85d3"
-        onClicked: Qt.openUrlExternally("https://github.com/sakurakugu/MyTodo")
-        isDarkMode: settingPage.isDarkMode
-    }
-
-        Label {
-            text: qsTr("配置文件管理")
-            font.bold: true
-            font.pixelSize: 16
-            color: theme.textColor
-            Layout.topMargin: 10
-        }
-
-        ColumnLayout {
-            spacing: 10
-            Layout.fillWidth: true
-
-            // 配置文件路径显示（仅对文件类型显示）
-            ColumnLayout {
-                spacing: 5
-                Layout.fillWidth: true
-                
+            // 在线状态显示（只读）
+            Row {
+                spacing: 10
                 Label {
-                    text: qsTr("配置文件路径:")
+                    text: qsTr("连接状态:")
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Rectangle {
+                    width: 12
+                    height: 12
+                    radius: 6
+                    color: todoModel.isOnline ? "#4CAF50" : "#F44336"
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+
+            Label {
+                text: qsTr("网络代理设置")
+                font.bold: true
+                font.pixelSize: 16
+                color: theme.textColor
+            }
+
+            Switch {
+                id: proxyEnabledSwitch
+                text: qsTr("启用代理")
+                checked: setting.getProxyEnabled()
+
+                property bool isInitialized: false
+
+                Component.onCompleted: {
+                    isInitialized = true;
+                }
+
+                onCheckedChanged: {
+                    if (!isInitialized) {
+                        return;
+                    }
+                    setting.setProxyEnabled(checked);
+                    // 应用代理设置
+                    applyProxySettings();
+                }
+            }
+
+            ComboBox {
+                id: proxyTypeCombo
+                enabled: proxyEnabledSwitch.checked
+                model: [qsTr("不使用代理"), qsTr("系统代理"), qsTr("HTTP代理"), qsTr("SOCKS5代理")]
+                currentIndex: setting.getProxyType()
+
+                property bool isInitialized: false
+
+                Component.onCompleted: {
+                    isInitialized = true;
+                }
+
+                onCurrentIndexChanged: {
+                    if (!isInitialized) {
+                        return;
+                    }
+                    setting.setProxyType(currentIndex);
+                    applyProxySettings();
+                }
+            }
+
+            // 代理服务器设置（仅在选择HTTP或SOCKS5代理时显示）
+            Column {
+                visible: proxyEnabledSwitch.checked && (proxyTypeCombo.currentIndex === 2 || proxyTypeCombo.currentIndex === 3)
+                spacing: 10
+                width: parent.width
+
+                Row {
+                    spacing: 10
+                    width: parent.width
+
+                    Label {
+                        text: qsTr("服务器:")
+                        width: 80
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    TextField {
+                        id: proxyHostField
+                        placeholderText: qsTr("代理服务器地址")
+                        text: setting.getProxyHost()
+                        width: parent.width - 90
+
+                        onTextChanged: {
+                            setting.setProxyHost(text);
+                            applyProxySettings();
+                        }
+                    }
+                }
+
+                Row {
+                    spacing: 10
+                    width: parent.width
+
+                    Label {
+                        text: qsTr("端口:")
+                        width: 80
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    SpinBox {
+                        id: proxyPortSpinBox
+                        from: 1
+                        to: 65535
+                        value: setting.getProxyPort()
+
+                        onValueChanged: {
+                            setting.setProxyPort(value);
+                            applyProxySettings();
+                        }
+                    }
+                }
+
+                Row {
+                    spacing: 10
+                    width: parent.width
+
+                    Label {
+                        text: qsTr("用户名:")
+                        width: 80
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    TextField {
+                        id: proxyUsernameField
+                        placeholderText: qsTr("用户名（可选）")
+                        text: setting.getProxyUsername()
+                        width: parent.width - 90
+
+                        onTextChanged: {
+                            setting.setProxyUsername(text);
+                            applyProxySettings();
+                        }
+                    }
+                }
+
+                Row {
+                    spacing: 10
+                    width: parent.width
+
+                    Label {
+                        text: qsTr("密码:")
+                        width: 80
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    TextField {
+                        id: proxyPasswordField
+                        placeholderText: qsTr("密码（可选）")
+                        text: setting.getProxyPassword()
+                        echoMode: TextInput.Password
+                        width: parent.width - 90
+
+                        onTextChanged: {
+                            setting.setProxyPassword(text);
+                            applyProxySettings();
+                        }
+                    }
+                }
+            }
+
+            // 在线状态显示（只读）
+            Row {
+                spacing: 10
+                Label {
+                    text: qsTr("连接状态:")
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Rectangle {
+                    width: 12
+                    height: 12
+                    radius: 6
+                    color: todoModel.isOnline ? "#4CAF50" : "#F44336"
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Label {
+                    text: todoModel.isOnline ? qsTr("在线") : qsTr("离线")
+                    color: todoModel.isOnline ? "#4CAF50" : "#F44336"
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+
+            Label {
+                text: qsTr("数据管理")
+                font.bold: true
+                font.pixelSize: 16
+                color: theme.textColor
+                Layout.topMargin: 10
+            }
+
+            RowLayout {
+                spacing: 10
+
+                CustomButton {
+                    text: qsTr("导出待办事项")
+                    textColor: "white"
+                    backgroundColor: "#27ae60"
+                    onClicked: exportFileDialog.open()
+                    isDarkMode: settingPage.isDarkMode
+                }
+
+                CustomButton {
+                    text: qsTr("导入待办事项")
+                    textColor: "white"
+                    backgroundColor: "#3498db"
+                    onClicked: importFileDialog.open()
+                    isDarkMode: settingPage.isDarkMode
+                }
+            }
+
+            Label {
+                text: qsTr("关于")
+                font.bold: true
+                font.pixelSize: 16
+                color: theme.textColor
+                Layout.topMargin: 10
+            }
+
+            CustomButton {
+                text: qsTr("GitHub主页")
+                textColor: "white"
+                backgroundColor: "#0f85d3"
+                onClicked: Qt.openUrlExternally("https://github.com/sakurakugu/MyTodo")
+                isDarkMode: settingPage.isDarkMode
+            }
+
+            Label {
+                text: qsTr("配置文件管理")
+                font.bold: true
+                font.pixelSize: 16
+                color: theme.textColor
+                Layout.topMargin: 10
+            }
+
+            ColumnLayout {
+                spacing: 10
+                Layout.fillWidth: true
+
+                // 配置文件路径显示（仅对文件类型显示）
+                ColumnLayout {
+                    spacing: 5
+                    Layout.fillWidth: true
+
+                    Label {
+                        text: qsTr("配置文件路径:")
+                        color: theme.textColor
+                    }
+
+                    TextField {
+                        id: configPathField
+                        Layout.fillWidth: true
+                        text: setting.getConfigFilePath()
+                        readOnly: true
+                        color: theme.textColor
+                        background: Rectangle {
+                            color: theme.secondaryBackgroundColor
+                            border.color: theme.borderColor
+                            border.width: 1
+                            radius: 4
+                        }
+                    }
+
+                    RowLayout {
+                        spacing: 10
+
+                        CustomButton {
+                            text: qsTr("打开目录")
+                            textColor: "white"
+                            backgroundColor: "#27ae60"
+                            onClicked: {
+                                if (!setting.openConfigFilePath()) {
+                                    openDirErrorDialog.open();
+                                }
+                            }
+                            isDarkMode: settingPage.isDarkMode
+                        }
+
+                        CustomButton {
+                            text: qsTr("清空配置")
+                            textColor: "white"
+                            backgroundColor: "#e74c3c"
+                            onClicked: clearConfigDialog.open()
+                            isDarkMode: settingPage.isDarkMode
+                        }
+                    }
+                }
+            }
+
+            Label {
+                text: qsTr("服务器配置")
+                font.bold: true
+                font.pixelSize: 16
+                color: theme.textColor
+                Layout.topMargin: 10
+            }
+
+            ColumnLayout {
+                spacing: 10
+                Layout.fillWidth: true
+
+                Label {
+                    text: qsTr("API服务器地址:")
                     color: theme.textColor
                 }
-                
+
                 TextField {
-                    id: configPathField
+                    id: apiUrlField
                     Layout.fillWidth: true
-                    text: setting.getConfigFilePath()
-                    readOnly: true
+                    // placeholderText: qsTr("请输入API服务器地址")
+                    text: setting.get("server/baseUrl", "https://api.example.com")
                     color: theme.textColor
                     background: Rectangle {
                         color: theme.secondaryBackgroundColor
@@ -284,688 +526,628 @@ Page {
                         radius: 4
                     }
                 }
-                
+
                 RowLayout {
                     spacing: 10
-                    
+
                     CustomButton {
-                        text: qsTr("打开目录")
+                        text: qsTr("保存配置")
                         textColor: "white"
                         backgroundColor: "#27ae60"
+                        enabled: apiUrlField.text.length > 0
                         onClicked: {
-                            if (!setting.openConfigFilePath()) {
-                                openDirErrorDialog.open();
+                            var url = apiUrlField.text.trim();
+                            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                                apiConfigErrorDialog.message = qsTr("请输入完整的URL地址（包含http://或https://）");
+                                apiConfigErrorDialog.open();
+                                return;
                             }
+
+                            if (!todoModel.isHttpsUrl(url)) {
+                                httpsWarningDialog.targetUrl = url;
+                                httpsWarningDialog.open();
+                                return;
+                            }
+
+                            todoModel.updateServerConfig(url);
+                            apiConfigSuccessDialog.open();
                         }
                         isDarkMode: settingPage.isDarkMode
                     }
-                    
+
                     CustomButton {
-                        text: qsTr("清空配置")
+                        text: qsTr("重置为默认")
                         textColor: "white"
-                        backgroundColor: "#e74c3c"
-                        onClicked: clearConfigDialog.open()
+                        backgroundColor: "#95a5a6"
+                        onClicked: {
+                            apiUrlField.text = "https://api.example.com";
+                        }
                         isDarkMode: settingPage.isDarkMode
                     }
                 }
             }
         }
 
-        Label {
-            text: qsTr("服务器配置")
-            font.bold: true
-            font.pixelSize: 16
-            color: theme.textColor
-            Layout.topMargin: 10
+        // 导出文件对话框
+        FileDialog {
+            id: exportFileDialog
+            title: qsTr("选择导出位置")
+            fileMode: FileDialog.SaveFile
+            nameFilters: ["JSON files (*.json)", "All files (*)"]
+            defaultSuffix: "json"
+            selectedFile: {
+                var now = new Date();
+                var dateStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0') + "_" + String(now.getHours()).padStart(2, '0') + "-" + String(now.getMinutes()).padStart(2, '0');
+                return "file:///" + "MyTodo_导出_" + dateStr + ".json";
+            }
+            onAccepted: {
+                var filePath = selectedFile.toString().replace("file:///", "");
+                if (todoModel.exportTodos(filePath)) {
+                    exportSuccessDialog.open();
+                } else {
+                    exportErrorDialog.open();
+                }
+            }
         }
 
-        ColumnLayout {
-            spacing: 10
-            Layout.fillWidth: true
+        // 导入文件对话框
+        FileDialog {
+            id: importFileDialog
+            title: qsTr("选择要导入的文件")
+            fileMode: FileDialog.OpenFile
+            nameFilters: ["JSON files (*.json)", "All files (*)"]
+            onAccepted: {
+                var filePath = selectedFile.toString().replace("file:///", "");
 
+                // 使用新的自动解决方法：先导入无冲突项目，返回冲突项目列表
+                var conflicts = todoModel.importTodosWithAutoResolution(filePath);
+
+                if (conflicts.length > 0) {
+                    // 有冲突，显示冲突处理对话框
+                    conflictResolutionDialog.conflicts = conflicts;
+                    conflictResolutionDialog.selectedFilePath = filePath;
+                    conflictResolutionDialog.open();
+                } else {
+                    // 没有冲突，所有项目已自动导入
+                    importSuccessDialog.open();
+                }
+            }
+        }
+
+        // 导出成功对话框
+        Dialog {
+            id: exportSuccessDialog
+            title: qsTr("导出成功")
+            standardButtons: Dialog.Ok
             Label {
-                text: qsTr("API服务器地址:")
-                color: theme.textColor
-            }
-
-            TextField {
-                id: apiUrlField
-                Layout.fillWidth: true
-                // placeholderText: qsTr("请输入API服务器地址")
-                text: setting.get("server/baseUrl", "https://api.example.com")
-                color: theme.textColor
-                background: Rectangle {
-                    color: theme.secondaryBackgroundColor
-                    border.color: theme.borderColor
-                    border.width: 1
-                    radius: 4
-                }
-            }
-
-            RowLayout {
-                spacing: 10
-
-                CustomButton {
-                text: qsTr("保存配置")
-                textColor: "white"
-                backgroundColor: "#27ae60"
-                enabled: apiUrlField.text.length > 0
-                onClicked: {
-                    var url = apiUrlField.text.trim()
-                    if (!url.startsWith("http://") && !url.startsWith("https://")) {
-                        apiConfigErrorDialog.message = qsTr("请输入完整的URL地址（包含http://或https://）")
-                        apiConfigErrorDialog.open()
-                        return
-                    }
-                    
-                    if (!todoModel.isHttpsUrl(url)) {
-                        httpsWarningDialog.targetUrl = url
-                        httpsWarningDialog.open()
-                        return
-                    }
-                    
-                    todoModel.updateServerConfig(url)
-                    apiConfigSuccessDialog.open()
-                }
-                isDarkMode: settingPage.isDarkMode
-            }
-
-                CustomButton {
-                text: qsTr("重置为默认")
-                textColor: "white"
-                backgroundColor: "#95a5a6"
-                onClicked: {
-                    apiUrlField.text = "https://api.example.com"
-                }
-                isDarkMode: settingPage.isDarkMode
-            }
+                text: qsTr("待办事项已成功导出！")
             }
         }
 
-        }
-    }
-    
-    // 导出文件对话框
-    FileDialog {
-        id: exportFileDialog
-        title: qsTr("选择导出位置")
-        fileMode: FileDialog.SaveFile
-        nameFilters: ["JSON files (*.json)", "All files (*)"]
-        defaultSuffix: "json"
-        selectedFile: {
-            var now = new Date();
-            var dateStr = now.getFullYear() + "-" + 
-                         String(now.getMonth() + 1).padStart(2, '0') + "-" + 
-                         String(now.getDate()).padStart(2, '0') + "_" +
-                         String(now.getHours()).padStart(2, '0') + "-" +
-                         String(now.getMinutes()).padStart(2, '0');
-            return "file:///" + "MyTodo_导出_" + dateStr + ".json";
-        }
-        onAccepted: {
-            var filePath = selectedFile.toString().replace("file:///", "");
-            if (todoModel.exportTodos(filePath)) {
-                exportSuccessDialog.open();
-            } else {
-                exportErrorDialog.open();
-            }
-        }
-    }
-    
-    // 导入文件对话框
-    FileDialog {
-        id: importFileDialog
-        title: qsTr("选择要导入的文件")
-        fileMode: FileDialog.OpenFile
-        nameFilters: ["JSON files (*.json)", "All files (*)"]
-        onAccepted: {
-            var filePath = selectedFile.toString().replace("file:///", "");
-            
-            // 使用新的自动解决方法：先导入无冲突项目，返回冲突项目列表
-            var conflicts = todoModel.importTodosWithAutoResolution(filePath);
-            
-            if (conflicts.length > 0) {
-                // 有冲突，显示冲突处理对话框
-                conflictResolutionDialog.conflicts = conflicts;
-                conflictResolutionDialog.selectedFilePath = filePath;
-                conflictResolutionDialog.open();
-            } else {
-                // 没有冲突，所有项目已自动导入
-                importSuccessDialog.open();
-            }
-        }
-    }
-    
-    // 导出成功对话框
-    Dialog {
-        id: exportSuccessDialog
-        title: qsTr("导出成功")
-        standardButtons: Dialog.Ok
-        Label {
-            text: qsTr("待办事项已成功导出！")
-        }
-    }
-    
-    // 导出失败对话框
-    Dialog {
-        id: exportErrorDialog
-        title: qsTr("导出失败")
-        standardButtons: Dialog.Ok
-        Label {
-            text: qsTr("导出待办事项时发生错误，请检查文件路径和权限。")
-        }
-    }
-    
-    // 导入成功对话框
-    Dialog {
-        id: importSuccessDialog
-        title: qsTr("导入成功")
-        standardButtons: Dialog.Ok
-        Label {
-            text: qsTr("待办事项已成功导入！")
-        }
-    }
-    
-    // 导入失败对话框
-    Dialog {
-        id: importErrorDialog
-        title: qsTr("导入失败")
-        standardButtons: Dialog.Ok
-        Label {
-            text: qsTr("导入待办事项时发生错误，请检查文件格式和内容。")
-        }
-    }
-    
-    // 冲突处理对话框
-    Dialog {
-        id: conflictResolutionDialog
-        title: qsTr("检测到冲突")
-        modal: true
-        width: Math.min(800, parent.width * 0.9)
-        height: Math.min(600, parent.height * 0.8)
-        anchors.centerIn: parent
-        standardButtons: Dialog.NoButton
-        
-        property var conflicts: []
-        property string selectedFilePath: ""
-        property var conflictResolutions: ({})
-        
-        onOpened: {
-            // 初始化每个冲突项的处理方式为"skip"
-            conflictResolutions = {};
-            for (var i = 0; i < conflicts.length; i++) {
-                conflictResolutions[conflicts[i].id] = "skip";
-            }
-        }
-        
-        contentItem: Column {
-            spacing: 15
-            anchors.fill: parent
-            anchors.margins: 10
-            
+        // 导出失败对话框
+        Dialog {
+            id: exportErrorDialog
+            title: qsTr("导出失败")
+            standardButtons: Dialog.Ok
             Label {
-                text: qsTr("导入文件中发现 %1 个待办事项与现有数据存在ID冲突，请为每个冲突项选择处理方式：").arg(conflictResolutionDialog.conflicts.length)
-                wrapMode: Text.WordWrap
-                width: parent.width
-                font.bold: true
+                text: qsTr("导出待办事项时发生错误，请检查文件路径和权限。")
             }
-            
-            ScrollView {
-                width: parent.width
-                height: parent.height - 100
-                clip: true
-                
-                Column {
-                    width: parent.width
-                    spacing: 10
-                    
-                    Repeater {
-                        model: conflictResolutionDialog.conflicts
-                        
-                        delegate: Rectangle {
-                            width: parent.width
-                            height: 350
-                            color: index % 2 === 0 ? "#f8f9fa" : "#ffffff"
-                            border.color: "#dee2e6"
-                            border.width: 1
-                            radius: 5
-                            
-                            Column {
-                                id: conflictItemColumn
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.top: parent.top
-                                anchors.margins: 15
-                                spacing: 10
-                                
-                                Label {
-                                    text: qsTr("冲突项目 %1 (ID: %2)").arg(index + 1).arg(modelData.id)
-                                    font.bold: true
-                                    font.pixelSize: 14
-                                    color: "#dc3545"
-                                }
-                                
-                                Row {
-                                    width: parent.width
-                                    spacing: 20
-                                    
-                                    // 现有数据
-                                    Column {
-                                        width: (parent.width - 40) / 2
-                                        
-                                        Rectangle {
-                                            width: parent.width
-                                            height: 2
-                                            color: "#28a745"
-                                        }
-                                        
-                                        Label {
-                                            text: qsTr("现有数据")
-                                            font.bold: true
-                                            font.pixelSize: 12
-                                            color: "#28a745"
-                                        }
-                                        
-                                        Label {
-                                            text: qsTr("标题: %1").arg(modelData.existingTitle || "")
-                                            wrapMode: Text.WordWrap
-                                            width: parent.width
-                                            font.pixelSize: 11
-                                        }
-                                        
-                                        Label {
-                                            text: qsTr("描述: %1").arg(modelData.existingDescription || "")
-                                            wrapMode: Text.WordWrap
-                                            width: parent.width
-                                            font.pixelSize: 11
-                                            maximumLineCount: 2
-                                            elide: Text.ElideRight
-                                        }
-                                        
-                                        Row {
-                                            width: parent.width
-                                            spacing: 10
-                                            
-                                            Label {
-                                                text: qsTr("分类: %1").arg(modelData.existingCategory || "")
-                                                font.pixelSize: 10
-                                            }
-                                            
-                                            Label {
-                                                text: qsTr("状态: %1").arg(modelData.existingStatus || "")
-                                                font.pixelSize: 10
-                                            }
-                                        }
-                                        
-                                        Label {
-                                            text: qsTr("更新时间: %1").arg(modelData.existingUpdatedAt ? modelData.existingUpdatedAt.toLocaleString() : "")
-                                            font.pixelSize: 9
-                                            color: "#6c757d"
-                                        }
-                                    }
-                                    
-                                    // 分隔线
-                                    Rectangle {
-                                        width: 2
-                                        height: 200
-                                        color: "#dee2e6"
-                                    }
-                                    
-                                    // 导入数据
-                                    Column {
-                                        width: (parent.width - 40) / 2
-                                        
-                                        Rectangle {
-                                            width: parent.width
-                                            height: 2
-                                            color: "#007bff"
-                                        }
-                                        
-                                        Label {
-                                            text: qsTr("导入数据")
-                                            font.bold: true
-                                            font.pixelSize: 12
-                                            color: "#007bff"
-                                        }
-                                        
-                                        Label {
-                                            text: qsTr("标题: %1").arg(modelData.importTitle || "")
-                                            wrapMode: Text.WordWrap
-                                            width: parent.width
-                                            font.pixelSize: 11
-                                        }
-                                        
-                                        Label {
-                                            text: qsTr("描述: %1").arg(modelData.importDescription || "")
-                                            wrapMode: Text.WordWrap
-                                            width: parent.width
-                                            font.pixelSize: 11
-                                            maximumLineCount: 2
-                                            elide: Text.ElideRight
-                                        }
-                                        
-                                        Row {
-                                            width: parent.width
-                                            spacing: 10
-                                            
-                                            Label {
-                                                text: qsTr("分类: %1").arg(modelData.importCategory || "")
-                                                font.pixelSize: 10
-                                            }
-                                            
-                                            Label {
-                                                text: qsTr("状态: %1").arg(modelData.importStatus || "")
-                                                font.pixelSize: 10
-                                            }
-                                        }
-                                        
-                                        Label {
-                                            text: qsTr("更新时间: %1").arg(modelData.importUpdatedAt ? modelData.importUpdatedAt.toLocaleString() : "")
-                                            font.pixelSize: 9
-                                            color: "#6c757d"
-                                        }
-                                    }
-                                }
-                                
-                                // 处理方式选择
-                                Column {
-                                    width: parent.width
-                                    spacing: 5
-                                    
-                                    Label {
-                                        text: qsTr("处理方式:")
-                                        font.bold: true
-                                        font.pixelSize: 12
-                                    }
-                                    
-                                    Row {
-                                        width: parent.width
-                                        spacing: 15
-                                        
-                                        RadioButton {
-                                            id: skipRadio
-                                            text: qsTr("跳过")
-                                            checked: true
-                                            font.pixelSize: 11
-                                            onCheckedChanged: {
-                                                if (checked) {
-                                                    conflictResolutionDialog.conflictResolutions[modelData.id] = "skip";
-                                                }
-                                            }
-                                        }
-                                        
-                                        RadioButton {
-                                            id: overwriteRadio
-                                            text: qsTr("覆盖")
-                                            font.pixelSize: 11
-                                            onCheckedChanged: {
-                                                if (checked) {
-                                                    conflictResolutionDialog.conflictResolutions[modelData.id] = "overwrite";
-                                                }
-                                            }
-                                        }
-                                        
-                                        RadioButton {
-                                            id: mergeRadio
-                                            text: qsTr("智能合并")
-                                            font.pixelSize: 11
-                                            onCheckedChanged: {
-                                                if (checked) {
-                                                    conflictResolutionDialog.conflictResolutions[modelData.id] = "merge";
-                                                }
-                                            }
-                                        }
-                                    }
-                                    
-                                    Label {
-                                        text: {
-                                            if (skipRadio.checked) return qsTr("保留现有数据，不导入此项目");
-                                            if (overwriteRadio.checked) return qsTr("用导入的数据完全替换现有数据");
-                                            if (mergeRadio.checked) return qsTr("保留更新时间较新的版本");
-                                            return "";
-                                        }
-                                        font.pixelSize: 10
-                                        color: "#6c757d"
-                                        wrapMode: Text.WordWrap
-                                        width: parent.width
-                                    }
-                                }
-                            }
-                        }
-                    }
+        }
+
+        // 导入成功对话框
+        Dialog {
+            id: importSuccessDialog
+            title: qsTr("导入成功")
+            standardButtons: Dialog.Ok
+            Label {
+                text: qsTr("待办事项已成功导入！")
+            }
+        }
+
+        // 导入失败对话框
+        Dialog {
+            id: importErrorDialog
+            title: qsTr("导入失败")
+            standardButtons: Dialog.Ok
+            Label {
+                text: qsTr("导入待办事项时发生错误，请检查文件格式和内容。")
+            }
+        }
+
+        // 冲突处理对话框
+        Dialog {
+            id: conflictResolutionDialog
+            title: qsTr("检测到冲突")
+            modal: true
+            width: Math.min(800, parent.width * 0.9)
+            height: Math.min(600, parent.height * 0.8)
+            anchors.centerIn: parent
+            standardButtons: Dialog.NoButton
+
+            property var conflicts: []
+            property string selectedFilePath: ""
+            property var conflictResolutions: ({})
+
+            onOpened: {
+                // 初始化每个冲突项的处理方式为"skip"
+                conflictResolutions = {};
+                for (var i = 0; i < conflicts.length; i++) {
+                    conflictResolutions[conflicts[i].id] = "skip";
                 }
             }
-            
-            // 批量操作按钮
-            Row {
-                width: parent.width
-                spacing: 10
-                
+
+            contentItem: Column {
+                spacing: 15
+                anchors.fill: parent
+                anchors.margins: 10
+
                 Label {
-                    text: qsTr("批量操作:")
+                    text: qsTr("导入文件中发现 %1 个待办事项与现有数据存在ID冲突，请为每个冲突项选择处理方式：").arg(conflictResolutionDialog.conflicts.length)
+                    wrapMode: Text.WordWrap
+                    width: parent.width
                     font.bold: true
                 }
-                
-                Button {
-                    text: qsTr("全部跳过")
-                    font.pixelSize: 10
-                    onClicked: {
-                        for (var i = 0; i < conflictResolutionDialog.conflicts.length; i++) {
-                            conflictResolutionDialog.conflictResolutions[conflictResolutionDialog.conflicts[i].id] = "skip";
-                        }
-                        // 刷新界面
-                        conflictResolutionDialog.close();
-                        conflictResolutionDialog.open();
-                    }
-                }
-                
-                Button {
-                    text: qsTr("全部覆盖")
-                    font.pixelSize: 10
-                    onClicked: {
-                        for (var i = 0; i < conflictResolutionDialog.conflicts.length; i++) {
-                            conflictResolutionDialog.conflictResolutions[conflictResolutionDialog.conflicts[i].id] = "overwrite";
-                        }
-                        // 刷新界面
-                        conflictResolutionDialog.close();
-                        conflictResolutionDialog.open();
-                    }
-                }
-                
-                Button {
-                    text: qsTr("全部智能合并")
-                    font.pixelSize: 10
-                    onClicked: {
-                        for (var i = 0; i < conflictResolutionDialog.conflicts.length; i++) {
-                            conflictResolutionDialog.conflictResolutions[conflictResolutionDialog.conflicts[i].id] = "merge";
-                        }
-                        // 刷新界面
-                        conflictResolutionDialog.close();
-                        conflictResolutionDialog.open();
-                    }
-                }
-            }
-            
-            Row {
-                anchors.right: parent.right
-                spacing: 10
-                
-                Button {
-                    text: qsTr("取消")
-                    onClicked: conflictResolutionDialog.reject()
-                }
-                
-                Button {
-                    text: qsTr("确定")
-                    highlighted: true
-                    onClicked: {
-                        if (todoModel.importTodosWithIndividualResolution(conflictResolutionDialog.selectedFilePath, conflictResolutionDialog.conflictResolutions)) {
-                            conflictResolutionDialog.accept();
-                            importSuccessDialog.open();
-                        } else {
-                            conflictResolutionDialog.reject();
-                            importErrorDialog.open();
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    // API配置成功对话框
-    Dialog {
-        id: apiConfigSuccessDialog
-        title: qsTr("配置成功")
-        standardButtons: Dialog.Ok
-        Label {
-            text: qsTr("API服务器地址已成功保存！")
-        }
-    }
-    
-    // API配置错误对话框
-    Dialog {
-        id: apiConfigErrorDialog
-        title: qsTr("配置错误")
-        standardButtons: Dialog.Ok
-        property string message: ""
-        Label {
-            text: apiConfigErrorDialog.message
-        }
-    }
-    
-    // HTTPS警告对话框
-    Dialog {
-        id: httpsWarningDialog
-        title: qsTr("安全警告")
-        standardButtons: Dialog.Yes | Dialog.No
-        property string targetUrl: ""
-        
-        Label {
-            text: qsTr("您输入的地址使用HTTP协议，这可能不安全。\n建议使用HTTPS协议以保护您的数据安全。\n\n是否仍要保存此配置？")
-            wrapMode: Text.WordWrap
-        }
-        
-        onAccepted: {
-            todoModel.updateServerConfig(targetUrl)
-            apiConfigSuccessDialog.open()
-        }
-    }
 
-    // 登录提示对话框
-    Dialog {
-        id: loginRequiredDialog
-        title: qsTr("需要登录")
-        modal: true
-        anchors.centerIn: parent
-        width: 300
-        height: 150
-        standardButtons: Dialog.Ok
-        
-        background: Rectangle {
-            color: settingPage.isDarkMode ? "#2c3e50" : "white"
-            border.color: settingPage.isDarkMode ? "#34495e" : "#bdc3c7"
-            border.width: 1
-            radius: 8
+                ScrollView {
+                    width: parent.width
+                    height: parent.height - 100
+                    clip: true
+
+                    Column {
+                        width: parent.width
+                        spacing: 10
+
+                        Repeater {
+                            model: conflictResolutionDialog.conflicts
+
+                            delegate: Rectangle {
+                                width: parent.width
+                                height: 350
+                                color: index % 2 === 0 ? "#f8f9fa" : "#ffffff"
+                                border.color: "#dee2e6"
+                                border.width: 1
+                                radius: 5
+
+                                Column {
+                                    id: conflictItemColumn
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.top: parent.top
+                                    anchors.margins: 15
+                                    spacing: 10
+
+                                    Label {
+                                        text: qsTr("冲突项目 %1 (ID: %2)").arg(index + 1).arg(modelData.id)
+                                        font.bold: true
+                                        font.pixelSize: 14
+                                        color: "#dc3545"
+                                    }
+
+                                    Row {
+                                        width: parent.width
+                                        spacing: 20
+
+                                        // 现有数据
+                                        Column {
+                                            width: (parent.width - 40) / 2
+
+                                            Rectangle {
+                                                width: parent.width
+                                                height: 2
+                                                color: "#28a745"
+                                            }
+
+                                            Label {
+                                                text: qsTr("现有数据")
+                                                font.bold: true
+                                                font.pixelSize: 12
+                                                color: "#28a745"
+                                            }
+
+                                            Label {
+                                                text: qsTr("标题: %1").arg(modelData.existingTitle || "")
+                                                wrapMode: Text.WordWrap
+                                                width: parent.width
+                                                font.pixelSize: 11
+                                            }
+
+                                            Label {
+                                                text: qsTr("描述: %1").arg(modelData.existingDescription || "")
+                                                wrapMode: Text.WordWrap
+                                                width: parent.width
+                                                font.pixelSize: 11
+                                                maximumLineCount: 2
+                                                elide: Text.ElideRight
+                                            }
+
+                                            Row {
+                                                width: parent.width
+                                                spacing: 10
+
+                                                Label {
+                                                    text: qsTr("分类: %1").arg(modelData.existingCategory || "")
+                                                    font.pixelSize: 10
+                                                }
+
+                                                Label {
+                                                    text: qsTr("状态: %1").arg(modelData.existingStatus || "")
+                                                    font.pixelSize: 10
+                                                }
+                                            }
+
+                                            Label {
+                                                text: qsTr("更新时间: %1").arg(modelData.existingUpdatedAt ? modelData.existingUpdatedAt.toLocaleString() : "")
+                                                font.pixelSize: 9
+                                                color: "#6c757d"
+                                            }
+                                        }
+
+                                        // 分隔线
+                                        Rectangle {
+                                            width: 2
+                                            height: 200
+                                            color: "#dee2e6"
+                                        }
+
+                                        // 导入数据
+                                        Column {
+                                            width: (parent.width - 40) / 2
+
+                                            Rectangle {
+                                                width: parent.width
+                                                height: 2
+                                                color: "#007bff"
+                                            }
+
+                                            Label {
+                                                text: qsTr("导入数据")
+                                                font.bold: true
+                                                font.pixelSize: 12
+                                                color: "#007bff"
+                                            }
+
+                                            Label {
+                                                text: qsTr("标题: %1").arg(modelData.importTitle || "")
+                                                wrapMode: Text.WordWrap
+                                                width: parent.width
+                                                font.pixelSize: 11
+                                            }
+
+                                            Label {
+                                                text: qsTr("描述: %1").arg(modelData.importDescription || "")
+                                                wrapMode: Text.WordWrap
+                                                width: parent.width
+                                                font.pixelSize: 11
+                                                maximumLineCount: 2
+                                                elide: Text.ElideRight
+                                            }
+
+                                            Row {
+                                                width: parent.width
+                                                spacing: 10
+
+                                                Label {
+                                                    text: qsTr("分类: %1").arg(modelData.importCategory || "")
+                                                    font.pixelSize: 10
+                                                }
+
+                                                Label {
+                                                    text: qsTr("状态: %1").arg(modelData.importStatus || "")
+                                                    font.pixelSize: 10
+                                                }
+                                            }
+
+                                            Label {
+                                                text: qsTr("更新时间: %1").arg(modelData.importUpdatedAt ? modelData.importUpdatedAt.toLocaleString() : "")
+                                                font.pixelSize: 9
+                                                color: "#6c757d"
+                                            }
+                                        }
+                                    }
+
+                                    // 处理方式选择
+                                    Column {
+                                        width: parent.width
+                                        spacing: 5
+
+                                        Label {
+                                            text: qsTr("处理方式:")
+                                            font.bold: true
+                                            font.pixelSize: 12
+                                        }
+
+                                        Row {
+                                            width: parent.width
+                                            spacing: 15
+
+                                            RadioButton {
+                                                id: skipRadio
+                                                text: qsTr("跳过")
+                                                checked: true
+                                                font.pixelSize: 11
+                                                onCheckedChanged: {
+                                                    if (checked) {
+                                                        conflictResolutionDialog.conflictResolutions[modelData.id] = "skip";
+                                                    }
+                                                }
+                                            }
+
+                                            RadioButton {
+                                                id: overwriteRadio
+                                                text: qsTr("覆盖")
+                                                font.pixelSize: 11
+                                                onCheckedChanged: {
+                                                    if (checked) {
+                                                        conflictResolutionDialog.conflictResolutions[modelData.id] = "overwrite";
+                                                    }
+                                                }
+                                            }
+
+                                            RadioButton {
+                                                id: mergeRadio
+                                                text: qsTr("智能合并")
+                                                font.pixelSize: 11
+                                                onCheckedChanged: {
+                                                    if (checked) {
+                                                        conflictResolutionDialog.conflictResolutions[modelData.id] = "merge";
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        Label {
+                                            text: {
+                                                if (skipRadio.checked)
+                                                    return qsTr("保留现有数据，不导入此项目");
+                                                if (overwriteRadio.checked)
+                                                    return qsTr("用导入的数据完全替换现有数据");
+                                                if (mergeRadio.checked)
+                                                    return qsTr("保留更新时间较新的版本");
+                                                return "";
+                                            }
+                                            font.pixelSize: 10
+                                            color: "#6c757d"
+                                            wrapMode: Text.WordWrap
+                                            width: parent.width
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 批量操作按钮
+                Row {
+                    width: parent.width
+                    spacing: 10
+
+                    Label {
+                        text: qsTr("批量操作:")
+                        font.bold: true
+                    }
+
+                    Button {
+                        text: qsTr("全部跳过")
+                        font.pixelSize: 10
+                        onClicked: {
+                            for (var i = 0; i < conflictResolutionDialog.conflicts.length; i++) {
+                                conflictResolutionDialog.conflictResolutions[conflictResolutionDialog.conflicts[i].id] = "skip";
+                            }
+                            // 刷新界面
+                            conflictResolutionDialog.close();
+                            conflictResolutionDialog.open();
+                        }
+                    }
+
+                    Button {
+                        text: qsTr("全部覆盖")
+                        font.pixelSize: 10
+                        onClicked: {
+                            for (var i = 0; i < conflictResolutionDialog.conflicts.length; i++) {
+                                conflictResolutionDialog.conflictResolutions[conflictResolutionDialog.conflicts[i].id] = "overwrite";
+                            }
+                            // 刷新界面
+                            conflictResolutionDialog.close();
+                            conflictResolutionDialog.open();
+                        }
+                    }
+
+                    Button {
+                        text: qsTr("全部智能合并")
+                        font.pixelSize: 10
+                        onClicked: {
+                            for (var i = 0; i < conflictResolutionDialog.conflicts.length; i++) {
+                                conflictResolutionDialog.conflictResolutions[conflictResolutionDialog.conflicts[i].id] = "merge";
+                            }
+                            // 刷新界面
+                            conflictResolutionDialog.close();
+                            conflictResolutionDialog.open();
+                        }
+                    }
+                }
+
+                Row {
+                    anchors.right: parent.right
+                    spacing: 10
+
+                    Button {
+                        text: qsTr("取消")
+                        onClicked: conflictResolutionDialog.reject()
+                    }
+
+                    Button {
+                        text: qsTr("确定")
+                        highlighted: true
+                        onClicked: {
+                            if (todoModel.importTodosWithIndividualResolution(conflictResolutionDialog.selectedFilePath, conflictResolutionDialog.conflictResolutions)) {
+                                conflictResolutionDialog.accept();
+                                importSuccessDialog.open();
+                            } else {
+                                conflictResolutionDialog.reject();
+                                importErrorDialog.open();
+                            }
+                        }
+                    }
+                }
+            }
         }
-        
-        Label {
-            text: qsTr("开启自动同步功能需要先登录账户。\n请先登录后再开启自动同步。")
-            wrapMode: Text.WordWrap
-            color: settingPage.isDarkMode ? "#ecf0f1" : "black"
+
+        // API配置成功对话框
+        Dialog {
+            id: apiConfigSuccessDialog
+            title: qsTr("配置成功")
+            standardButtons: Dialog.Ok
+            Label {
+                text: qsTr("API服务器地址已成功保存！")
+            }
+        }
+
+        // API配置错误对话框
+        Dialog {
+            id: apiConfigErrorDialog
+            title: qsTr("配置错误")
+            standardButtons: Dialog.Ok
+            property string message: ""
+            Label {
+                text: apiConfigErrorDialog.message
+            }
+        }
+
+        // HTTPS警告对话框
+        Dialog {
+            id: httpsWarningDialog
+            title: qsTr("安全警告")
+            standardButtons: Dialog.Yes | Dialog.No
+            property string targetUrl: ""
+
+            Label {
+                text: qsTr("您输入的地址使用HTTP协议，这可能不安全。\n建议使用HTTPS协议以保护您的数据安全。\n\n是否仍要保存此配置？")
+                wrapMode: Text.WordWrap
+            }
+
+            onAccepted: {
+                todoModel.updateServerConfig(targetUrl);
+                apiConfigSuccessDialog.open();
+            }
+        }
+
+        // 登录提示对话框
+        Dialog {
+            id: loginRequiredDialog
+            title: qsTr("需要登录")
+            modal: true
             anchors.centerIn: parent
-        }
-    }
-    
-    // 清空配置确认对话框
-    Dialog {
-        id: clearConfigDialog
-        title: qsTr("清空所有配置")
-        modal: true
-        anchors.centerIn: parent
-        standardButtons: Dialog.Yes | Dialog.No
-        
-        Label {
-            text: qsTr("警告：此操作将清空所有配置设置！\n\n确定要继续吗？此操作无法撤销。")
-            wrapMode: Text.WordWrap
-            color: "#e74c3c"
-        }
-        
-        onAccepted: {
-            setting.clear();
-            clearConfigSuccessDialog.open();
-        }
-    }
-    
-    // 成功/错误提示对话框
-    Dialog {
-        id: storageChangeSuccessDialog
-        title: qsTr("操作成功")
-        standardButtons: Dialog.Ok
-        Label {
-            text: qsTr("存储类型已成功更改！")
-        }
-    }
-    
-    Dialog {
-        id: storageChangeErrorDialog
-        title: qsTr("操作失败")
-        standardButtons: Dialog.Ok
-        Label {
-            text: qsTr("更改存储类型时发生错误，请重试。")
-        }
-    }
-    
-    Dialog {
-        id: pathChangeSuccessDialog
-        title: qsTr("操作成功")
-        standardButtons: Dialog.Ok
-        Label {
-            text: qsTr("配置文件路径已成功更改！")
-        }
-    }
-    
-    Dialog {
-        id: pathChangeErrorDialog
-        title: qsTr("操作失败")
-        standardButtons: Dialog.Ok
-        Label {
-            text: qsTr("更改配置文件路径时发生错误，请检查路径是否有效。")
-        }
-    }
-    
-    Dialog {
-        id: pathResetSuccessDialog
-        title: qsTr("操作成功")
-        standardButtons: Dialog.Ok
-        Label {
-            text: qsTr("配置文件路径已重置为选定的默认位置！")
-        }
-    }
-    
-    Dialog {
-        id: pathResetErrorDialog
-        title: qsTr("操作失败")
-        standardButtons: Dialog.Ok
-        Label {
-            text: qsTr("重置配置文件路径时发生错误。")
-        }
-    }
-    
-    Dialog {
-        id: clearConfigSuccessDialog
-        title: qsTr("操作成功")
-        standardButtons: Dialog.Ok
-        Label {
-            text: qsTr("所有配置已清空！")
-        }
-    }
-    
-    Dialog {
-        id: openDirErrorDialog
-        title: qsTr("操作失败")
-        standardButtons: Dialog.Ok
-        Label {
-            text: qsTr("无法打开配置文件目录。")
-        }
-    }
+            width: 300
+            height: 150
+            standardButtons: Dialog.Ok
 
+            background: Rectangle {
+                color: settingPage.isDarkMode ? "#2c3e50" : "white"
+                border.color: settingPage.isDarkMode ? "#34495e" : "#bdc3c7"
+                border.width: 1
+                radius: 8
+            }
+
+            Label {
+                text: qsTr("开启自动同步功能需要先登录账户。\n请先登录后再开启自动同步。")
+                wrapMode: Text.WordWrap
+                color: settingPage.isDarkMode ? "#ecf0f1" : "black"
+                anchors.centerIn: parent
+            }
+        }
+
+        // 清空配置确认对话框
+        Dialog {
+            id: clearConfigDialog
+            title: qsTr("清空所有配置")
+            modal: true
+            anchors.centerIn: parent
+            standardButtons: Dialog.Yes | Dialog.No
+
+            Label {
+                text: qsTr("警告：此操作将清空所有配置设置！\n\n确定要继续吗？此操作无法撤销。")
+                wrapMode: Text.WordWrap
+                color: "#e74c3c"
+            }
+
+            onAccepted: {
+                setting.clear();
+                clearConfigSuccessDialog.open();
+            }
+        }
+
+        // 成功/错误提示对话框
+        Dialog {
+            id: storageChangeSuccessDialog
+            title: qsTr("操作成功")
+            standardButtons: Dialog.Ok
+            Label {
+                text: qsTr("存储类型已成功更改！")
+            }
+        }
+
+        Dialog {
+            id: storageChangeErrorDialog
+            title: qsTr("操作失败")
+            standardButtons: Dialog.Ok
+            Label {
+                text: qsTr("更改存储类型时发生错误，请重试。")
+            }
+        }
+
+        Dialog {
+            id: pathChangeSuccessDialog
+            title: qsTr("操作成功")
+            standardButtons: Dialog.Ok
+            Label {
+                text: qsTr("配置文件路径已成功更改！")
+            }
+        }
+
+        Dialog {
+            id: pathChangeErrorDialog
+            title: qsTr("操作失败")
+            standardButtons: Dialog.Ok
+            Label {
+                text: qsTr("更改配置文件路径时发生错误，请检查路径是否有效。")
+            }
+        }
+
+        Dialog {
+            id: pathResetSuccessDialog
+            title: qsTr("操作成功")
+            standardButtons: Dialog.Ok
+            Label {
+                text: qsTr("配置文件路径已重置为选定的默认位置！")
+            }
+        }
+
+        Dialog {
+            id: pathResetErrorDialog
+            title: qsTr("操作失败")
+            standardButtons: Dialog.Ok
+            Label {
+                text: qsTr("重置配置文件路径时发生错误。")
+            }
+        }
+
+        Dialog {
+            id: clearConfigSuccessDialog
+            title: qsTr("操作成功")
+            standardButtons: Dialog.Ok
+            Label {
+                text: qsTr("所有配置已清空！")
+            }
+        }
+
+        Dialog {
+            id: openDirErrorDialog
+            title: qsTr("操作失败")
+            standardButtons: Dialog.Ok
+            Label {
+                text: qsTr("无法打开配置文件目录。")
+            }
+        }
+    }
 }
