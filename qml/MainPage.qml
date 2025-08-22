@@ -72,9 +72,17 @@ Page {
                     ComboBox {
                         id: statusFilter
                         Layout.fillWidth: true
-                        model: ["全部", "待办", "完成"]
+                        model: ["全部", "待办", "完成", "回收站"]
                         onCurrentTextChanged: {
-                            todoModel.currentFilter = (currentText === "全部" ? "" : currentText === "待办" ? "todo" : "done");
+                            if (currentText === "全部") {
+                                todoModel.currentFilter = "";
+                            } else if (currentText === "待办") {
+                                todoModel.currentFilter = "todo";
+                            } else if (currentText === "完成") {
+                                todoModel.currentFilter = "done";
+                            } else if (currentText === "回收站") {
+                                todoModel.currentFilter = "recycle";
+                            }
                         }
                     }
 
@@ -117,6 +125,93 @@ Page {
                                 todoModel.currentFilter = "important";
                                 todoModel.currentImportant = false;
                             }
+                        }
+                    }
+
+                    // 日期筛选分隔线
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 1
+                        color: theme.borderColor
+                        Layout.topMargin: 10
+                        Layout.bottomMargin: 10
+                    }
+
+                    Label {
+                        text: "日期筛选"
+                        font.pixelSize: 14
+                        color: theme.textColor
+                    }
+
+                    CheckBox {
+                        id: dateFilterEnabled
+                        text: "启用日期筛选"
+                        font.pixelSize: 12
+                        checked: todoModel.dateFilterEnabled
+                        onCheckedChanged: {
+                            todoModel.dateFilterEnabled = checked;
+                        }
+                    }
+
+                    Label {
+                        text: "开始日期"
+                        font.pixelSize: 12
+                        color: theme.textColor
+                        enabled: dateFilterEnabled.checked
+                    }
+
+                    TextField {
+                        id: startDateField
+                        Layout.fillWidth: true
+                        placeholderText: "选择开始日期 (yyyy-MM-dd)"
+                        enabled: dateFilterEnabled.checked
+                        text: todoModel.dateFilterStart.getTime() > 0 ? Qt.formatDate(todoModel.dateFilterStart, "yyyy-MM-dd") : ""
+                        onTextChanged: {
+                            if (text.length === 10) {
+                                var date = Date.fromLocaleString(Qt.locale(), text, "yyyy-MM-dd");
+                                if (!isNaN(date.getTime())) {
+                                    todoModel.dateFilterStart = date;
+                                }
+                            } else if (text === "") {
+                                todoModel.dateFilterStart = new Date(0); // 无效日期
+                            }
+                        }
+                    }
+
+                    Label {
+                        text: "结束日期"
+                        font.pixelSize: 12
+                        color: theme.textColor
+                        enabled: dateFilterEnabled.checked
+                    }
+
+                    TextField {
+                        id: endDateField
+                        Layout.fillWidth: true
+                        placeholderText: "选择结束日期 (yyyy-MM-dd)"
+                        enabled: dateFilterEnabled.checked
+                        text: todoModel.dateFilterEnd.getTime() > 0 ? Qt.formatDate(todoModel.dateFilterEnd, "yyyy-MM-dd") : ""
+                        onTextChanged: {
+                            if (text.length === 10) {
+                                var date = Date.fromLocaleString(Qt.locale(), text, "yyyy-MM-dd");
+                                if (!isNaN(date.getTime())) {
+                                    todoModel.dateFilterEnd = date;
+                                }
+                            } else if (text === "") {
+                                todoModel.dateFilterEnd = new Date(0); // 无效日期
+                            }
+                        }
+                    }
+
+                    Button {
+                        text: "清除日期筛选"
+                        Layout.fillWidth: true
+                        enabled: dateFilterEnabled.checked
+                        onClicked: {
+                            startDateField.text = "";
+                            endDateField.text = "";
+                            todoModel.dateFilterStart = new Date(0);
+                            todoModel.dateFilterEnd = new Date(0);
                         }
                     }
 

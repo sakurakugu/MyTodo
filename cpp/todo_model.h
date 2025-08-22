@@ -57,6 +57,9 @@ class TodoModel : public QAbstractListModel {
     Q_PROPERTY(QString currentCategory READ currentCategory WRITE setCurrentCategory NOTIFY currentCategoryChanged)
     Q_PROPERTY(QString currentFilter READ currentFilter WRITE setCurrentFilter NOTIFY currentFilterChanged)
     Q_PROPERTY(bool currentImportant READ currentImportant WRITE setCurrentImportant NOTIFY currentImportantChanged)
+    Q_PROPERTY(QDate dateFilterStart READ dateFilterStart WRITE setDateFilterStart NOTIFY dateFilterStartChanged)
+    Q_PROPERTY(QDate dateFilterEnd READ dateFilterEnd WRITE setDateFilterEnd NOTIFY dateFilterEndChanged)
+    Q_PROPERTY(bool dateFilterEnabled READ dateFilterEnabled WRITE setDateFilterEnabled NOTIFY dateFilterEnabledChanged)
     Q_PROPERTY(QString username READ getUsername NOTIFY usernameChanged)
     Q_PROPERTY(bool isLoggedIn READ isLoggedIn NOTIFY isLoggedInChanged)
 
@@ -114,13 +117,23 @@ class TodoModel : public QAbstractListModel {
     void setCurrentFilter(const QString &filter);     // 设置筛选条件
     bool currentImportant() const;                    // 获取当前激活的重要程度筛选器
     void setCurrentImportant(bool important);         // 设置重要程度筛选器
+    
+    // 日期筛选相关方法
+    QDate dateFilterStart() const;                   // 获取日期筛选开始日期
+    void setDateFilterStart(const QDate &date);      // 设置日期筛选开始日期
+    QDate dateFilterEnd() const;                     // 获取日期筛选结束日期
+    void setDateFilterEnd(const QDate &date);        // 设置日期筛选结束日期
+    bool dateFilterEnabled() const;                  // 获取日期筛选是否启用
+    void setDateFilterEnabled(bool enabled);         // 设置日期筛选是否启用
 
     // CRUD操作
     Q_INVOKABLE void addTodo(const QString &title, const QString &description = QString(),
                              const QString &category = "default", bool important = false,
                              const QString &deadline = QString());       // 添加新的待办事项
     Q_INVOKABLE bool updateTodo(int index, const QVariantMap &todoData); // 更新现有待办事项
-    Q_INVOKABLE bool removeTodo(int index);                              // 删除待办事项
+    Q_INVOKABLE bool removeTodo(int index);
+    Q_INVOKABLE bool restoreTodo(int index);
+    Q_INVOKABLE bool permanentlyDeleteTodo(int index);                              // 删除待办事项
     Q_INVOKABLE bool markAsDone(int index);                              // 将待办事项标记为已完成
 
     // 网络同步操作
@@ -157,6 +170,9 @@ class TodoModel : public QAbstractListModel {
     void currentCategoryChanged();                                             // 当前分类筛选器变化信号
     void currentFilterChanged();                                               // 当前筛选条件变化信号
     void currentImportantChanged();                                            // 当前重要程度筛选器变化信号
+    void dateFilterStartChanged();                                             // 日期筛选开始日期变化信号
+    void dateFilterEndChanged();                                               // 日期筛选结束日期变化信号
+    void dateFilterEnabledChanged();                                           // 日期筛选启用状态变化信号
     void usernameChanged();                                                    // 用户名变化信号
     void isLoggedInChanged();                                                  // 登录状态变化信号
     void syncStarted();                                                        // 同步操作开始信号
@@ -201,6 +217,9 @@ class TodoModel : public QAbstractListModel {
     QString m_currentCategory;                      ///< 当前分类筛选器
     QString m_currentFilter;                        ///< 当前筛选条件
     bool m_currentImportant;                        ///< 当前重要程度筛选器
+    QDate m_dateFilterStart;                        ///< 日期筛选开始日期
+    QDate m_dateFilterEnd;                          ///< 日期筛选结束日期
+    bool m_dateFilterEnabled;                       ///< 日期筛选是否启用
     NetworkManager &m_networkManager;               ///< 网络管理器
     Config &m_config;                               ///< 应用配置
     Setting &m_setting;                             ///< 应用设置

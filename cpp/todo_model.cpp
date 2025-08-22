@@ -17,7 +17,8 @@
 
 TodoModel::TodoModel(QObject *parent)
     : QAbstractListModel(parent), m_filterCacheDirty(true), m_isOnline(false), m_currentCategory(""),
-      m_currentFilter(""), m_currentImportant(false), m_networkManager(NetworkManager::GetInstance()),
+      m_currentFilter(""), m_currentImportant(false), m_dateFilterEnabled(false),
+      m_networkManager(NetworkManager::GetInstance()),
       m_config(Config::GetInstance()), m_setting(Setting::GetInstance()) {
     // 初始化默认服务器配置
     m_setting.initializeDefaultServerConfig();
@@ -271,8 +272,26 @@ bool TodoModel::itemMatchesFilter(const TodoItem *item) const {
     bool categoryMatch =
         m_currentCategory.isEmpty() || item->category() == m_currentCategory ||
         (m_currentCategory == "uncategorized" && (item->category().isEmpty() || item->category() == "uncategorized"));
-    bool statusMatch = m_currentFilter.isEmpty() || (m_currentFilter == "done" && item->isCompleted()) ||
-                       (m_currentFilter == "todo" && !item->isCompleted());
+    // 状态筛选逻辑：
+    // - 如果m_currentFilter为"recycle"，则只显示已删除的项目
+    // - 否则只显示未删除的项目，并根据完成状态进一步筛选
+    bool statusMatch = true;
+    if (m_currentFilter == "recycle") {
+        // 回收站模式：只显示已删除的项目
+        statusMatch = item->isDeleted();
+    } else {
+        // 正常模式：只显示未删除的项目
+        statusMatch = !item->isDeleted();
+        
+        // 在未删除的项目中进一步筛选完成状态
+        if (!m_currentFilter.isEmpty()) {
+            if (m_currentFilter == "done") {
+                statusMatch = statusMatch && item->isCompleted();
+            } else if (m_currentFilter == "todo") {
+                statusMatch = statusMatch && !item->isCompleted();
+            }
+        }
+    }
 
     // 重要性筛选逻辑：
     // - 如果m_currentImportant为false且m_currentFilter不是"important"，则显示所有项目
@@ -283,7 +302,20 @@ bool TodoModel::itemMatchesFilter(const TodoItem *item) const {
         importantMatch = (item->important() == m_currentImportant);
     }
 
-    return categoryMatch && statusMatch && importantMatch;
+    // 日期筛选逻辑：
+    // 如果启用了日期筛选，检查任务的截止日期是否在指定范围内
+    bool dateMatch = true; // 默认显示所有
+    if (m_dateFilterEnabled && item->deadline().isValid()) {
+        QDate itemDate = item->deadline().date();
+        bool startMatch = !m_dateFilterStart.isValid() || itemDate >= m_dateFilterStart;
+        bool endMatch = !m_dateFilterEnd.isValid() || itemDate <= m_dateFilterEnd;
+        dateMatch = startMatch && endMatch;
+    } else if (m_dateFilterEnabled && !item->deadline().isValid()) {
+        // 如果启用了日期筛选但任务没有截止日期，则不显示
+        dateMatch = false;
+    }
+
+    return categoryMatch && statusMatch && importantMatch && dateMatch;
 }
 
 TodoItem *TodoModel::getFilteredItem(int index) const {
@@ -411,6 +443,72 @@ void TodoModel::setCurrentImportant(bool important) {
         invalidateFilterCache();
         endResetModel();
         emit currentImportantChanged();
+    }
+}
+
+/**
+ * @brief 获取日期筛选开始日期
+ * @return 日期筛选开始日期
+ */
+QDate TodoModel::dateFilterStart() const {
+    return m_dateFilterStart;
+}
+
+/**
+ * @brief 设置日期筛选开始日期
+ * @param date 开始日期
+ */
+void TodoModel::setDateFilterStart(const QDate &date) {
+    if (m_dateFilterStart != date) {
+        beginResetModel();
+        m_dateFilterStart = date;
+        invalidateFilterCache();
+        endResetModel();
+        emit dateFilterStartChanged();
+    }
+}
+
+/**
+ * @brief 获取日期筛选结束日期
+ * @return 日期筛选结束日期
+ */
+QDate TodoModel::dateFilterEnd() const {
+    return m_dateFilterEnd;
+}
+
+/**
+ * @brief 设置日期筛选结束日期
+ * @param date 结束日期
+ */
+void TodoModel::setDateFilterEnd(const QDate &date) {
+    if (m_dateFilterEnd != date) {
+        beginResetModel();
+        m_dateFilterEnd = date;
+        invalidateFilterCache();
+        endResetModel();
+        emit dateFilterEndChanged();
+    }
+}
+
+/**
+ * @brief 获取日期筛选是否启用
+ * @return 日期筛选是否启用
+ */
+bool TodoModel::dateFilterEnabled() const {
+    return m_dateFilterEnabled;
+}
+
+/**
+ * @brief 设置日期筛选是否启用
+ * @param enabled 是否启用日期筛选
+ */
+void TodoModel::setDateFilterEnabled(bool enabled) {
+    if (m_dateFilterEnabled != enabled) {
+        beginResetModel();
+        m_dateFilterEnabled = enabled;
+        invalidateFilterCache();
+        endResetModel();
+        emit dateFilterEnabledChanged();
     }
 }
 
@@ -610,30 +708,35 @@ bool TodoModel::removeTodo(int index) {
     }
 
     try {
-        beginRemoveRows(QModelIndex(), index, index);
-
-        m_todos.erase(m_todos.begin() + index);
+        // 软删除：设置isDeleted为true和deletedAt时间戳，而不是物理删除
+        auto &todoItem = m_todos[index];
+        todoItem->setIsDeleted(true);
+        todoItem->setDeletedAt(QDateTime::currentDateTime());
+        
+        // 通知视图数据已更改
+        QModelIndex modelIndex = createIndex(index, 0);
+        emit dataChanged(modelIndex, modelIndex);
+        
+        // 使筛选缓存失效，以便重新筛选
         invalidateFilterCache();
 
-        endRemoveRows();
-
         if (!saveToLocalStorage()) {
-            qWarning() << "删除待办事项后无法保存到本地存储";
+            qWarning() << "软删除待办事项后无法保存到本地存储";
         }
 
         if (m_isOnline && isLoggedIn()) {
             syncWithServer();
         }
 
-        qDebug() << "成功删除索引" << index << "处的待办事项";
+        qDebug() << "成功软删除索引" << index << "处的待办事项";
         return true;
     } catch (const std::exception &e) {
-        qCritical() << "删除待办事项时发生异常:" << e.what();
-        logError("删除待办事项", QString("异常: %1").arg(e.what()));
+        qCritical() << "软删除待办事项时发生异常:" << e.what();
+        logError("软删除待办事项", QString("异常: %1").arg(e.what()));
         return false;
     } catch (...) {
-        qCritical() << "删除待办事项时发生未知异常";
-        logError("删除待办事项", "未知异常");
+        qCritical() << "软删除待办事项时发生未知异常";
+        logError("软删除待办事项", "未知异常");
         return false;
     }
 }
@@ -643,6 +746,97 @@ bool TodoModel::removeTodo(int index) {
  * @param index 待办事项的索引
  * @return 操作是否成功
  */
+bool TodoModel::restoreTodo(int index) {
+    // 检查索引是否有效
+    if (index < 0 || static_cast<size_t>(index) >= m_todos.size()) {
+        qWarning() << "尝试恢复无效的索引:" << index;
+        return false;
+    }
+
+    try {
+        auto &todoItem = m_todos[index];
+        
+        // 检查任务是否已删除
+        if (!todoItem->isDeleted()) {
+            qWarning() << "尝试恢复未删除的任务，索引:" << index;
+            return false;
+        }
+        
+        // 恢复任务：设置isDeleted为false，清除deletedAt时间戳
+        todoItem->setIsDeleted(false);
+        todoItem->setDeletedAt(QDateTime());
+        
+        // 通知视图数据已更改
+        QModelIndex modelIndex = createIndex(index, 0);
+        emit dataChanged(modelIndex, modelIndex);
+        
+        // 使筛选缓存失效，以便重新筛选
+        invalidateFilterCache();
+
+        if (!saveToLocalStorage()) {
+            qWarning() << "恢复待办事项后无法保存到本地存储";
+        }
+
+        if (m_isOnline && isLoggedIn()) {
+            syncWithServer();
+        }
+
+        qDebug() << "成功恢复索引" << index << "处的待办事项";
+        return true;
+    } catch (const std::exception &e) {
+        qCritical() << "恢复待办事项时发生异常:" << e.what();
+        logError("恢复待办事项", QString("异常: %1").arg(e.what()));
+        return false;
+    } catch (...) {
+        qCritical() << "恢复待办事项时发生未知异常";
+        logError("恢复待办事项", "未知异常");
+        return false;
+    }
+}
+
+bool TodoModel::permanentlyDeleteTodo(int index) {
+    // 检查索引是否有效
+    if (index < 0 || static_cast<size_t>(index) >= m_todos.size()) {
+        qWarning() << "尝试永久删除无效的索引:" << index;
+        return false;
+    }
+
+    try {
+        auto &todoItem = m_todos[index];
+        
+        // 检查任务是否已删除
+        if (!todoItem->isDeleted()) {
+            qWarning() << "尝试永久删除未删除的任务，索引:" << index;
+            return false;
+        }
+        
+        // 永久删除：从列表中物理移除
+        beginRemoveRows(QModelIndex(), index, index);
+        m_todos.erase(m_todos.begin() + index);
+        invalidateFilterCache();
+        endRemoveRows();
+
+        if (!saveToLocalStorage()) {
+            qWarning() << "永久删除待办事项后无法保存到本地存储";
+        }
+
+        if (m_isOnline && isLoggedIn()) {
+            syncWithServer();
+        }
+
+        qDebug() << "成功永久删除索引" << index << "处的待办事项";
+        return true;
+    } catch (const std::exception &e) {
+        qCritical() << "永久删除待办事项时发生异常:" << e.what();
+        logError("永久删除待办事项", QString("异常: %1").arg(e.what()));
+        return false;
+    } catch (...) {
+        qCritical() << "永久删除待办事项时发生未知异常";
+        logError("永久删除待办事项", "未知异常");
+        return false;
+    }
+}
+
 bool TodoModel::markAsDone(int index) {
     // 检查索引是否有效
     if (index < 0 || static_cast<size_t>(index) >= m_todos.size()) {

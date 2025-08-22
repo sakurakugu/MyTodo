@@ -1,14 +1,14 @@
 #include "main_window.h"
-#include <QSettings>
 #include <QCoreApplication>
 #include <QDir>
-#include <QStandardPaths>
 #include <QGuiApplication>
 #include <QPalette>
+#include <QSettings>
+#include <QStandardPaths>
 
 MainWindow::MainWindow(QObject *parent)
     : QObject(parent), m_isDesktopWidget(false), m_isShowAddTask(false), m_isShowTodos(true), m_isShowSetting(false) {
-    
+
     // 监听系统主题变化
     connect(QGuiApplication::instance(), SIGNAL(paletteChanged(QPalette)), this, SIGNAL(systemDarkModeChanged()));
 }
@@ -58,12 +58,46 @@ void MainWindow::setIsShowSetting(bool value) {
 }
 
 bool MainWindow::isSystemDarkMode() const {
+
+#if defined(Q_OS_WIN) // Windows 平台
+    QSettings settings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+                       QSettings::NativeFormat);
+    int value = settings.value("AppsUseLightTheme", 1).toInt();
+    return value == 0; // 0 = 深色，1 = 浅色
+
+#elif defined(Q_OS_MACOS) // macOS 平台
+    QProcess process;
+    process.start("defaults", {"read", "-g", "AppleInterfaceStyle"});
+    process.waitForFinished();
+    QString output = QString::fromUtf8(process.readAllStandardOutput()).trimmed();
+    return (output.compare("Dark", Qt::CaseInsensitive) == 0);
+
+#elif defined(Q_OS_LINUX) // Linux (GNOME / KDE)
+    // 1. 先尝试 GNOME
+    QProcess process;
+    process.start("gsettings", {"get", "org.gnome.desktop.interface", "color-scheme"});
+    process.waitForFinished();
+    QString output = QString::fromUtf8(process.readAllStandardOutput()).trimmed();
+    if (output.contains("dark", Qt::CaseInsensitive))
+        return true;
+
+    // 2. KDE Plasma (5.24+ 支持 colorscheme)
+    process.start("plasma-apply-colorscheme", {"--list-schemes"});
+    process.waitForFinished();
+    QString kdeOutput = QString::fromUtf8(process.readAllStandardOutput());
+    if (kdeOutput.contains("Dark", Qt::CaseInsensitive))
+        return true;
+
+    return false; // 默认浅色
+
+#else
     QPalette palette = QGuiApplication::palette();
     QColor windowColor = palette.color(QPalette::Window);
     QColor textColor = palette.color(QPalette::WindowText);
-    
+
     // 判断系统是否为深色模式：窗口背景色比文本色更暗
     return windowColor.lightness() < textColor.lightness();
+#endif
 }
 
 void MainWindow::toggleWidgetMode() {
@@ -80,11 +114,12 @@ void MainWindow::toggleWidgetMode() {
 }
 
 void MainWindow::updateWidgetHeight() {
-    if (!m_isDesktopWidget) return;
-    
+    if (!m_isDesktopWidget)
+        return;
+
     int totalHeight = 50; // 标题栏高度
     int popupSpacing = 6; // 弹窗间距
-    
+
     // 计算需要显示的弹窗总高度
     if (m_isShowSetting) {
         totalHeight += 250 + popupSpacing;
@@ -95,12 +130,12 @@ void MainWindow::updateWidgetHeight() {
     if (m_isShowTodos) {
         totalHeight += 200 + popupSpacing;
     }
-    
+
     // 设置最小高度和额外边距
     int minHeight = 100;
     int extraMargin = 60;
     int finalHeight = qMax(minHeight, totalHeight + extraMargin);
-    
+
     emit heightChanged(finalHeight);
 }
 
@@ -126,7 +161,7 @@ bool MainWindow::isAutoStartEnabled() const {
 
 bool MainWindow::setAutoStart(bool enabled) {
     QSettings config("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
-    
+
     if (enabled) {
         QString applicationPath = QCoreApplication::applicationFilePath();
         applicationPath = QDir::toNativeSeparators(applicationPath);
@@ -136,7 +171,7 @@ bool MainWindow::setAutoStart(bool enabled) {
     } else {
         config.remove("MyTodo");
     }
-    
+
     config.sync();
     return config.status() == QSettings::NoError;
 }
