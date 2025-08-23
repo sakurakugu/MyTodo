@@ -644,6 +644,7 @@ Window {
                         if (checked && !todoModel.isLoggedIn) {
                             // 如果要开启自动同步但未登录，显示提示并重置开关
                             onlineSwitch.checked = false;
+                            topMenu.close(); // 关闭菜单
                             loginStatusDialogs.showLoginRequired();
                         } else {
                             setting.save("setting/autoSync", checked);
