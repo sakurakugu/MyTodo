@@ -23,6 +23,7 @@ Item {
     property bool isShowAddTask: mainWindow.isShowAddTask
     property bool isShowSetting: mainWindow.isShowSetting
     property bool isShowTodos: false
+    property bool isShowDropdown: mainWindow.isShowDropdown
     property bool isDarkMode: false
     property bool preventDragging: false
 
@@ -162,12 +163,17 @@ Item {
                     color: theme.textColor
                 }
 
-                TaskForm {
-                    id: addTaskForm
+                ScrollView {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    theme: widgetMode.theme
-                    isCompactMode: true
+                    clip: true
+
+                    TaskForm {
+                        id: addTaskForm
+                        width: parent.width
+                        theme: widgetMode.theme
+                        isCompactMode: true
+                    }
                 }
 
                 RowLayout {
@@ -298,17 +304,19 @@ Item {
                         height: 40
                         color: index % 2 === 0 ? theme.secondaryBackgroundColor : theme.backgroundColor
 
-                        // 点击项目查看/编辑详情
+                        // 点击项目显示下拉窗口
                         MouseArea {
                             anchors.fill: parent
                             z: 0
                             onClicked: {
-                                todoDetailsDialog.openTodoDetails({
+                                todoItemDropdown.currentTodoIndex = index;
+                                todoItemDropdown.currentTodoData = {
                                     title: model.title,
                                     description: model.description,
                                     category: model.category,
                                     important: model.important
-                                }, index);
+                                };
+                                mainWindow.toggleDropdownVisible();
                             }
                         }
 
@@ -382,6 +390,128 @@ Item {
 
         onTodoUpdated: function (index, todoData) {
             todoModel.updateTodo(index, todoData);
+        }
+    }
+
+    // 待办事项下拉窗口
+    Popup {
+        id: todoItemDropdown
+
+        property int calculatedY: {
+            return mainContentPopup.y + mainContentPopup.height + 6;
+        }
+
+        // x: mainContentPopup.x
+        y: calculatedY
+        width: mainContentPopup.width
+        height: 180
+        modal: false
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        visible: isDesktopWidget && isShowDropdown
+
+        property int currentTodoIndex: -1
+        property var currentTodoData: null
+
+        contentItem: Rectangle {
+            color: theme.secondaryBackgroundColor
+            border.color: theme.borderColor
+            border.width: 1
+            radius: 5
+
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 10
+                spacing: 8
+
+                // 顶部标题栏和收回按钮
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+
+                    Label {
+                        text: todoItemDropdown.currentTodoData ? todoItemDropdown.currentTodoData.title : ""
+                        font.bold: true
+                        font.pixelSize: 14
+                        color: theme.textColor
+                        Layout.fillWidth: true
+                        elide: Text.ElideRight
+                    }
+
+                    // 收回按钮
+                    Rectangle {
+                        width: 24
+                        height: 24
+                        color: "transparent"
+                        border.width: 0
+                        radius: 12
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "^"
+                            color: theme.textColor
+                            font.pixelSize: 16
+                            font.bold: true
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: {
+                                 mainWindow.toggleDropdownVisible();
+                             }
+                            onEntered: {
+                                parent.color = theme.borderColor;
+                            }
+                            onExited: {
+                                parent.color = "transparent";
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 1
+                    color: theme.borderColor
+                }
+
+                CustomButton {
+                    text: "查看详情"
+                    Layout.fillWidth: true
+                    textColor: theme.textColor
+                    backgroundColor: theme.backgroundColor
+                    isDarkMode: widgetMode.isDarkMode
+                    onClicked: {
+                         mainWindow.toggleDropdownVisible();
+                         todoDetailsDialog.openTodoDetails(todoItemDropdown.currentTodoData, todoItemDropdown.currentTodoIndex);
+                     }
+                }
+
+                CustomButton {
+                    text: "标记完成"
+                    Layout.fillWidth: true
+                    textColor: "white"
+                    backgroundColor: theme.primaryColor
+                    isDarkMode: widgetMode.isDarkMode
+                    onClicked: {
+                         todoModel.markAsDone(todoItemDropdown.currentTodoIndex);
+                         mainWindow.toggleDropdownVisible();
+                     }
+                }
+
+                CustomButton {
+                    text: "删除任务"
+                    Layout.fillWidth: true
+                    textColor: "white"
+                    backgroundColor: "#e74c3c"
+                    isDarkMode: widgetMode.isDarkMode
+                    onClicked: {
+                         todoModel.removeTodo(todoItemDropdown.currentTodoIndex);
+                         mainWindow.toggleDropdownVisible();
+                     }
+                }
+            }
         }
     }
 }

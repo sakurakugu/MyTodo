@@ -16,7 +16,7 @@
 #include <QStandardPaths>
 
 MainWindow::MainWindow(QObject *parent)
-    : QObject(parent), m_isDesktopWidget(false), m_isShowAddTask(false), m_isShowTodos(true), m_isShowSetting(false) {
+    : QObject(parent), m_isDesktopWidget(false), m_isShowAddTask(false), m_isShowTodos(true), m_isShowSetting(false), m_isShowDropdown(false) {
 
     // 监听系统主题变化
     connect(QGuiApplication::instance(), SIGNAL(paletteChanged(QPalette)), this, SIGNAL(systemDarkModeChanged()));
@@ -63,6 +63,17 @@ void MainWindow::setIsShowSetting(bool value) {
     if (m_isShowSetting != value) {
         m_isShowSetting = value;
         emit isShowSettingChanged();
+    }
+}
+
+bool MainWindow::isShowDropdown() const {
+    return m_isShowDropdown;
+}
+
+void MainWindow::setIsShowDropdown(bool value) {
+    if (m_isShowDropdown != value) {
+        m_isShowDropdown = value;
+        emit isShowDropdownChanged();
     }
 }
 
@@ -139,6 +150,9 @@ void MainWindow::updateWidgetHeight() {
     if (m_isShowTodos) {
         totalHeight += 200 + popupSpacing;
     }
+    if (m_isShowDropdown) {
+        totalHeight += 180 + popupSpacing;
+    }
 
     // 设置最小高度和额外边距
     int minHeight = 100;
@@ -160,6 +174,11 @@ void MainWindow::toggleTodosVisible() {
 
 void MainWindow::toggleSettingsVisible() {
     setIsShowSetting(!m_isShowSetting);
+    updateWidgetHeight(); // 动态更新高度
+}
+
+void MainWindow::toggleDropdownVisible() {
+    setIsShowDropdown(!m_isShowDropdown);
     updateWidgetHeight(); // 动态更新高度
 }
 

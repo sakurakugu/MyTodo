@@ -18,6 +18,7 @@ class MainWindow : public QObject {
     Q_PROPERTY(bool isShowAddTask READ isShowAddTask WRITE setIsShowAddTask NOTIFY isShowAddTaskChanged)
     Q_PROPERTY(bool isShowTodos READ isShowTodos WRITE setIsShowTodos NOTIFY isShowTodosChanged)
     Q_PROPERTY(bool isShowSetting READ isShowSetting WRITE setIsShowSetting NOTIFY isShowSettingChanged)
+    Q_PROPERTY(bool isShowDropdown READ isShowDropdown WRITE setIsShowDropdown NOTIFY isShowDropdownChanged)
     Q_PROPERTY(bool isSystemDarkMode READ isSystemDarkMode NOTIFY systemDarkModeChanged)
 
   public:
@@ -35,6 +36,9 @@ class MainWindow : public QObject {
 
     bool isShowSetting() const;
     void setIsShowSetting(bool value);
+    
+    bool isShowDropdown() const;
+    void setIsShowDropdown(bool value);
 
     bool isSystemDarkMode() const;
 
@@ -44,6 +48,7 @@ class MainWindow : public QObject {
     void toggleAddTaskVisible();
     void toggleTodosVisible();
     void toggleSettingsVisible();
+    void toggleDropdownVisible();
     
     // 开机自启动相关方法
     Q_INVOKABLE bool isAutoStartEnabled() const;
@@ -57,6 +62,7 @@ class MainWindow : public QObject {
     void isShowAddTaskChanged();
     void isShowTodosChanged();
     void isShowSettingChanged();
+    void isShowDropdownChanged();
     void systemDarkModeChanged();
     void widthChanged(int width);
     void heightChanged(int height);
@@ -66,4 +72,5 @@ class MainWindow : public QObject {
     bool m_isShowAddTask;
     bool m_isShowTodos;
     bool m_isShowSetting;
+    bool m_isShowDropdown;
 };
