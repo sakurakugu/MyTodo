@@ -193,7 +193,7 @@ Item {
                 TextField {
                     id: usernameField
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 32
+                    Layout.preferredHeight: 36
                     placeholderText: qsTr("请输入用户名")
                     color: theme.textColor
                     enabled: !loginDialog.isLoggingIn // 登录中禁用输入
@@ -239,7 +239,7 @@ Item {
                     placeholderText: qsTr("请输入密码")
                     echoMode: TextInput.Password
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 32
+                    Layout.preferredHeight: 36
                     color: theme.textColor
                     enabled: !loginDialog.isLoggingIn
 

@@ -164,7 +164,8 @@ set(I18N_FILES
 # 资源文件配置
 set(RESOURCE_FILES
     # 图标、图片等资源文件
-   "./image/app_icon/icon.ico"
+    "./image/app_icon/icon.ico"          # 应用图标
+    "./image/font_icon/iconfont.ttf"     # 字体图标
 )
 
 # 查找 Qt6 依赖

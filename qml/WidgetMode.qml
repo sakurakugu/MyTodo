@@ -20,8 +20,8 @@ Item {
 
     // 从父组件传入的属性
     property bool isDesktopWidget: false
-    property bool isShowSetting: false
-    property bool isShowAddTask: false
+    property bool isShowAddTask: mainWindow.isShowAddTask
+    property bool isShowSetting: mainWindow.isShowSetting
     property bool isShowTodos: false
     property bool isDarkMode: false
     property bool preventDragging: false

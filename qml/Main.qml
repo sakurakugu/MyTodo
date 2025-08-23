@@ -44,12 +44,14 @@ Window {
 
     // 显示模式控制属性
     property bool isDesktopWidget: mainWindow.isDesktopWidget  ///< 是否为桌面小组件模式
-    property bool isShowTodos: mainWindow.isShowTodos         ///< 是否显示所有任务（小组件模式下）
-    property bool isShowAddTask: mainWindow.isShowAddTask      ///< 是否显示添加任务界面
-    property bool isShowSetting: mainWindow.isShowSetting      ///< 是否显示设置界面
-
-    property bool isDarkMode: setting.get("setting/isDarkMode", false)  ///< 深色模式开关，从配置文件读取
+    property bool isShowTodos: mainWindow.isShowTodos          ///< 是否显示所有任务（小组件模式下）
+    property bool isDarkMode: setting.get("setting/isDarkMode", false)           ///< 深色模式开关，从配置文件读取
     property bool preventDragging: setting.get("setting/preventDragging", false) ///< 是否禁止窗口拖拽，从配置文件读取
+
+    FontLoader {
+        id: iconFont
+        source: "qrc:/qt/qml/MyTodo/image/font_icon/iconfont.ttf"
+    }
 
     // 主题管理器
     ThemeManager {
@@ -160,13 +162,22 @@ Window {
             RowLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                spacing: 10
+                spacing: 0
                 visible: !root.isDesktopWidget && stackView.depth > 1  ///< 仅在非小组件模式且有子页面时显示
 
                 ToolButton {
-                    text: "<-"
-                    font.pixelSize: 16
+                    font.family: iconFont.name
+                    text: "\ue8fa"
+                    font.bold: true
+                    font.pixelSize: 18
                     onClicked: stackView.pop()
+                    contentItem: Text {
+                        text: parent.text
+                        font: parent.font
+                        color: theme.titleBarTextColor
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
 
                 Label {
@@ -203,7 +214,7 @@ Window {
                     /// 点击弹出用户菜单
                     onClicked: {
                         // 计算菜单位置，固定在用户头像下方
-                        var pos = mapToItem(null, 0, height+9);
+                        var pos = mapToItem(null, 0, height + 9);
                         topMenu.popup(pos.x, pos.y);
                     }
 
@@ -268,30 +279,63 @@ Window {
 
                 /// 设置按钮
                 CustomButton {
-                    text: "☰"                                       ///< 菜单图标
+                    text: "\ue90f"                                       ///< 菜单图标
                     onClicked: mainWindow.toggleSettingsVisible()  ///< 切换设置界面显示
+                    textColor: theme.titleBarTextColor
                     fontSize: 16
                     isDarkMode: root.isDarkMode
+
+                    contentItem: Text {
+                        text: parent.text
+                        color: parent.textColor
+                        font.pixelSize: parent.fontSize
+                        font.family: iconFont.name
+                        font.bold: true
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
 
                 /// 任务列表展开/收起按钮
                 CustomButton {
-                    text: isShowTodos ? "^" : "v"                   ///< 根据状态显示箭头
+                    text: isShowTodos ? "\ue667" : "\ue669"        ///< 根据状态显示箭头
                     onClicked: mainWindow.toggleTodosVisible()     ///< 切换任务列表显示
+                    textColor: theme.titleBarTextColor
                     fontSize: 16
                     isDarkMode: root.isDarkMode
+
+                    contentItem: Text {
+                        text: parent.text
+                        color: parent.textColor
+                        font.pixelSize: parent.fontSize
+                        font.family: iconFont.name
+                        font.bold: true
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
 
                 /// 添加任务按钮
                 CustomButton {
-                    text: "+"                                       ///< 加号图标
+                    text: "\ue903"                                 ///< 加号图标
                     onClicked: mainWindow.toggleAddTaskVisible()   ///< 切换添加任务界面显示
+                    textColor: theme.titleBarTextColor
                     fontSize: 16
                     isDarkMode: root.isDarkMode
+
+                    contentItem: Text {
+                        text: parent.text
+                        color: parent.textColor
+                        font.pixelSize: parent.fontSize
+                        font.family: iconFont.name
+                        font.bold: true
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
 
                 CustomButton {
-                    text: root.isDesktopWidget ? "大" : "小"
+                    text: root.isDesktopWidget ? "\ue620" : "\ue61f"
                     onClicked: {
                         if (root.isDesktopWidget) {
                             mainWindow.toggleWidgetMode();
@@ -300,8 +344,19 @@ Window {
                             mainWindow.toggleWidgetMode();
                         }
                     }
-                    fontSize: 14
+                    textColor: theme.titleBarTextColor
+                    fontSize: 18
                     isDarkMode: root.isDarkMode
+
+                    contentItem: Text {
+                        text: parent.text
+                        color: parent.textColor
+                        font.pixelSize: parent.fontSize
+                        font.family: iconFont.name
+                        font.bold: true
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
             }
 
@@ -312,7 +367,7 @@ Window {
                 visible: !root.isDesktopWidget
 
                 CustomButton {
-                    text: root.isDesktopWidget ? "大" : "小"
+                    text: root.isDesktopWidget ? "\ue620" : "\ue61f"
                     onClicked: {
                         if (root.isDesktopWidget) {
                             mainWindow.toggleWidgetMode();
@@ -321,21 +376,43 @@ Window {
                             mainWindow.toggleWidgetMode();
                         }
                     }
-                    fontSize: 14
+                    textColor: theme.titleBarTextColor
+                    fontSize: 18
                     isDarkMode: root.isDarkMode
+
+                    contentItem: Text {
+                        text: parent.text
+                        color: parent.textColor
+                        font.pixelSize: parent.fontSize
+                        font.family: iconFont.name
+                        font.bold: true
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
 
                 // 最小化按钮
                 CustomButton {
-                    text: "−"
+                    text: "\ue65a"
                     onClicked: root.showMinimized()
-                    fontSize: 14
+                    textColor: theme.titleBarTextColor
+                    fontSize: 16
                     isDarkMode: root.isDarkMode
+
+                    contentItem: Text {
+                        text: parent.text
+                        color: parent.textColor
+                        font.pixelSize: parent.fontSize
+                        font.family: iconFont.name
+                        font.bold: true
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
 
                 // 最大化/恢复按钮
                 CustomButton {
-                    text: root.visibility === Window.Maximized ? "❐" : "□"
+                    text: root.visibility === Window.Maximized ? "\ue600" : "\ue65b"
                     onClicked: {
                         if (root.visibility === Window.Maximized) {
                             root.showNormal();
@@ -343,16 +420,38 @@ Window {
                             root.showMaximized();
                         }
                     }
-                    fontSize: 14
+                    textColor: theme.titleBarTextColor
+                    fontSize: 16
                     isDarkMode: root.isDarkMode
+
+                    contentItem: Text {
+                        text: parent.text
+                        color: parent.textColor
+                        font.pixelSize: parent.fontSize
+                        font.family: iconFont.name
+                        font.bold: true
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
 
                 // 关闭按钮
                 CustomButton {
-                    text: "✕"
+                    text: "\ue8d1"
                     onClicked: root.close()
-                    fontSize: 14
+                    fontSize: 16
+                    textColor: theme.titleBarTextColor
                     isDarkMode: root.isDarkMode
+
+                    contentItem: Text {
+                        text: parent.text
+                        color: parent.textColor
+                        font.pixelSize: parent.fontSize
+                        font.family: iconFont.name
+                        font.bold: true
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
             }
         }
@@ -524,8 +623,6 @@ Window {
         id: widgetModeComponent
         anchors.fill: parent
         isDesktopWidget: root.isDesktopWidget
-        isShowSetting: root.isShowSetting
-        isShowAddTask: root.isShowAddTask
         isShowTodos: root.isShowTodos
         isDarkMode: root.isDarkMode
         preventDragging: root.preventDragging
@@ -540,6 +637,13 @@ Window {
         onDarkModeToggled: function (value) {
             root.isDarkMode = value;
         }
+    }
+
+    MainPage {
+        id: mainPageComponent
+        isDarkMode: root.isDarkMode
+        isDesktopWidget: root.isDesktopWidget
+        rootWindow: root
     }
 
     // 顶部用户菜单（从头像处点击弹出）
@@ -558,10 +662,22 @@ Window {
 
         MenuItem {
             text: todoModel.isLoggedIn ? qsTr("退出登录") : qsTr("登录")
-            contentItem: Text {
-                text: parent.text
-                color: theme.textColor
-                font: parent.font
+            contentItem: Row {
+                spacing: 8
+                Text {
+                    text: "\ue981"
+                    font.family: iconFont.name
+                    color: theme.textColor
+                    font.pixelSize: 18
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Text {
+                    text: parent.parent.text
+                    color: theme.textColor
+                    // font: parent.parent.font
+                    font.pixelSize: 18
+                    anchors.verticalCenter: parent.verticalCenter
+                }
             }
             onTriggered: {
                 if (todoModel.isLoggedIn) {
@@ -574,10 +690,21 @@ Window {
 
         MenuItem {
             text: qsTr("设置")
-            contentItem: Text {
-                text: parent.text
-                color: theme.textColor
-                font: parent.font
+            contentItem: Row {
+                spacing: 8
+                Text {
+                    text: "\ue913"
+                    font.family: iconFont.name
+                    color: theme.textColor
+                    font.pixelSize: 18
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                Text {
+                    text: parent.parent.text
+                    color: theme.textColor
+                    font.pixelSize: 18
+                    anchors.verticalCenter: parent.verticalCenter
+                }
             }
             onTriggered: {
                 stackView.push(Qt.resolvedUrl("Setting.qml"), {
@@ -592,26 +719,30 @@ Window {
             id: darkModeItem
             contentItem: RowLayout {
                 spacing: 12
-                Label {
-                    text: qsTr("深色模式")
-                    color: theme.textColor
+                Row {
+                    spacing: 8
+                    Text {
+                        text: root.isDarkMode ? "\ue668" : "\ue62e"
+                        font.family: iconFont.name
+                        color: theme.textColor
+                        font.pixelSize: 18
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    Text {
+                        text: qsTr("深色模式")
+                        color: theme.textColor
+                        font.pixelSize: 18
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
                 }
                 Switch {
                     id: darkModeSwitch
+                    leftPadding: 0
                     checked: root.isDarkMode
-
-                    property bool isInitialized: false
-
-                    Component.onCompleted: {
-                        isInitialized = true;
-                    }
+                    scale: 0.7
 
                     onCheckedChanged: {
-                        if (!isInitialized) {
-                            return; // 避免初始化时触发
-                        }
                         root.isDarkMode = checked;
-                        console.log("顶部用户菜单-切换深色模式", checked);
                         setting.save("setting/isDarkMode", checked);
                     }
                 }
@@ -622,25 +753,29 @@ Window {
             id: onlineToggleItem
             contentItem: RowLayout {
                 spacing: 12
-                Label {
-                    text: qsTr("自动同步")
-                    color: theme.textColor
+                Row {
+                    spacing: 8
+                    Text {
+                        text: "\ue8ef"
+                        font.family: iconFont.name
+                        color: theme.textColor
+                        font.pixelSize: 18
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    Text {
+                        text: qsTr("自动同步")
+                        color: theme.textColor
+                        font.pixelSize: 18
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
                 }
                 Switch {
                     id: onlineSwitch
+                    leftPadding: 0
                     checked: setting.get("setting/autoSync", false)
-
-                    property bool isInitialized: false
-
-                    Component.onCompleted: {
-                        isInitialized = true;
-                    }
+                    scale: 0.7
 
                     onCheckedChanged: {
-                        if (!isInitialized) {
-                            return; // 避免初始化时触发
-                        }
-
                         if (checked && !todoModel.isLoggedIn) {
                             // 如果要开启自动同步但未登录，显示提示并重置开关
                             onlineSwitch.checked = false;
@@ -654,15 +789,6 @@ Window {
             }
             // 阻止点击整行触发默认切换
             onTriggered: {}
-        }
-    }
-
-    Component {
-        id: mainPageComponent
-        MainPage {
-            isDarkMode: root.isDarkMode
-            isDesktopWidget: root.isDesktopWidget
-            rootWindow: root
         }
     }
 

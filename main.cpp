@@ -30,6 +30,15 @@
 #include "cpp/setting.h"
 #include "cpp/todo_model.h"
 
+#include <QDebug>
+#include <QDirIterator>
+void printResources(const QString &path = ":/") {
+    QDirIterator it(path, QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        qDebug() << it.next();
+    }
+}
+
 int main(int argc, char *argv[]) {
 #if defined(Q_OS_WIN) && defined(QT_DEBUG)
     // Windows平台
@@ -44,6 +53,8 @@ int main(int argc, char *argv[]) {
         SetConsoleOutputCP(936);
     }
 #endif
+
+    // printResources();
 
     QGuiApplication app(argc, argv);
 
