@@ -6,7 +6,7 @@
 
 #include <iostream>
 #include <mutex>
-#include <ranges>
+#include <qstandardpaths.h>
 #include <shared_mutex>
 
 Logger::Logger(QObject *parent) noexcept

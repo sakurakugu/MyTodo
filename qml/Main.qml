@@ -41,22 +41,14 @@ Window {
     // Qt.WindowStaysOnTopHint 只在 Debug 模式下启用
     flags: Qt.FramelessWindowHint | (isDesktopWidget ? Qt.Tool : Qt.Window) | Qt.WindowStaysOnTopHint
 
-    // 窗口调整相关属性
-    property int resizeBorderWidth: 5     ///< 边框调整大小的边距宽度
-
     // 显示模式控制属性
     property bool isDesktopWidget: mainWindow.isDesktopWidget  ///< 是否为桌面小组件模式
     property bool isShowTodos: mainWindow.isShowTodos         ///< 是否显示所有任务（小组件模式下）
     property bool isShowAddTask: mainWindow.isShowAddTask      ///< 是否显示添加任务界面
     property bool isShowSetting: mainWindow.isShowSetting      ///< 是否显示设置界面
 
-    // 主题相关属性
     property bool isDarkMode: setting.get("setting/isDarkMode", false)  ///< 深色模式开关，从配置文件读取
-
-    // 交互控制属性
     property bool preventDragging: setting.get("setting/preventDragging", false) ///< 是否禁止窗口拖拽，从配置文件读取
-
-    // 页面导航系统（使用StackView实现）
 
     // 主题管理器
     ThemeManager {
@@ -65,10 +57,28 @@ Window {
     }
 
     /**
+     * @brief 主窗口背景容器
+     *
+     * 为整个窗口提供圆角背景效果，包裹所有内容。
+     */
+    Rectangle {
+        id: mainBackground
+        visible: !root.isDesktopWidget
+        anchors.fill: parent
+        anchors.margins: 0
+        color: theme.backgroundColor
+        radius: 5                        ///< 窗口圆角半径
+        border.color: theme.borderColor
+        border.width: 1
+        z: -1000                        ///< 确保背景在所有内容下方
+    }
+
+    /**
      * @brief 窗口尺寸同步连接
      *
      * 监听C++端mainWindow对象的尺寸变化，
      * 确保QML窗口与C++窗口尺寸保持同步。
+     * 仅在桌面小组件模式下有效。
      */
     Connections {
         target: mainWindow
@@ -93,12 +103,15 @@ Window {
     Rectangle {
         id: titleBar
         anchors.top: parent.top
-        width: isDesktopWidget ? 400 : parent.width     ///< 小组件模式固定宽度，普通模式填充父容器
-        height: isDesktopWidget ? 35 : 45               ///< 小组件模式较小高度，普通模式较大高度
-        color: theme.primaryColor                       ///< 使用主题主色调
-        border.color: theme.borderColor                 ///< 小组件模式显示边框
-        border.width: isDesktopWidget ? 1 : 0           ///< 边框宽度
-        radius: isDesktopWidget ? 5 : 0                 ///< 小组件模式圆角
+        width: root.isDesktopWidget ? 400 : parent.width     ///< 小组件模式固定宽度，普通模式填充父容器
+        height: root.isDesktopWidget ? 35 : 48               ///< 小组件模式较小高度，普通模式较大高度
+        color: theme.primaryColor                            ///< 使用主题主色调
+        border.color: theme.borderColor                      ///< 小组件模式显示边框
+        border.width: 0                                     ///< 边框宽度
+        topLeftRadius: 5                                     ///< 左上角圆角
+        topRightRadius: 5                                    ///< 右上角圆角
+        bottomLeftRadius: root.isDesktopWidget ? 5 : 0       ///< 左下角无圆角
+        bottomRightRadius: root.isDesktopWidget ? 5 : 0      ///< 右下角无圆角
 
         /**
          * @brief 窗口拖拽处理区域
@@ -108,7 +121,7 @@ Window {
          */
         MouseArea {
             anchors.fill: parent
-            property point clickPos: "0,0"  ///< 记录鼠标按下时的位置
+            property point clickPos: Qt.point(0, 0)  ///< 记录鼠标按下时的位置
 
             /// 鼠标按下事件处理
             onPressed: function (mouse) {
@@ -118,7 +131,7 @@ Window {
             /// 鼠标移动事件处理 - 实现窗口拖拽
             onPositionChanged: function (mouse) {
                 // 只有在非小组件模式或小组件模式但未启用防止拖动时才允许拖动
-                if (pressed && ((!isDesktopWidget) || (isDesktopWidget && !preventDragging))) {
+                if (pressed && ((!root.isDesktopWidget) || (root.isDesktopWidget && !root.preventDragging))) {
                     var delta = Qt.point(mouse.x - clickPos.x, mouse.y - clickPos.y);
                     root.x += delta.x;
                     root.y += delta.y;
@@ -135,8 +148,8 @@ Window {
          */
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: isDesktopWidget ? 5 : 10   ///< 左边距
-            anchors.rightMargin: isDesktopWidget ? 5 : 10  ///< 右边距
+            anchors.leftMargin: root.isDesktopWidget ? 5 : 10   ///< 左边距
+            anchors.rightMargin: root.isDesktopWidget ? 5 : 10  ///< 右边距
 
             /**
              * @brief 页面导航区域
@@ -147,7 +160,7 @@ Window {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 spacing: 10
-                visible: !isDesktopWidget && stackView.depth > 1  ///< 仅在非小组件模式且有子页面时显示
+                visible: !root.isDesktopWidget && stackView.depth > 1  ///< 仅在非小组件模式且有子页面时显示
 
                 ToolButton {
                     text: "<-"
@@ -157,10 +170,9 @@ Window {
 
                 Label {
                     text: stackView.currentItem && stackView.currentItem.objectName === "settingPage" ? qsTr("设置") : ""
-                    font.bold: true
+                    font.bold: true                     ///< 粗体字
                     font.pixelSize: 16
-                    color: theme.textColor
-                    Layout.leftMargin: 10
+                    color: theme.titleBarTextColor
                 }
             }
 
@@ -173,8 +185,7 @@ Window {
             RowLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                spacing: 10
-                visible: !isDesktopWidget && stackView.depth <= 1  ///< 仅在非小组件模式且在主页面时显示
+                visible: !root.isDesktopWidget && stackView.depth <= 1  ///< 仅在非小组件模式且在主页面时显示
 
                 /**
                  * @brief 用户资料点击区域
@@ -191,7 +202,7 @@ Window {
                     /// 点击弹出用户菜单
                     onClicked: {
                         // 计算菜单位置，固定在用户头像下方
-                        var pos = mapToItem(null, 0, height);
+                        var pos = mapToItem(null, 0, height+9);
                         topMenu.popup(pos.x, pos.y);
                     }
 
@@ -207,9 +218,9 @@ Window {
                         Rectangle {
                             width: 30
                             height: 30
-                            radius: 15                          ///< 圆形头像
-                            color: theme.secondaryBackgroundColor     ///< 使用主题次要背景色
-                            Layout.alignment: Qt.AlignVCenter  ///< 垂直居中对齐
+                            radius: 15                               ///< 圆形头像
+                            color: theme.secondaryBackgroundColor    ///< 使用主题次要背景色
+                            Layout.alignment: Qt.AlignVCenter        ///< 垂直居中对齐
 
                             /// 头像图标
                             Text {
@@ -225,10 +236,10 @@ Window {
                          * 显示当前登录用户的用户名，未登录时显示提示文本。
                          */
                         Text {
-                            text: todoModel.username !== "" ? todoModel.username : "未登录"
-                            color: theme.textColor                    ///< 使用主题文本颜色
+                            text: todoModel.username !== "" ? todoModel.username : qsTr("未登录")
+                            color: theme.titleBarTextColor      ///< 使用主题文本颜色
                             font.bold: true                     ///< 粗体字
-                            font.pixelSize: 14                  ///< 字体大小
+                            font.pixelSize: 16                  ///< 字体大小
                             Layout.alignment: Qt.AlignVCenter   ///< 垂直居中对齐
                             horizontalAlignment: Text.AlignLeft ///< 水平左对齐
                         }
@@ -249,14 +260,14 @@ Window {
              * 包括设置、任务列表展开/收起、添加任务等功能。
              */
             RowLayout {
-                Layout.fillWidth: isDesktopWidget ? true : false   ///< 小组件模式下填充宽度
-                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter  ///< 右对齐垂直居中
-                spacing: 2                                         ///< 按钮间距
-                visible: isDesktopWidget                           ///< 仅在小组件模式下显示
+                Layout.fillWidth: root.isDesktopWidget ? true : false   ///< 小组件模式下填充宽度
+                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter       ///< 右对齐垂直居中
+                spacing: 2                                              ///< 按钮间距
+                visible: root.isDesktopWidget                           ///< 仅在小组件模式下显示
 
                 /// 设置按钮
                 CustomButton {
-                    text: "☰"                                       ///< 汉堡菜单图标
+                    text: "☰"                                       ///< 菜单图标
                     onClicked: mainWindow.toggleSettingsVisible()  ///< 切换设置界面显示
                     fontSize: 16
                     isDarkMode: root.isDarkMode
@@ -279,9 +290,9 @@ Window {
                 }
 
                 CustomButton {
-                    text: isDesktopWidget ? "大" : "小"
+                    text: root.isDesktopWidget ? "大" : "小"
                     onClicked: {
-                        if (isDesktopWidget) {
+                        if (root.isDesktopWidget) {
                             mainWindow.toggleWidgetMode();
                             mainWindow.isShowTodos = true;
                         } else {
@@ -297,12 +308,12 @@ Window {
             RowLayout {
                 Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                 spacing: 5
-                visible: !isDesktopWidget
+                visible: !root.isDesktopWidget
 
                 CustomButton {
-                    text: isDesktopWidget ? "大" : "小"
+                    text: root.isDesktopWidget ? "大" : "小"
                     onClicked: {
-                        if (isDesktopWidget) {
+                        if (root.isDesktopWidget) {
                             mainWindow.toggleWidgetMode();
                             mainWindow.isShowTodos = true;
                         } else {
@@ -347,6 +358,7 @@ Window {
     }
 
     // 边框调整大小区域
+    property int resizeBorderWidth: 5     ///< 边框调整大小的边距宽度
     // 左边框
     MouseArea {
         id: leftResizeArea
@@ -491,17 +503,19 @@ Window {
         }
     }
 
-    // 导航栈，使用内置 Page 进行页面管理
+    // 导航栈，进行页面管理
     StackView {
         id: stackView
         anchors.top: titleBar.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
+        anchors.margins: 0
         z: 1000
         focus: true
-        visible: !isDesktopWidget && depth > 0 // 小窗口模式时隐藏主页面
+        visible: !root.isDesktopWidget && depth > 0 // 小窗口模式时隐藏主页面
         initialItem: mainPageComponent
+        // clip: true  ///< 裁剪内容以配合窗口圆角效果
     }
 
     // 小组件模式组件
@@ -515,6 +529,7 @@ Window {
         isDarkMode: root.isDarkMode
         preventDragging: root.preventDragging
         visible: isDesktopWidget
+        // clip: true  ///< 裁剪内容以配合窗口圆角效果
 
         // 连接信号
         onPreventDraggingToggled: function (value) {

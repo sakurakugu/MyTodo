@@ -184,20 +184,18 @@ class NetworkRequest : public QObject {
     QString m_authToken;                     // 认证令牌
     QString m_serverBaseUrl;                 // 服务器基础URL
     QString m_apiVersion;                    // API版本
-
-    // 代理管理器
-    NetworkProxy *m_proxyManager;     // 代理管理器
-
+    
     QMap<qint64, PendingRequest> m_pendingRequests; // 待处理请求映射
     QMap<RequestType, qint64> m_activeRequests;     // 活跃请求映射（用于去重）
     qint64 m_nextRequestId;                         // 下一个请求ID
-
+    
     bool m_isOnline; // 是否在线
-
+    
     // 配置常量
     static const int DEFAULT_TIMEOUT_MS = 10000;
     static const int MAX_CONCURRENT_REQUESTS = 5;
     static const int CONNECTIVITY_CHECK_INTERVAL = 30000; // 30秒检查一次网络连接
-
+    
     QTimer *m_connectivityTimer; // 连接定时器
+    NetworkProxy *m_proxyManager;     // 代理管理器
 };
