@@ -1,16 +1,16 @@
 /**
  * @brief 主函数
- * 
+ *
  * 该函数是 MyTodo 应用程序的入口点。它初始化应用程序、设置日志系统、
  * 加载 QML 界面、处理命令行参数、设置应用程序信息和图标，最后启动应用程序事件循环。
- * 
+ *
  * @param argc 命令行参数数量
  * @param argv 命令行参数数组
  * @return int 应用程序退出状态码
- * 
+ *
  * @author Sakurakugu
  * @date 2025-08-16 20:05:55(UTC+8) 周六
- * @version 2025-08-22 16:24:28(UTC+8) 周五
+ * @version 2025-08-23 21:09:00(UTC+8) 周六
  */
 // Qt 相关头文件
 #include <QGuiApplication>
@@ -70,8 +70,12 @@ int main(int argc, char *argv[]) {
 
     Setting &setting = Setting::GetInstance(); // 创建Setting实例
 
-    // 应用日志设置
-    setting.setLogLevel(setting.getLogLevel());
+// 应用日志设置
+#if defined(QT_DEBUG)
+    setting.setLogLevel(Logger::LogLevel::Debug);
+#else
+    setting.setLogLevel(Logger::LogLevel::Info);
+#endif
     setting.setLogToFile(setting.getLogToFile());
     setting.setLogToConsole(setting.getLogToConsole());
     setting.setMaxLogFileSize(setting.getMaxLogFileSize());

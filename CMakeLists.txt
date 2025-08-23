@@ -3,7 +3,7 @@
 #
 # 作者： sakurakugu
 # 首次创建日期： 2025-08-16 20:05:55(UTC+8) 周六
-# 最后更新日期： 2025-08-22 23:04:19(UTC+8) 周五
+# 最后更新日期： 2025-08-23 21:09:00(UTC+8) 周六
 
 cmake_minimum_required(VERSION 3.16)
 
@@ -133,7 +133,7 @@ set(QML_COMPONENT_FILES
     qml/components/TaskForm.qml                     # 任务表单
     qml/components/ThemeManager.qml                 # 主题管理器
     qml/components/ConfirmDialog.qml                # 通用确认对话框
-    qml/components/LoginDialog.qml                  # 登录对话框
+    # qml/components/LoginDialog.qml                  # 登录对话框
     qml/components/MessageDialog.qml                # 消息提示对话框
     qml/components/LoginStatusDialogs.qml           # 登录状态相关对话框
     qml/components/TodoDetailsDialog.qml            # 待办详情对话框

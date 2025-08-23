@@ -5,7 +5,7 @@
  *
  * @param parent 父对象指针，默认值为nullptr。
  * @date 2025-08-16 20:05:55(UTC+8) 周六
- * @version 2025-08-22 23:04:19(UTC+8) 周五
+ * @version 2025-08-23 21:09:00(UTC+8) 周六
  */
 #include "todo_model.h"
 
@@ -969,9 +969,9 @@ void TodoModel::logout() {
     emit usernameChanged();
     // 发出登录状态变化信号
     emit isLoggedInChanged();
-
     // 发出退出登录成功信号
-    emit logoutSuccessful();
+    // qDebug() << "用户" << m_username << "已成功退出登录";
+    // emit logoutSuccessful();
 }
 
 /**
@@ -1090,7 +1090,6 @@ void TodoModel::onAuthTokenExpired() {
 }
 
 void TodoModel::handleLoginSuccess(const QJsonObject &response) {
-    qDebug() << "登录成功";
 
     // 验证响应中包含必要的字段
     if (!response.contains("access_token") || !response.contains("refresh_token") || !response.contains("user")) {
@@ -1111,14 +1110,12 @@ void TodoModel::handleLoginSuccess(const QJsonObject &response) {
     m_config.save(QStringLiteral("user/username"), m_username);
 
     qDebug() << "用户" << m_username << "登录成功";
-
     // 发出用户名变化信号
     emit usernameChanged();
     // 发出登录状态变化信号
     emit isLoggedInChanged();
-
+    // 发出登录成功信号，不知道为什么会发两次该信号
     emit loginSuccessful(m_username);
-
     // 登录成功后获取类别列表和自动同步
     if (m_isOnline) {
         fetchCategories();
@@ -1406,7 +1403,7 @@ void TodoModel::fetchTodosFromServer() {
  * @param error 错误信息
  */
 void TodoModel::logError(const QString &context, const QString &error) {
-    qCritical() << "[错误] -" << context << ":" << error;
+    qCritical() << context << ":" << error;
 
     // 可以将错误记录到日志文件中
     // TODO: 实现日志文件记录

@@ -11,7 +11,7 @@
  *
  * @author Sakurakugu
  * @date 2025-08-16 20:05:55(UTC+8) 周六
- * @version 2025-08-23 15:15:19(UTC+8) 周六
+ * @version 2025-08-23 21:09:00(UTC+8) 周六
  */
 
 import QtQuick
@@ -567,7 +567,7 @@ Window {
                 if (todoModel.isLoggedIn) {
                     loginStatusDialogs.showLogoutConfirm();
                 } else {
-                    loginDialog.openLogin();
+                    loginStatusDialogs.showLoginDialog();
                 }
             }
         }
@@ -655,11 +655,6 @@ Window {
             onTriggered: {}
         }
     }
-    // 通用确认对话框组件
-    ConfirmDialog {
-        id: confirmDialog
-        isDarkMode: root.isDarkMode
-    }
 
     Component {
         id: mainPageComponent
@@ -670,70 +665,9 @@ Window {
         }
     }
 
-    // TodoModel信号连接
-    Connections {
-        target: todoModel
-
-        function onLoginSuccessful(username) {
-            loginDialog.resetLoginState();
-            messageDialog.showSuccess(qsTr("欢迎回来，%1！").arg(username));
-            loginDialog.close();
-        }
-
-        function onLoginFailed(errorMessage) {
-            loginDialog.setErrorMessage(qsTr("登录失败：%1").arg(errorMessage));
-        }
-
-        function onLogoutSuccessful() {
-            messageDialog.showSuccess(qsTr("已成功退出登录"));
-        }
-    }
-
-    // 消息提示对话框组件
-    MessageDialog {
-        id: messageDialog
-        isDarkMode: root.isDarkMode
-    }
-
-    // 登录状态相关对话框组件
+    // 登录相关对话框组件
     LoginStatusDialogs {
         id: loginStatusDialogs
         isDarkMode: root.isDarkMode
-
-        onLoginRequested: {
-            loginDialog.openLogin();
-        }
-
-        onLogoutConfirmed: {
-            todoModel.logout();
-        }
-    }
-
-    // 登录对话框组件
-    LoginDialog {
-        id: loginDialog
-        isDarkMode: root.isDarkMode
-
-        onLoginRequested: function (username, password) {
-            todoModel.login(username, password);
-        }
-    }
-
-    // 登录提示对话框
-    BaseDialog {
-        id: loginRequiredDialog
-        dialogTitle: qsTr("需要登录")
-        dialogWidth: 300
-        dialogHeight: 150
-        showStandardButtons: true
-        isDarkMode: root.isDarkMode
-
-        Label {
-            text: qsTr("开启自动同步功能需要先登录账户。\n请先登录后再开启自动同步。")
-            wrapMode: Text.WordWrap
-            color: theme.textColor
-            Layout.fillWidth: true
-            horizontalAlignment: Text.AlignHCenter
-        }
     }
 }

@@ -5,7 +5,7 @@
  *
  * @param parent 父对象指针，默认值为nullptr。
  * @date 2025-08-21 21:31:41(UTC+8) 周四
- * @version 2025-08-22 22:28:54(UTC+8) 周五
+ * @version 2025-08-23 21:09:00(UTC+8) 周六
  */
 #include "setting.h"
 
@@ -70,17 +70,17 @@ QString Setting::getConfigFilePath() const {
 }
 
 // 日志配置相关方法实现
-void Setting::setLogLevel(int level) {
-    m_config.save(QStringLiteral("log/level"), level);
-    auto result = m_logger.setLogLevel(static_cast<Logger::LogLevel>(level));
+void Setting::setLogLevel(Logger::LogLevel logLevel) {
+    m_config.save(QStringLiteral("log/level"), static_cast<int>(logLevel));
+    auto result = m_logger.setLogLevel(logLevel);
     if (!result) {
         qWarning() << "无法设置日志级别:" << static_cast<int>(result.error());
     }
 }
 
-int Setting::getLogLevel() const {
+Logger::LogLevel Setting::getLogLevel() const {
     auto result = m_config.get(QStringLiteral("log/level"), static_cast<int>(Logger::LogLevel::Info));
-    return result.has_value() ? result.value().toInt() : static_cast<int>(Logger::LogLevel::Info);
+    return result.has_value() ? static_cast<Logger::LogLevel>(result.value().toInt()) : Logger::LogLevel::Info;
 }
 
 void Setting::setLogToFile(bool enabled) {

@@ -7,7 +7,7 @@
  *
  * @author Sakurakugu
  * @date 2025-08-19 07:39:54(UTC+8) 周二
- * @version 2025-08-21 21:31:41(UTC+8) 周四
+ * @version 2025-08-23 21:09:00(UTC+8) 周六
  */
 
 import QtQuick
@@ -48,6 +48,10 @@ QtObject {
     readonly property color hoverColor: isDarkMode ? "#34495e" : "#f0f0f0"
     readonly property color selectedColor: isDarkMode ? "#2980b9" : "#e3f2fd"
     readonly property color pressedColor: isDarkMode ? "#1f2937" : "#e8e8e8"
+    
+    // 按钮状态颜色
+    readonly property color buttonHoverColor: isDarkMode ? "#34495e" : "#f0f0f0"
+    readonly property color buttonPressedColor: isDarkMode ? "#1f2937" : "#e8e8e8"
     
     // 阴影色
     readonly property color shadowColor: isDarkMode ? "#000000" : "#00000020"

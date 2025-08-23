@@ -7,7 +7,7 @@
  *
  * @author Sakurakugu
  * @date 2025-08-16 20:05:55(UTC+8) 周六
- * @version 2025-08-22 23:04:19(UTC+8) 周五
+ * @version 2025-08-23 21:09:00(UTC+8) 周六
  */
 
 import QtQuick
@@ -53,7 +53,11 @@ Page {
         color: theme.backgroundColor
     }
 
-    // header已移动到Main.qml的标题栏中
+    // 登录相关对话框组件
+    LoginStatusDialogs {
+        id: loginStatusDialogs
+        isDarkMode: settingPage.isDarkMode
+    }
 
     ScrollView {
         anchors.fill: parent
@@ -181,7 +185,7 @@ Page {
 
             Switch {
                 id: autoSyncSwitch
-                text: qsTr("自动同步")
+                text: !todoModel.isLoggedIn ? qsTr("自动同步（未登录）") : qsTr("自动同步")
                 checked: setting.get("setting/autoSync", false)
 
                 property bool isInitialized: false
@@ -198,7 +202,7 @@ Page {
                     if (checked && !todoModel.isLoggedIn) {
                         // 如果要开启自动同步但未登录，显示提示并重置开关
                         autoSyncSwitch.checked = false;
-                        loginRequiredDialog.open();
+                        loginStatusDialogs.showLoginRequired();
                     } else {
                         setting.save("setting/autoSync", checked);
                     }
@@ -623,7 +627,7 @@ Page {
             dialogHeight: 150
             showStandardButtons: true
             isDarkMode: mainPage.isDarkMode
-            
+
             Label {
                 text: qsTr("待办事项已成功导出！")
                 Layout.fillWidth: true
@@ -641,7 +645,7 @@ Page {
             dialogHeight: 180
             showStandardButtons: true
             isDarkMode: mainPage.isDarkMode
-            
+
             Label {
                 text: qsTr("导出待办事项时发生错误，请检查文件路径和权限。")
                 Layout.fillWidth: true
@@ -660,7 +664,7 @@ Page {
             dialogHeight: 150
             showStandardButtons: true
             isDarkMode: mainPage.isDarkMode
-            
+
             Label {
                 text: qsTr("待办事项已成功导入！")
                 Layout.fillWidth: true
@@ -678,7 +682,7 @@ Page {
             dialogHeight: 180
             showStandardButtons: true
             isDarkMode: mainPage.isDarkMode
-            
+
             Label {
                 text: qsTr("导入待办事项时发生错误，请检查文件格式和内容。")
                 Layout.fillWidth: true
@@ -729,225 +733,225 @@ Page {
                     width: parent.width
                     spacing: 10
 
-                        Repeater {
-                            model: conflictResolutionDialog.conflicts
+                    Repeater {
+                        model: conflictResolutionDialog.conflicts
 
-                            delegate: Rectangle {
-                                width: parent.width
-                                height: 350
-                                color: index % 2 === 0 ? "#f8f9fa" : "#ffffff"
-                                border.color: "#dee2e6"
-                                border.width: 1
-                                radius: 5
+                        delegate: Rectangle {
+                            width: parent.width
+                            height: 350
+                            color: index % 2 === 0 ? "#f8f9fa" : "#ffffff"
+                            border.color: "#dee2e6"
+                            border.width: 1
+                            radius: 5
 
-                                Column {
-                                    id: conflictItemColumn
-                                    anchors.left: parent.left
-                                    anchors.right: parent.right
-                                    anchors.top: parent.top
-                                    anchors.margins: 15
-                                    spacing: 10
+                            Column {
+                                id: conflictItemColumn
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.top: parent.top
+                                anchors.margins: 15
+                                spacing: 10
 
-                                    Label {
-                                        text: qsTr("冲突项目 %1 (ID: %2)").arg(index + 1).arg(modelData.id)
-                                        font.bold: true
-                                        font.pixelSize: 14
-                                        color: "#dc3545"
-                                    }
+                                Label {
+                                    text: qsTr("冲突项目 %1 (ID: %2)").arg(index + 1).arg(modelData.id)
+                                    font.bold: true
+                                    font.pixelSize: 14
+                                    color: "#dc3545"
+                                }
 
-                                    Row {
-                                        width: parent.width
-                                        spacing: 20
+                                Row {
+                                    width: parent.width
+                                    spacing: 20
 
-                                        // 现有数据
-                                        Column {
-                                            width: (parent.width - 40) / 2
-
-                                            Rectangle {
-                                                width: parent.width
-                                                height: 2
-                                                color: "#28a745"
-                                            }
-
-                                            Label {
-                                                text: qsTr("现有数据")
-                                                font.bold: true
-                                                font.pixelSize: 12
-                                                color: "#28a745"
-                                            }
-
-                                            Label {
-                                                text: qsTr("标题: %1").arg(modelData.existingTitle || "")
-                                                wrapMode: Text.WordWrap
-                                                width: parent.width
-                                                font.pixelSize: 11
-                                            }
-
-                                            Label {
-                                                text: qsTr("描述: %1").arg(modelData.existingDescription || "")
-                                                wrapMode: Text.WordWrap
-                                                width: parent.width
-                                                font.pixelSize: 11
-                                                maximumLineCount: 2
-                                                elide: Text.ElideRight
-                                            }
-
-                                            Row {
-                                                width: parent.width
-                                                spacing: 10
-
-                                                Label {
-                                                    text: qsTr("分类: %1").arg(modelData.existingCategory || "")
-                                                    font.pixelSize: 10
-                                                }
-
-                                                Label {
-                                                    text: qsTr("状态: %1").arg(modelData.existingStatus || "")
-                                                    font.pixelSize: 10
-                                                }
-                                            }
-
-                                            Label {
-                                                text: qsTr("更新时间: %1").arg(modelData.existingUpdatedAt ? modelData.existingUpdatedAt.toLocaleString() : "")
-                                                font.pixelSize: 9
-                                                color: "#6c757d"
-                                            }
-                                        }
-
-                                        // 分隔线
-                                        Rectangle {
-                                            width: 2
-                                            height: 200
-                                            color: "#dee2e6"
-                                        }
-
-                                        // 导入数据
-                                        Column {
-                                            width: (parent.width - 40) / 2
-
-                                            Rectangle {
-                                                width: parent.width
-                                                height: 2
-                                                color: "#007bff"
-                                            }
-
-                                            Label {
-                                                text: qsTr("导入数据")
-                                                font.bold: true
-                                                font.pixelSize: 12
-                                                color: "#007bff"
-                                            }
-
-                                            Label {
-                                                text: qsTr("标题: %1").arg(modelData.importTitle || "")
-                                                wrapMode: Text.WordWrap
-                                                width: parent.width
-                                                font.pixelSize: 11
-                                            }
-
-                                            Label {
-                                                text: qsTr("描述: %1").arg(modelData.importDescription || "")
-                                                wrapMode: Text.WordWrap
-                                                width: parent.width
-                                                font.pixelSize: 11
-                                                maximumLineCount: 2
-                                                elide: Text.ElideRight
-                                            }
-
-                                            Row {
-                                                width: parent.width
-                                                spacing: 10
-
-                                                Label {
-                                                    text: qsTr("分类: %1").arg(modelData.importCategory || "")
-                                                    font.pixelSize: 10
-                                                }
-
-                                                Label {
-                                                    text: qsTr("状态: %1").arg(modelData.importStatus || "")
-                                                    font.pixelSize: 10
-                                                }
-                                            }
-
-                                            Label {
-                                                text: qsTr("更新时间: %1").arg(modelData.importUpdatedAt ? modelData.importUpdatedAt.toLocaleString() : "")
-                                                font.pixelSize: 9
-                                                color: "#6c757d"
-                                            }
-                                        }
-                                    }
-
-                                    // 处理方式选择
+                                    // 现有数据
                                     Column {
-                                        width: parent.width
-                                        spacing: 5
+                                        width: (parent.width - 40) / 2
+
+                                        Rectangle {
+                                            width: parent.width
+                                            height: 2
+                                            color: "#28a745"
+                                        }
 
                                         Label {
-                                            text: qsTr("处理方式:")
+                                            text: qsTr("现有数据")
                                             font.bold: true
                                             font.pixelSize: 12
+                                            color: "#28a745"
+                                        }
+
+                                        Label {
+                                            text: qsTr("标题: %1").arg(modelData.existingTitle || "")
+                                            wrapMode: Text.WordWrap
+                                            width: parent.width
+                                            font.pixelSize: 11
+                                        }
+
+                                        Label {
+                                            text: qsTr("描述: %1").arg(modelData.existingDescription || "")
+                                            wrapMode: Text.WordWrap
+                                            width: parent.width
+                                            font.pixelSize: 11
+                                            maximumLineCount: 2
+                                            elide: Text.ElideRight
                                         }
 
                                         Row {
                                             width: parent.width
-                                            spacing: 15
+                                            spacing: 10
 
-                                            RadioButton {
-                                                id: skipRadio
-                                                text: qsTr("跳过")
-                                                checked: true
-                                                font.pixelSize: 11
-                                                onCheckedChanged: {
-                                                    if (checked) {
-                                                        conflictResolutionDialog.conflictResolutions[modelData.id] = "skip";
-                                                    }
-                                                }
+                                            Label {
+                                                text: qsTr("分类: %1").arg(modelData.existingCategory || "")
+                                                font.pixelSize: 10
                                             }
 
-                                            RadioButton {
-                                                id: overwriteRadio
-                                                text: qsTr("覆盖")
-                                                font.pixelSize: 11
-                                                onCheckedChanged: {
-                                                    if (checked) {
-                                                        conflictResolutionDialog.conflictResolutions[modelData.id] = "overwrite";
-                                                    }
-                                                }
-                                            }
-
-                                            RadioButton {
-                                                id: mergeRadio
-                                                text: qsTr("智能合并")
-                                                font.pixelSize: 11
-                                                onCheckedChanged: {
-                                                    if (checked) {
-                                                        conflictResolutionDialog.conflictResolutions[modelData.id] = "merge";
-                                                    }
-                                                }
+                                            Label {
+                                                text: qsTr("状态: %1").arg(modelData.existingStatus || "")
+                                                font.pixelSize: 10
                                             }
                                         }
 
                                         Label {
-                                            text: {
-                                                if (skipRadio.checked)
-                                                    return qsTr("保留现有数据，不导入此项目");
-                                                if (overwriteRadio.checked)
-                                                    return qsTr("用导入的数据完全替换现有数据");
-                                                if (mergeRadio.checked)
-                                                    return qsTr("保留更新时间较新的版本");
-                                                return "";
-                                            }
-                                            font.pixelSize: 10
+                                            text: qsTr("更新时间: %1").arg(modelData.existingUpdatedAt ? modelData.existingUpdatedAt.toLocaleString() : "")
+                                            font.pixelSize: 9
                                             color: "#6c757d"
+                                        }
+                                    }
+
+                                    // 分隔线
+                                    Rectangle {
+                                        width: 2
+                                        height: 200
+                                        color: "#dee2e6"
+                                    }
+
+                                    // 导入数据
+                                    Column {
+                                        width: (parent.width - 40) / 2
+
+                                        Rectangle {
+                                            width: parent.width
+                                            height: 2
+                                            color: "#007bff"
+                                        }
+
+                                        Label {
+                                            text: qsTr("导入数据")
+                                            font.bold: true
+                                            font.pixelSize: 12
+                                            color: "#007bff"
+                                        }
+
+                                        Label {
+                                            text: qsTr("标题: %1").arg(modelData.importTitle || "")
                                             wrapMode: Text.WordWrap
                                             width: parent.width
+                                            font.pixelSize: 11
                                         }
+
+                                        Label {
+                                            text: qsTr("描述: %1").arg(modelData.importDescription || "")
+                                            wrapMode: Text.WordWrap
+                                            width: parent.width
+                                            font.pixelSize: 11
+                                            maximumLineCount: 2
+                                            elide: Text.ElideRight
+                                        }
+
+                                        Row {
+                                            width: parent.width
+                                            spacing: 10
+
+                                            Label {
+                                                text: qsTr("分类: %1").arg(modelData.importCategory || "")
+                                                font.pixelSize: 10
+                                            }
+
+                                            Label {
+                                                text: qsTr("状态: %1").arg(modelData.importStatus || "")
+                                                font.pixelSize: 10
+                                            }
+                                        }
+
+                                        Label {
+                                            text: qsTr("更新时间: %1").arg(modelData.importUpdatedAt ? modelData.importUpdatedAt.toLocaleString() : "")
+                                            font.pixelSize: 9
+                                            color: "#6c757d"
+                                        }
+                                    }
+                                }
+
+                                // 处理方式选择
+                                Column {
+                                    width: parent.width
+                                    spacing: 5
+
+                                    Label {
+                                        text: qsTr("处理方式:")
+                                        font.bold: true
+                                        font.pixelSize: 12
+                                    }
+
+                                    Row {
+                                        width: parent.width
+                                        spacing: 15
+
+                                        RadioButton {
+                                            id: skipRadio
+                                            text: qsTr("跳过")
+                                            checked: true
+                                            font.pixelSize: 11
+                                            onCheckedChanged: {
+                                                if (checked) {
+                                                    conflictResolutionDialog.conflictResolutions[modelData.id] = "skip";
+                                                }
+                                            }
+                                        }
+
+                                        RadioButton {
+                                            id: overwriteRadio
+                                            text: qsTr("覆盖")
+                                            font.pixelSize: 11
+                                            onCheckedChanged: {
+                                                if (checked) {
+                                                    conflictResolutionDialog.conflictResolutions[modelData.id] = "overwrite";
+                                                }
+                                            }
+                                        }
+
+                                        RadioButton {
+                                            id: mergeRadio
+                                            text: qsTr("智能合并")
+                                            font.pixelSize: 11
+                                            onCheckedChanged: {
+                                                if (checked) {
+                                                    conflictResolutionDialog.conflictResolutions[modelData.id] = "merge";
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Label {
+                                        text: {
+                                            if (skipRadio.checked)
+                                                return qsTr("保留现有数据，不导入此项目");
+                                            if (overwriteRadio.checked)
+                                                return qsTr("用导入的数据完全替换现有数据");
+                                            if (mergeRadio.checked)
+                                                return qsTr("保留更新时间较新的版本");
+                                            return "";
+                                        }
+                                        font.pixelSize: 10
+                                        color: "#6c757d"
+                                        wrapMode: Text.WordWrap
+                                        width: parent.width
                                     }
                                 }
                             }
                         }
                     }
                 }
+            }
 
             // 批量操作按钮
             Row {
@@ -1109,25 +1113,6 @@ Page {
             }
         }
 
-        // 登录提示对话框
-        BaseDialog {
-            id: loginRequiredDialog
-            dialogTitle: qsTr("需要登录")
-            dialogWidth: 300
-            dialogHeight: 150
-            showStandardButtons: true
-            isDarkMode: mainPage.isDarkMode
-
-            Label {
-                text: qsTr("开启自动同步功能需要先登录账户。\n请先登录后再开启自动同步。")
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.WordWrap
-                color: theme.textColor
-                font.pixelSize: 14
-            }
-        }
-
         // 清空配置确认对话框
         BaseDialog {
             id: clearConfigDialog
@@ -1161,7 +1146,7 @@ Page {
             dialogHeight: 150
             showStandardButtons: true
             isDarkMode: mainPage.isDarkMode
-            
+
             Label {
                 text: qsTr("存储类型已成功更改！")
                 Layout.fillWidth: true
@@ -1178,7 +1163,7 @@ Page {
             dialogHeight: 150
             showStandardButtons: true
             isDarkMode: mainPage.isDarkMode
-            
+
             Label {
                 text: qsTr("更改存储类型时发生错误，请重试。")
                 Layout.fillWidth: true
@@ -1195,7 +1180,7 @@ Page {
             dialogHeight: 150
             showStandardButtons: true
             isDarkMode: mainPage.isDarkMode
-            
+
             Label {
                 text: qsTr("配置文件路径已成功更改！")
                 Layout.fillWidth: true
@@ -1212,7 +1197,7 @@ Page {
             dialogHeight: 150
             showStandardButtons: true
             isDarkMode: mainPage.isDarkMode
-            
+
             Label {
                 text: qsTr("更改配置文件路径时发生错误，请检查路径是否有效。")
                 Layout.fillWidth: true
@@ -1228,8 +1213,8 @@ Page {
             dialogWidth: 350
             dialogHeight: 150
             showStandardButtons: true
-            isDarkMode: mainPage.isDarkMode
-            
+            isDarkMode: settingPage.isDarkMode
+
             Label {
                 text: qsTr("配置文件路径已重置为选定的默认位置！")
                 Layout.fillWidth: true
@@ -1245,8 +1230,8 @@ Page {
             dialogWidth: 300
             dialogHeight: 150
             showStandardButtons: true
-            isDarkMode: mainPage.isDarkMode
-            
+            isDarkMode: settingPage.isDarkMode
+
             Label {
                 text: qsTr("重置配置文件路径时发生错误。")
                 Layout.fillWidth: true
@@ -1262,8 +1247,8 @@ Page {
             dialogWidth: 300
             dialogHeight: 150
             showStandardButtons: true
-            isDarkMode: mainPage.isDarkMode
-            
+            isDarkMode: settingPage.isDarkMode
+
             Label {
                 text: qsTr("所有配置已清空！")
                 Layout.fillWidth: true
@@ -1279,8 +1264,8 @@ Page {
             dialogWidth: 350
             dialogHeight: 150
             showStandardButtons: true
-            isDarkMode: mainPage.isDarkMode
-            
+            isDarkMode: settingPage.isDarkMode
+
             Label {
                 text: qsTr("无法打开配置文件目录。")
                 Layout.fillWidth: true
