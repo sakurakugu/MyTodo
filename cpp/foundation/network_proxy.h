@@ -5,7 +5,8 @@
  * 该文件定义了NetworkProxy类，用于管理应用程序的网络代理配置。
  *
  * @author Sakurakugu
- * @date 2025
+ * @date 2025-08-22 23:04:19(UTC+8) 周五
+ * @version 2025-08-22 23:04:19(UTC+8) 周五
  */
 
 #pragma once

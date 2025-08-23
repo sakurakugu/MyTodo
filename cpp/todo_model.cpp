@@ -1,3 +1,12 @@
+/**
+ * @brief 构造函数
+ *
+ * 初始化TodoModel对象，设置父对象为parent。
+ *
+ * @param parent 父对象指针，默认值为nullptr。
+ * @date 2025-08-16 20:05:55(UTC+8) 周六
+ * @version 2025-08-22 23:04:19(UTC+8) 周五
+ */
 #include "todo_model.h"
 
 #include <QDateTime>

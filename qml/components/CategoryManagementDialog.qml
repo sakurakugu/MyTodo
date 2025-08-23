@@ -1,3 +1,14 @@
+/**
+ * @file CategoryManagementDialog.qml
+ * @brief 类别管理对话框组件
+ *
+ * 提供类别管理功能，包括添加、删除、编辑类别。
+ * 对话框支持深色模式和浅色模式主题。
+ *
+ * @author Sakurakugu
+ * @date 2025-08-22 18:51:19(UTC+8) 周五
+ * @version 2025-08-22 18:51:19(UTC+8) 周五
+ */
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts

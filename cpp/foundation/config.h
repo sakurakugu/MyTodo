@@ -5,7 +5,8 @@
  * 该文件定义了Config类，用于管理应用程序的本地配置文件。
  *
  * @author Sakurakugu
- * @date 2025
+ * @date 2025-08-16 20:05:55(UTC+8) 周六
+ * @version 2025-08-22 16:24:28(UTC+8) 周五
  */
 #pragma once
 

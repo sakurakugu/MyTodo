@@ -6,7 +6,8 @@
  * 用户可以在该页面中调整应用程序的主题、窗口行为、自动启动等设置。
  *
  * @author Sakurakugu
- * @date 2025
+ * @date 2025-08-16 20:05:55(UTC+8) 周六
+ * @version 2025-08-22 23:04:19(UTC+8) 周五
  */
 
 import QtQuick
@@ -615,54 +616,87 @@ Page {
         }
 
         // 导出成功对话框
-        Dialog {
+        BaseDialog {
             id: exportSuccessDialog
-            title: qsTr("导出成功")
-            standardButtons: Dialog.Ok
+            dialogTitle: qsTr("导出成功")
+            dialogWidth: 300
+            dialogHeight: 150
+            showStandardButtons: true
+            isDarkMode: mainPage.isDarkMode
+            
             Label {
                 text: qsTr("待办事项已成功导出！")
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                color: theme.textColor
+                font.pixelSize: 14
             }
         }
 
         // 导出失败对话框
-        Dialog {
+        BaseDialog {
             id: exportErrorDialog
-            title: qsTr("导出失败")
-            standardButtons: Dialog.Ok
+            dialogTitle: qsTr("导出失败")
+            dialogWidth: 400
+            dialogHeight: 180
+            showStandardButtons: true
+            isDarkMode: mainPage.isDarkMode
+            
             Label {
                 text: qsTr("导出待办事项时发生错误，请检查文件路径和权限。")
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                color: theme.textColor
+                font.pixelSize: 14
+                wrapMode: Text.WordWrap
             }
         }
 
         // 导入成功对话框
-        Dialog {
+        BaseDialog {
             id: importSuccessDialog
-            title: qsTr("导入成功")
-            standardButtons: Dialog.Ok
+            dialogTitle: qsTr("导入成功")
+            dialogWidth: 300
+            dialogHeight: 150
+            showStandardButtons: true
+            isDarkMode: mainPage.isDarkMode
+            
             Label {
                 text: qsTr("待办事项已成功导入！")
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                color: theme.textColor
+                font.pixelSize: 14
             }
         }
 
         // 导入失败对话框
-        Dialog {
+        BaseDialog {
             id: importErrorDialog
-            title: qsTr("导入失败")
-            standardButtons: Dialog.Ok
+            dialogTitle: qsTr("导入失败")
+            dialogWidth: 400
+            dialogHeight: 180
+            showStandardButtons: true
+            isDarkMode: mainPage.isDarkMode
+            
             Label {
                 text: qsTr("导入待办事项时发生错误，请检查文件格式和内容。")
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                color: theme.textColor
+                font.pixelSize: 14
+                wrapMode: Text.WordWrap
             }
         }
 
         // 冲突处理对话框
-        Dialog {
+        BaseDialog {
             id: conflictResolutionDialog
-            title: qsTr("检测到冲突")
-            modal: true
-            width: Math.min(800, parent.width * 0.9)
-            height: Math.min(600, parent.height * 0.8)
-            anchors.centerIn: parent
-            standardButtons: Dialog.NoButton
+            dialogTitle: qsTr("检测到冲突")
+            dialogWidth: Math.min(800, parent.width * 0.9)
+            dialogHeight: Math.min(600, parent.height * 0.8)
+            showStandardButtons: false
+            isDarkMode: mainPage.isDarkMode
 
             property var conflicts: []
             property string selectedFilePath: ""
@@ -676,26 +710,24 @@ Page {
                 }
             }
 
-            contentItem: Column {
-                spacing: 15
-                anchors.fill: parent
-                anchors.margins: 10
+            Label {
+                text: qsTr("导入文件中发现 %1 个待办事项与现有数据存在ID冲突，请为每个冲突项选择处理方式：").arg(conflictResolutionDialog.conflicts.length)
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                font.bold: true
+                color: theme.textColor
+                font.pixelSize: 14
+            }
 
-                Label {
-                    text: qsTr("导入文件中发现 %1 个待办事项与现有数据存在ID冲突，请为每个冲突项选择处理方式：").arg(conflictResolutionDialog.conflicts.length)
-                    wrapMode: Text.WordWrap
+            ScrollView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.preferredHeight: 400
+                clip: true
+
+                Column {
                     width: parent.width
-                    font.bold: true
-                }
-
-                ScrollView {
-                    width: parent.width
-                    height: parent.height - 100
-                    clip: true
-
-                    Column {
-                        width: parent.width
-                        spacing: 10
+                    spacing: 10
 
                         Repeater {
                             model: conflictResolutionDialog.conflicts
@@ -917,76 +949,121 @@ Page {
                     }
                 }
 
-                // 批量操作按钮
-                Row {
-                    width: parent.width
-                    spacing: 10
+            // 批量操作按钮
+            Row {
+                Layout.fillWidth: true
+                spacing: 10
+                Layout.topMargin: 10
 
-                    Label {
-                        text: qsTr("批量操作:")
-                        font.bold: true
+                Label {
+                    text: qsTr("批量操作:")
+                    font.bold: true
+                    color: theme.textColor
+                }
+
+                Button {
+                    text: qsTr("全部跳过")
+                    font.pixelSize: 10
+                    background: Rectangle {
+                        color: parent.pressed ? (theme.isDarkMode ? "#34495e" : "#bdc3c7") : (parent.hovered ? (theme.isDarkMode ? "#2c3e50" : "#ecf0f1") : (theme.isDarkMode ? "#2c3e50" : "white"))
+                        border.color: theme.isDarkMode ? "#34495e" : "#bdc3c7"
+                        border.width: 1
+                        radius: 4
                     }
-
-                    Button {
-                        text: qsTr("全部跳过")
-                        font.pixelSize: 10
-                        onClicked: {
-                            for (var i = 0; i < conflictResolutionDialog.conflicts.length; i++) {
-                                conflictResolutionDialog.conflictResolutions[conflictResolutionDialog.conflicts[i].id] = "skip";
-                            }
-                            // 刷新界面
-                            conflictResolutionDialog.close();
-                            conflictResolutionDialog.open();
+                    onClicked: {
+                        for (var i = 0; i < conflictResolutionDialog.conflicts.length; i++) {
+                            conflictResolutionDialog.conflictResolutions[conflictResolutionDialog.conflicts[i].id] = "skip";
                         }
-                    }
-
-                    Button {
-                        text: qsTr("全部覆盖")
-                        font.pixelSize: 10
-                        onClicked: {
-                            for (var i = 0; i < conflictResolutionDialog.conflicts.length; i++) {
-                                conflictResolutionDialog.conflictResolutions[conflictResolutionDialog.conflicts[i].id] = "overwrite";
-                            }
-                            // 刷新界面
-                            conflictResolutionDialog.close();
-                            conflictResolutionDialog.open();
-                        }
-                    }
-
-                    Button {
-                        text: qsTr("全部智能合并")
-                        font.pixelSize: 10
-                        onClicked: {
-                            for (var i = 0; i < conflictResolutionDialog.conflicts.length; i++) {
-                                conflictResolutionDialog.conflictResolutions[conflictResolutionDialog.conflicts[i].id] = "merge";
-                            }
-                            // 刷新界面
-                            conflictResolutionDialog.close();
-                            conflictResolutionDialog.open();
-                        }
+                        // 刷新界面
+                        conflictResolutionDialog.close();
+                        conflictResolutionDialog.open();
                     }
                 }
 
-                Row {
-                    anchors.right: parent.right
-                    spacing: 10
-
-                    Button {
-                        text: qsTr("取消")
-                        onClicked: conflictResolutionDialog.reject()
+                Button {
+                    text: qsTr("全部覆盖")
+                    font.pixelSize: 10
+                    background: Rectangle {
+                        color: parent.pressed ? (theme.isDarkMode ? "#34495e" : "#bdc3c7") : (parent.hovered ? (theme.isDarkMode ? "#2c3e50" : "#ecf0f1") : (theme.isDarkMode ? "#2c3e50" : "white"))
+                        border.color: theme.isDarkMode ? "#34495e" : "#bdc3c7"
+                        border.width: 1
+                        radius: 4
                     }
+                    onClicked: {
+                        for (var i = 0; i < conflictResolutionDialog.conflicts.length; i++) {
+                            conflictResolutionDialog.conflictResolutions[conflictResolutionDialog.conflicts[i].id] = "overwrite";
+                        }
+                        // 刷新界面
+                        conflictResolutionDialog.close();
+                        conflictResolutionDialog.open();
+                    }
+                }
 
-                    Button {
-                        text: qsTr("确定")
-                        highlighted: true
-                        onClicked: {
-                            if (todoModel.importTodosWithIndividualResolution(conflictResolutionDialog.selectedFilePath, conflictResolutionDialog.conflictResolutions)) {
-                                conflictResolutionDialog.accept();
-                                importSuccessDialog.open();
-                            } else {
-                                conflictResolutionDialog.reject();
-                                importErrorDialog.open();
-                            }
+                Button {
+                    text: qsTr("全部智能合并")
+                    font.pixelSize: 10
+                    background: Rectangle {
+                        color: parent.pressed ? (theme.isDarkMode ? "#34495e" : "#bdc3c7") : (parent.hovered ? (theme.isDarkMode ? "#2c3e50" : "#ecf0f1") : (theme.isDarkMode ? "#2c3e50" : "white"))
+                        border.color: theme.isDarkMode ? "#34495e" : "#bdc3c7"
+                        border.width: 1
+                        radius: 4
+                    }
+                    onClicked: {
+                        for (var i = 0; i < conflictResolutionDialog.conflicts.length; i++) {
+                            conflictResolutionDialog.conflictResolutions[conflictResolutionDialog.conflicts[i].id] = "merge";
+                        }
+                        // 刷新界面
+                        conflictResolutionDialog.close();
+                        conflictResolutionDialog.open();
+                    }
+                }
+            }
+
+            Row {
+                Layout.alignment: Qt.AlignRight
+                spacing: 10
+                Layout.topMargin: 10
+
+                Button {
+                    text: qsTr("取消")
+                    background: Rectangle {
+                        color: parent.pressed ? (theme.isDarkMode ? "#34495e" : "#bdc3c7") : (parent.hovered ? (theme.isDarkMode ? "#2c3e50" : "#ecf0f1") : (theme.isDarkMode ? "#2c3e50" : "white"))
+                        border.color: theme.isDarkMode ? "#34495e" : "#bdc3c7"
+                        border.width: 1
+                        radius: 4
+                    }
+                    contentItem: Text {
+                        text: parent.text
+                        color: theme.textColor
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        font.pixelSize: 14
+                    }
+                    onClicked: conflictResolutionDialog.reject()
+                }
+
+                Button {
+                    text: qsTr("确定")
+                    background: Rectangle {
+                        color: parent.pressed ? "#2980b9" : (parent.hovered ? "#3498db" : "#3498db")
+                        border.color: "#2980b9"
+                        border.width: 1
+                        radius: 4
+                    }
+                    contentItem: Text {
+                        text: parent.text
+                        color: "white"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        font.pixelSize: 14
+                    }
+                    onClicked: {
+                        if (todoModel.importTodosWithIndividualResolution(conflictResolutionDialog.selectedFilePath, conflictResolutionDialog.conflictResolutions)) {
+                            conflictResolutionDialog.accept();
+                            importSuccessDialog.open();
+                        } else {
+                            conflictResolutionDialog.reject();
+                            importErrorDialog.open();
                         }
                     }
                 }
@@ -1033,42 +1110,41 @@ Page {
         }
 
         // 登录提示对话框
-        Dialog {
+        BaseDialog {
             id: loginRequiredDialog
-            title: qsTr("需要登录")
-            modal: true
-            anchors.centerIn: parent
-            width: 300
-            height: 150
-            standardButtons: Dialog.Ok
-
-            background: Rectangle {
-                color: settingPage.isDarkMode ? "#2c3e50" : "white"
-                border.color: settingPage.isDarkMode ? "#34495e" : "#bdc3c7"
-                border.width: 1
-                radius: 8
-            }
+            dialogTitle: qsTr("需要登录")
+            dialogWidth: 300
+            dialogHeight: 150
+            showStandardButtons: true
+            isDarkMode: mainPage.isDarkMode
 
             Label {
                 text: qsTr("开启自动同步功能需要先登录账户。\n请先登录后再开启自动同步。")
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
-                color: settingPage.isDarkMode ? "#ecf0f1" : "black"
-                anchors.centerIn: parent
+                color: theme.textColor
+                font.pixelSize: 14
             }
         }
 
         // 清空配置确认对话框
-        Dialog {
+        BaseDialog {
             id: clearConfigDialog
-            title: qsTr("清空所有配置")
-            modal: true
-            anchors.centerIn: parent
+            dialogTitle: qsTr("清空所有配置")
+            dialogWidth: 350
+            dialogHeight: 200
+            showStandardButtons: true
+            isDarkMode: mainPage.isDarkMode
             standardButtons: Dialog.Yes | Dialog.No
 
             Label {
                 text: qsTr("警告：此操作将清空所有配置设置！\n\n确定要继续吗？此操作无法撤销。")
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
                 color: "#e74c3c"
+                font.pixelSize: 14
             }
 
             onAccepted: {
@@ -1078,75 +1154,139 @@ Page {
         }
 
         // 成功/错误提示对话框
-        Dialog {
+        BaseDialog {
             id: storageChangeSuccessDialog
-            title: qsTr("操作成功")
-            standardButtons: Dialog.Ok
+            dialogTitle: qsTr("操作成功")
+            dialogWidth: 300
+            dialogHeight: 150
+            showStandardButtons: true
+            isDarkMode: mainPage.isDarkMode
+            
             Label {
                 text: qsTr("存储类型已成功更改！")
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                color: theme.textColor
+                font.pixelSize: 14
             }
         }
 
-        Dialog {
+        BaseDialog {
             id: storageChangeErrorDialog
-            title: qsTr("操作失败")
-            standardButtons: Dialog.Ok
+            dialogTitle: qsTr("操作失败")
+            dialogWidth: 300
+            dialogHeight: 150
+            showStandardButtons: true
+            isDarkMode: mainPage.isDarkMode
+            
             Label {
                 text: qsTr("更改存储类型时发生错误，请重试。")
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                color: theme.textColor
+                font.pixelSize: 14
             }
         }
 
-        Dialog {
+        BaseDialog {
             id: pathChangeSuccessDialog
-            title: qsTr("操作成功")
-            standardButtons: Dialog.Ok
+            dialogTitle: qsTr("操作成功")
+            dialogWidth: 300
+            dialogHeight: 150
+            showStandardButtons: true
+            isDarkMode: mainPage.isDarkMode
+            
             Label {
                 text: qsTr("配置文件路径已成功更改！")
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                color: theme.textColor
+                font.pixelSize: 14
             }
         }
 
-        Dialog {
+        BaseDialog {
             id: pathChangeErrorDialog
-            title: qsTr("操作失败")
-            standardButtons: Dialog.Ok
+            dialogTitle: qsTr("操作失败")
+            dialogWidth: 350
+            dialogHeight: 150
+            showStandardButtons: true
+            isDarkMode: mainPage.isDarkMode
+            
             Label {
                 text: qsTr("更改配置文件路径时发生错误，请检查路径是否有效。")
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                color: theme.textColor
+                font.pixelSize: 14
             }
         }
 
-        Dialog {
+        BaseDialog {
             id: pathResetSuccessDialog
-            title: qsTr("操作成功")
-            standardButtons: Dialog.Ok
+            dialogTitle: qsTr("操作成功")
+            dialogWidth: 350
+            dialogHeight: 150
+            showStandardButtons: true
+            isDarkMode: mainPage.isDarkMode
+            
             Label {
                 text: qsTr("配置文件路径已重置为选定的默认位置！")
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                color: theme.textColor
+                font.pixelSize: 14
             }
         }
 
-        Dialog {
+        BaseDialog {
             id: pathResetErrorDialog
-            title: qsTr("操作失败")
-            standardButtons: Dialog.Ok
+            dialogTitle: qsTr("操作失败")
+            dialogWidth: 300
+            dialogHeight: 150
+            showStandardButtons: true
+            isDarkMode: mainPage.isDarkMode
+            
             Label {
                 text: qsTr("重置配置文件路径时发生错误。")
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                color: theme.textColor
+                font.pixelSize: 14
             }
         }
 
-        Dialog {
+        BaseDialog {
             id: clearConfigSuccessDialog
-            title: qsTr("操作成功")
-            standardButtons: Dialog.Ok
+            dialogTitle: qsTr("操作成功")
+            dialogWidth: 300
+            dialogHeight: 150
+            showStandardButtons: true
+            isDarkMode: mainPage.isDarkMode
+            
             Label {
                 text: qsTr("所有配置已清空！")
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                color: theme.textColor
+                font.pixelSize: 14
             }
         }
 
-        Dialog {
+        BaseDialog {
             id: openDirErrorDialog
-            title: qsTr("操作失败")
-            standardButtons: Dialog.Ok
+            dialogTitle: qsTr("操作失败")
+            dialogWidth: 350
+            dialogHeight: 150
+            showStandardButtons: true
+            isDarkMode: mainPage.isDarkMode
+            
             Label {
                 text: qsTr("无法打开配置文件目录。")
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+                color: theme.textColor
+                font.pixelSize: 14
             }
         }
     }

@@ -6,7 +6,8 @@
  * 它是应用程序的主要界面，用户可以在其中查看和管理待办事项。
  *
  * @author Sakurakugu
- * @date 2025
+ * @date 2025-08-16 20:05:55(UTC+8) 周六
+ * @version 2025-08-22 18:51:19(UTC+8) 周五
  */
 
 import QtQuick

@@ -9,7 +9,8 @@
  * - 扁平化设计风格
  * 
  * @author Sakurakugu
- * @date 2025
+ * @date 2025-08-17 07:17:29(UTC+8) 周日
+ * @version 2025-08-21 21:31:41(UTC+8) 周四
  */
 
 import QtQuick

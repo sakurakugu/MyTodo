@@ -5,7 +5,8 @@
  * 该文件定义了Logger类，用于记录应用程序的运行时日志信息。
  *
  * @author Sakurakugu
- * @date 2025
+ * @date 2025-08-19 05:57:09(UTC+8) 周二
+ * @version 2025-08-22 16:24:28(UTC+8) 周五
  */
 
 #pragma once

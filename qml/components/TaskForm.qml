@@ -10,7 +10,8 @@
  * - 表单验证和提交
  *
  * @author Sakurakugu
- * @date 2025
+ * @date 2025-08-17 07:17:29(UTC+8) 周日
+ * @version 2025-08-22 18:51:19(UTC+8) 周五
  */
 
 import QtQuick

@@ -5,7 +5,8 @@
  * 该文件定义了NetworkRequest类，用于管理应用程序的网络请求。
  *
  * @author Sakurakugu
- * @date 2025
+ * @date 2025-08-17 07:17:29(UTC+8) 周日
+ * @version 2025-08-23 15:15:19(UTC+8) 周六
  */
 
 #pragma once

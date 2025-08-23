@@ -1,3 +1,10 @@
+/**
+ * @file config.cpp
+ * @brief 配置类实现
+ * @author sakurakugu
+ * @date 2025-08-17 07:17:29(UTC+8) 周日
+ * @version 2025-08-22 16:24:28(UTC+8) 周五
+ */
 #include "config.h"
 #include "default_value.h"
 

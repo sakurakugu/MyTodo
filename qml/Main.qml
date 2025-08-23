@@ -10,7 +10,8 @@
  * - 页面导航和状态管理
  *
  * @author Sakurakugu
- * @date 2025
+ * @date 2025-08-16 20:05:55(UTC+8) 周六
+ * @version 2025-08-23 15:15:19(UTC+8) 周六
  */
 
 import QtQuick
@@ -719,27 +720,20 @@ Window {
     }
 
     // 登录提示对话框
-    Dialog {
+    BaseDialog {
         id: loginRequiredDialog
-        title: qsTr("需要登录")
-        modal: true
-        anchors.centerIn: parent
-        width: 300
-        height: 150
-        standardButtons: Dialog.Ok
-
-        background: Rectangle {
-            color: theme.backgroundColor
-            border.color: theme.borderColor
-            border.width: 1
-            radius: 8
-        }
+        dialogTitle: qsTr("需要登录")
+        dialogWidth: 300
+        dialogHeight: 150
+        showStandardButtons: true
+        isDarkMode: root.isDarkMode
 
         Label {
             text: qsTr("开启自动同步功能需要先登录账户。\n请先登录后再开启自动同步。")
             wrapMode: Text.WordWrap
             color: theme.textColor
-            anchors.centerIn: parent
+            Layout.fillWidth: true
+            horizontalAlignment: Text.AlignHCenter
         }
     }
 }

@@ -6,20 +6,21 @@
  * 它包含一个任务表单组件，用于输入和编辑待办事项的标题、描述、截止日期等信息。
  *
  * @author Sakurakugu
- * @date 2025
+ * @date 2025-08-19 07:39:54(UTC+8) 周二
+ * @version 2025-08-21 21:31:41(UTC+8) 周四
  */
  
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 
-Dialog {
+BaseDialog {
     id: todoDetailsDialog
-    title: qsTr("待办详情")
+    dialogTitle: qsTr("待办详情")
+    dialogWidth: 400
+    dialogHeight: Math.min(parent ? parent.height * 0.8 : 500, 500)
+    showStandardButtons: true
     standardButtons: Dialog.Ok | Dialog.Cancel
-    width: 400
-    height: Math.min(parent ? parent.height * 0.8 : 500, 500)
-    modal: true
-    anchors.centerIn: parent
 
     property bool isDarkMode: false
     property var currentTodo: null
@@ -41,15 +42,10 @@ Dialog {
         open();
     }
 
-    background: Rectangle {
-        color: theme.backgroundColor
-        border.color: theme.borderColor
-        border.width: 1
-        radius: 8
-    }
-
     ScrollView {
-        anchors.fill: parent
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        Layout.preferredHeight: 400
         clip: true
         
         TaskForm {

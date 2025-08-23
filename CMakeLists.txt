@@ -1,5 +1,9 @@
 # MyTodo 项目构建配置
 # 现代化的 CMake 配置，支持 Qt6 和 C++23
+#
+# 作者： sakurakugu
+# 首次创建日期： 2025-08-16 20:05:55(UTC+8) 周六
+# 最后更新日期： 2025-08-22 23:04:19(UTC+8) 周五
 
 cmake_minimum_required(VERSION 3.16)
 
@@ -134,6 +138,7 @@ set(QML_COMPONENT_FILES
     qml/components/LoginStatusDialogs.qml           # 登录状态相关对话框
     qml/components/TodoDetailsDialog.qml            # 待办详情对话框
     qml/components/CategoryManagementDialog.qml     # 分类管理对话框
+    qml/components/BaseDialog.qml                   # 基础对话框
 )
 
 # 合并所有 QML 文件
@@ -144,15 +149,15 @@ set(QML_FILES
 
 # 国际化翻译的语言列表
 set(QT_I18N_TRANSLATED_LANGUAGES 
-en
-zh_CN
-ja
+    en
+    zh_CN
+    ja
 )
 # 国际化翻译文件的路径
 set(I18N_FILES
-i18n/MyTodo_en.ts
-i18n/MyTodo_zh_CN.ts
-i18n/MyTodo_ja.ts
+    i18n/MyTodo_en.ts
+    i18n/MyTodo_zh_CN.ts
+    i18n/MyTodo_ja.ts
 )
 # 然后在主目录输入：`cmake --build build --target update_translations` 以更新翻译文件
 

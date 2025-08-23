@@ -1,3 +1,12 @@
+/**
+ * @brief 主窗口类
+ *
+ * 该类负责管理应用程序的主窗口，包括窗口属性、显示状态和系统主题监听。
+ *
+ * @author Sakurakugu
+ * @date 2025-08-16 20:05:55(UTC+8) 周六
+ * @version 2025-08-22 18:34:35(UTC+8) 周五
+ */
 #include "main_window.h"
 #include <QCoreApplication>
 #include <QDir>

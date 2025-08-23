@@ -1,3 +1,10 @@
+/**
+ * @file settings.json
+ * @brief 编辑器设置文件
+ * @author Sakurakugu
+ * @date 2025-08-16 20:05:55(UTC+8) 周六
+ * @version 2025-08-22 14:55:36(UTC+8) 周五
+ */
 {
     "files.associations": {
         "*.dbclient-js": "javascript",

@@ -6,7 +6,8 @@
  * 如成功、错误、警告、信息等，并支持自定义图标和按钮。
  *
  * @author Sakurakugu
- * @date 2025
+ * @date 2025-08-19 07:39:54(UTC+8) 周二
+ * @version 2025-08-21 21:31:41(UTC+8) 周四
  */
 
 import QtQuick
@@ -19,7 +20,7 @@ import QtQuick.Layouts
  * 提供标准的消息提示界面，支持多种消息类型和自定义样式。
  * 可用于显示成功、错误、警告等各种类型的消息。
  */
-Dialog {
+BaseDialog {
     id: messageDialog
     
     // 消息类型枚举
@@ -34,25 +35,16 @@ Dialog {
     property string message: ""                           ///< 消息内容
     property int messageType: MessageDialog.MessageType.Info  ///< 消息类型
     property string buttonText: qsTr("确定")              ///< 按钮文本
-    property bool isDarkMode: false                       ///< 深色模式开关
     property bool autoClose: false                        ///< 是否自动关闭
     property int autoCloseDelay: 3000                     ///< 自动关闭延迟（毫秒）
     
-    // 主题管理器
-    ThemeManager {
-        id: theme
-        isDarkMode: messageDialog.isDarkMode
-    }
-    
-    // 对话框基本设置
-    modal: true
-    anchors.centerIn: parent
-    width: Math.max(300, contentLayout.implicitWidth + 40)
-    height: Math.max(150, contentLayout.implicitHeight + 80)
-    standardButtons: Dialog.NoButton
+    // 对话框设置
+    dialogWidth: Math.max(300, messageLabel.implicitWidth + iconText.implicitWidth + 100)
+    dialogHeight: Math.max(150, contentLayout.implicitHeight + 100)
+    showStandardButtons: false
     
     // 根据消息类型设置标题
-    title: {
+    dialogTitle: {
         switch (messageType) {
             case MessageDialog.MessageType.Success:
                 return qsTr("成功");
@@ -65,53 +57,41 @@ Dialog {
         }
     }
     
-    // 背景样式
-    background: Rectangle {
-        color: theme.backgroundColor
-        border.color: theme.borderColor
-        border.width: 1
-        radius: 8
-    }
-    
-    // 内容区域
-    contentItem: ColumnLayout {
-        id: contentLayout
-        spacing: 20
-        anchors.margins: 20
+    // 图标和消息区域
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: 15
         
-        // 图标和消息区域
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 15
-            
-            // 消息类型图标
-            Text {
-                text: {
-                    switch (messageDialog.messageType) {
-                        case MessageDialog.MessageType.Success:
-                            return "✅";
-                        case MessageDialog.MessageType.Warning:
-                            return "⚠️";
-                        case MessageDialog.MessageType.Error:
-                            return "❌";
-                        default:
-                            return "ℹ️";
-                    }
+        // 消息类型图标
+        Text {
+            id: iconText
+            text: {
+                switch (messageDialog.messageType) {
+                    case MessageDialog.MessageType.Success:
+                        return "✅";
+                    case MessageDialog.MessageType.Warning:
+                        return "⚠️";
+                    case MessageDialog.MessageType.Error:
+                        return "❌";
+                    default:
+                        return "ℹ️";
                 }
-                font.pixelSize: 24
-                Layout.alignment: Qt.AlignTop
             }
-            
-            // 消息文本
-            Label {
-                text: messageDialog.message
-                color: theme.textColor
-                wrapMode: Text.WordWrap
-                Layout.fillWidth: true
-                Layout.preferredWidth: 220
-                verticalAlignment: Text.AlignVCenter
-            }
+            font.pixelSize: 24
+            Layout.alignment: Qt.AlignTop
         }
+        
+        // 消息文本
+        Label {
+            id: messageLabel
+            text: messageDialog.message
+            color: theme.textColor
+            wrapMode: Text.WordWrap
+            Layout.fillWidth: true
+            Layout.preferredWidth: 220
+            verticalAlignment: Text.AlignVCenter
+        }
+    }
         
         // 按钮区域
         RowLayout {
@@ -123,8 +103,20 @@ Dialog {
                 
                 background: Rectangle {
                     color: {
-                        if (parent.pressed) return theme.buttonPressedColor;
-                        if (parent.hovered) return theme.buttonHoverColor;
+                        if (parent.pressed) return theme.pressedColor;
+                        if (parent.hovered) {
+                            // 根据消息类型设置悬停颜色
+                            switch (messageDialog.messageType) {
+                                case MessageDialog.MessageType.Success:
+                                    return "#66BB6A";  // 浅绿色
+                                case MessageDialog.MessageType.Warning:
+                                    return "#FFB74D";  // 浅橙色
+                                case MessageDialog.MessageType.Error:
+                                    return "#EF5350";  // 浅红色
+                                default:
+                                    return theme.primaryColorLight;
+                            }
+                        }
                         
                         // 根据消息类型设置按钮颜色
                         switch (messageDialog.messageType) {
@@ -148,10 +140,11 @@ Dialog {
                     color: "white"
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
+                    font.pixelSize: 14
                 }
             }
         }
-    }
+    
     
     // 自动关闭定时器
     Timer {

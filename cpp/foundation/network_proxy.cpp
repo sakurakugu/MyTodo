@@ -1,3 +1,10 @@
+/**
+ * @file network_proxy.cpp
+ * @brief 网络代理类实现
+ * @author Sakurakugu
+ * @date 2025-08-22 23:04:19(UTC+8) 周五
+ * @version 2025-08-22 23:04:19(UTC+8) 周五
+ */
 #include "network_proxy.h"
 #include "config.h"
 

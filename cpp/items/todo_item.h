@@ -5,7 +5,8 @@
  * 该文件定义了TodoItem类，用于表示待办事项的数据模型。
  *
  * @author Sakurakugu
- * @date 2025
+ * @date 2025-08-22 12:06:17(UTC+8) 周五
+ * @version 2025-08-22 14:55:36(UTC+8) 周五
  */
 
 #pragma once

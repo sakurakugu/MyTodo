@@ -7,7 +7,8 @@
  * 并提供了相应的getter和setter方法，支持Qt的属性系统和信号槽机制。
  *
  * @author Sakurakugu
- * @date 2025
+ * @date 2025-08-22 12:06:17(UTC+8) 周五
+ * @version 2025-08-22 14:55:36(UTC+8) 周五
  */
 
 #include "categorie_item.h"

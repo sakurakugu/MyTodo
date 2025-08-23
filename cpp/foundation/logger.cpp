@@ -1,3 +1,10 @@
+/**
+ * @file logger.cpp
+ * @brief 日志记录器实现
+ * @author Sakurakugu
+ * @date 2025-08-19 05:57:09(UTC+8) 周二
+ * @version 2025-08-23 15:15:19(UTC+8) 周六
+ */
 #include "logger.h"
 #include "default_value.h"
 

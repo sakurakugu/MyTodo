@@ -7,7 +7,8 @@
  * 并提供了相应的getter和setter方法，支持Qt的属性系统和信号槽机制。
  *
  * @author Sakurakugu
- * @date 2025
+ * @date 2025-08-16 20:05:55(UTC+8) 周六
+ * @version 2025-08-22 16:24:28(UTC+8) 周五
  */
 
 #include "todo_item.h"

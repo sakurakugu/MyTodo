@@ -1,8 +1,22 @@
+/**
+ * @brief 构造函数
+ *
+ * 初始化Setting对象，设置父对象为parent。
+ *
+ * @param parent 父对象指针，默认值为nullptr。
+ * @date 2025-08-21 21:31:41(UTC+8) 周四
+ * @version 2025-08-22 22:28:54(UTC+8) 周五
+ */
 #include "setting.h"
 
 Setting::Setting(QObject *parent) : QObject(parent), m_logger(Logger::GetInstance()), m_config(Config::GetInstance()) {
 }
 
+/**
+ * @brief 析构函数
+ *
+ * 清理Setting对象，释放资源。
+ */
 Setting::~Setting() {
 }
 

@@ -5,7 +5,8 @@
  * 该文件定义了Setting类，用于管理应用程序的配置信息。
  *
  * @author Sakurakugu
- * @date 2025
+ * @date 2025-08-21 21:31:41(UTC+8) 周四
+ * @version 2025-08-22 22:28:54(UTC+8) 周五
  */
 
 #pragma once

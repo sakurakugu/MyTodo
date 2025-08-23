@@ -1,3 +1,14 @@
+/**
+ * @file MyTodo.qmlproject
+ * @brief MyTodo 项目配置文件
+ *
+ * 该文件用于配置 MyTodo 项目的构建过程，使用 CMake 构建系统。
+ * 它定义了项目的基本信息、C++ 标准、Qt 组件和源文件。
+ *
+ * @author Sakurakugu
+ * @date 2025-08-16 20:05:55(UTC+8) 周六
+ * @version 2025-08-16 20:05:55(UTC+8) 周六
+ */
 /* File 生成于 Qt Creator */
 /* QML项目配置文件 */
 import QmlProject

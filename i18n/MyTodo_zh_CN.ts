@@ -1,3 +1,14 @@
+<!--
+ * @file MyTodo_zh_CN.ts
+ * @brief 中文翻译文件
+ *
+ * 该文件包含了MyTodo应用程序的中文翻译，用于支持多语言功能。
+ *
+ * @author Sakurakugu
+ * @date 2025-08-22 21:14:29(UTC+8) 周五
+ * @version 2025-08-22 21:14:29(UTC+8) 周五
+ */
+-->
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
 <TS version="2.1" language="zh_CN" sourcelanguage="en">

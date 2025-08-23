@@ -6,7 +6,8 @@
  * 登录成功、登录失败、退出登录确认等对话框。
  *
  * @author Sakurakugu
- * @date 2025
+ * @date 2025-08-19 07:39:54(UTC+8) 周二
+ * @version 2025-08-21 21:31:41(UTC+8) 周四
  */
 
 import QtQuick
@@ -42,168 +43,146 @@ Item {
      *
      * 当用户尝试使用需要登录的功能时显示此对话框。
      */
-    Dialog {
+    BaseDialog {
         id: loginRequiredDialog
-        title: qsTr("需要登录")
-        modal: true
-        anchors.centerIn: parent
-        width: 300
-        height: 180
-        standardButtons: Dialog.NoButton
+        dialogTitle: qsTr("需要登录")
+        dialogWidth: 300
+        dialogHeight: 180
+        showStandardButtons: false
+        isDarkMode: loginStatusDialogs.isDarkMode
         
-        background: Rectangle {
-            color: theme.backgroundColor
-            border.color: theme.borderColor
-            border.width: 1
-            radius: 8
+        Label {
+            text: qsTr("开启自动同步功能需要先登录账户。\n请先登录后再开启自动同步。")
+            wrapMode: Text.WordWrap
+            color: theme.textColor
+            Layout.fillWidth: true
+            horizontalAlignment: Text.AlignHCenter
         }
-        
-        contentItem: ColumnLayout {
-            spacing: 20
-            anchors.margins: 20
-            
-            Label {
-                text: qsTr("开启自动同步功能需要先登录账户。\n请先登录后再开启自动同步。")
-                wrapMode: Text.WordWrap
-                color: theme.textColor
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-            }
-            
-            RowLayout {
-                Layout.alignment: Qt.AlignRight
-                spacing: 10
-                
-                Button {
-                    text: qsTr("取消")
-                    onClicked: loginRequiredDialog.close()
-                    
-                    background: Rectangle {
-                        color: parent.pressed ? theme.buttonPressedColor : 
-                               parent.hovered ? theme.buttonHoverColor : 
-                               theme.secondaryBackgroundColor
-                        border.color: theme.borderColor
-                        border.width: 1
-                        radius: 4
-                    }
-                    
-                    contentItem: Text {
-                        text: parent.text
-                        color: theme.textColor
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
-                
-                Button {
-                    text: qsTr("去登录")
-                    onClicked: {
-                        loginRequiredDialog.close();
-                        loginStatusDialogs.loginRequested();
-                    }
-                    
-                    background: Rectangle {
-                        color: parent.pressed ? theme.buttonPressedColor : 
-                               parent.hovered ? theme.buttonHoverColor : 
-                               theme.primaryColor
-                        border.color: theme.borderColor
-                        border.width: 1
-                        radius: 4
-                    }
-                    
-                    contentItem: Text {
-                        text: parent.text
-                        color: "white"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
-            }
-        }
-    }
+         
+         RowLayout {
+             Layout.alignment: Qt.AlignRight
+             spacing: 10
+             
+             Button {
+                 text: qsTr("取消")
+                 onClicked: loginRequiredDialog.close()
+                 
+                 background: Rectangle {
+                     color: parent.pressed ? theme.buttonPressedColor : 
+                            parent.hovered ? theme.buttonHoverColor : 
+                            theme.secondaryBackgroundColor
+                     border.color: theme.borderColor
+                     border.width: 1
+                     radius: 4
+                 }
+                 
+                 contentItem: Text {
+                     text: parent.text
+                     color: theme.textColor
+                     font.pixelSize: 14
+                     horizontalAlignment: Text.AlignHCenter
+                     verticalAlignment: Text.AlignVCenter
+                 }
+             }
+             
+             Button {
+                 text: qsTr("去登录")
+                 onClicked: {
+                     loginRequiredDialog.close();
+                     loginStatusDialogs.loginRequested();
+                 }
+                 
+                 background: Rectangle {
+                     color: parent.pressed ? theme.buttonPressedColor : 
+                            parent.hovered ? theme.buttonHoverColor : 
+                            theme.primaryColor
+                     border.color: theme.borderColor
+                     border.width: 1
+                     radius: 4
+                 }
+                 
+                 contentItem: Text {
+                     text: parent.text
+                     color: "white"
+                     font.pixelSize: 14
+                     horizontalAlignment: Text.AlignHCenter
+                     verticalAlignment: Text.AlignVCenter
+                 }
+             }
+         }
+     }
     
     /**
-     * @brief 退出登录确认对话框
-     *
-     * 当用户点击退出登录时显示确认对话框。
-     */
-    Dialog {
-        id: logoutConfirmDialog
-        title: qsTr("确认退出")
-        modal: true
-        anchors.centerIn: parent
-        width: 300
-        height: 150
-        standardButtons: Dialog.NoButton
-        
-        background: Rectangle {
-            color: theme.backgroundColor
-            border.color: theme.borderColor
-            border.width: 1
-            radius: 8
-        }
-        
-        contentItem: ColumnLayout {
-            spacing: 20
-            anchors.margins: 20
-            
-            Label {
-                text: qsTr("确定要退出登录吗？")
-                color: theme.textColor
-                Layout.alignment: Qt.AlignHCenter
-            }
-            
-            RowLayout {
-                Layout.alignment: Qt.AlignRight
-                spacing: 10
-                
-                Button {
-                    text: qsTr("取消")
-                    onClicked: logoutConfirmDialog.close()
-                    
-                    background: Rectangle {
-                        color: parent.pressed ? theme.buttonPressedColor : 
-                               parent.hovered ? theme.buttonHoverColor : 
-                               theme.secondaryBackgroundColor
-                        border.color: theme.borderColor
-                        border.width: 1
-                        radius: 4
-                    }
-                    
-                    contentItem: Text {
-                        text: parent.text
-                        color: theme.textColor
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
-                
-                Button {
-                    text: qsTr("确定")
-                    onClicked: {
-                        logoutConfirmDialog.close();
-                        loginStatusDialogs.logoutConfirmed();
-                    }
-                    
-                    background: Rectangle {
-                        color: parent.pressed ? theme.buttonPressedColor : 
-                               parent.hovered ? theme.buttonHoverColor : 
-                               theme.primaryColor
-                        border.color: theme.borderColor
-                        border.width: 1
-                        radius: 4
-                    }
-                    
-                    contentItem: Text {
-                        text: parent.text
-                        color: "white"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
-            }
-        }
-    }
+      * @brief 退出登录确认对话框
+      *
+      * 当用户点击退出登录时显示确认对话框。
+      */
+     BaseDialog {
+         id: logoutConfirmDialog
+         dialogTitle: qsTr("确认退出")
+         dialogWidth: 300
+         dialogHeight: 150
+         showStandardButtons: false
+         isDarkMode: loginStatusDialogs.isDarkMode
+         
+         Label {
+             text: qsTr("确定要退出登录吗？")
+             color: theme.textColor
+             Layout.alignment: Qt.AlignHCenter
+         }
+          
+          RowLayout {
+              Layout.alignment: Qt.AlignRight
+              spacing: 10
+              
+              Button {
+                  text: qsTr("取消")
+                  onClicked: logoutConfirmDialog.close()
+                  
+                  background: Rectangle {
+                      color: parent.pressed ? theme.buttonPressedColor : 
+                             parent.hovered ? theme.buttonHoverColor : 
+                             theme.secondaryBackgroundColor
+                      border.color: theme.borderColor
+                      border.width: 1
+                      radius: 4
+                  }
+                  
+                  contentItem: Text {
+                      text: parent.text
+                      color: theme.textColor
+                      font.pixelSize: 14
+                      horizontalAlignment: Text.AlignHCenter
+                      verticalAlignment: Text.AlignVCenter
+                  }
+              }
+              
+              Button {
+                  text: qsTr("确定")
+                  onClicked: {
+                      logoutConfirmDialog.close();
+                      loginStatusDialogs.logoutConfirmed();
+                  }
+                  
+                  background: Rectangle {
+                      color: parent.pressed ? theme.buttonPressedColor : 
+                             parent.hovered ? theme.buttonHoverColor : 
+                             theme.primaryColor
+                      border.color: theme.borderColor
+                      border.width: 1
+                      radius: 4
+                  }
+                  
+                  contentItem: Text {
+                      text: parent.text
+                      color: "white"
+                      font.pixelSize: 14
+                      horizontalAlignment: Text.AlignHCenter
+                      verticalAlignment: Text.AlignVCenter
+                  }
+              }
+          }
+      }
     
     // 公共方法
     

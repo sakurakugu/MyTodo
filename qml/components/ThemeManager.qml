@@ -6,7 +6,8 @@
  * 它提供了切换主题、获取当前主题颜色和样式的功能。
  *
  * @author Sakurakugu
- * @date 2025
+ * @date 2025-08-19 07:39:54(UTC+8) 周二
+ * @version 2025-08-21 21:31:41(UTC+8) 周四
  */
 
 import QtQuick

@@ -1,4 +1,7 @@
-# This file is used to ignore files which are generated
+# @首次创建日期 2025-08-16 20:05:55(UTC+8) 周六
+# @最后更新日期 2025-08-22 21:14:29(UTC+8) 周五
+#
+# 该文件用于忽略生成的文件
 # ----------------------------------------------------------------------------
 
 *~
@@ -35,18 +38,18 @@ Thumbs.db
 /.qmake.cache
 /.qmake.stash
 
-# qtcreator 生成文件
+# QtCreator 生成文件
 *.pro.user*
 *.qbs.user*
 CMakeLists.txt.user*
 
-# qtdesignstudio 生成文件
+# QtDesigner 生成文件
 *.qtds
 
-# xemacs temporary files
+# Xemacs 临时文件
 *.flc
 
-# Vim temporary files
+# Vim 临时文件
 .*.swp
 
 # Visual Studio 生成文件
@@ -68,7 +71,7 @@ CMakeLists.txt.user*
 *.Debug
 *.Release
 
-# Python byte code
+# Python 二进制代码
 *.pyc
 
 # Binaries
@@ -76,7 +79,7 @@ CMakeLists.txt.user*
 *.dll
 *.exe
 
-# Directories with 生成文件
+# 包含生成文件的目录
 .moc/
 .obj/
 .pch/
