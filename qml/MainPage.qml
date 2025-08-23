@@ -21,14 +21,12 @@ Page {
     // 属性绑定外部上下文
     property bool isDarkMode: false
     property bool isDesktopWidget: false
-    // 提供根窗口引用，便于在子页面中读写全局属性
-    property var rootWindow: null
-    // 侧边栏展开/收起状态
-    property bool sidebarExpanded: true
-    // 详情显示状态
-    property bool showDetails: false
-    // 当前选中的待办事项
-    property var selectedTodo: null
+
+    property var rootWindow: null // 提供根窗口引用，便于在子页面中读写全局属性
+    property bool sidebarExpanded: true // 侧边栏展开/收起状态
+    property bool showDetails: false // 详情显示状态
+    property var selectedTodo: null // 当前选中的待办事项
+
     // 主题管理器
     ThemeManager {
         id: theme
@@ -37,12 +35,14 @@ Page {
 
     background: Rectangle {
         color: theme.backgroundColor
+        bottomLeftRadius: 5
+        bottomRightRadius: 5
     }
 
     // 主内容区域，列式布局
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: mainPage.isDesktopWidget ? 5 : 10
+        anchors.margins: 10
         spacing: 10
 
         // 侧边栏和主内容区的分割
@@ -279,54 +279,281 @@ Page {
             }
 
             // 主内容区
-            RowLayout {
+            ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                spacing: 0
+                Layout.margins: 10
+                spacing: 10
 
-                // 待办列表区域
-                ColumnLayout {
-                    Layout.preferredWidth: showDetails ? parent.width * 0.6 : parent.width
-                    Layout.fillHeight: true
-                    Layout.margins: 10
-                    spacing: 10
+                // 添加新待办的区域
+                RowLayout {
+                    Layout.fillWidth: true
 
-                    Behavior on Layout.preferredWidth {
-                        NumberAnimation {
-                            duration: 300
-                            easing.type: Easing.OutCubic
+                    TextField {
+                        id: newTodoField
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 36
+                        placeholderText: qsTr("添加新待办...")
+                        color: theme.textColor
+                        onAccepted: {
+                            if (text.trim() !== "") {
+                                todoModel.addTodo(text.trim());
+                                text = "";
+                            }
                         }
                     }
 
-                    // 添加新待办的区域
+                    Button {
+                        text: qsTr("添加")
+                        onClicked: {
+                            if (newTodoField.text.trim() !== "") {
+                                todoModel.addTodo(newTodoField.text.trim());
+                                newTodoField.text = "";
+                            }
+                        }
+
+                        background: Rectangle {
+                            color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
+                            border.color: theme.borderColor
+                            border.width: 1
+                            radius: 4
+                        }
+
+                        contentItem: Text {
+                            text: parent.text
+                            color: theme.textColor
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                    }
+
+                    Button {
+                        text: qsTr("类别管理")
+                        onClicked: {
+                            categoryManagementDialog.open();
+                        }
+
+                        background: Rectangle {
+                            color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
+                            border.color: theme.borderColor
+                            border.width: 1
+                            radius: 4
+                        }
+
+                        contentItem: Text {
+                            text: parent.text
+                            color: theme.textColor
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                    }
+                }
+
+                // 待办列表
+                ListView {
+                    id: todoListView
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+
+                    // 使用 C++ 的 TodoModel
+                    model: todoModel
+
+                    // 下拉刷新相关属性与逻辑
+                    property bool refreshing: false
+                    property int pullThreshold: 60
+                    property real pullDistance: 0
+
+                    onContentYChanged: {
+                        pullDistance = contentY < 0 ? -contentY : 0;
+                    }
+                    onMovementEnded: {
+                        if (contentY < -pullThreshold && atYBeginning && !refreshing) {
+                            refreshing = true;
+                            todoModel.syncWithServer();
+                        }
+                    }
+
+                    header: Item {
+                        width: todoListView.width
+                        height: todoListView.refreshing ? 50 : Math.min(50, todoListView.pullDistance)
+                        visible: height > 0 || todoListView.refreshing
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 6
+                            BusyIndicator {
+                                running: todoListView.refreshing
+                                visible: todoListView.refreshing || todoListView.pullDistance > 0
+                                width: 20
+                                height: 20
+                            }
+                            Label {
+                                text: todoListView.refreshing ? qsTr("正在同步...") : (todoListView.pullDistance >= todoListView.pullThreshold ? qsTr("释放刷新") : qsTr("下拉刷新"))
+                                color: theme.textColor
+                                font.pixelSize: 12
+                            }
+                        }
+                    }
+
+                    Connections {
+                        target: todoModel
+                        function onSyncStarted() {
+                            if (!todoListView.refreshing && todoListView.atYBeginning) {
+                                todoListView.refreshing = true;
+                            }
+                        }
+                        function onSyncCompleted(success, errorMessage) {
+                            todoListView.refreshing = false;
+                            todoListView.contentY = 0;
+                        }
+                    }
+
+                    delegate: Rectangle {
+                        id: delegateItem
+                        width: parent.width
+                        height: 50
+                        color: index % 2 === 0 ? theme.secondaryBackgroundColor : theme.backgroundColor
+
+                        property alias itemMouseArea: itemMouseArea
+
+                        // 点击项目查看/编辑详情
+                        MouseArea {
+                            id: itemMouseArea
+                            anchors.fill: parent
+                            z: 0  // 确保这个MouseArea在底层
+                            onClicked: {
+                                // 收起侧边栏
+                                sidebarExpanded = false;
+                                // 显示详情
+                                selectedTodo = {
+                                    title: model.title,
+                                    description: model.description,
+                                    category: model.category,
+                                    important: model.important
+                                };
+                                detailsTaskForm.setFormData(selectedTodo);
+                                showDetails = true;
+                                todoListView.currentIndex = index;
+                            }
+                        }
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 8
+                            spacing: 8
+                            z: 1  // 确保RowLayout在MouseArea之上
+
+                            // 待办状态指示器
+                            Rectangle {
+                                width: 16
+                                height: 16
+                                radius: 8
+                                color: model.status === "done" ? theme.completedColor : model.important ? theme.highImportantColor : theme.lowImportantColor
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: {
+                                        todoModel.markAsDone(index);
+                                        mouse.accepted = true;  // 阻止事件传播
+                                    }
+                                }
+                            }
+
+                            // 待办标题
+                            Label {
+                                text: model.title
+                                font.strikeout: model.status === "done"
+                                color: theme.textColor
+                                Layout.fillWidth: true
+                            }
+
+                            // 删除按钮 - 使用独立的Rectangle和MouseArea
+                            Rectangle {
+                                width: 30
+                                height: 30
+                                color: "transparent"
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "×"
+                                    font.pixelSize: 16
+                                    color: deleteMouseArea.pressed ? "darkgray" : "gray"
+                                }
+
+                                MouseArea {
+                                    id: deleteMouseArea
+                                    anchors.fill: parent
+                                    onClicked: {
+                                        // 禁用当前项目的MouseArea
+                                        delegateItem.itemMouseArea.enabled = false;
+                                        // 设置当前项索引
+                                        todoListView.currentIndex = index;
+                                        // 删除待办
+                                        todoModel.removeTodo(index);
+                                        // 延迟重新启用项目的MouseArea
+                                        // 这是为了防止事件传播到下面的MouseArea
+                                        timer.start();
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 用于延迟重新启用itemMouseArea的定时器
+                    Timer {
+                        id: timer
+                        interval: 10
+                        onTriggered: {
+                            // 重新启用当前项的MouseArea
+                            if (todoListView.currentItem && todoListView.currentItem.itemMouseArea) {
+                                todoListView.currentItem.itemMouseArea.enabled = true;
+                            }
+                        }
+                    }
+
+                    // 将垂直滚动条附加到ListView本身
+                    ScrollBar.vertical: ScrollBar {}
+                }
+            }
+
+            // 详情显示区域
+            Rectangle {
+                Layout.preferredWidth: showDetails ? 300 : 0
+                Layout.fillHeight: true
+                color: theme.secondaryBackgroundColor
+                visible: showDetails
+
+                Behavior on Layout.preferredWidth {
+                    NumberAnimation {
+                        duration: 300
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    spacing: 10
+
+                    // 详情标题栏
                     RowLayout {
                         Layout.fillWidth: true
 
-                        TextField {
-                            id: newTodoField
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 36
-                            placeholderText: qsTr("添加新待办...")
+                        Label {
+                            text: qsTr("待办详情")
+                            font.bold: true
+                            font.pixelSize: 16
                             color: theme.textColor
-                            onAccepted: {
-                                if (text.trim() !== "") {
-                                    todoModel.addTodo(text.trim());
-                                    text = "";
-                                }
-                            }
+                            Layout.fillWidth: true
                         }
 
                         Button {
-                            text: qsTr("添加")
-                            onClicked: {
-                                if (newTodoField.text.trim() !== "") {
-                                    todoModel.addTodo(newTodoField.text.trim());
-                                    newTodoField.text = "";
-                                }
-                            }
+                            text: "×"
+                            width: 30
+                            height: 30
 
                             background: Rectangle {
-                                color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
+                                color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : "transparent"
                                 border.color: theme.borderColor
                                 border.width: 1
                                 radius: 4
@@ -337,323 +564,82 @@ Page {
                                 color: theme.textColor
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
+                                font.pixelSize: 16
                             }
-                        }
 
-                        Button {
-                            text: qsTr("类别管理")
                             onClicked: {
-                                categoryManagementDialog.open();
-                            }
-
-                            background: Rectangle {
-                                color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
-                                border.color: theme.borderColor
-                                border.width: 1
-                                radius: 4
-                            }
-
-                            contentItem: Text {
-                                text: parent.text
-                                color: theme.textColor
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
+                                showDetails = false;
+                                selectedTodo = null;
                             }
                         }
                     }
 
-                    // 待办列表
-                    ListView {
-                        id: todoListView
+                    // 详情内容
+                    ScrollView {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         clip: true
 
-                        // 使用 C++ 的 TodoModel
-                        model: todoModel
-
-                        // 下拉刷新相关属性与逻辑
-                        property bool refreshing: false
-                        property int pullThreshold: 60
-                        property real pullDistance: 0
-
-                        onContentYChanged: {
-                            pullDistance = contentY < 0 ? -contentY : 0;
-                        }
-                        onMovementEnded: {
-                            if (contentY < -pullThreshold && atYBeginning && !refreshing) {
-                                refreshing = true;
-                                todoModel.syncWithServer();
-                            }
-                        }
-
-                        header: Item {
-                            width: todoListView.width
-                            height: todoListView.refreshing ? 50 : Math.min(50, todoListView.pullDistance)
-                            visible: height > 0 || todoListView.refreshing
-                            Column {
-                                anchors.centerIn: parent
-                                spacing: 6
-                                BusyIndicator {
-                                    running: todoListView.refreshing
-                                    visible: todoListView.refreshing || todoListView.pullDistance > 0
-                                    width: 20
-                                    height: 20
-                                }
-                                Label {
-                                    text: todoListView.refreshing ? qsTr("正在同步...") : (todoListView.pullDistance >= todoListView.pullThreshold ? qsTr("释放刷新") : qsTr("下拉刷新"))
-                                    color: theme.textColor
-                                    font.pixelSize: 12
-                                }
-                            }
-                        }
-
-                        Connections {
-                            target: todoModel
-                            function onSyncStarted() {
-                                if (!todoListView.refreshing && todoListView.atYBeginning) {
-                                    todoListView.refreshing = true;
-                                }
-                            }
-                            function onSyncCompleted(success, errorMessage) {
-                                todoListView.refreshing = false;
-                                todoListView.contentY = 0;
-                            }
-                        }
-
-                        delegate: Rectangle {
-                            id: delegateItem
+                        TaskForm {
+                            id: detailsTaskForm
                             width: parent.width
-                            height: 50
-                            color: index % 2 === 0 ? theme.secondaryBackgroundColor : theme.backgroundColor
-
-                            property alias itemMouseArea: itemMouseArea
-
-                            // 点击项目查看/编辑详情
-                            MouseArea {
-                                id: itemMouseArea
-                                anchors.fill: parent
-                                z: 0  // 确保这个MouseArea在底层
-                                onClicked: {
-                                    // 收起侧边栏
-                                    sidebarExpanded = false;
-                                    // 显示详情
-                                    selectedTodo = {
-                                        title: model.title,
-                                        description: model.description,
-                                        category: model.category,
-                                        important: model.important
-                                    };
-                                    detailsTaskForm.setFormData(selectedTodo);
-                                    showDetails = true;
-                                    todoListView.currentIndex = index;
-                                }
-                            }
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.margins: 8
-                                spacing: 8
-                                z: 1  // 确保RowLayout在MouseArea之上
-
-                                // 待办状态指示器
-                                Rectangle {
-                                    width: 16
-                                    height: 16
-                                    radius: 8
-                                    color: model.status === "done" ? theme.completedColor : model.important ? theme.highImportantColor : theme.lowImportantColor
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        onClicked: {
-                                            todoModel.markAsDone(index);
-                                            mouse.accepted = true;  // 阻止事件传播
-                                        }
-                                    }
-                                }
-
-                                // 待办标题
-                                Label {
-                                    text: model.title
-                                    font.strikeout: model.status === "done"
-                                    color: theme.textColor
-                                    Layout.fillWidth: true
-                                }
-
-                                // 删除按钮 - 使用独立的Rectangle和MouseArea
-                                Rectangle {
-                                    width: 30
-                                    height: 30
-                                    color: "transparent"
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "×"
-                                        font.pixelSize: 16
-                                        color: deleteMouseArea.pressed ? "darkgray" : "gray"
-                                    }
-
-                                    MouseArea {
-                                        id: deleteMouseArea
-                                        anchors.fill: parent
-                                        onClicked: {
-                                            // 禁用当前项目的MouseArea
-                                            delegateItem.itemMouseArea.enabled = false;
-                                            // 设置当前项索引
-                                            todoListView.currentIndex = index;
-                                            // 删除待办
-                                            todoModel.removeTodo(index);
-                                            // 延迟重新启用项目的MouseArea
-                                            // 这是为了防止事件传播到下面的MouseArea
-                                            timer.start();
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // 用于延迟重新启用itemMouseArea的定时器
-                        Timer {
-                            id: timer
-                            interval: 10
-                            onTriggered: {
-                                // 重新启用当前项的MouseArea
-                                if (todoListView.currentItem && todoListView.currentItem.itemMouseArea) {
-                                    todoListView.currentItem.itemMouseArea.enabled = true;
-                                }
-                            }
-                        }
-
-                        // 将垂直滚动条附加到ListView本身
-                        ScrollBar.vertical: ScrollBar {}
-                    }
-                }
-
-                // 详情显示区域
-                Rectangle {
-                    Layout.preferredWidth: showDetails ? parent.width * 0.4 : 0
-                    Layout.fillHeight: true
-                    color: theme.secondaryBackgroundColor
-                    visible: showDetails
-
-                    Behavior on Layout.preferredWidth {
-                        NumberAnimation {
-                            duration: 300
-                            easing.type: Easing.OutCubic
+                            theme: mainPage.theme
                         }
                     }
 
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 10
+                    // 操作按钮
+                    RowLayout {
+                        Layout.fillWidth: true
 
-                        // 详情标题栏
-                        RowLayout {
+                        Button {
+                            text: qsTr("保存")
                             Layout.fillWidth: true
 
-                            Label {
-                                text: qsTr("待办详情")
-                                font.bold: true
-                                font.pixelSize: 16
+                            background: Rectangle {
+                                color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
+                                border.color: theme.borderColor
+                                border.width: 1
+                                radius: 4
+                            }
+
+                            contentItem: Text {
+                                text: parent.text
                                 color: theme.textColor
-                                Layout.fillWidth: true
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
                             }
 
-                            Button {
-                                text: "×"
-                                width: 30
-                                height: 30
-
-                                background: Rectangle {
-                                    color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : "transparent"
-                                    border.color: theme.borderColor
-                                    border.width: 1
-                                    radius: 4
-                                }
-
-                                contentItem: Text {
-                                    text: parent.text
-                                    color: theme.textColor
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                    font.pixelSize: 16
-                                }
-
-                                onClicked: {
+                            onClicked: {
+                                if (selectedTodo && detailsTaskForm.isValid()) {
+                                    var todoData = detailsTaskForm.getTodoData();
+                                    todoModel.updateTodo(todoListView.currentIndex, todoData);
                                     showDetails = false;
                                     selectedTodo = null;
                                 }
                             }
                         }
 
-                        // 详情内容
-                        ScrollView {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            clip: true
-
-                            TaskForm {
-                                id: detailsTaskForm
-                                width: parent.width
-                                theme: mainPage.theme
-                            }
-                        }
-
-                        // 操作按钮
-                        RowLayout {
+                        Button {
+                            text: qsTr("取消")
                             Layout.fillWidth: true
 
-                            Button {
-                                text: qsTr("保存")
-                                Layout.fillWidth: true
-
-                                background: Rectangle {
-                                    color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
-                                    border.color: theme.borderColor
-                                    border.width: 1
-                                    radius: 4
-                                }
-
-                                contentItem: Text {
-                                    text: parent.text
-                                    color: theme.textColor
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                }
-
-                                onClicked: {
-                                    if (selectedTodo && detailsTaskForm.isValid()) {
-                                        var todoData = detailsTaskForm.getTodoData();
-                                        todoModel.updateTodo(todoListView.currentIndex, todoData);
-                                        showDetails = false;
-                                        selectedTodo = null;
-                                    }
-                                }
+                            background: Rectangle {
+                                color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
+                                border.color: theme.borderColor
+                                border.width: 1
+                                radius: 4
                             }
 
-                            Button {
-                                text: qsTr("取消")
-                                Layout.fillWidth: true
+                            contentItem: Text {
+                                text: parent.text
+                                color: theme.textColor
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
 
-                                background: Rectangle {
-                                    color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
-                                    border.color: theme.borderColor
-                                    border.width: 1
-                                    radius: 4
-                                }
-
-                                contentItem: Text {
-                                    text: parent.text
-                                    color: theme.textColor
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                }
-
-                                onClicked: {
-                                    showDetails = false;
-                                    selectedTodo = null;
-                                }
+                            onClicked: {
+                                showDetails = false;
+                                selectedTodo = null;
                             }
                         }
                     }

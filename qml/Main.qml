@@ -615,7 +615,7 @@ Window {
         focus: true
         visible: !root.isDesktopWidget && depth > 0 // 小窗口模式时隐藏主页面
         initialItem: mainPageComponent
-        // clip: true  ///< 裁剪内容以配合窗口圆角效果
+        clip: true  ///< 裁剪内容以配合窗口圆角效果
     }
 
     // 小组件模式组件
@@ -627,7 +627,6 @@ Window {
         isDarkMode: root.isDarkMode
         preventDragging: root.preventDragging
         visible: isDesktopWidget
-        // clip: true  ///< 裁剪内容以配合窗口圆角效果
 
         // 连接信号
         onPreventDraggingToggled: function (value) {
