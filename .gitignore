@@ -4,6 +4,11 @@
 # 该文件用于忽略生成的文件
 # ----------------------------------------------------------------------------
 
+# 临时
+服务器文件/
+image/app_icon/icon.ico
+image/font_icon/
+
 *~
 *.autosave
 *.a
@@ -93,8 +98,3 @@ CMakeLists.txt.user*
 # 其他
 replacements.txt
 my-test/
-
-# 临时
-服务器文件/
-image/app_icon/icon.ico
-image/font_icon/

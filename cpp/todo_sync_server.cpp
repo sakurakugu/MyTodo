@@ -498,7 +498,21 @@ void TodoSyncServer::initializeServerConfig() {
 }
 
 QString TodoSyncServer::getApiUrl(const QString &endpoint) const {
-    return m_serverBaseUrl + endpoint;
+    if (m_serverBaseUrl.isEmpty()) {
+        return endpoint;
+    }
+
+    QString baseUrl = m_serverBaseUrl;
+    if (!baseUrl.endsWith('/')) {
+        baseUrl += '/';
+    }
+
+    QString cleanEndpoint = endpoint;
+    if (cleanEndpoint.startsWith('/')) {
+        cleanEndpoint = cleanEndpoint.mid(1);
+    }
+
+    return baseUrl + cleanEndpoint;
 }
 
 void TodoSyncServer::updateLastSyncTime() {

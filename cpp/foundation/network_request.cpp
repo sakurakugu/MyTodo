@@ -6,8 +6,8 @@
  * @version 2025-08-22 23:04:19(UTC+8) 周五
  */
 #include "network_request.h"
-#include "network_proxy.h"
 #include "config.h"
+#include "network_proxy.h"
 
 #include <QCoreApplication>
 #include <QDebug>
@@ -27,12 +27,12 @@
  * @param parent 父对象指针，用于Qt对象树管理
  */
 NetworkRequest::NetworkRequest(QObject *parent)
-    : QObject(parent),
-      m_networkRequest(new QNetworkAccessManager(this)),
-      m_nextRequestId(1),
-      m_isOnline(false),
-      m_connectivityTimer(new QTimer(this)),
-      m_proxyManager(NetworkProxy::GetInstance()) {
+    : QObject(parent),                                   //
+      m_networkRequest(new QNetworkAccessManager(this)), //
+      m_nextRequestId(1),                                //
+      m_isOnline(false),                                 //
+      m_connectivityTimer(new QTimer(this)),             //
+      m_proxyManager(NetworkProxy::GetInstance()) {      //
     // 设置默认配置
     m_networkRequest->setProxy(QNetworkProxy::NoProxy);
 
@@ -43,7 +43,7 @@ NetworkRequest::NetworkRequest(QObject *parent)
 
     // 初始网络状态检查
     checkNetworkConnectivity();
-    
+
     // 应用代理配置到网络管理器
     m_proxyManager.applyProxyToManager(m_networkRequest);
 }
@@ -53,24 +53,32 @@ NetworkRequest::NetworkRequest(QObject *parent)
  *
  * 清理所有待处理的请求，停止定时器，释放网络资源。
  */
-NetworkRequest::~NetworkRequest() { cancelAllRequests(); }
+NetworkRequest::~NetworkRequest() {
+    cancelAllRequests();
+}
 
 /**
  * @brief 设置认证令牌
  * @param token 访问令牌字符串
  */
-void NetworkRequest::setAuthToken(const QString &token) { m_authToken = token; }
+void NetworkRequest::setAuthToken(const QString &token) {
+    m_authToken = token;
+}
 
 /**
  * @brief 清除认证令牌
  */
-void NetworkRequest::clearAuthToken() { m_authToken.clear(); }
+void NetworkRequest::clearAuthToken() {
+    m_authToken.clear();
+}
 
 /**
  * @brief 检查是否有有效的认证信息
  * @return 如果有有效认证令牌返回true，否则返回false
  */
-bool NetworkRequest::hasValidAuth() const { return !m_authToken.isEmpty(); }
+bool NetworkRequest::hasValidAuth() const {
+    return !m_authToken.isEmpty();
+}
 
 /**
  * @brief 设置服务器地址与api版本
@@ -93,12 +101,26 @@ void NetworkRequest::setServerConfig(const QString &baseUrl, const QString &apiV
  * @return 完整的API URL
  */
 QString NetworkRequest::getApiUrl(const QString &endpoint) const {
-    QString url = m_serverBaseUrl;
-    if (!m_apiVersion.isEmpty()) {
-        url += QString("api/%1/").arg(m_apiVersion);
+    if (m_serverBaseUrl.isEmpty()) {
+        return endpoint;
     }
-    url += endpoint;
-    return url;
+
+    QString baseUrl = m_serverBaseUrl;
+    if (!baseUrl.endsWith('/')) {
+        baseUrl += '/';
+    }
+
+    // 添加API版本号路径
+    if (!m_apiVersion.isEmpty()) {
+        baseUrl += QString("api/%1/").arg(m_apiVersion);
+    }
+
+    QString cleanEndpoint = endpoint;
+    if (cleanEndpoint.startsWith('/')) {
+        cleanEndpoint = cleanEndpoint.mid(1);
+    }
+
+    return baseUrl + cleanEndpoint;
 }
 
 void NetworkRequest::sendRequest(RequestType type, const RequestConfig &config) {
@@ -183,10 +205,19 @@ void NetworkRequest::onReplyFinished() {
                 throw QString("JSON解析错误: %1").arg(parseError.errorString());
             }
 
-            responseData = doc.object();
-            success = true;
+            QJsonObject fullResponse = doc.object();
 
-            qDebug() << "请求成功:" << request.type;
+            bool serverSuccess = fullResponse["success"].toBool();
+            if (serverSuccess) {
+                // 成功响应，提取data字段作为响应数据
+                responseData = fullResponse.contains("data") ? fullResponse["data"].toObject() : fullResponse;
+                success = true;
+                qDebug() << "请求成功:" << request.type;
+            } else {
+                // 服务器返回错误
+                QString serverMessage = fullResponse["message"].toString();
+                throw QString("服务器错误: %1").arg(serverMessage);
+            }
 
         } else {
             // 处理网络错误
@@ -375,11 +406,13 @@ void NetworkRequest::cancelAllRequests() {
     }
 }
 
-bool NetworkRequest::isNetworkAvailable() const { return m_isOnline; }
+bool NetworkRequest::isNetworkAvailable() const {
+    return m_isOnline;
+}
 
 void NetworkRequest::checkNetworkConnectivity() {
     // TODO: 检查网络连接状态
-    bool online = true;  // 简化实现，实际应用中可以发送测试请求
+    bool online = true; // 简化实现，实际应用中可以发送测试请求
 
     if (online != m_isOnline) {
         m_isOnline = online;
@@ -412,7 +445,8 @@ void NetworkRequest::setupDefaultHeaders(QNetworkRequest &request) const {
     // TODO: 应用名 / 版本 (平台)
     request.setRawHeader("User-Agent", "MyTodoApp/1.0 (Qt)");
     request.setRawHeader("Accept", "application/json");
-    // TODO: 干脆删掉还是伪造成一个浏览器来源? 一般来说，对于客户端/移动端是不用加的，到时候如果有网页版，要不要添加？到时候c++的后端会不会改？
+    // TODO: 干脆删掉还是伪造成一个浏览器来源?
+    // 一般来说，对于客户端/移动端是不用加的，到时候如果有网页版，要不要添加？到时候c++的后端会不会改？
     request.setRawHeader("Origin", "https://example.com");
 }
 
@@ -424,45 +458,45 @@ void NetworkRequest::addAuthHeader(QNetworkRequest &request) const {
 
 NetworkRequest::NetworkError NetworkRequest::mapQNetworkError(QNetworkReply::NetworkError error) const {
     switch (error) {
-        case QNetworkReply::TimeoutError:
-            return TimeoutError;
-        case QNetworkReply::ConnectionRefusedError:
-        case QNetworkReply::RemoteHostClosedError:
-        case QNetworkReply::HostNotFoundError:
-        case QNetworkReply::NetworkSessionFailedError:
-            return ConnectionError;
-        case QNetworkReply::AuthenticationRequiredError:
-        case QNetworkReply::ProxyAuthenticationRequiredError:
-            return AuthenticationError;
-        case QNetworkReply::InternalServerError:
-        case QNetworkReply::ServiceUnavailableError:
-            return ServerError;
-        default:
-            return UnknownError;
+    case QNetworkReply::TimeoutError:
+        return TimeoutError;
+    case QNetworkReply::ConnectionRefusedError:
+    case QNetworkReply::RemoteHostClosedError:
+    case QNetworkReply::HostNotFoundError:
+    case QNetworkReply::NetworkSessionFailedError:
+        return ConnectionError;
+    case QNetworkReply::AuthenticationRequiredError:
+    case QNetworkReply::ProxyAuthenticationRequiredError:
+        return AuthenticationError;
+    case QNetworkReply::InternalServerError:
+    case QNetworkReply::ServiceUnavailableError:
+        return ServerError;
+    default:
+        return UnknownError;
     }
 }
 
 QString NetworkRequest::getErrorMessage(NetworkError error, const QString &details) const {
     QString baseMessage;
     switch (error) {
-        case TimeoutError:
-            baseMessage = "请求超时";
-            break;
-        case ConnectionError:
-            baseMessage = "连接错误";
-            break;
-        case AuthenticationError:
-            baseMessage = "认证失败";
-            break;
-        case ServerError:
-            baseMessage = "服务器错误";
-            break;
-        case ParseError:
-            baseMessage = "数据解析错误";
-            break;
-        default:
-            baseMessage = "未知错误";
-            break;
+    case TimeoutError:
+        baseMessage = "请求超时";
+        break;
+    case ConnectionError:
+        baseMessage = "连接错误";
+        break;
+    case AuthenticationError:
+        baseMessage = "认证失败";
+        break;
+    case ServerError:
+        baseMessage = "服务器错误";
+        break;
+    case ParseError:
+        baseMessage = "数据解析错误";
+        break;
+    default:
+        baseMessage = "未知错误";
+        break;
     }
 
     if (!details.isEmpty()) {
@@ -476,8 +510,14 @@ bool NetworkRequest::shouldRetry(NetworkError error) const {
     return error == TimeoutError || error == ConnectionError || error == ServerError;
 }
 
-bool NetworkRequest::isDuplicateRequest(RequestType type) const { return m_activeRequests.contains(type); }
+bool NetworkRequest::isDuplicateRequest(RequestType type) const {
+    return m_activeRequests.contains(type);
+}
 
-void NetworkRequest::addActiveRequest(RequestType type, qint64 requestId) { m_activeRequests[type] = requestId; }
+void NetworkRequest::addActiveRequest(RequestType type, qint64 requestId) {
+    m_activeRequests[type] = requestId;
+}
 
-void NetworkRequest::removeActiveRequest(RequestType type) { m_activeRequests.remove(type); }
+void NetworkRequest::removeActiveRequest(RequestType type) {
+    m_activeRequests.remove(type);
+}

@@ -17,8 +17,10 @@
 #include "setting.h"
 
 UserAuth::UserAuth(QObject *parent)
-    : QObject(parent), m_networkRequest(NetworkRequest::GetInstance()), m_isOnline(false),
-      m_setting(Setting::GetInstance()) {
+    : QObject(parent),                                 //
+      m_networkRequest(NetworkRequest::GetInstance()), //
+      m_setting(Setting::GetInstance()),               //
+      m_isOnline(false) {                              //
 
     // 连接网络请求信号
     connect(&m_networkRequest, &NetworkRequest::requestCompleted, this, &UserAuth::onNetworkRequestCompleted);
@@ -234,8 +236,9 @@ void UserAuth::handleLoginSuccess(const QJsonObject &response) {
     m_accessToken = response["access_token"].toString();
     m_refreshToken = response["refresh_token"].toString();
 
-    m_username = response["user"].toObject()["username"].toString();
-    // m_email = userObj.value("email").toString();
+    QJsonObject userObj = response["user"].toObject();
+    m_username = userObj["username"].toString();
+    m_email = userObj.value("email").toString();
 
     // 设置网络管理器的认证令牌
     m_networkRequest.setAuthToken(m_accessToken);
