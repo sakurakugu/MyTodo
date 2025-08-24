@@ -27,6 +27,8 @@
 #include "setting.h"
 #include "todo_data_storage.h" // 数据管理器
 #include "todo_sync_server.h"  // 服务器同步管理器
+#include "todo_filter.h"       // 筛选管理器
+#include "todo_sorter.h"       // 排序管理器
 
 /**
  * @class TodoManager
@@ -54,15 +56,6 @@
  */
 class TodoManager : public QAbstractListModel {
     Q_OBJECT
-    Q_PROPERTY(QString currentCategory READ currentCategory WRITE setCurrentCategory NOTIFY currentCategoryChanged)
-    Q_PROPERTY(QString currentFilter READ currentFilter WRITE setCurrentFilter NOTIFY currentFilterChanged)
-    Q_PROPERTY(bool currentImportant READ currentImportant WRITE setCurrentImportant NOTIFY currentImportantChanged)
-    Q_PROPERTY(QDate dateFilterStart READ dateFilterStart WRITE setDateFilterStart NOTIFY dateFilterStartChanged)
-    Q_PROPERTY(QDate dateFilterEnd READ dateFilterEnd WRITE setDateFilterEnd NOTIFY dateFilterEndChanged)
-    Q_PROPERTY(bool dateFilterEnabled READ dateFilterEnabled WRITE setDateFilterEnabled NOTIFY dateFilterEnabledChanged)
-
-    Q_PROPERTY(QStringList categories READ getCategories NOTIFY categoriesChanged)
-    Q_PROPERTY(int sortType READ sortType WRITE setSortType NOTIFY sortTypeChanged)
 
   public:
     /**
@@ -92,17 +85,7 @@ class TodoManager : public QAbstractListModel {
     };
     Q_ENUM(TodoRoles)
 
-    /**
-     * @enum SortType
-     * @brief 定义待办事项的排序类型
-     */
-    enum SortType {
-        SortByCreatedTime = 0, // 按创建时间排序（默认）
-        SortByDeadline = 1,    // 按截止日期排序
-        SortByImportance = 2,  // 按重要程度排序
-        SortByTitle = 3        // 按标题排序
-    };
-    Q_ENUM(SortType)
+
 
     /**
      * @brief 构造函数
@@ -119,21 +102,10 @@ class TodoManager : public QAbstractListModel {
     bool setData(const QModelIndex &index, const QVariant &value,
                  int role = Qt::EditRole) override; // 设置指定索引和角色的数据
 
-    // 筛选和排序功能
-    QString currentCategory() const;                  // 获取当前激活的分类筛选器
-    void setCurrentCategory(const QString &category); // 设置分类筛选器
-    QString currentFilter() const;                    // 获取当前激活的筛选条件
-    void setCurrentFilter(const QString &filter);     // 设置筛选条件
-    bool currentImportant() const;                    // 获取当前激活的重要程度筛选器
-    void setCurrentImportant(bool important);         // 设置重要程度筛选器
-
-    // 日期筛选相关方法
-    QDate dateFilterStart() const;              // 获取日期筛选开始日期
-    void setDateFilterStart(const QDate &date); // 设置日期筛选开始日期
-    QDate dateFilterEnd() const;                // 获取日期筛选结束日期
-    void setDateFilterEnd(const QDate &date);   // 设置日期筛选结束日期
-    bool dateFilterEnabled() const;             // 获取日期筛选是否启用
-    void setDateFilterEnabled(bool enabled);    // 设置日期筛选是否启用
+    // 筛选和排序功能访问器
+    // 访问器
+    Q_INVOKABLE TodoFilter* filter() const;
+    Q_INVOKABLE TodoSorter* sorter() const;
 
     // CRUD操作
     Q_INVOKABLE void addTodo(const QString &title, const QString &description = QString(),
@@ -148,31 +120,13 @@ class TodoManager : public QAbstractListModel {
     // 网络同步操作
     Q_INVOKABLE void syncWithServer(); // 与服务器同步待办事项数据
 
-    // 类别管理相关（委托给CategoryManager）
-    Q_INVOKABLE QStringList getCategories() const;                // 获取类别列表
-    Q_INVOKABLE void fetchCategories();                           // 从服务器获取类别列表
-    Q_INVOKABLE void createCategory(const QString &name);         // 创建新类别
-    Q_INVOKABLE void updateCategory(int id, const QString &name); // 更新类别名称
-    Q_INVOKABLE void deleteCategory(int id);                      // 删除类别
-    CategoryManager *getCategoryManager() const;                  // 获取类别管理器
-
     // 排序相关
-    Q_INVOKABLE int sortType() const;       // 获取当前排序类型
-    Q_INVOKABLE void setSortType(int type); // 设置排序类型
     Q_INVOKABLE void sortTodos();           // 对待办事项进行排序
 
   signals:
-    void currentCategoryChanged();                                             // 当前分类筛选器变化信号
-    void currentFilterChanged();                                               // 当前筛选条件变化信号
-    void currentImportantChanged();                                            // 当前重要程度筛选器变化信号
-    void dateFilterStartChanged();                                             // 日期筛选开始日期变化信号
-    void dateFilterEndChanged();                                               // 日期筛选结束日期变化信号
-    void dateFilterEnabledChanged();                                           // 日期筛选启用状态变化信号
     void syncStarted();                                                        // 同步操作开始信号
     void syncCompleted(bool success, const QString &errorMessage = QString()); // 同步操作完成信号
-    void categoriesChanged();                                                  // 类别列表变化信号
     void categoryOperationCompleted(bool success, const QString &message);     // 类别操作完成信号
-    void sortTypeChanged();                                                    // 排序类型变化信号
 
   private slots:
     void onSyncStarted();                                                            // 处理同步开始
@@ -187,7 +141,6 @@ class TodoManager : public QAbstractListModel {
 
     // 性能优化相关方法
     void updateFilterCache();                           // 更新过滤缓存
-    bool itemMatchesFilter(const TodoItem *item) const; // 检查项目是否匹配当前过滤条件
     TodoItem *getFilteredItem(int index) const;         // 获取过滤后的项目（带边界检查）
     void invalidateFilterCache();                       // 使过滤缓存失效
 
@@ -195,12 +148,6 @@ class TodoManager : public QAbstractListModel {
     std::vector<std::unique_ptr<TodoItem>> m_todos; ///< 待办事项列表（使用智能指针）
     QList<TodoItem *> m_filteredTodos;              ///< 过滤后的待办事项列表（缓存）
     bool m_filterCacheDirty;                        ///< 过滤缓存是否需要更新
-    QString m_currentCategory;                      ///< 当前分类筛选器
-    QString m_currentFilter;                        ///< 当前筛选条件
-    bool m_currentImportant;                        ///< 当前重要程度筛选器
-    QDate m_dateFilterStart;                        ///< 日期筛选开始日期
-    QDate m_dateFilterEnd;                          ///< 日期筛选结束日期
-    bool m_dateFilterEnabled;                       ///< 日期筛选是否启用
     NetworkRequest &m_networkRequest;               ///< 网络管理器
     Setting &m_setting;                             ///< 应用设置
     bool m_isAutoSync;                              ///< 是否自动同步
@@ -209,8 +156,8 @@ class TodoManager : public QAbstractListModel {
     TodoSyncServer *m_syncManager;      ///< 同步管理器 - 负责所有服务器同步相关功能
     TodoDataStorage *m_dataManager;     ///< 数据管理器 - 负责本地存储和文件导入导出
     CategoryManager *m_categoryManager; ///< 类别管理器 - 负责类别相关操作
-
-    int m_sortType; ///< 当前排序类型
+    TodoFilter *m_filter;               ///< 筛选管理器 - 负责所有筛选相关功能
+    TodoSorter *m_sorter;               ///< 排序管理器 - 负责所有排序相关功能
 
     // 辅助方法
 };

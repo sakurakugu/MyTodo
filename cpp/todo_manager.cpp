@@ -25,14 +25,31 @@
 #include "category_manager.h"
 #include "foundation/network_request.h"
 #include "user_auth.h"
+#include "todo_filter.h"
+#include "todo_sorter.h"
 
 TodoManager::TodoManager(QObject *parent)
-    : QAbstractListModel(parent), m_filterCacheDirty(true), m_currentCategory(""), m_currentFilter(""),
-      m_currentImportant(false), m_dateFilterEnabled(false), m_networkRequest(NetworkRequest::GetInstance()),
-      m_setting(Setting::GetInstance()), m_isAutoSync(false), m_sortType(SortByCreatedTime) {
+    : QAbstractListModel(parent), m_filterCacheDirty(true), m_networkRequest(NetworkRequest::GetInstance()),
+      m_setting(Setting::GetInstance()), m_isAutoSync(false) {
 
     // 初始化默认服务器配置
     m_setting.initializeDefaultServerConfig();
+
+    // 初始化筛选管理器
+    m_filter = new TodoFilter(this);
+    
+    // 初始化排序管理器
+    m_sorter = new TodoSorter(this);
+    
+    // 连接筛选器信号，当筛选条件变化时更新缓存
+    connect(m_filter, &TodoFilter::filtersChanged, this, [this]() {
+        beginResetModel();
+        invalidateFilterCache();
+        endResetModel();
+    });
+    
+    // 连接排序器信号，当排序类型变化时重新排序
+    connect(m_sorter, &TodoSorter::sortTypeChanged, this, &TodoManager::sortTodos);
 
     // 创建数据管理器
     m_dataManager = new TodoDataStorage(m_setting, this);
@@ -50,7 +67,6 @@ TodoManager::TodoManager(QObject *parent)
 
     // 创建类别管理器
     m_categoryManager = new CategoryManager(m_syncManager, this);
-    connect(m_categoryManager, &CategoryManager::categoriesChanged, this, &TodoManager::categoriesChanged);
     connect(m_categoryManager, &CategoryManager::categoryOperationCompleted, this,
             &TodoManager::categoryOperationCompleted);
 
@@ -67,7 +83,7 @@ TodoManager::TodoManager(QObject *parent)
 
     // 如果已登录，获取类别列表
     if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
-        fetchCategories();
+        m_categoryManager->fetchCategories();
     }
 }
 
@@ -95,8 +111,8 @@ int TodoManager::rowCount(const QModelIndex &parent) const {
     if (parent.isValid())
         return 0;
 
-    // 如果没有设置过滤条件，返回所有项目
-    if (m_currentCategory.isEmpty() && m_currentFilter.isEmpty()) {
+    // 使用筛选器获取筛选后的项目数量
+    if (!m_filter->hasActiveFilters()) {
         return m_todos.size();
     }
 
@@ -116,7 +132,7 @@ QVariant TodoManager::data(const QModelIndex &index, int role) const {
         return QVariant();
 
     // 如果没有设置过滤条件，直接返回对应索引的项目
-    if (m_currentCategory.isEmpty() && m_currentFilter.isEmpty()) {
+    if (!m_filter->hasActiveFilters()) {
         if (static_cast<size_t>(index.row()) >= m_todos.size())
             return QVariant();
         return getItemData(m_todos[index.row()].get(), role);
@@ -264,80 +280,18 @@ bool TodoManager::setData(const QModelIndex &index, const QVariant &value, int r
 // 性能优化相关方法实现
 void TodoManager::updateFilterCache() {
     if (!m_filterCacheDirty) {
-        return; // 缓存仍然有效
+        return;
     }
 
     m_filteredTodos.clear();
-
-    // 如果没有过滤条件，缓存所有项目
-    if (m_currentCategory.isEmpty() && m_currentFilter.isEmpty()) {
-        for (auto it = m_todos.begin(); it != m_todos.end(); ++it) {
-            m_filteredTodos.append(it->get());
-        }
-    } else {
-        // 应用过滤条件
-        for (auto it = m_todos.begin(); it != m_todos.end(); ++it) {
-            if (itemMatchesFilter(it->get())) {
-                m_filteredTodos.append(it->get());
-            }
-        }
-    }
+    
+    // 使用新的筛选器进行筛选
+    m_filteredTodos = m_filter->filterTodos(m_todos);
 
     m_filterCacheDirty = false;
 }
 
-bool TodoManager::itemMatchesFilter(const TodoItem *item) const {
-    if (!item)
-        return false;
 
-    bool categoryMatch =
-        m_currentCategory.isEmpty() || item->category() == m_currentCategory ||
-        (m_currentCategory == "uncategorized" && (item->category().isEmpty() || item->category() == "uncategorized"));
-    // 状态筛选逻辑：
-    // - 如果m_currentFilter为"recycle"，则只显示已删除的项目
-    // - 否则只显示未删除的项目，并根据完成状态进一步筛选
-    bool statusMatch = true;
-    if (m_currentFilter == "recycle") {
-        // 回收站模式：只显示已删除的项目
-        statusMatch = item->isDeleted();
-    } else {
-        // 正常模式：只显示未删除的项目
-        statusMatch = !item->isDeleted();
-
-        // 在未删除的项目中进一步筛选完成状态
-        if (!m_currentFilter.isEmpty()) {
-            if (m_currentFilter == "done") {
-                statusMatch = statusMatch && item->isCompleted();
-            } else if (m_currentFilter == "todo") {
-                statusMatch = statusMatch && !item->isCompleted();
-            }
-        }
-    }
-
-    // 重要性筛选逻辑：
-    // - 如果m_currentImportant为false且m_currentFilter不是"important"，则显示所有项目
-    // - 如果m_currentImportant为true，则只显示重要的项目
-    // - 如果m_currentImportant为false且需要筛选，则只显示不重要的项目
-    bool importantMatch = true; // 默认显示所有
-    if (m_currentFilter == "important") {
-        importantMatch = (item->important() == m_currentImportant);
-    }
-
-    // 日期筛选逻辑：
-    // 如果启用了日期筛选，检查任务的截止日期是否在指定范围内
-    bool dateMatch = true; // 默认显示所有
-    if (m_dateFilterEnabled && item->deadline().isValid()) {
-        QDate itemDate = item->deadline().date();
-        bool startMatch = !m_dateFilterStart.isValid() || itemDate >= m_dateFilterStart;
-        bool endMatch = !m_dateFilterEnd.isValid() || itemDate <= m_dateFilterEnd;
-        dateMatch = startMatch && endMatch;
-    } else if (m_dateFilterEnabled && !item->deadline().isValid()) {
-        // 如果启用了日期筛选但任务没有截止日期，则不显示
-        dateMatch = false;
-    }
-
-    return categoryMatch && statusMatch && importantMatch && dateMatch;
-}
 
 TodoItem *TodoManager::getFilteredItem(int index) const {
     const_cast<TodoManager *>(this)->updateFilterCache();
@@ -353,137 +307,7 @@ void TodoManager::invalidateFilterCache() {
     m_filterCacheDirty = true;
 }
 
-/**
- * @brief 获取当前激活的分类筛选器
- * @return 当前分类名称
- */
-QString TodoManager::currentCategory() const {
-    return m_currentCategory;
-}
 
-/**
- * @brief 设置分类筛选器
- * @param category 分类名称，空字符串表示显示所有分类
- */
-void TodoManager::setCurrentCategory(const QString &category) {
-    if (m_currentCategory != category) {
-        beginResetModel();
-        m_currentCategory = category;
-        invalidateFilterCache();
-        endResetModel();
-        emit currentCategoryChanged();
-    }
-}
-
-/**
- * @brief 获取当前激活的筛选条件
- * @return 当前筛选条件
- */
-QString TodoManager::currentFilter() const {
-    return m_currentFilter;
-}
-
-/**
- * @brief 设置筛选条件
- * @param filter 筛选条件（如"完成"、"未完成"等）
- */
-void TodoManager::setCurrentFilter(const QString &filter) {
-    if (m_currentFilter != filter) {
-        beginResetModel();
-        m_currentFilter = filter;
-        invalidateFilterCache();
-        endResetModel();
-        emit currentFilterChanged();
-    }
-}
-
-/**
- * @brief 获取当前激活的重要程度筛选器
- * @return 当前重要程度筛选器
- */
-bool TodoManager::currentImportant() const {
-    return m_currentImportant;
-}
-
-/**
- * @brief 设置重要程度筛选器
- * @param important 重要程度筛选器（true表示重要，false表示不重要）
- */
-void TodoManager::setCurrentImportant(bool important) {
-    if (m_currentImportant != important) {
-        beginResetModel();
-        m_currentImportant = important;
-        invalidateFilterCache();
-        endResetModel();
-        emit currentImportantChanged();
-    }
-}
-
-/**
- * @brief 获取日期筛选开始日期
- * @return 日期筛选开始日期
- */
-QDate TodoManager::dateFilterStart() const {
-    return m_dateFilterStart;
-}
-
-/**
- * @brief 设置日期筛选开始日期
- * @param date 开始日期
- */
-void TodoManager::setDateFilterStart(const QDate &date) {
-    if (m_dateFilterStart != date) {
-        beginResetModel();
-        m_dateFilterStart = date;
-        invalidateFilterCache();
-        endResetModel();
-        emit dateFilterStartChanged();
-    }
-}
-
-/**
- * @brief 获取日期筛选结束日期
- * @return 日期筛选结束日期
- */
-QDate TodoManager::dateFilterEnd() const {
-    return m_dateFilterEnd;
-}
-
-/**
- * @brief 设置日期筛选结束日期
- * @param date 结束日期
- */
-void TodoManager::setDateFilterEnd(const QDate &date) {
-    if (m_dateFilterEnd != date) {
-        beginResetModel();
-        m_dateFilterEnd = date;
-        invalidateFilterCache();
-        endResetModel();
-        emit dateFilterEndChanged();
-    }
-}
-
-/**
- * @brief 获取日期筛选是否启用
- * @return 日期筛选是否启用
- */
-bool TodoManager::dateFilterEnabled() const {
-    return m_dateFilterEnabled;
-}
-
-/**
- * @brief 设置日期筛选是否启用
- * @param enabled 是否启用日期筛选
- */
-void TodoManager::setDateFilterEnabled(bool enabled) {
-    if (m_dateFilterEnabled != enabled) {
-        beginResetModel();
-        m_dateFilterEnabled = enabled;
-        invalidateFilterCache();
-        endResetModel();
-        emit dateFilterEnabledChanged();
-    }
-}
 
 /**
  * @brief 添加新的待办事项
@@ -977,106 +801,31 @@ void TodoManager::logError(const QString &context, const QString &error) {
     // 也可以在这里添加错误报告机制
 }
 
-// 类别管理相关方法实现
-QStringList TodoManager::getCategories() const {
-    return m_categoryManager->getCategories();
+// 访问器方法
+TodoFilter* TodoManager::filter() const {
+    return m_filter;
 }
 
-CategoryManager *TodoManager::getCategoryManager() const {
-    return m_categoryManager;
+TodoSorter* TodoManager::sorter() const {
+    return m_sorter;
 }
 
 // 排序相关实现
-int TodoManager::sortType() const {
-    return m_sortType;
-}
-
-void TodoManager::setSortType(int type) {
-    if (m_sortType != type) {
-        m_sortType = type;
-        sortTodos();
-        emit sortTypeChanged();
-    }
-}
-
 void TodoManager::sortTodos() {
     if (m_todos.empty()) {
         return;
     }
 
     beginResetModel();
-
-    switch (m_sortType) {
-    case SortByDeadline:
-        std::sort(m_todos.begin(), m_todos.end(),
-                  [](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
-                      // 获取截止日期
-                      QDateTime deadlineA = a->deadline();
-                      QDateTime deadlineB = b->deadline();
-
-                      // 如果A有截止日期，B没有，A排在前面
-                      if (deadlineA.isValid() && !deadlineB.isValid()) {
-                          return true;
-                      }
-                      // 如果B有截止日期，A没有，B排在前面
-                      if (!deadlineA.isValid() && deadlineB.isValid()) {
-                          return false;
-                      }
-                      // 如果都没有截止日期，按创建时间排序
-                      if (!deadlineA.isValid() && !deadlineB.isValid()) {
-                          return a->createdAt() > b->createdAt();
-                      }
-                      // 如果都有截止日期，按截止日期排序（早的在前）
-                      return deadlineA < deadlineB;
-                  });
-        break;
-    case SortByImportance:
-        std::sort(m_todos.begin(), m_todos.end(),
-                  [](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
-                      // 重要的任务排在前面
-                      if (a->important() != b->important()) {
-                          return a->important() > b->important();
-                      }
-                      // 如果重要程度相同，按创建时间排序
-                      return a->createdAt() > b->createdAt();
-                  });
-        break;
-    case SortByTitle:
-        std::sort(m_todos.begin(), m_todos.end(),
-                  [](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
-                      return a->title().compare(b->title(), Qt::CaseInsensitive) < 0;
-                  });
-        break;
-    case SortByCreatedTime:
-    default:
-        std::sort(m_todos.begin(), m_todos.end(),
-                  [](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
-                      return a->createdAt() > b->createdAt();
-                  });
-        break;
-    }
-
+     
+    // 委托给排序器进行排序
+    m_sorter->sortTodos(m_todos);
+     
     // 排序后需要更新过滤缓存
     invalidateFilterCache();
-
+     
     endResetModel();
-
+     
     // 保存到本地存储
     m_dataManager->saveToLocalStorage(m_todos);
-}
-
-void TodoManager::fetchCategories() {
-    m_categoryManager->fetchCategories();
-}
-
-void TodoManager::createCategory(const QString &name) {
-    m_categoryManager->createCategory(name);
-}
-
-void TodoManager::updateCategory(int id, const QString &name) {
-    m_categoryManager->updateCategory(id, name);
-}
-
-void TodoManager::deleteCategory(int id) {
-    m_categoryManager->deleteCategory(id);
 }

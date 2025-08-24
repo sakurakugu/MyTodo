@@ -86,6 +86,10 @@ set(CORE_SOURCES
     cpp/todo_data_storage.h
     cpp/category_manager.cpp
     cpp/category_manager.h
+    cpp/todo_sorter.cpp
+    cpp/todo_sorter.h
+    cpp/todo_filter.cpp
+    cpp/todo_filter.h
 )
 
 set(NETWORK_SOURCES
