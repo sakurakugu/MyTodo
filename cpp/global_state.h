@@ -1,8 +1,8 @@
 /**
- * @file mainWindow.h
- * @brief MainWindow类的头文件
+ * @file global_state.h
+ * @brief GlobalState类的头文件
  *
- * 该文件定义了MainWindow类，用于管理应用程序的主窗口。
+ * 该文件定义了GlobalState类，用于管理应用程序的全局状态。
  *
  * @author Sakurakugu
  * @date 2025-08-16 20:05:55(UTC+8) 周六
@@ -12,7 +12,7 @@
 
 #include <QObject>
 
-class MainWindow : public QObject {
+class GlobalState : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool isDesktopWidget READ isDesktopWidget WRITE setIsDesktopWidget NOTIFY isDesktopWidgetChanged)
     Q_PROPERTY(bool isShowAddTask READ isShowAddTask WRITE setIsShowAddTask NOTIFY isShowAddTaskChanged)
@@ -22,7 +22,7 @@ class MainWindow : public QObject {
     Q_PROPERTY(bool isSystemDarkMode READ isSystemDarkMode NOTIFY systemDarkModeChanged)
 
   public:
-    explicit MainWindow(QObject *parent = nullptr);
+    explicit GlobalState(QObject *parent = nullptr);
 
     // 属性访问器
     bool isDesktopWidget() const;

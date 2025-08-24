@@ -39,9 +39,9 @@ Item {
 
     anchors.centerIn: parent
 
-    // TodoModel信号连接
+    // UserAuth信号连接
     Connections {
-        target: todoModel
+        target: userAuth
 
         function onLoginSuccessful(username) {
             loginDialog.close();
@@ -307,7 +307,7 @@ Item {
 
                 onClicked: {
                     loginDialog.isLoggingIn = true;
-                    todoModel.login(usernameField.text, passwordField.text);
+                    userAuth.login(usernameField.text, passwordField.text);
                 }
 
                 background: Rectangle {
@@ -421,7 +421,7 @@ Item {
                 onClicked: {
                     logoutConfirmDialog.close();
                     loginStatusDialogs.logoutConfirmed();
-                    todoModel.logout();
+                    userAuth.logout();
                 }
 
                 background: Rectangle {

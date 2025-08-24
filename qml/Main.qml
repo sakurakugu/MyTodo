@@ -43,8 +43,8 @@ Window {
     flags: Qt.FramelessWindowHint | (isDesktopWidget ? Qt.Tool : Qt.Window) | Qt.WindowStaysOnTopHint
 
     // 显示模式控制属性
-    property bool isDesktopWidget: mainWindow.isDesktopWidget  ///< 是否为桌面小组件模式
-    property bool isShowTodos: mainWindow.isShowTodos          ///< 是否显示所有任务（小组件模式下）
+    property bool isDesktopWidget: globalState.isDesktopWidget  ///< 是否为桌面小组件模式
+    property bool isShowTodos: globalState.isShowTodos          ///< 是否显示所有任务（小组件模式下）
     property bool isDarkMode: setting.get("setting/isDarkMode", false)           ///< 深色模式开关，从配置文件读取
     property bool preventDragging: setting.get("setting/preventDragging", false) ///< 是否禁止窗口拖拽，从配置文件读取
 
@@ -79,12 +79,12 @@ Window {
     /**
      * @brief 窗口尺寸同步连接
      *
-     * 监听C++端mainWindow对象的尺寸变化，
+     * 监听C++端globalState对象的尺寸变化，
      * 确保QML窗口与C++窗口尺寸保持同步。
      * 仅在桌面小组件模式下有效。
      */
     Connections {
-        target: mainWindow
+        target: globalState
 
         /// 处理窗口宽度变化
         function onWidthChanged(width) {
@@ -257,7 +257,7 @@ Window {
                          * 显示当前登录用户的用户名，未登录时显示提示文本。
                          */
                         Text {
-                            text: todoModel.username !== "" ? todoModel.username : qsTr("未登录")
+                            text: userAuth.username !== "" ? userAuth.username : qsTr("未登录")
                             color: theme.titleBarTextColor      ///< 使用主题文本颜色
                             font.bold: true                     ///< 粗体字
                             font.pixelSize: 16                  ///< 字体大小
@@ -277,7 +277,7 @@ Window {
             /// 设置按钮
             IconButton {
                 text: "\ue90f"                                       ///< 菜单图标
-                onClicked: mainWindow.toggleSettingsVisible()  ///< 切换设置界面显示
+                onClicked: globalState.toggleSettingsVisible()  ///< 切换设置界面显示
                 visible: root.isDesktopWidget
                 textColor: theme.titleBarTextColor
                 fontSize: 16
@@ -329,7 +329,7 @@ Window {
             /// 任务列表展开/收起按钮
             IconButton {
                 text: isShowTodos ? "\ue667" : "\ue669"        ///< 根据状态显示箭头
-                onClicked: mainWindow.toggleTodosVisible()     ///< 切换任务列表显示
+                onClicked: globalState.toggleTodosVisible()     ///< 切换任务列表显示
                 visible: root.isDesktopWidget
                 textColor: theme.titleBarTextColor
                 fontSize: 16
@@ -339,7 +339,7 @@ Window {
             /// 添加任务按钮
             IconButton {
                 text: "\ue903"                                 ///< 加号图标
-                onClicked: mainWindow.toggleAddTaskVisible()   ///< 切换添加任务界面显示
+                onClicked: globalState.toggleAddTaskVisible()   ///< 切换添加任务界面显示
                 visible: root.isDesktopWidget
                 textColor: theme.titleBarTextColor
                 fontSize: 16
@@ -352,10 +352,10 @@ Window {
                 /// 鼠标按下事件处理
                 onClicked: {
                     if (root.isDesktopWidget) {
-                        mainWindow.toggleWidgetMode();
-                        mainWindow.isShowTodos = true;
+                        globalState.toggleWidgetMode();
+                        globalState.isShowTodos = true;
                     } else {
-                        mainWindow.toggleWidgetMode();
+                        globalState.toggleWidgetMode();
                     }
                 }
                 textColor: theme.titleBarTextColor

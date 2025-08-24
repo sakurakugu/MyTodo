@@ -1,13 +1,13 @@
 /**
- * @brief 主窗口类
+ * @brief 全局状态类
  *
- * 该类负责管理应用程序的主窗口，包括窗口属性、显示状态和系统主题监听。
+ * 该类负责管理应用程序的全局状态，包括窗口属性、显示状态和系统主题监听。
  *
  * @author Sakurakugu
  * @date 2025-08-16 20:05:55(UTC+8) 周六
  * @version 2025-08-22 18:34:35(UTC+8) 周五
  */
-#include "main_window.h"
+#include "global_state.h"
 #include <QCoreApplication>
 #include <QDir>
 #include <QGuiApplication>
@@ -15,69 +15,69 @@
 #include <QSettings>
 #include <QStandardPaths>
 
-MainWindow::MainWindow(QObject *parent)
+GlobalState::GlobalState(QObject *parent)
     : QObject(parent), m_isDesktopWidget(false), m_isShowAddTask(false), m_isShowTodos(true), m_isShowSetting(false), m_isShowDropdown(false) {
 
     // 监听系统主题变化
     connect(QGuiApplication::instance(), SIGNAL(paletteChanged(QPalette)), this, SIGNAL(systemDarkModeChanged()));
 }
 
-bool MainWindow::isDesktopWidget() const {
+bool GlobalState::isDesktopWidget() const {
     return m_isDesktopWidget;
 }
 
-void MainWindow::setIsDesktopWidget(bool value) {
+void GlobalState::setIsDesktopWidget(bool value) {
     if (m_isDesktopWidget != value) {
         m_isDesktopWidget = value;
         emit isDesktopWidgetChanged();
     }
 }
 
-bool MainWindow::isShowAddTask() const {
+bool GlobalState::isShowAddTask() const {
     return m_isShowAddTask;
 }
 
-void MainWindow::setIsShowAddTask(bool value) {
+void GlobalState::setIsShowAddTask(bool value) {
     if (m_isShowAddTask != value) {
         m_isShowAddTask = value;
         emit isShowAddTaskChanged();
     }
 }
 
-bool MainWindow::isShowTodos() const {
+bool GlobalState::isShowTodos() const {
     return m_isShowTodos;
 }
 
-void MainWindow::setIsShowTodos(bool value) {
+void GlobalState::setIsShowTodos(bool value) {
     if (m_isShowTodos != value) {
         m_isShowTodos = value;
         emit isShowTodosChanged();
     }
 }
 
-bool MainWindow::isShowSetting() const {
+bool GlobalState::isShowSetting() const {
     return m_isShowSetting;
 }
 
-void MainWindow::setIsShowSetting(bool value) {
+void GlobalState::setIsShowSetting(bool value) {
     if (m_isShowSetting != value) {
         m_isShowSetting = value;
         emit isShowSettingChanged();
     }
 }
 
-bool MainWindow::isShowDropdown() const {
+bool GlobalState::isShowDropdown() const {
     return m_isShowDropdown;
 }
 
-void MainWindow::setIsShowDropdown(bool value) {
+void GlobalState::setIsShowDropdown(bool value) {
     if (m_isShowDropdown != value) {
         m_isShowDropdown = value;
         emit isShowDropdownChanged();
     }
 }
 
-bool MainWindow::isSystemDarkMode() const {
+bool GlobalState::isSystemDarkMode() const {
 
 #if defined(Q_OS_WIN) // Windows 平台
     QSettings settings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
@@ -120,7 +120,7 @@ bool MainWindow::isSystemDarkMode() const {
 #endif
 }
 
-void MainWindow::toggleWidgetMode() {
+void GlobalState::toggleWidgetMode() {
     setIsDesktopWidget(!m_isDesktopWidget);
 
     // 根据模式设置窗口大小
@@ -133,7 +133,7 @@ void MainWindow::toggleWidgetMode() {
     }
 }
 
-void MainWindow::updateWidgetHeight() {
+void GlobalState::updateWidgetHeight() {
     if (!m_isDesktopWidget)
         return;
 
@@ -162,32 +162,32 @@ void MainWindow::updateWidgetHeight() {
     emit heightChanged(finalHeight);
 }
 
-void MainWindow::toggleAddTaskVisible() {
+void GlobalState::toggleAddTaskVisible() {
     setIsShowAddTask(!m_isShowAddTask);
     updateWidgetHeight(); // 动态更新高度
 }
 
-void MainWindow::toggleTodosVisible() {
+void GlobalState::toggleTodosVisible() {
     setIsShowTodos(!m_isShowTodos);
     updateWidgetHeight(); // 动态更新高度
 }
 
-void MainWindow::toggleSettingsVisible() {
+void GlobalState::toggleSettingsVisible() {
     setIsShowSetting(!m_isShowSetting);
     updateWidgetHeight(); // 动态更新高度
 }
 
-void MainWindow::toggleDropdownVisible() {
+void GlobalState::toggleDropdownVisible() {
     setIsShowDropdown(!m_isShowDropdown);
     updateWidgetHeight(); // 动态更新高度
 }
 
-bool MainWindow::isAutoStartEnabled() const {
+bool GlobalState::isAutoStartEnabled() const {
     QSettings config("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
     return config.contains("MyTodo");
 }
 
-bool MainWindow::setAutoStart(bool enabled) {
+bool GlobalState::setAutoStart(bool enabled) {
     QSettings config("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
 
     if (enabled) {

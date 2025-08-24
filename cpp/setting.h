@@ -12,11 +12,11 @@
 #pragma once
 
 #include "default_value.h"
-#include "foundation/config.h"
 #include "foundation/logger.h"
 
 #include <QObject>
 
+class Config;
 class Setting : public QObject {
     Q_OBJECT
   public:

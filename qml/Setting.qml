@@ -114,7 +114,7 @@ Page {
                     isInitialized = true;
                     if (checked) {
                         // 如果启用跟随系统，立即同步系统主题
-                        var systemDarkMode = mainWindow.isSystemDarkMode;
+                        var systemDarkMode = globalState.isSystemDarkMode;
                         if (settingPage.isDarkMode !== systemDarkMode) {
                             settingPage.isDarkMode = systemDarkMode;
                             setting.save("setting/isDarkMode", systemDarkMode);
@@ -133,7 +133,7 @@ Page {
 
                     if (checked) {
                         // 启用跟随系统时，立即同步系统主题
-                        var systemDarkMode = mainWindow.isSystemDarkMode;
+                        var systemDarkMode = globalState.isSystemDarkMode;
                         if (settingPage.isDarkMode !== systemDarkMode) {
                             settingPage.isDarkMode = systemDarkMode;
                             setting.save("setting/isDarkMode", systemDarkMode);
@@ -145,10 +145,10 @@ Page {
 
                 // 监听系统主题变化
                 Connections {
-                    target: mainWindow
+                    target: globalState
                     function onSystemDarkModeChanged() {
                         if (followSystemThemeCheckBox.checked) {
-                            var systemDarkMode = mainWindow.isSystemDarkMode;
+                            var systemDarkMode = globalState.isSystemDarkMode;
                             if (settingPage.isDarkMode !== systemDarkMode) {
                                 settingPage.isDarkMode = systemDarkMode;
                                 setting.save("setting/isDarkMode", systemDarkMode);
@@ -164,7 +164,7 @@ Page {
                 id: preventDraggingCheckBox
                 text: qsTr("防止拖动窗口（小窗口模式）")
                 checked: settingPage.preventDragging
-                enabled: mainWindow.isDesktopWidget
+                enabled: globalState.isDesktopWidget
                 onCheckedChanged: {
                     settingPage.preventDragging = checked;
                     setting.save("setting/preventDragging", settingPage.preventDragging);
@@ -176,9 +176,9 @@ Page {
             Switch {
                 id: autoStartSwitch
                 text: qsTr("开机自启动")
-                checked: mainWindow.isAutoStartEnabled()
+                checked: globalState.isAutoStartEnabled()
                 onCheckedChanged: {
-                    mainWindow.setAutoStart(checked);
+                    globalState.setAutoStart(checked);
                 }
             }
 

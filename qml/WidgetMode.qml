@@ -20,10 +20,10 @@ Item {
 
     // 从父组件传入的属性
     property bool isDesktopWidget: false
-    property bool isShowAddTask: mainWindow.isShowAddTask
-    property bool isShowSetting: mainWindow.isShowSetting
+    property bool isShowAddTask: globalState.isShowAddTask
+    property bool isShowSetting: globalState.isShowSetting
     property bool isShowTodos: false
-    property bool isShowDropdown: mainWindow.isShowDropdown
+    property bool isShowDropdown: globalState.isShowDropdown
     property bool isDarkMode: false
     property bool preventDragging: false
 
@@ -189,7 +189,7 @@ Item {
                                 var todoData = addTaskForm.getTodoData();
                                 todoModel.addTodo(todoData.title, todoData.description, todoData.category, todoData.important);
                                 addTaskForm.clear();
-                                mainWindow.isShowAddTask = false;
+                                globalState.isShowAddTask = false;
                             }
                         }
                     }
@@ -315,7 +315,7 @@ Item {
                                     category: model.category,
                                     important: model.important
                                 };
-                                mainWindow.toggleDropdownVisible();
+                                globalState.toggleDropdownVisible();
                             }
                         }
 
@@ -457,7 +457,7 @@ Item {
                             anchors.fill: parent
                             hoverEnabled: true
                             onClicked: {
-                                 mainWindow.toggleDropdownVisible();
+                                 globalState.toggleDropdownVisible();
                              }
                             onEntered: {
                                 parent.color = theme.borderColor;
@@ -482,7 +482,7 @@ Item {
                     backgroundColor: theme.backgroundColor
                     isDarkMode: widgetMode.isDarkMode
                     onClicked: {
-                         mainWindow.toggleDropdownVisible();
+                         globalState.toggleDropdownVisible();
                          todoDetailsDialog.openTodoDetails(todoItemDropdown.currentTodoData, todoItemDropdown.currentTodoIndex);
                      }
                 }
@@ -495,7 +495,7 @@ Item {
                     isDarkMode: widgetMode.isDarkMode
                     onClicked: {
                          todoModel.markAsDone(todoItemDropdown.currentTodoIndex);
-                         mainWindow.toggleDropdownVisible();
+                         globalState.toggleDropdownVisible();
                      }
                 }
 
@@ -507,7 +507,7 @@ Item {
                     isDarkMode: widgetMode.isDarkMode
                     onClicked: {
                          todoModel.removeTodo(todoItemDropdown.currentTodoIndex);
-                         mainWindow.toggleDropdownVisible();
+                         globalState.toggleDropdownVisible();
                      }
                 }
             }

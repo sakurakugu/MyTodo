@@ -30,7 +30,7 @@ class Config : public QObject {
     Q_OBJECT
 
   public:
-    // 单例模式 - 使用C++23的constexpr改进
+    // 单例模式
     static Config &GetInstance() noexcept {
         static Config instance;
         return instance;

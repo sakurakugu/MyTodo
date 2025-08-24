@@ -26,9 +26,10 @@
 #endif
 // 自定义头文件
 #include "cpp/foundation/logger.h"
-#include "cpp/main_window.h"
+#include "cpp/global_state.h"
 #include "cpp/setting.h"
 #include "cpp/todo_model.h"
+#include "cpp/user_auth.h"
 
 #include <QDebug>
 #include <QDirIterator>
@@ -93,22 +94,24 @@ int main(int argc, char *argv[]) {
     setting.setMaxLogFiles(setting.getMaxLogFiles());
 
     qInfo() << "日志系统初始化完成，日志文件路径:" << setting.getLogFilePath();
-    TodoModel todoModel(nullptr); // 创建TodoModel实例
-    MainWindow mainWindow;        // 创建MainWindow实例
+    UserAuth &userAuth = UserAuth::GetInstance(); // 获取UserAuth实例
+    TodoModel todoModel(nullptr);                 // 创建TodoModel实例
+    GlobalState globalState;                        // 创建GlobalState实例
 
     // 检查是否通过开机自启动启动
     QStringList arguments = app.arguments();
     if (arguments.contains("--autostart")) {
         // 如果是开机自启动，默认设置为小组件模式
-        mainWindow.setIsDesktopWidget(true);
+        globalState.setIsDesktopWidget(true);
     }
 
     QQmlApplicationEngine engine;
 
     // 将类注册到QML上下文
-    engine.rootContext()->setContextProperty("todoModel", &todoModel);
-    engine.rootContext()->setContextProperty("mainWindow", &mainWindow);
     engine.rootContext()->setContextProperty("setting", &setting);
+    engine.rootContext()->setContextProperty("userAuth", &userAuth);
+    engine.rootContext()->setContextProperty("todoModel", &todoModel);
+    engine.rootContext()->setContextProperty("globalState", &globalState);
 
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app, []() { QCoreApplication::exit(-1); },

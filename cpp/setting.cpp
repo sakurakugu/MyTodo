@@ -9,6 +9,8 @@
  */
 #include "setting.h"
 
+#include "foundation/config.h"
+
 Setting::Setting(QObject *parent) : QObject(parent), m_logger(Logger::GetInstance()), m_config(Config::GetInstance()) {
 }
 

@@ -88,12 +88,14 @@ set(NETWORK_SOURCES
     cpp/foundation/network_request.h
     cpp/foundation/network_proxy.cpp
     cpp/foundation/network_proxy.h
+    cpp/user_auth.cpp
+    cpp/user_auth.h
 )
 
 set(UI_SOURCES
     # 用户界面模块
-    cpp/main_window.cpp
-    cpp/main_window.h
+    cpp/global_state.cpp
+    cpp/global_state.h
 )
 
 set(UTILITY_SOURCES

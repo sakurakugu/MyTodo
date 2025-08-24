@@ -61,8 +61,7 @@ class TodoModel : public QAbstractListModel {
     Q_PROPERTY(QDate dateFilterStart READ dateFilterStart WRITE setDateFilterStart NOTIFY dateFilterStartChanged)
     Q_PROPERTY(QDate dateFilterEnd READ dateFilterEnd WRITE setDateFilterEnd NOTIFY dateFilterEndChanged)
     Q_PROPERTY(bool dateFilterEnabled READ dateFilterEnabled WRITE setDateFilterEnabled NOTIFY dateFilterEnabledChanged)
-    Q_PROPERTY(QString username READ getUsername NOTIFY usernameChanged)
-    Q_PROPERTY(bool isLoggedIn READ isLoggedIn NOTIFY isLoggedInChanged)
+
     Q_PROPERTY(QStringList categories READ getCategories NOTIFY categoriesChanged)
     Q_PROPERTY(int sortType READ sortType WRITE setSortType NOTIFY sortTypeChanged)
 
@@ -152,13 +151,7 @@ class TodoModel : public QAbstractListModel {
     Q_INVOKABLE bool markAsDone(int index);            // 将待办事项标记为已完成
 
     // 网络同步操作
-    Q_INVOKABLE void syncWithServer();                                        // 与服务器同步待办事项数据
-    Q_INVOKABLE void login(const QString &username, const QString &password); // 使用用户凭据登录服务器
-    Q_INVOKABLE void logout();                                                // 注销当前用户
-    Q_INVOKABLE bool isLoggedIn() const;                                      // 检查用户是否已登录
-
-    Q_INVOKABLE QString getUsername() const; // 获取用户名
-    Q_INVOKABLE QString getEmail() const;    // 获取邮箱
+    Q_INVOKABLE void syncWithServer(); // 与服务器同步待办事项数据
 
     // 导出导入功能
     Q_INVOKABLE bool exportTodos(const QString &filePath);                  // 导出待办事项到文件
@@ -195,14 +188,8 @@ class TodoModel : public QAbstractListModel {
     void dateFilterStartChanged();                                             // 日期筛选开始日期变化信号
     void dateFilterEndChanged();                                               // 日期筛选结束日期变化信号
     void dateFilterEnabledChanged();                                           // 日期筛选启用状态变化信号
-    void usernameChanged();                                                    // 用户名变化信号
-    void isLoggedInChanged();                                                  // 登录状态变化信号
     void syncStarted();                                                        // 同步操作开始信号
     void syncCompleted(bool success, const QString &errorMessage = QString()); // 同步操作完成信号
-    void loginSuccessful(const QString &username);                             // 登录成功信号
-    void loginFailed(const QString &errorMessage);                             // 登录失败信号
-    void loginRequired();                                                      // 需要登录信号
-    void logoutSuccessful();                                                   // 退出登录成功信号
     void categoriesChanged();                                                  // 类别列表变化信号
     void categoryOperationCompleted(bool success, const QString &message);     // 类别操作完成信号
     void sortTypeChanged();                                                    // 排序类型变化信号
@@ -212,7 +199,7 @@ class TodoModel : public QAbstractListModel {
     void onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
                                 const QString &message); // 处理网络请求失败
     void onNetworkStatusChanged(bool isOnline);          // 处理网络状态变化
-    void onAuthTokenExpired();                           // 处理认证令牌过期
+
 
   private:
     bool loadFromLocalStorage();                                      // 从本地存储加载待办事项
@@ -221,7 +208,7 @@ class TodoModel : public QAbstractListModel {
     void pushLocalChangesToServer();                                  // 将本地更改推送到服务器
     void handleFetchTodosSuccess(const QJsonObject &response);        // 处理获取待办事项成功
     void handlePushChangesSuccess(const QJsonObject &response);       // 处理推送更改成功
-    void handleLoginSuccess(const QJsonObject &response);             // 处理登录成功
+
     void handleSyncSuccess(const QJsonObject &response);              // 处理同步成功
     void handleFetchCategoriesSuccess(const QJsonObject &response);   // 处理获取类别列表成功响应
     void handleCategoryOperationSuccess(const QJsonObject &response); // 处理类别操作成功响应
@@ -250,15 +237,9 @@ class TodoModel : public QAbstractListModel {
     NetworkRequest &m_networkRequest;               ///< 网络管理器
     Setting &m_setting;                             ///< 应用设置
 
-    QString m_accessToken;  ///< 访问令牌
-    QString m_refreshToken; ///< 刷新令牌
-    QString m_username;     ///< 用户名
-    QString m_email;        ///< 邮箱
-
     // 服务器配置
     QString m_serverBaseUrl;   ///< 服务器基础URL
     QString m_todoApiEndpoint; ///< 待办事项API端点
-    QString m_authApiEndpoint; ///< 认证API端点
 
     // 待同步项目的临时存储
     QList<TodoItem *> m_pendingUnsyncedItems; ///< 待同步项目列表

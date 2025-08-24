@@ -23,6 +23,7 @@
 #include <map>
 
 #include "foundation/network_request.h"
+#include "user_auth.h"
 
 TodoModel::TodoModel(QObject *parent)
     : QAbstractListModel(parent), m_filterCacheDirty(true), m_isOnline(false), m_currentCategory(""),
@@ -42,7 +43,6 @@ TodoModel::TodoModel(QObject *parent)
     connect(&m_networkRequest, &NetworkRequest::requestCompleted, this, &TodoModel::onNetworkRequestCompleted);
     connect(&m_networkRequest, &NetworkRequest::requestFailed, this, &TodoModel::onNetworkRequestFailed);
     connect(&m_networkRequest, &NetworkRequest::networkStatusChanged, this, &TodoModel::onNetworkStatusChanged);
-    connect(&m_networkRequest, &NetworkRequest::authTokenExpired, this, &TodoModel::onAuthTokenExpired);
 
     // 加载本地数据
     if (!loadFromLocalStorage()) {
@@ -53,19 +53,9 @@ TodoModel::TodoModel(QObject *parent)
     m_isOnline = m_setting.get(QStringLiteral("autoSync"), false).toBool();
     emit isOnlineChanged();
 
-    // 尝试使用存储的令牌自动登录
-    if (m_setting.contains(QStringLiteral("user/accessToken"))) {
-        m_accessToken = m_setting.get(QStringLiteral("user/accessToken")).toString();
-        m_refreshToken = m_setting.get(QStringLiteral("user/refreshToken")).toString();
-        m_username = m_setting.get(QStringLiteral("user/username")).toString();
-
-        // TODO: 在这里验证令牌是否有效
-        qDebug() << "使用存储的凭据自动登录用户：" << m_username;
-
-        // 如果已登录，获取类别列表
-        if (m_isOnline) {
-            fetchCategories();
-        }
+    // 如果已登录，获取类别列表
+    if (m_isOnline && UserAuth::GetInstance().isLoggedIn()) {
+        fetchCategories();
     }
 }
 
@@ -373,7 +363,7 @@ void TodoModel::setIsOnline(bool online) {
         // 尝试连接服务器，验证是否可以切换到在线模式
         NetworkRequest::RequestConfig config;
         config.url = getApiUrl(m_todoApiEndpoint);
-        config.requiresAuth = isLoggedIn();
+        config.requiresAuth = UserAuth::GetInstance().isLoggedIn();
         config.timeout = 5000; // 5秒超时
 
         // 发送测试请求
@@ -385,7 +375,7 @@ void TodoModel::setIsOnline(bool online) {
         // 保存到设置，保持与autoSync一致
         m_setting.save(QStringLiteral("setting/autoSync"), m_isOnline);
 
-        if (m_isOnline && isLoggedIn()) {
+        if (m_isOnline && UserAuth::GetInstance().isLoggedIn()) {
             syncWithServer();
         }
     } else {
@@ -568,7 +558,7 @@ void TodoModel::addTodo(const QString &title, const QString &description, const 
 
     saveToLocalStorage();
 
-    if (m_isOnline && isLoggedIn()) {
+    if (m_isOnline && UserAuth::GetInstance().isLoggedIn()) {
         // 如果在线且已登录，立即尝试同步到服务器
         syncWithServer();
     }
@@ -691,7 +681,7 @@ bool TodoModel::updateTodo(int index, const QVariantMap &todoData) {
                 qWarning() << "更新待办事项后无法保存到本地存储";
             }
 
-            if (m_isOnline && isLoggedIn()) {
+            if (m_isOnline && UserAuth::GetInstance().isLoggedIn()) {
                 syncWithServer();
             }
 
@@ -741,7 +731,7 @@ bool TodoModel::removeTodo(int index) {
             qWarning() << "软删除待办事项后无法保存到本地存储";
         }
 
-        if (m_isOnline && isLoggedIn()) {
+        if (m_isOnline && UserAuth::GetInstance().isLoggedIn()) {
             syncWithServer();
         }
 
@@ -794,7 +784,7 @@ bool TodoModel::restoreTodo(int index) {
             qWarning() << "恢复待办事项后无法保存到本地存储";
         }
 
-        if (m_isOnline && isLoggedIn()) {
+        if (m_isOnline && UserAuth::GetInstance().isLoggedIn()) {
             syncWithServer();
         }
 
@@ -837,7 +827,7 @@ bool TodoModel::permanentlyDeleteTodo(int index) {
             qWarning() << "永久删除待办事项后无法保存到本地存储";
         }
 
-        if (m_isOnline && isLoggedIn()) {
+        if (m_isOnline && UserAuth::GetInstance().isLoggedIn()) {
             syncWithServer();
         }
 
@@ -866,7 +856,7 @@ bool TodoModel::markAsDone(int index) {
         bool success = setData(modelIndex, true, IsCompletedRole);
 
         if (success) {
-            if (m_isOnline && isLoggedIn()) {
+            if (m_isOnline && UserAuth::GetInstance().isLoggedIn()) {
                 syncWithServer();
             }
             qDebug() << "成功将索引" << index << "处的待办事项标记为已完成";
@@ -899,7 +889,7 @@ void TodoModel::syncWithServer() {
         return;
     }
 
-    if (!isLoggedIn()) {
+    if (!UserAuth::GetInstance().UserAuth::GetInstance().isLoggedIn()) {
         qDebug() << "无法同步：未登录";
         return;
     }
@@ -916,93 +906,8 @@ void TodoModel::syncWithServer() {
     m_networkRequest.sendRequest(NetworkRequest::RequestType::Sync, config);
 }
 
-/**
- * @brief 使用用户凭据登录服务器
- * @param username 用户名
- * @param password 密码
- *
- * 登录结果会通过loginSuccessful或loginFailed信号通知。
- */
-void TodoModel::login(const QString &username, const QString &password) {
-    if (username.isEmpty() || password.isEmpty()) {
-        qWarning() << "尝试使用空的用户名或密码登录";
-        emit loginFailed("用户名和密码不能为空");
-        return;
-    }
-
-    qDebug() << "尝试登录用户:" << username;
-
-    // 准备请求配置
-    NetworkRequest::RequestConfig config;
-    config.url = getApiUrl(m_authApiEndpoint) + "?action=login";
-    config.requiresAuth = false; // 登录请求不需要认证
-
-    // 创建登录数据
-    config.data["username"] = username;
-    config.data["password"] = password;
-
-    // 发送登录请求
-    emit syncStarted();
-    m_networkRequest.sendRequest(NetworkRequest::RequestType::Login, config);
-}
-
-/**
- * @brief 注销当前用户
- *
- * 清除存储的凭据并将所有项标记为未同步。
- */
-void TodoModel::logout() {
-    m_accessToken.clear();
-    m_refreshToken.clear();
-    m_username.clear();
-
-    m_setting.remove(QStringLiteral("user/accessToken"));
-    m_setting.remove(QStringLiteral("user/refreshToken"));
-    m_setting.remove(QStringLiteral("user/username"));
-
-    // 标记所有项为未同步
-    for (size_t i = 0; i < m_todos.size(); ++i) {
-        m_todos[i]->setSynced(false);
-    }
-
-    // 发出用户名变化信号
-    emit usernameChanged();
-    // 发出登录状态变化信号
-    emit isLoggedInChanged();
-    // 发出退出登录成功信号
-    // qDebug() << "用户" << m_username << "已成功退出登录";
-    // emit logoutSuccessful();
-}
-
-/**
- * @brief 检查用户是否已登录
- * @return 是否已登录
- */
-bool TodoModel::isLoggedIn() const {
-    return !m_accessToken.isEmpty();
-}
-
-/**
- * @brief 获取用户名
- * @return 用户名
- */
-QString TodoModel::getUsername() const {
-    return m_username;
-}
-
-/**
- * @brief 获取邮箱
- * @return 邮箱
- */
-QString TodoModel::getEmail() const {
-    return m_email;
-}
-
 void TodoModel::onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response) {
     switch (type) {
-    case NetworkRequest::RequestType::Login:
-        handleLoginSuccess(response);
-        break;
     case NetworkRequest::RequestType::Sync:
         handleSyncSuccess(response);
         break;
@@ -1012,10 +917,6 @@ void TodoModel::onNetworkRequestCompleted(NetworkRequest::RequestType type, cons
     case NetworkRequest::RequestType::PushTodos:
         handlePushChangesSuccess(response);
         break;
-    case NetworkRequest::RequestType::Logout:
-        // 注销成功处理
-        emit logoutSuccessful();
-        break;
     case NetworkRequest::RequestType::FetchCategories:
         handleFetchCategoriesSuccess(response);
         break;
@@ -1023,6 +924,8 @@ void TodoModel::onNetworkRequestCompleted(NetworkRequest::RequestType type, cons
     case NetworkRequest::RequestType::UpdateCategory:
     case NetworkRequest::RequestType::DeleteCategory:
         handleCategoryOperationSuccess(response);
+        break;
+    default:
         break;
     }
 }
@@ -1034,9 +937,9 @@ void TodoModel::onNetworkRequestFailed(NetworkRequest::RequestType type, Network
     QString typeStr;
     switch (type) {
     case NetworkRequest::RequestType::Login:
-        typeStr = "登录";
-        emit loginFailed(errorMessage);
-        break;
+    case NetworkRequest::RequestType::Logout:
+        // 认证相关错误现在由UserAuth处理
+        return;
     case NetworkRequest::RequestType::Sync:
         typeStr = "同步";
         emit syncCompleted(false, errorMessage);
@@ -1048,10 +951,6 @@ void TodoModel::onNetworkRequestFailed(NetworkRequest::RequestType type, Network
     case NetworkRequest::RequestType::PushTodos:
         typeStr = "推送更改";
         emit syncCompleted(false, errorMessage);
-        break;
-    case NetworkRequest::RequestType::Logout:
-        typeStr = "注销";
-        emit logoutSuccessful();
         break;
     case NetworkRequest::RequestType::FetchCategories:
         typeStr = "获取类别";
@@ -1080,46 +979,6 @@ void TodoModel::onNetworkStatusChanged(bool isOnline) {
         m_isOnline = isOnline;
         emit isOnlineChanged();
         qDebug() << "网络状态变更:" << (isOnline ? "在线" : "离线");
-    }
-}
-
-void TodoModel::onAuthTokenExpired() {
-    qWarning() << "认证令牌已过期，需要重新登录";
-    logout();
-    emit loginRequired();
-}
-
-void TodoModel::handleLoginSuccess(const QJsonObject &response) {
-
-    // 验证响应中包含必要的字段
-    if (!response.contains("access_token") || !response.contains("refresh_token") || !response.contains("user")) {
-        emit loginFailed("服务器响应缺少必要字段");
-        return;
-    }
-
-    m_accessToken = response["access_token"].toString();
-    m_refreshToken = response["refresh_token"].toString();
-    m_username = response["user"].toObject()["username"].toString();
-
-    // 设置网络管理器的认证令牌
-    m_networkRequest.setAuthToken(m_accessToken);
-
-    // 保存令牌
-    m_setting.save(QStringLiteral("user/accessToken"), m_accessToken);
-    m_setting.save(QStringLiteral("user/refreshToken"), m_refreshToken);
-    m_setting.save(QStringLiteral("user/username"), m_username);
-
-    qDebug() << "用户" << m_username << "登录成功";
-    // 发出用户名变化信号
-    emit usernameChanged();
-    // 发出登录状态变化信号
-    emit isLoggedInChanged();
-    // 发出登录成功信号，不知道为什么会发两次该信号
-    emit loginSuccessful(m_username);
-    // 登录成功后获取类别列表和自动同步
-    if (m_isOnline) {
-        fetchCategories();
-        syncWithServer();
     }
 }
 
@@ -1375,7 +1234,7 @@ bool TodoModel::saveToLocalStorage() {
  * @brief 从服务器获取最新的待办事项
  */
 void TodoModel::fetchTodosFromServer() {
-    if (!m_isOnline || !isLoggedIn()) {
+    if (!m_isOnline || !UserAuth::GetInstance().isLoggedIn()) {
         qWarning() << "无法获取服务器数据：离线或未登录";
         return;
     }
@@ -1418,7 +1277,7 @@ void TodoModel::logError(const QString &context, const QString &error) {
  */
 void TodoModel::pushLocalChangesToServer() {
     // 检查网络和登录状态
-    if (!m_isOnline || !isLoggedIn()) {
+    if (!m_isOnline || !UserAuth::GetInstance().isLoggedIn()) {
         qDebug() << "无法推送更改：离线或未登录";
         return;
     }
@@ -1491,12 +1350,10 @@ void TodoModel::initializeServerConfig() {
     // 从设置中读取服务器配置，如果不存在则使用默认值
     m_serverBaseUrl = m_setting.get(QStringLiteral("server/baseUrl"), "https://api.example.com").toString();
     m_todoApiEndpoint = m_setting.get(QStringLiteral("server/todoApiEndpoint"), "/todo/todo_api.php").toString();
-    m_authApiEndpoint = m_setting.get(QStringLiteral("server/authApiEndpoint"), "/auth_api.php").toString();
 
     qDebug() << "服务器配置已初始化:";
     qDebug() << "  基础URL:" << m_serverBaseUrl;
     qDebug() << "  待办事项API:" << m_todoApiEndpoint;
-    qDebug() << "  认证API:" << m_authApiEndpoint;
 }
 
 /**
@@ -1671,7 +1528,7 @@ void TodoModel::sortTodos() {
 }
 
 void TodoModel::fetchCategories() {
-    if (!isLoggedIn()) {
+    if (!UserAuth::GetInstance().isLoggedIn()) {
         qWarning() << "用户未登录，无法获取类别列表";
         emit categoryOperationCompleted(false, "用户未登录");
         return;
@@ -1684,13 +1541,13 @@ void TodoModel::fetchCategories() {
     config.url = getApiUrl("categories_api.php");
     config.data = requestData;
     config.requiresAuth = true;
-    config.headers["Authorization"] = "Bearer " + m_accessToken;
+    config.headers["Authorization"] = "Bearer " + UserAuth::GetInstance().getAccessToken();
 
     m_networkRequest.sendRequest(NetworkRequest::FetchCategories, config);
 }
 
 void TodoModel::createCategory(const QString &name) {
-    if (!isLoggedIn()) {
+    if (!UserAuth::GetInstance().isLoggedIn()) {
         qWarning() << "用户未登录，无法创建类别";
         emit categoryOperationCompleted(false, "用户未登录");
         return;
@@ -1709,13 +1566,13 @@ void TodoModel::createCategory(const QString &name) {
     config.url = getApiUrl("categories_api.php");
     config.data = requestData;
     config.requiresAuth = true;
-    config.headers["Authorization"] = "Bearer " + m_accessToken;
+    config.headers["Authorization"] = "Bearer " + UserAuth::GetInstance().getAccessToken();
 
     m_networkRequest.sendRequest(NetworkRequest::CreateCategory, config);
 }
 
 void TodoModel::updateCategory(int id, const QString &name) {
-    if (!isLoggedIn()) {
+    if (!UserAuth::GetInstance().isLoggedIn()) {
         qWarning() << "用户未登录，无法更新类别";
         emit categoryOperationCompleted(false, "用户未登录");
         return;
@@ -1735,13 +1592,13 @@ void TodoModel::updateCategory(int id, const QString &name) {
     config.url = getApiUrl("categories_api.php");
     config.data = requestData;
     config.requiresAuth = true;
-    config.headers["Authorization"] = "Bearer " + m_accessToken;
+    config.headers["Authorization"] = "Bearer " + UserAuth::GetInstance().getAccessToken();
 
     m_networkRequest.sendRequest(NetworkRequest::UpdateCategory, config);
 }
 
 void TodoModel::deleteCategory(int id) {
-    if (!isLoggedIn()) {
+    if (!UserAuth::GetInstance().isLoggedIn()) {
         qWarning() << "用户未登录，无法删除类别";
         emit categoryOperationCompleted(false, "用户未登录");
         return;
@@ -1755,7 +1612,7 @@ void TodoModel::deleteCategory(int id) {
     config.url = getApiUrl("categories_api.php");
     config.data = requestData;
     config.requiresAuth = true;
-    config.headers["Authorization"] = "Bearer " + m_accessToken;
+    config.headers["Authorization"] = "Bearer " + UserAuth::GetInstance().getAccessToken();
 
     m_networkRequest.sendRequest(NetworkRequest::DeleteCategory, config);
 }
