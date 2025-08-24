@@ -64,6 +64,7 @@ class TodoModel : public QAbstractListModel {
     Q_PROPERTY(QString username READ getUsername NOTIFY usernameChanged)
     Q_PROPERTY(bool isLoggedIn READ isLoggedIn NOTIFY isLoggedInChanged)
     Q_PROPERTY(QStringList categories READ getCategories NOTIFY categoriesChanged)
+    Q_PROPERTY(int sortType READ sortType WRITE setSortType NOTIFY sortTypeChanged)
 
   public:
     /**
@@ -92,6 +93,18 @@ class TodoModel : public QAbstractListModel {
         LastModifiedAtRole         // 任务最后修改时间
     };
     Q_ENUM(TodoRoles)
+
+    /**
+     * @enum SortType
+     * @brief 定义待办事项的排序类型
+     */
+    enum SortType {
+        SortByCreatedTime = 0,     // 按创建时间排序（默认）
+        SortByDeadline = 1,        // 按截止日期排序
+        SortByImportance = 2,      // 按重要程度排序
+        SortByTitle = 3            // 按标题排序
+    };
+    Q_ENUM(SortType)
 
     /**
      * @brief 构造函数
@@ -174,6 +187,11 @@ class TodoModel : public QAbstractListModel {
     Q_INVOKABLE void updateCategory(int id, const QString &name);     // 更新类别名称
     Q_INVOKABLE void deleteCategory(int id);                          // 删除类别
 
+    // 排序相关
+    int sortType() const;                                              // 获取当前排序类型
+    void setSortType(int type);                                        // 设置排序类型
+    Q_INVOKABLE void sortTodos();                                      // 对待办事项进行排序
+
   signals:
     void isOnlineChanged();                                                    // 在线状态变化信号
     void currentCategoryChanged();                                             // 当前分类筛选器变化信号
@@ -192,6 +210,7 @@ class TodoModel : public QAbstractListModel {
     void logoutSuccessful();                                                   // 退出登录成功信号
     void categoriesChanged();                                                  // 类别列表变化信号
     void categoryOperationCompleted(bool success, const QString &message);    // 类别操作完成信号
+    void sortTypeChanged();                                                    // 排序类型变化信号
 
   private slots:
     void onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response); // 处理网络请求成功
@@ -252,6 +271,7 @@ class TodoModel : public QAbstractListModel {
 
     // 类别管理相关
     QStringList m_categories; ///< 类别列表
+    int m_sortType;           ///< 当前排序类型
 
     // 辅助方法
     QString getApiUrl(const QString &endpoint) const; ///< 获取完整的API URL

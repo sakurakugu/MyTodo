@@ -27,6 +27,7 @@
 TodoModel::TodoModel(QObject *parent)
     : QAbstractListModel(parent), m_filterCacheDirty(true), m_isOnline(false), m_currentCategory(""),
       m_currentFilter(""), m_currentImportant(false), m_dateFilterEnabled(false),
+      m_sortType(SortByCreatedTime),
       m_networkRequest(NetworkRequest::GetInstance()),
       m_config(Config::GetInstance()), m_setting(Setting::GetInstance()) {
     
@@ -1587,6 +1588,81 @@ bool TodoModel::exportTodos(const QString &filePath) {
 // 类别管理相关方法实现
 QStringList TodoModel::getCategories() const {
     return m_categories;
+}
+
+// 排序相关实现
+int TodoModel::sortType() const {
+    return m_sortType;
+}
+
+void TodoModel::setSortType(int type) {
+    if (m_sortType != type) {
+        m_sortType = type;
+        sortTodos();
+        emit sortTypeChanged();
+    }
+}
+
+void TodoModel::sortTodos() {
+    if (m_todos.empty()) {
+        return;
+    }
+
+    beginResetModel();
+    
+    switch (m_sortType) {
+    case SortByDeadline:
+        std::sort(m_todos.begin(), m_todos.end(), [](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
+            // 获取截止日期
+            QDateTime deadlineA = a->deadline();
+            QDateTime deadlineB = b->deadline();
+            
+            // 如果A有截止日期，B没有，A排在前面
+            if (deadlineA.isValid() && !deadlineB.isValid()) {
+                return true;
+            }
+            // 如果B有截止日期，A没有，B排在前面
+            if (!deadlineA.isValid() && deadlineB.isValid()) {
+                return false;
+            }
+            // 如果都没有截止日期，按创建时间排序
+            if (!deadlineA.isValid() && !deadlineB.isValid()) {
+                return a->createdAt() > b->createdAt();
+            }
+            // 如果都有截止日期，按截止日期排序（早的在前）
+            return deadlineA < deadlineB;
+        });
+        break;
+    case SortByImportance:
+        std::sort(m_todos.begin(), m_todos.end(), [](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
+            // 重要的任务排在前面
+            if (a->important() != b->important()) {
+                return a->important() > b->important();
+            }
+            // 如果重要程度相同，按创建时间排序
+            return a->createdAt() > b->createdAt();
+        });
+        break;
+    case SortByTitle:
+        std::sort(m_todos.begin(), m_todos.end(), [](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
+            return a->title().compare(b->title(), Qt::CaseInsensitive) < 0;
+        });
+        break;
+    case SortByCreatedTime:
+    default:
+        std::sort(m_todos.begin(), m_todos.end(), [](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
+            return a->createdAt() > b->createdAt();
+        });
+        break;
+    }
+    
+    // 排序后需要更新过滤缓存
+    invalidateFilterCache();
+    
+    endResetModel();
+    
+    // 保存到本地存储
+    saveToLocalStorage();
 }
 
 void TodoModel::fetchCategories() {

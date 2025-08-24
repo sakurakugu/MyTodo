@@ -85,7 +85,6 @@ Item {
                             return; // 避免初始化时触发
                         }
                         // 保存设置到配置文件
-                        console.log("小窗口页面-切换深色模式", checked);
                         setting.save("setting/isDarkMode", checked);
                         // 发出信号通知父组件
                         widgetMode.darkModeToggled(checked);

@@ -97,7 +97,6 @@ Page {
                     }
                     settingPage.isDarkMode = checked;
                     // 保存设置到配置文件
-                    console.log("设置页面-切换深色模式", checked);
                     setting.save("setting/isDarkMode", checked);
                     if (settingPage.rootWindow)
                         settingPage.rootWindow.isDarkMode = settingPage.isDarkMode;

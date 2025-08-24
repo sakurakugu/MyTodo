@@ -106,8 +106,8 @@ Dialog {
     // 统一的内容区域
     contentItem: ColumnLayout {
         id: contentColumn
-        spacing: contentSpacing
-        anchors.margins: contentMargins
+        spacing: baseDialog.contentSpacing
+        anchors.margins: baseDialog.contentMargins
         
         // 支持自动尺寸调整
         Layout.fillWidth: true
@@ -120,21 +120,21 @@ Dialog {
 
     // 统一的进入动画
     enter: Transition {
-        enabled: enableAnimation
+        enabled: baseDialog.enableAnimation
 
         ParallelAnimation {
             NumberAnimation {
                 property: "opacity"
                 from: 0.0
                 to: 1.0
-                duration: animationDuration
+                duration: baseDialog.animationDuration
                 easing.type: Easing.OutQuad
             }
             NumberAnimation {
                 property: "scale"
                 from: 0.8
                 to: 1.0
-                duration: animationDuration
+                duration: baseDialog.animationDuration
                 easing.type: Easing.OutBack
                 easing.overshoot: 1.2
             }
@@ -143,21 +143,21 @@ Dialog {
 
     // 统一的退出动画
     exit: Transition {
-        enabled: enableAnimation
+        enabled: baseDialog.enableAnimation
 
         ParallelAnimation {
             NumberAnimation {
                 property: "opacity"
                 from: 1.0
                 to: 0.0
-                duration: animationDuration * 0.75
+                duration: baseDialog.animationDuration * 0.75
                 easing.type: Easing.InQuad
             }
             NumberAnimation {
                 property: "scale"
                 from: 1.0
                 to: 0.9
-                duration: animationDuration * 0.75
+                duration: baseDialog.animationDuration * 0.75
                 easing.type: Easing.InQuad
             }
         }

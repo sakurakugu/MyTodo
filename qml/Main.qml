@@ -39,7 +39,7 @@ Window {
     color: "transparent"
 
     // 窗口标志设置 - FramelessWindowHint必须始终存在，否则Windows下会出现背景变黑且无法恢复的问题
-    // Qt.WindowStaysOnTopHint 只在 Debug 模式下启用
+    // TODO: Qt.WindowStaysOnTopHint 只在 Debug 模式下启用
     flags: Qt.FramelessWindowHint | (isDesktopWidget ? Qt.Tool : Qt.Window) | Qt.WindowStaysOnTopHint
 
     // 显示模式控制属性
@@ -125,19 +125,35 @@ Window {
         MouseArea {
             anchors.fill: parent
             property point clickPos: Qt.point(0, 0)  ///< 记录鼠标按下时的位置
+            property bool wasMaximized: false        ///< 记录拖拽开始时是否为最大化状态
 
             /// 鼠标按下事件处理
             onPressed: function (mouse) {
                 clickPos = Qt.point(mouse.x, mouse.y);
+                wasMaximized = (root.visibility === Window.Maximized);
             }
 
             /// 鼠标移动事件处理 - 实现窗口拖拽
             onPositionChanged: function (mouse) {
                 // 只有在非小组件模式或小组件模式但未启用防止拖动时才允许拖动
                 if (pressed && ((!root.isDesktopWidget) || (root.isDesktopWidget && !root.preventDragging))) {
-                    var delta = Qt.point(mouse.x - clickPos.x, mouse.y - clickPos.y);
-                    root.x += delta.x;
-                    root.y += delta.y;
+                    if (wasMaximized) {
+                        // 如果是从最大化状态开始拖拽，需要特殊处理
+                        var mouseRatioX = clickPos.x / titleBar.width;  // 计算鼠标在标题栏中的相对位置
+                        root.showNormal();
+                        // 根据鼠标相对位置调整窗口位置，使鼠标保持在相同的相对位置
+                        var globalMousePos = mapToGlobal(mouse.x, mouse.y);
+                        root.x = globalMousePos.x - (root.width * mouseRatioX);
+                        root.y = globalMousePos.y - mouse.y;
+                        // 更新点击位置为新窗口大小下的相对位置
+                        clickPos = Qt.point(root.width * mouseRatioX, mouse.y);
+                        wasMaximized = false;
+                    } else {
+                        // 普通拖拽逻辑
+                        var delta = Qt.point(mouse.x - clickPos.x, mouse.y - clickPos.y);
+                        root.x += delta.x;
+                        root.y += delta.y;
+                    }
                 }
             }
             z: -1 ///< 确保此MouseArea在其他控件下层，不影响其他控件的点击事件
@@ -171,13 +187,6 @@ Window {
                     font.bold: true
                     font.pixelSize: 18
                     onClicked: stackView.pop()
-                    contentItem: Text {
-                        text: parent.text
-                        font: parent.font
-                        color: theme.titleBarTextColor
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
                 }
 
                 Label {
@@ -265,194 +274,129 @@ Window {
                 }
             }
 
-            /**
-             * @brief 小组件模式控制按钮组
-             *
-             * 仅在桌面小组件模式下显示的功能按钮，
-             * 包括设置、任务列表展开/收起、添加任务等功能。
-             */
-            RowLayout {
-                Layout.fillWidth: root.isDesktopWidget ? true : false   ///< 小组件模式下填充宽度
-                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter       ///< 右对齐垂直居中
-                spacing: 2                                              ///< 按钮间距
-                visible: root.isDesktopWidget                           ///< 仅在小组件模式下显示
+            /// 设置按钮
+            IconButton {
+                text: "\ue90f"                                       ///< 菜单图标
+                onClicked: mainWindow.toggleSettingsVisible()  ///< 切换设置界面显示
+                visible: root.isDesktopWidget
+                textColor: theme.titleBarTextColor
+                fontSize: 16
+                isDarkMode: root.isDarkMode
+            }
 
-                /// 设置按钮
-                CustomButton {
-                    text: "\ue90f"                                       ///< 菜单图标
-                    onClicked: mainWindow.toggleSettingsVisible()  ///< 切换设置界面显示
-                    textColor: theme.titleBarTextColor
-                    fontSize: 16
-                    isDarkMode: root.isDarkMode
-
-                    contentItem: Text {
-                        text: parent.text
-                        color: parent.textColor
-                        font.pixelSize: parent.fontSize
-                        font.family: iconFont.name
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+            /// 待办状态指示器
+            Text {
+                id: todoStatusIndicator
+                visible: root.isDesktopWidget
+                Layout.alignment: Qt.AlignVCenter
+                color: theme.titleBarTextColor
+                font.pixelSize: 14
+                font.bold: true
+                
+                // TODO: 新增或删除待办后，这里的文字没有更改（显示的是当前分类下的待办数量）
+                property int todoCount: todoModel.rowCount()
+                property bool isHovered: false
+                
+                text: {
+                    if (isHovered) {
+                        return todoCount > 0 ? todoCount + "个待办" : "没有待办"
+                    } else {
+                        return todoCount > 0 ? todoCount + "个待办" : "我的待办"
                     }
                 }
-
-                /// 任务列表展开/收起按钮
-                CustomButton {
-                    text: isShowTodos ? "\ue667" : "\ue669"        ///< 根据状态显示箭头
-                    onClicked: mainWindow.toggleTodosVisible()     ///< 切换任务列表显示
-                    textColor: theme.titleBarTextColor
-                    fontSize: 16
-                    isDarkMode: root.isDarkMode
-
-                    contentItem: Text {
-                        text: parent.text
-                        color: parent.textColor
-                        font.pixelSize: parent.fontSize
-                        font.family: iconFont.name
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    
+                    onEntered: {
+                        parent.isHovered = true
                     }
-                }
-
-                /// 添加任务按钮
-                CustomButton {
-                    text: "\ue903"                                 ///< 加号图标
-                    onClicked: mainWindow.toggleAddTaskVisible()   ///< 切换添加任务界面显示
-                    textColor: theme.titleBarTextColor
-                    fontSize: 16
-                    isDarkMode: root.isDarkMode
-
-                    contentItem: Text {
-                        text: parent.text
-                        color: parent.textColor
-                        font.pixelSize: parent.fontSize
-                        font.family: iconFont.name
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
-
-                CustomButton {
-                    text: root.isDesktopWidget ? "\ue620" : "\ue61f"
-                    onClicked: {
-                        if (root.isDesktopWidget) {
-                            mainWindow.toggleWidgetMode();
-                            mainWindow.isShowTodos = true;
-                        } else {
-                            mainWindow.toggleWidgetMode();
-                        }
-                    }
-                    textColor: theme.titleBarTextColor
-                    fontSize: 18
-                    isDarkMode: root.isDarkMode
-
-                    contentItem: Text {
-                        text: parent.text
-                        color: parent.textColor
-                        font.pixelSize: parent.fontSize
-                        font.family: iconFont.name
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                    
+                    onExited: {
+                        parent.isHovered = false
                     }
                 }
             }
 
-            // 非小组件模式按钮组
-            RowLayout {
-                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                spacing: 5
+            /// 标题栏剩余空间填充
+            Item {
+                visible: root.isDesktopWidget
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+            }
+
+            /// 任务列表展开/收起按钮
+            IconButton {
+                text: isShowTodos ? "\ue667" : "\ue669"        ///< 根据状态显示箭头
+                onClicked: mainWindow.toggleTodosVisible()     ///< 切换任务列表显示
+                visible: root.isDesktopWidget
+                textColor: theme.titleBarTextColor
+                fontSize: 16
+                isDarkMode: root.isDarkMode
+            }
+
+            /// 添加任务按钮
+            IconButton {
+                text: "\ue903"                                 ///< 加号图标
+                onClicked: mainWindow.toggleAddTaskVisible()   ///< 切换添加任务界面显示
+                visible: root.isDesktopWidget
+                textColor: theme.titleBarTextColor
+                fontSize: 16
+                isDarkMode: root.isDarkMode
+            }
+
+            /// 普通模式和小组件模式切换按钮
+            IconButton {
+                text: root.isDesktopWidget ? "\ue620" : "\ue61f"
+                /// 鼠标按下事件处理
+                onClicked: {
+                    if (root.isDesktopWidget) {
+                        mainWindow.toggleWidgetMode();
+                        mainWindow.isShowTodos = true;
+                    } else {
+                        mainWindow.toggleWidgetMode();
+                    }
+                }
+                textColor: theme.titleBarTextColor
+                fontSize: 18
+                isDarkMode: root.isDarkMode
+            }
+
+            // 最小化按钮
+            IconButton {
+                text: "\ue65a"
+                onClicked: root.showMinimized()
+                textColor: theme.titleBarTextColor
                 visible: !root.isDesktopWidget
+                fontSize: 16
+                isDarkMode: root.isDarkMode
+            }
 
-                CustomButton {
-                    text: root.isDesktopWidget ? "\ue620" : "\ue61f"
-                    onClicked: {
-                        if (root.isDesktopWidget) {
-                            mainWindow.toggleWidgetMode();
-                            mainWindow.isShowTodos = true;
-                        } else {
-                            mainWindow.toggleWidgetMode();
-                        }
-                    }
-                    textColor: theme.titleBarTextColor
-                    fontSize: 18
-                    isDarkMode: root.isDarkMode
-
-                    contentItem: Text {
-                        text: parent.text
-                        color: parent.textColor
-                        font.pixelSize: parent.fontSize
-                        font.family: iconFont.name
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+            // 最大化/恢复按钮
+            IconButton {
+                text: root.visibility === Window.Maximized ? "\ue600" : "\ue65b"
+                visible: !root.isDesktopWidget
+                onClicked: {
+                    if (root.visibility === Window.Maximized) {
+                        root.showNormal();
+                    } else {
+                        root.showMaximized();
                     }
                 }
+                textColor: theme.titleBarTextColor
+                fontSize: 16
+                isDarkMode: root.isDarkMode
+            }
 
-                // 最小化按钮
-                CustomButton {
-                    text: "\ue65a"
-                    onClicked: root.showMinimized()
-                    textColor: theme.titleBarTextColor
-                    fontSize: 16
-                    isDarkMode: root.isDarkMode
-
-                    contentItem: Text {
-                        text: parent.text
-                        color: parent.textColor
-                        font.pixelSize: parent.fontSize
-                        font.family: iconFont.name
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
-
-                // 最大化/恢复按钮
-                CustomButton {
-                    text: root.visibility === Window.Maximized ? "\ue600" : "\ue65b"
-                    onClicked: {
-                        if (root.visibility === Window.Maximized) {
-                            root.showNormal();
-                        } else {
-                            root.showMaximized();
-                        }
-                    }
-                    textColor: theme.titleBarTextColor
-                    fontSize: 16
-                    isDarkMode: root.isDarkMode
-
-                    contentItem: Text {
-                        text: parent.text
-                        color: parent.textColor
-                        font.pixelSize: parent.fontSize
-                        font.family: iconFont.name
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
-
-                // 关闭按钮
-                CustomButton {
-                    text: "\ue8d1"
-                    onClicked: root.close()
-                    fontSize: 16
-                    textColor: theme.titleBarTextColor
-                    isDarkMode: root.isDarkMode
-
-                    contentItem: Text {
-                        text: parent.text
-                        color: parent.textColor
-                        font.pixelSize: parent.fontSize
-                        font.family: iconFont.name
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
+            // 关闭按钮
+            IconButton {
+                text: "\ue8d1"
+                onClicked: root.close()
+                visible: !root.isDesktopWidget
+                fontSize: 16
+                textColor: theme.titleBarTextColor
+                isDarkMode: root.isDarkMode
             }
         }
     }

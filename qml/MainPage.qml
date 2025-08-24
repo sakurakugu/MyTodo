@@ -22,10 +22,10 @@ Page {
     property bool isDarkMode: false
     property bool isDesktopWidget: false
 
-    property var rootWindow: null // 提供根窗口引用，便于在子页面中读写全局属性
+    property var rootWindow: null       // 提供根窗口引用，便于在子页面中读写全局属性
     property bool sidebarExpanded: true // 侧边栏展开/收起状态
-    property bool showDetails: false // 详情显示状态
-    property var selectedTodo: null // 当前选中的待办事项
+    property bool showDetails: false    // 详情显示状态
+    property var selectedTodo: null     // 当前选中的待办事项
 
     // 主题管理器
     ThemeManager {
@@ -45,7 +45,7 @@ Page {
         anchors.margins: 10
         spacing: 10
 
-        // 侧边栏和主内容区的分割
+        // 侧边栏和主内容区和详情显示区的分割
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -53,11 +53,13 @@ Page {
             // 左侧侧边栏
             Rectangle {
                 id: sidebar
-                Layout.preferredWidth: sidebarExpanded ? 200 : 40
+                Layout.preferredWidth: mainPage.sidebarExpanded ? 180 : 0
                 Layout.fillHeight: true
                 color: theme.secondaryBackgroundColor
-                visible: !isDesktopWidget
+                visible: !mainPage.isDesktopWidget
+                radius: 5
 
+                // 侧边栏宽度变化动画
                 Behavior on Layout.preferredWidth {
                     NumberAnimation {
                         duration: 300
@@ -65,45 +67,65 @@ Page {
                     }
                 }
 
-                // 收起/展开按钮
-                Button {
-                    id: toggleButton
+                // 侧边栏标题部分
+                RowLayout {
+                    // 侧边栏标题
+                    visible: mainPage.sidebarExpanded
+                    Layout.fillWidth: true
                     anchors.top: parent.top
+                    anchors.left: parent.left
                     anchors.right: parent.right
-                    anchors.margins: 5
-                    width: 30
-                    height: 30
-                    z: 10
-
-                    background: Rectangle {
-                        color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
-                        border.color: theme.borderColor
-                        border.width: 1
-                        radius: 4
-                    }
-
-                    contentItem: Text {
-                        text: sidebarExpanded ? "◀" : "▶"
+                    anchors.margins: 10
+                    spacing: 10
+                    Label {
+                        text: qsTr("筛选")
+                        font.bold: true
+                        font.pixelSize: 16
                         color: theme.textColor
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        font.pixelSize: 12
+                        Layout.alignment: Qt.AlignLeft
                     }
 
-                    onClicked: {
-                        sidebarExpanded = !sidebarExpanded;
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                    // 收起按钮
+                    Button {
+                        Layout.preferredWidth: 50
+                        z: 10
+
+                        background: Rectangle {
+                            color: parent.pressed ? (mainPage.isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (mainPage.isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
+                            border.color: theme.borderColor
+                            border.width: 1
+                            radius: 4
+                        }
+
+                        contentItem: Text {
+                            text: "收起 ◀"
+                            color: theme.textColor
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            font.pixelSize: 12
+                        }
+
+                        onClicked: {
+                            sidebarExpanded = !sidebarExpanded;
+                        }
                     }
                 }
 
                 // 侧边栏内容区域
                 ScrollView {
-                    anchors.fill: parent
-                    anchors.topMargin: 40  // 为切换按钮留出空间
-                    anchors.margins: sidebarExpanded ? 10 : 5
+                    anchors.top: parent.children[0].bottom  // 紧贴标题区域底部
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    anchors.margins: mainPage.sidebarExpanded ? 10 : 5
                     clip: true
-                    visible: sidebarExpanded
+                    visible: mainPage.sidebarExpanded
 
-                    ScrollBar.vertical.policy: ScrollBar.AsNeeded
+                    ScrollBar.vertical.policy: ScrollBar.AlwaysOff
                     ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                     ColumnLayout {
@@ -111,10 +133,38 @@ Page {
                         spacing: 10
 
                         Label {
-                            text: qsTr("分类")
-                            font.bold: true
-                            font.pixelSize: 16
+                            text: "排序"
+                            font.pixelSize: 14
                             color: theme.textColor
+                        }
+
+                        // 排序选择控件
+                        ComboBox {
+                            id: sortComboBox
+                            Layout.preferredWidth: 120
+                            Layout.preferredHeight: 36
+                            model: ["按创建时间", "按截止日期", "按重要性", "按标题"]
+                            currentIndex: todoModel.sortType
+
+                            background: Rectangle {
+                                color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
+                                border.color: theme.borderColor
+                                border.width: 1
+                                radius: 4
+                            }
+
+                            contentItem: Text {
+                                text: sortComboBox.displayText
+                                color: theme.textColor
+                                font.pixelSize: 12
+                                horizontalAlignment: Text.AlignLeft
+                                verticalAlignment: Text.AlignVCenter
+                                leftPadding: 8
+                            }
+
+                            onCurrentIndexChanged: {
+                                todoModel.setSortType(currentIndex);
+                            }
                         }
 
                         Label {
@@ -215,7 +265,7 @@ Page {
                             text: "开始日期"
                             font.pixelSize: 12
                             color: theme.textColor
-                            enabled: dateFilterEnabled.checked
+                            visible: dateFilterEnabled.checked
                         }
 
                         TextField {
@@ -223,7 +273,7 @@ Page {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 36
                             placeholderText: "选择开始日期 (yyyy-MM-dd)"
-                            enabled: dateFilterEnabled.checked
+                            visible: dateFilterEnabled.checked
                             text: todoModel.dateFilterStart.getTime() > 0 ? Qt.formatDate(todoModel.dateFilterStart, "yyyy-MM-dd") : ""
                             onTextChanged: {
                                 if (text.length === 10) {
@@ -241,7 +291,7 @@ Page {
                             text: "结束日期"
                             font.pixelSize: 12
                             color: theme.textColor
-                            enabled: dateFilterEnabled.checked
+                            visible: dateFilterEnabled.checked
                         }
 
                         TextField {
@@ -249,7 +299,7 @@ Page {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 36
                             placeholderText: "选择结束日期 (yyyy-MM-dd)"
-                            enabled: dateFilterEnabled.checked
+                            visible: dateFilterEnabled.checked
                             text: todoModel.dateFilterEnd.getTime() > 0 ? Qt.formatDate(todoModel.dateFilterEnd, "yyyy-MM-dd") : ""
                             onTextChanged: {
                                 if (text.length === 10) {
@@ -266,7 +316,7 @@ Page {
                         Button {
                             text: "清除日期筛选"
                             Layout.fillWidth: true
-                            enabled: dateFilterEnabled.checked
+                            visible: dateFilterEnabled.checked
                             onClicked: {
                                 startDateField.text = "";
                                 endDateField.text = "";
@@ -280,14 +330,47 @@ Page {
 
             // 主内容区
             ColumnLayout {
-                Layout.fillWidth: true
+                Layout.preferredWidth: mainPage.showDetails ? 180 : parent.width - (mainPage.sidebarExpanded ? 180 : 0) - 20
                 Layout.fillHeight: true
                 Layout.margins: 10
                 spacing: 10
 
+                Behavior on Layout.preferredWidth {
+                    NumberAnimation {
+                        duration: 300
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
                 // 添加新待办的区域
                 RowLayout {
                     Layout.fillWidth: true
+
+                    // 展开按钮
+                    Button {
+                        Layout.preferredWidth: 50
+                        z: 10
+                        visible: !sidebarExpanded
+
+                        background: Rectangle {
+                            color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
+                            border.color: theme.borderColor
+                            border.width: 1
+                            radius: 4
+                        }
+
+                        contentItem: Text {
+                            text: "筛选 ▶"
+                            color: theme.textColor
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            font.pixelSize: 12
+                        }
+
+                        onClicked: {
+                            sidebarExpanded = !sidebarExpanded;
+                        }
+                    }
 
                     TextField {
                         id: newTodoField
@@ -518,10 +601,10 @@ Page {
 
             // 详情显示区域
             Rectangle {
-                Layout.preferredWidth: showDetails ? 300 : 0
+                Layout.preferredWidth: mainPage.showDetails ? 300 : 0
                 Layout.fillHeight: true
                 color: theme.secondaryBackgroundColor
-                visible: showDetails
+                visible: mainPage.showDetails
 
                 Behavior on Layout.preferredWidth {
                     NumberAnimation {
@@ -568,8 +651,8 @@ Page {
                             }
 
                             onClicked: {
-                                showDetails = false;
-                                selectedTodo = null;
+                                mainPage.showDetails = false;
+                                mainPage.selectedTodo = null;
                             }
                         }
                     }

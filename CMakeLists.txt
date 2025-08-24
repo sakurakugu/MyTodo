@@ -133,12 +133,12 @@ set(QML_COMPONENT_FILES
     qml/components/TaskForm.qml                     # 任务表单
     qml/components/ThemeManager.qml                 # 主题管理器
     qml/components/ConfirmDialog.qml                # 通用确认对话框
-    # qml/components/LoginDialog.qml                  # 登录对话框
     qml/components/MessageDialog.qml                # 消息提示对话框
     qml/components/LoginStatusDialogs.qml           # 登录状态相关对话框
     qml/components/TodoDetailsDialog.qml            # 待办详情对话框
     qml/components/CategoryManagementDialog.qml     # 分类管理对话框
     qml/components/BaseDialog.qml                   # 基础对话框
+    qml/components/IconButton.qml                   # 图标按钮
 )
 
 # 合并所有 QML 文件
