@@ -35,9 +35,15 @@ TodoModel::TodoModel(QObject *parent)
     // 初始化默认服务器配置
     m_setting.initializeDefaultServerConfig();
 
+    // 创建数据管理器
+    m_dataManager = new TodoDataStorage(m_setting, this);
+
+    // 连接TodoDataStorage的信号
+    // 移除不存在的信号连接
+
     // 创建同步管理器
     m_syncManager = new TodoSyncServer(this);
-    
+
     // 连接同步管理器信号
     connect(m_syncManager, &TodoSyncServer::syncStarted, this, &TodoModel::onSyncStarted);
     connect(m_syncManager, &TodoSyncServer::syncCompleted, this, &TodoModel::onSyncCompleted);
@@ -47,15 +53,14 @@ TodoModel::TodoModel(QObject *parent)
     connect(&m_networkRequest, &NetworkRequest::requestCompleted, this, &TodoModel::onNetworkRequestCompleted);
     connect(&m_networkRequest, &NetworkRequest::requestFailed, this, &TodoModel::onNetworkRequestFailed);
 
-    // 加载本地数据
-    if (!loadFromLocalStorage()) {
-        qWarning() << "无法从本地存储加载待办事项数据";
-    }
+    // 通过数据管理器加载本地数据
+    // 从本地存储加载数据现在由TodoDataStorage处理
+    m_dataManager->loadFromLocalStorage(m_todos);
 
     // 初始化在线状态
     m_isAutoSync = m_setting.get(QStringLiteral("autoSync"), false).toBool();
     m_syncManager->setAutoSyncEnabled(m_isAutoSync);
-    
+
     // 设置待办事项数据到同步管理器
     updateSyncManagerData();
 
@@ -71,8 +76,10 @@ TodoModel::TodoModel(QObject *parent)
  * 清理资源，保存未同步的数据到本地存储。
  */
 TodoModel::~TodoModel() {
-    // 保存数据
-    saveToLocalStorage();
+    // 通过数据管理器保存数据
+    if (m_dataManager) {
+        m_dataManager->saveToLocalStorage(m_todos);
+    }
 
     m_todos.clear();
     m_filteredTodos.clear();
@@ -246,7 +253,7 @@ bool TodoModel::setData(const QModelIndex &index, const QVariant &value, int rol
         item->setSynced(false);
         invalidateFilterCache();
         emit dataChanged(index, index, QVector<int>() << role);
-        saveToLocalStorage();
+        m_dataManager->saveToLocalStorage(m_todos);
         return true;
     }
 
@@ -514,7 +521,7 @@ void TodoModel::addTodo(const QString &title, const QString &description, const 
 
     endInsertRows();
 
-    saveToLocalStorage();
+    m_dataManager->saveToLocalStorage(m_todos);
 
     if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
         // 如果在线且已登录，立即尝试同步到服务器
@@ -635,7 +642,7 @@ bool TodoModel::updateTodo(int index, const QVariantMap &todoData) {
             // 只触发一次dataChanged信号
             emit dataChanged(modelIndex, modelIndex, changedRoles);
 
-            if (!saveToLocalStorage()) {
+            if (!m_dataManager->saveToLocalStorage(m_todos)) {
                 qWarning() << "更新待办事项后无法保存到本地存储";
             }
 
@@ -685,7 +692,7 @@ bool TodoModel::removeTodo(int index) {
         // 使筛选缓存失效，以便重新筛选
         invalidateFilterCache();
 
-        if (!saveToLocalStorage()) {
+        if (!m_dataManager->saveToLocalStorage(m_todos)) {
             qWarning() << "软删除待办事项后无法保存到本地存储";
         }
 
@@ -738,7 +745,7 @@ bool TodoModel::restoreTodo(int index) {
         // 使筛选缓存失效，以便重新筛选
         invalidateFilterCache();
 
-        if (!saveToLocalStorage()) {
+        if (!m_dataManager->saveToLocalStorage(m_todos)) {
             qWarning() << "恢复待办事项后无法保存到本地存储";
         }
 
@@ -781,7 +788,7 @@ bool TodoModel::permanentlyDeleteTodo(int index) {
         invalidateFilterCache();
         endRemoveRows();
 
-        if (!saveToLocalStorage()) {
+        if (!m_dataManager->saveToLocalStorage(m_todos)) {
             qWarning() << "永久删除待办事项后无法保存到本地存储";
         }
 
@@ -843,7 +850,7 @@ bool TodoModel::markAsDone(int index) {
 void TodoModel::syncWithServer() {
     // 更新同步管理器的数据
     updateSyncManagerData();
-    
+
     // 委托给同步管理器处理
     m_syncManager->syncWithServer(TodoSyncServer::Bidirectional);
 }
@@ -907,10 +914,10 @@ void TodoModel::onSyncStarted() {
 void TodoModel::onSyncCompleted(TodoSyncServer::SyncResult result, const QString &message) {
     bool success = (result == TodoSyncServer::Success);
     emit syncCompleted(success, message);
-    
+
     // 如果同步成功，保存到本地存储
     if (success) {
-        if (!saveToLocalStorage()) {
+        if (!m_dataManager->saveToLocalStorage(m_todos)) {
             qWarning() << "同步成功后无法保存到本地存储";
         }
     }
@@ -992,128 +999,9 @@ void TodoModel::updateTodosFromServer(const QJsonArray &todosArray) {
     invalidateFilterCache();
 
     // 保存到本地存储
-    if (!saveToLocalStorage()) {
+    if (!m_dataManager->saveToLocalStorage(m_todos)) {
         qWarning() << "无法在服务器更新后保存本地存储";
     }
-}
-
-/**
- * @brief 从本地存储加载待办事项
- * @return 加载是否成功
- */
-bool TodoModel::loadFromLocalStorage() {
-    beginResetModel();
-    bool success = true;
-
-    try {
-        // 清除当前数据
-        m_todos.clear();
-        invalidateFilterCache();
-
-        // 从设置中加载数据
-        int count = m_setting.get(QStringLiteral("todos/size"), 0).toInt();
-        qDebug() << "从本地存储加载" << count << "个待办事项";
-
-        for (int i = 0; i < count; ++i) {
-            QString prefix = QString("todos/%1/").arg(i);
-
-            // 验证必要字段
-            if (!m_setting.contains(prefix + "id") || !m_setting.contains(prefix + "title")) {
-                qWarning() << "跳过无效的待办事项记录（索引" << i << "）：缺少必要字段";
-                continue;
-            }
-
-            auto item = std::make_unique<TodoItem>(
-                m_setting.get(prefix + "id").toInt(),                                              // id
-                QUuid::fromString(m_setting.get(prefix + "uuid").toString()),                      // uuid
-                m_setting.get(prefix + "userId", 0).toInt(),                                       // userId
-                m_setting.get(prefix + "title").toString(),                                        // title
-                m_setting.get(prefix + "description").toString(),                                  // description
-                m_setting.get(prefix + "category").toString(),                                     // category
-                m_setting.get(prefix + "important").toBool(),                                      // important
-                QDateTime::fromString(m_setting.get(prefix + "deadline").toString(), Qt::ISODate), // deadline
-                m_setting.get(prefix + "recurrenceInterval", 0).toInt(),                           // recurrenceInterval
-                m_setting.get(prefix + "recurrenceCount", -1).toInt(),                             // recurrenceCount
-                QDate::fromString(m_setting.get(prefix + "recurrenceStartDate").toString(),
-                                  Qt::ISODate),                        // recurrenceStartDate
-                m_setting.get(prefix + "isCompleted", false).toBool(), // isCompleted
-                m_setting.get(prefix + "completedAt").toDateTime(),    // completedAt
-                m_setting.get(prefix + "isDeleted", false).toBool(),   // isDeleted
-                m_setting.get(prefix + "deletedAt").toDateTime(),      // deletedAt
-                m_setting.get(prefix + "createdAt").toDateTime(),      // createdAt
-                m_setting.get(prefix + "updatedAt").toDateTime(),      // updatedAt
-                m_setting.get(prefix + "lastModifiedAt").toDateTime(), // lastModifiedAt
-                m_setting.get(prefix + "synced").toBool(),             // synced
-                this);
-
-            m_todos.push_back(std::move(item));
-        }
-    } catch (const std::exception &e) {
-        qCritical() << "加载本地存储时发生异常:" << e.what();
-        success = false;
-        logError("加载本地存储", QString("异常: %1").arg(e.what()));
-    } catch (...) {
-        qCritical() << "加载本地存储时发生未知异常";
-        success = false;
-        logError("加载本地存储", "未知异常");
-    }
-
-    endResetModel();
-    return success;
-}
-
-/**
- * @brief 将待办事项保存到本地存储
- * @return 保存是否成功
- */
-bool TodoModel::saveToLocalStorage() {
-    bool success = true;
-
-    try {
-
-        // 保存待办事项数量
-        m_setting.save(QStringLiteral("todos/size"), m_todos.size());
-
-        // 保存每个待办事项
-        for (size_t i = 0; i < m_todos.size(); ++i) {
-            const TodoItem *item = m_todos.at(i).get();
-            QString prefix = QString("todos/%1/").arg(i);
-
-            m_setting.save(prefix + "id", item->id());
-            m_setting.save(prefix + "uuid", item->uuid());
-            m_setting.save(prefix + "userId", item->userId());
-            m_setting.save(prefix + "title", item->title());
-            m_setting.save(prefix + "description", item->description());
-            m_setting.save(prefix + "category", item->category());
-            m_setting.save(prefix + "important", item->important());
-            // m_setting.save(prefix + "status", item->status());
-            m_setting.save(prefix + "createdAt", item->createdAt());
-            m_setting.save(prefix + "updatedAt", item->updatedAt());
-            m_setting.save(prefix + "synced", item->synced());
-            m_setting.save(prefix + "deadline", item->deadline());
-            m_setting.save(prefix + "recurrenceInterval", item->recurrenceInterval());
-            m_setting.save(prefix + "recurrenceCount", item->recurrenceCount());
-            m_setting.save(prefix + "recurrenceStartDate", item->recurrenceStartDate());
-            m_setting.save(prefix + "isCompleted", item->isCompleted());
-            m_setting.save(prefix + "completedAt", item->completedAt());
-            m_setting.save(prefix + "isDeleted", item->isDeleted());
-            m_setting.save(prefix + "deletedAt", item->deletedAt());
-            m_setting.save(prefix + "lastModifiedAt", item->lastModifiedAt());
-        }
-
-        qDebug() << "已成功保存" << m_todos.size() << "个待办事项到本地存储";
-        success = true;
-    } catch (const std::exception &e) {
-        qCritical() << "保存到本地存储时发生异常:" << e.what();
-        success = false;
-        logError("保存本地存储", QString("异常: %1").arg(e.what()));
-    } catch (...) {
-        qCritical() << "保存到本地存储时发生未知异常";
-        success = false;
-        logError("保存本地存储", "未知异常");
-    }
-
-    return success;
 }
 
 // 更新同步管理器的待办事项数据
@@ -1137,60 +1025,6 @@ void TodoModel::logError(const QString &context, const QString &error) {
     // TODO: 实现日志文件记录
 
     // 也可以在这里添加错误报告机制
-}
-
-
-
-
-
-
-bool TodoModel::exportTodos(const QString &filePath) {
-    QJsonArray todosArray;
-
-    // 将所有待办事项转换为JSON格式
-    for (const auto &todo : m_todos) {
-        QJsonObject todoObj;
-        todoObj["id"] = todo->id();
-        todoObj["title"] = todo->title();
-        todoObj["description"] = todo->description();
-        todoObj["category"] = todo->category();
-        todoObj["important"] = todo->important();
-        // Note: status method does not exist in TodoItem class
-        todoObj["createdAt"] = todo->createdAt().toString(Qt::ISODate);
-        todoObj["updatedAt"] = todo->updatedAt().toString(Qt::ISODate);
-        todoObj["synced"] = todo->synced();
-        todoObj["deadline"] = todo->deadline().toString(Qt::ISODate);
-
-        todosArray.append(todoObj);
-    }
-
-    // 创建根JSON对象
-    QJsonObject rootObj;
-    rootObj["version"] = "1.0";
-    rootObj["exportDate"] = QDateTime::currentDateTime().toString(Qt::ISODate);
-    rootObj["todos"] = todosArray;
-
-    // 写入文件
-    QJsonDocument doc(rootObj);
-    QFile file(filePath);
-
-    // 确保目录存在
-    QFileInfo fileInfo(filePath);
-    QDir dir = fileInfo.absoluteDir();
-    if (!dir.exists()) {
-        dir.mkpath(".");
-    }
-
-    if (!file.open(QIODevice::WriteOnly)) {
-        qWarning() << "无法打开文件进行写入:" << filePath;
-        return false;
-    }
-
-    file.write(doc.toJson());
-    file.close();
-
-    qDebug() << "成功导出" << m_todos.size() << "个待办事项到" << filePath;
-    return true;
 }
 
 // 类别管理相关方法实现
@@ -1274,7 +1108,7 @@ void TodoModel::sortTodos() {
     endResetModel();
 
     // 保存到本地存储
-    saveToLocalStorage();
+    m_dataManager->saveToLocalStorage(m_todos);
 }
 
 void TodoModel::fetchCategories() {
@@ -1410,536 +1244,4 @@ void TodoModel::handleCategoryOperationSuccess(const QJsonObject &response) {
     }
 
     emit categoryOperationCompleted(success, message);
-}
-
-QVariantList TodoModel::importTodosWithAutoResolution(const QString &filePath) {
-    QVariantList conflicts;
-
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly)) {
-        qWarning() << "无法打开文件进行读取:" << filePath;
-        return conflicts;
-    }
-
-    QByteArray data = file.readAll();
-    file.close();
-
-    QJsonParseError error;
-    QJsonDocument doc = QJsonDocument::fromJson(data, &error);
-
-    if (error.error != QJsonParseError::NoError) {
-        qWarning() << "JSON解析错误:" << error.errorString();
-        return conflicts;
-    }
-
-    QJsonObject rootObj = doc.object();
-
-    // 检查版本兼容性
-    QString version = rootObj["version"].toString();
-    if (version != "1.0") {
-        qWarning() << "不支持的文件版本:" << version;
-        return conflicts;
-    }
-
-    QJsonArray todosArray = rootObj["todos"].toArray();
-
-    // 分离冲突和非冲突项目
-    QJsonArray nonConflictTodos;
-
-    qDebug() << "开始检查导入冲突，现有项目数量:" << m_todos.size() << "，导入项目数量:" << todosArray.size();
-
-    // 打印现有项目的ID
-    for (size_t i = 0; i < m_todos.size(); ++i) {
-        qDebug() << "现有项目" << i << "ID:" << m_todos[i]->id() << "标题:" << m_todos[i]->title();
-    }
-
-    for (const QJsonValue &value : todosArray) {
-        QJsonObject todoObj = value.toObject();
-        QString id = todoObj["id"].toString();
-
-        bool hasConflict = false;
-        bool shouldSkip = false;
-        TodoItem *existingTodo = nullptr;
-
-        // 查找是否存在相同ID的待办事项
-        for (const auto &todo : m_todos) {
-            if (todo->id() == id.toInt()) {
-                // 检查内容是否真的不同
-                QString importTitle = todoObj["title"].toString();
-                QString importDescription = todoObj["description"].toString();
-                QString importCategory = todoObj["category"].toString();
-                QString importStatus = todoObj["status"].toString();
-
-                if (todo->title() != importTitle || todo->description() != importDescription ||
-                    todo->category() != importCategory) {
-                    hasConflict = true;
-                    existingTodo = todo.get();
-                    qDebug() << "发现真正冲突项目 ID:" << id << "现有标题:" << todo->title()
-                             << "导入标题:" << importTitle;
-                } else {
-                    qDebug() << "ID相同且内容一致，直接跳过 ID:" << id << "标题:" << importTitle;
-                    // 内容完全一致的项目直接跳过，既不导入也不显示冲突
-                    shouldSkip = true;
-                }
-                break;
-            }
-        }
-
-        if (shouldSkip) {
-            // 跳过内容完全一致的项目
-            continue;
-        } else if (hasConflict) {
-            // 发现冲突，添加到冲突列表
-            QVariantMap conflictInfo;
-            conflictInfo["id"] = id;
-            conflictInfo["existingTitle"] = existingTodo->title();
-            conflictInfo["existingDescription"] = existingTodo->description();
-            conflictInfo["existingCategory"] = existingTodo->category();
-            // conflictInfo["existingStatus"] = existingTodo->status();
-            conflictInfo["existingUpdatedAt"] = existingTodo->updatedAt();
-
-            conflictInfo["importTitle"] = todoObj["title"].toString();
-            conflictInfo["importDescription"] = todoObj["description"].toString();
-            conflictInfo["importCategory"] = todoObj["category"].toString();
-            conflictInfo["importStatus"] = todoObj["status"].toString();
-            conflictInfo["importUpdatedAt"] = QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate);
-
-            conflicts.append(conflictInfo);
-        } else {
-            // 无冲突，添加到非冲突列表
-            qDebug() << "无冲突项目 ID:" << id << "标题:" << todoObj["title"].toString();
-            nonConflictTodos.append(value);
-        }
-    }
-
-    qDebug() << "冲突检查完成，冲突项目数量:" << conflicts.size() << "，无冲突项目数量:" << nonConflictTodos.size();
-
-    // 导入无冲突的项目
-    if (nonConflictTodos.size() > 0) {
-        beginInsertRows(QModelIndex(), m_todos.size(), m_todos.size() + nonConflictTodos.size() - 1);
-
-        for (const QJsonValue &value : nonConflictTodos) {
-            QJsonObject todoObj = value.toObject();
-
-            auto newTodo = std::make_unique<TodoItem>(
-                todoObj["id"].toInt(),                                                       // id
-                QUuid::fromString(todoObj["uuid"].toString()),                               // uuid
-                todoObj["userId"].toInt(0),                                                  // userId
-                todoObj["title"].toString(),                                                 // title
-                todoObj["description"].toString(),                                           // description
-                todoObj["category"].toString(),                                              // category
-                todoObj["important"].toBool(),                                               // important
-                QDateTime::fromString(todoObj["deadline"].toString(), Qt::ISODate),          // deadline
-                todoObj["recurrence_interval"].toInt(0),                                     // recurrenceInterval
-                todoObj["recurrence_count"].toInt(-1),                                       // recurrenceCount
-                QDate::fromString(todoObj["recurrence_start_date"].toString(), Qt::ISODate), // recurrenceStartDate
-                todoObj["isCompleted"].toBool(false),                                        // isCompleted
-                QDateTime::fromString(todoObj["completedAt"].toString(), Qt::ISODate),       // completedAt
-                todoObj["isDeleted"].toBool(false),                                          // isDeleted
-                QDateTime::fromString(todoObj["deletedAt"].toString(), Qt::ISODate),         // deletedAt
-                QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),         // createdAt
-                QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate),         // updatedAt
-                QDateTime::fromString(todoObj["lastModifiedAt"].toString(), Qt::ISODate),    // lastModifiedAt
-                false,                                                                       // synced
-                this);
-
-            m_todos.push_back(std::move(newTodo));
-        }
-
-        endInsertRows();
-    }
-
-    // 保存到本地存储
-    if (nonConflictTodos.size() > 0) {
-        saveToLocalStorage();
-    }
-
-    return conflicts;
-}
-
-bool TodoModel::importTodos(const QString &filePath) {
-    QFile file(filePath);
-
-    if (!file.open(QIODevice::ReadOnly)) {
-        qWarning() << "无法打开文件进行读取:" << filePath;
-        return false;
-    }
-
-    QByteArray data = file.readAll();
-    file.close();
-
-    QJsonParseError error;
-    QJsonDocument doc = QJsonDocument::fromJson(data, &error);
-
-    if (error.error != QJsonParseError::NoError) {
-        qWarning() << "JSON解析错误:" << error.errorString();
-        return false;
-    }
-
-    QJsonObject rootObj = doc.object();
-
-    // 检查版本兼容性
-    QString version = rootObj["version"].toString();
-    if (version != "1.0") {
-        qWarning() << "不支持的文件版本:" << version;
-        return false;
-    }
-
-    QJsonArray todosArray = rootObj["todos"].toArray();
-    int importedCount = 0;
-    int skippedCount = 0;
-
-    beginResetModel();
-
-    for (const QJsonValue &value : todosArray) {
-        QJsonObject todoObj = value.toObject();
-
-        QString id = todoObj["id"].toString();
-
-        // 检查是否已存在相同ID的待办事项
-        bool exists = false;
-        for (const auto &existingTodo : m_todos) {
-            if (existingTodo->id() == id.toInt()) {
-                exists = true;
-                skippedCount++;
-                break;
-            }
-        }
-
-        if (!exists) {
-            // 创建新的待办事项
-            auto newTodo = std::make_unique<TodoItem>(
-                id.toInt(),                                                                  // id
-                QUuid::fromString(todoObj["uuid"].toString()),                               // uuid
-                todoObj["userId"].toInt(0),                                                  // userId
-                todoObj["title"].toString(),                                                 // title
-                todoObj["description"].toString(),                                           // description
-                todoObj["category"].toString(),                                              // category
-                todoObj["important"].toBool(),                                               // important
-                QDateTime::fromString(todoObj["deadline"].toString(), Qt::ISODate),          // deadline
-                todoObj["recurrence_interval"].toInt(0),                                     // recurrenceInterval
-                todoObj["recurrence_count"].toInt(-1),                                       // recurrenceCount
-                QDate::fromString(todoObj["recurrence_start_date"].toString(), Qt::ISODate), // recurrenceStartDate
-                todoObj["isCompleted"].toBool(false),                                        // isCompleted
-                QDateTime::fromString(todoObj["completedAt"].toString(), Qt::ISODate),       // completedAt
-                false,                                                                       // isDeleted
-                QDateTime(),                                                                 // deletedAt
-                QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),         // createdAt
-                QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate),         // updatedAt
-                QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate),         // lastModifiedAt
-                todoObj["synced"].toBool(),                                                  // synced
-                nullptr                                                                      // parent
-            );
-
-            // 设置deadline字段（如果存在）
-            if (todoObj.contains("deadline")) {
-                newTodo->setDeadline(QDateTime::fromString(todoObj["deadline"].toString(), Qt::ISODate));
-            }
-
-            m_todos.push_back(std::move(newTodo));
-            importedCount++;
-        }
-    }
-
-    endResetModel();
-
-    // 保存到本地存储
-    saveToLocalStorage();
-
-    qDebug() << "导入完成 - 新增:" << importedCount << "个，跳过:" << skippedCount << "个";
-    return true;
-}
-
-QVariantList TodoModel::checkImportConflicts(const QString &filePath) {
-    QVariantList conflicts;
-
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly)) {
-        qWarning() << "无法打开文件进行读取:" << filePath;
-        return conflicts;
-    }
-
-    QByteArray data = file.readAll();
-    file.close();
-
-    QJsonParseError error;
-    QJsonDocument doc = QJsonDocument::fromJson(data, &error);
-
-    if (error.error != QJsonParseError::NoError) {
-        qWarning() << "JSON解析错误:" << error.errorString();
-        return conflicts;
-    }
-
-    QJsonObject rootObj = doc.object();
-
-    // 检查版本兼容性
-    QString version = rootObj["version"].toString();
-    if (version != "1.0") {
-        qWarning() << "不支持的文件版本:" << version;
-        return conflicts;
-    }
-
-    QJsonArray todosArray = rootObj["todos"].toArray();
-
-    for (const QJsonValue &value : todosArray) {
-        QJsonObject todoObj = value.toObject();
-        QString id = todoObj["id"].toString();
-
-        // 查找是否存在相同ID的待办事项
-        for (const auto &existingTodo : m_todos) {
-            if (existingTodo->id() == id.toInt()) {
-                // 发现冲突，创建冲突信息
-                QVariantMap conflictInfo;
-                conflictInfo["id"] = id;
-                conflictInfo["existingTitle"] = existingTodo->title();
-                conflictInfo["existingDescription"] = existingTodo->description();
-                conflictInfo["existingCategory"] = existingTodo->category();
-                // conflictInfo["existingStatus"] = existingTodo->status();
-                conflictInfo["existingUpdatedAt"] = existingTodo->updatedAt();
-
-                conflictInfo["importTitle"] = todoObj["title"].toString();
-                conflictInfo["importDescription"] = todoObj["description"].toString();
-                conflictInfo["importCategory"] = todoObj["category"].toString();
-                conflictInfo["importStatus"] = todoObj["status"].toString();
-                conflictInfo["importUpdatedAt"] = QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate);
-
-                conflicts.append(conflictInfo);
-                break;
-            }
-        }
-    }
-
-    return conflicts;
-}
-
-bool TodoModel::importTodosWithConflictResolution(const QString &filePath, const QString &conflictResolution) {
-    QFile file(filePath);
-
-    if (!file.open(QIODevice::ReadOnly)) {
-        qWarning() << "无法打开文件进行读取:" << filePath;
-        return false;
-    }
-
-    QByteArray data = file.readAll();
-    file.close();
-
-    QJsonParseError error;
-    QJsonDocument doc = QJsonDocument::fromJson(data, &error);
-
-    if (error.error != QJsonParseError::NoError) {
-        qWarning() << "JSON解析错误:" << error.errorString();
-        return false;
-    }
-
-    QJsonObject rootObj = doc.object();
-
-    // 检查版本兼容性
-    QString version = rootObj["version"].toString();
-    if (version != "1.0") {
-        qWarning() << "不支持的文件版本:" << version;
-        return false;
-    }
-
-    QJsonArray todosArray = rootObj["todos"].toArray();
-    int importedCount = 0;
-    int skippedCount = 0;
-    int overwrittenCount = 0;
-
-    beginResetModel();
-
-    for (const QJsonValue &value : todosArray) {
-        QJsonObject todoObj = value.toObject();
-        QString id = todoObj["id"].toString();
-
-        // 查找是否已存在相同ID的待办事项
-        bool exists = false;
-        int existingIndex = -1;
-        for (size_t i = 0; i < m_todos.size(); ++i) {
-            if (m_todos[i]->id() == id.toInt()) {
-                exists = true;
-                existingIndex = static_cast<int>(i);
-                break;
-            }
-        }
-
-        if (exists) {
-            if (conflictResolution == "overwrite") {
-                // 覆盖现有项目
-                TodoItem *existingItem = m_todos[existingIndex].get();
-                existingItem->setTitle(todoObj["title"].toString());
-                existingItem->setDescription(todoObj["description"].toString());
-                existingItem->setCategory(todoObj["category"].toString());
-                existingItem->setImportant(todoObj["important"].toBool());
-                // Note: setStatus method does not exist in TodoItem class
-                existingItem->setUpdatedAt(QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate));
-                existingItem->setSynced(todoObj["synced"].toBool());
-                overwrittenCount++;
-            } else if (conflictResolution == "merge") {
-                // 合并：保留较新的更新时间的版本
-                TodoItem *existingItem = m_todos[existingIndex].get();
-                QDateTime importUpdatedAt = QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate);
-
-                if (importUpdatedAt > existingItem->updatedAt()) {
-                    // 导入的版本更新，使用导入的数据
-                    existingItem->setTitle(todoObj["title"].toString());
-                    existingItem->setDescription(todoObj["description"].toString());
-                    existingItem->setCategory(todoObj["category"].toString());
-                    existingItem->setImportant(todoObj["important"].toBool());
-                    existingItem->setUpdatedAt(importUpdatedAt);
-                    existingItem->setSynced(todoObj["synced"].toBool());
-                    overwrittenCount++;
-                }
-                // 如果现有版本更新或相同，则保持不变
-            } else if (conflictResolution == "skip") {
-                // 跳过冲突项目
-                skippedCount++;
-            }
-        } else {
-            // 创建新的待办事项
-            auto newTodo = std::make_unique<TodoItem>(
-                id.toInt(),                                                                  // id
-                QUuid::fromString(todoObj["uuid"].toString()),                               // uuid
-                todoObj["userId"].toInt(0),                                                  // userId
-                todoObj["title"].toString(),                                                 // title
-                todoObj["description"].toString(),                                           // description
-                todoObj["category"].toString(),                                              // category
-                todoObj["important"].toBool(),                                               // important
-                QDateTime::fromString(todoObj["deadline"].toString(), Qt::ISODate),          // deadline
-                todoObj["recurrence_interval"].toInt(0),                                     // recurrenceInterval
-                todoObj["recurrence_count"].toInt(-1),                                       // recurrenceCount
-                QDate::fromString(todoObj["recurrence_start_date"].toString(), Qt::ISODate), // recurrenceStartDate
-                todoObj["isCompleted"].toBool(false),                                        // isCompleted
-                QDateTime::fromString(todoObj["completedAt"].toString(), Qt::ISODate),       // completedAt
-                todoObj["isDeleted"].toBool(false),                                          // isDeleted
-                QDateTime::fromString(todoObj["deletedAt"].toString(), Qt::ISODate),         // deletedAt
-                QDateTime::fromString(todoObj["createdAt"].toString(), Qt::ISODate),         // createdAt
-                QDateTime::fromString(todoObj["updatedAt"].toString(), Qt::ISODate),         // updatedAt
-                QDateTime::fromString(todoObj["lastModifiedAt"].toString(), Qt::ISODate),    // lastModifiedAt
-                todoObj["synced"].toBool(),                                                  // synced
-                this                                                                         // parent
-            );
-
-            // 设置deadline字段（如果存在）
-            if (todoObj.contains("deadline")) {
-                newTodo->setDeadline(QDateTime::fromString(todoObj["deadline"].toString(), Qt::ISODate));
-            }
-
-            m_todos.push_back(std::move(newTodo));
-            importedCount++;
-        }
-    }
-
-    endResetModel();
-
-    // 保存到本地存储
-    saveToLocalStorage();
-
-    qDebug() << "导入完成 - 新增:" << importedCount << "个，覆盖:" << overwrittenCount << "个，跳过:" << skippedCount
-             << "个";
-    return true;
-}
-
-bool TodoModel::importTodosWithIndividualResolution(const QString &filePath, const QVariantMap &resolutions) {
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly)) {
-        qWarning() << "无法打开文件进行读取:" << filePath;
-        return false;
-    }
-
-    QByteArray data = file.readAll();
-    file.close();
-
-    QJsonParseError error;
-    QJsonDocument doc = QJsonDocument::fromJson(data, &error);
-    if (error.error != QJsonParseError::NoError) {
-        qWarning() << "JSON解析错误:" << error.errorString();
-        return false;
-    }
-
-    if (!doc.isArray()) {
-        qWarning() << "JSON文档不是数组格式";
-        return false;
-    }
-
-    QJsonArray jsonArray = doc.array();
-    int importedCount = 0;
-    int updatedCount = 0;
-    int skippedCount = 0;
-
-    for (const QJsonValue &value : jsonArray) {
-        if (!value.isObject())
-            continue;
-
-        QJsonObject obj = value.toObject();
-        QString id = obj["id"].toString();
-
-        // 查找是否存在相同ID的项目
-        TodoItem *existingItem = nullptr;
-        for (const auto &item : m_todos) {
-            if (item->id() == id.toInt()) {
-                existingItem = item.get();
-                break;
-            }
-        }
-
-        if (existingItem) {
-            // 获取该项目的处理方式
-            QString resolution = resolutions.value(id, "skip").toString();
-
-            if (resolution == "overwrite") {
-                // 覆盖现有数据
-                existingItem->setTitle(obj["title"].toString());
-                existingItem->setDescription(obj["description"].toString());
-                existingItem->setCategory(obj["category"].toString());
-                // Note: setStatus method does not exist in TodoItem class
-                existingItem->setCreatedAt(QDateTime::fromString(obj["createdAt"].toString(), Qt::ISODate));
-                existingItem->setUpdatedAt(QDateTime::fromString(obj["updatedAt"].toString(), Qt::ISODate));
-                existingItem->setSynced(false); // 标记为未同步
-                updatedCount++;
-            } else if (resolution == "merge") {
-                // 智能合并：保留更新时间较新的版本
-                QDateTime existingUpdated = existingItem->updatedAt();
-                QDateTime importUpdated = QDateTime::fromString(obj["updatedAt"].toString(), Qt::ISODate);
-
-                if (importUpdated > existingUpdated) {
-                    existingItem->setTitle(obj["title"].toString());
-                    existingItem->setDescription(obj["description"].toString());
-                    existingItem->setCategory(obj["category"].toString());
-                    // Note: setStatus method does not exist in TodoItem class
-                    existingItem->setCreatedAt(QDateTime::fromString(obj["createdAt"].toString(), Qt::ISODate));
-                    existingItem->setUpdatedAt(importUpdated);
-                    existingItem->setSynced(false); // 标记为未同步
-                    updatedCount++;
-                } else {
-                    skippedCount++; // 现有数据更新，跳过导入
-                }
-            } else {
-                // skip - 跳过冲突项目
-                skippedCount++;
-            }
-        } else {
-            // 创建新项目（没有冲突的项目直接导入）
-            auto newItem = std::make_unique<TodoItem>(this);
-            newItem->setId(id.toInt());
-            newItem->setTitle(obj["title"].toString());
-            newItem->setDescription(obj["description"].toString());
-            newItem->setCategory(obj["category"].toString());
-            // Note: setStatus method does not exist in TodoItem class
-            newItem->setCreatedAt(QDateTime::fromString(obj["createdAt"].toString(), Qt::ISODate));
-            newItem->setUpdatedAt(QDateTime::fromString(obj["updatedAt"].toString(), Qt::ISODate));
-            newItem->setSynced(false); // 标记为未同步
-
-            beginInsertRows(QModelIndex(), m_todos.size(), m_todos.size());
-            m_todos.push_back(std::move(newItem));
-            endInsertRows();
-            importedCount++;
-        }
-    }
-
-    // 保存到本地存储
-    saveToLocalStorage();
-
-    qDebug() << "个别冲突处理导入完成 - 新增:" << importedCount << "个，更新:" << updatedCount
-             << "个，跳过:" << skippedCount << "个";
-    return true;
 }

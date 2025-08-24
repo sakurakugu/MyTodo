@@ -10,7 +10,6 @@
  * @version 2025-08-21 21:31:41(UTC+8) 周四
  */
  
-import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 

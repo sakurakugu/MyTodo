@@ -25,6 +25,7 @@
 #include "items/todo_item.h"
 #include "setting.h"
 #include "todo_sync_server.h" // 服务器同步管理器
+#include "todo_data_storage.h" // 数据管理器
 
 /**
  * @class TodoModel
@@ -149,17 +150,6 @@ class TodoModel : public QAbstractListModel {
     // 网络同步操作
     Q_INVOKABLE void syncWithServer(); // 与服务器同步待办事项数据
 
-    // 导出导入功能
-    Q_INVOKABLE bool exportTodos(const QString &filePath);                  // 导出待办事项到文件
-    Q_INVOKABLE bool importTodos(const QString &filePath);                  // 从文件导入待办事项
-    Q_INVOKABLE QVariantList checkImportConflicts(const QString &filePath); // 检查导入冲突
-    Q_INVOKABLE bool importTodosWithConflictResolution(const QString &filePath,
-                                                       const QString &conflictResolution); // 带冲突处理的导入
-    Q_INVOKABLE bool importTodosWithIndividualResolution(const QString &filePath,
-                                                         const QVariantMap &resolutions); // 带个别冲突处理的导入
-    Q_INVOKABLE QVariantList
-    importTodosWithAutoResolution(const QString &filePath); // 自动导入无冲突项目，返回冲突项目列表
-
     // 类别管理相关
     Q_INVOKABLE QStringList getCategories() const;                // 获取类别列表
     Q_INVOKABLE void fetchCategories();                           // 从服务器获取类别列表
@@ -194,8 +184,6 @@ class TodoModel : public QAbstractListModel {
     void onTodosUpdatedFromServer(const QJsonArray &todosArray);                     // 处理从服务器更新的待办事项
 
   private:
-    bool loadFromLocalStorage();                                      // 从本地存储加载待办事项
-    bool saveToLocalStorage();                                        // 将待办事项保存到本地存储
     void handleFetchCategoriesSuccess(const QJsonObject &response);   // 处理获取类别列表成功响应
     void handleCategoryOperationSuccess(const QJsonObject &response); // 处理类别操作成功响应
     void updateTodosFromServer(const QJsonArray &todosArray);         // 从服务器数据更新待办事项
@@ -225,8 +213,9 @@ class TodoModel : public QAbstractListModel {
 
     // 同步管理器
     TodoSyncServer *m_syncManager; ///< 同步管理器 - 负责所有服务器同步相关功能
+    TodoDataStorage *m_dataManager; ///< 数据管理器 - 负责本地存储和文件导入导出
 
-    // 类别管理相关
+    // 类别相关
     QStringList m_categories; ///< 类别列表
     int m_sortType;           ///< 当前排序类型
 

@@ -82,6 +82,8 @@ set(CORE_SOURCES
     cpp/todo_model.h
     cpp/todo_sync_server.cpp
     cpp/todo_sync_server.h
+    cpp/todo_data_storage.cpp
+    cpp/todo_data_storage.h
 )
 
 set(NETWORK_SOURCES
