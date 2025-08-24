@@ -52,52 +52,61 @@ class NetworkProxy : public QObject {
      * @brief 代理类型枚举
      */
     enum ProxyType {
-        NoProxy,        // 不使用代理
-        SystemProxy,    // 使用系统代理
-        HttpProxy,      // HTTP代理
-        Socks5Proxy     // SOCKS5代理
+        NoProxy,     // 不使用代理
+        SystemProxy, // 使用系统代理
+        HttpProxy,   // HTTP代理
+        Socks5Proxy  // SOCKS5代理
     };
     Q_ENUM(ProxyType)
 
-    // 构造函数和析构函数
-    explicit NetworkProxy(QObject *parent = nullptr);
-    ~NetworkProxy();
+    static NetworkProxy &GetInstance() noexcept {
+        static NetworkProxy instance;
+        return instance;
+    }
+    // 禁用拷贝构造和赋值操作
+    NetworkProxy(const NetworkProxy &) = delete;
+    NetworkProxy &operator=(const NetworkProxy &) = delete;
+    NetworkProxy(NetworkProxy &&) = delete;
+    NetworkProxy &operator=(NetworkProxy &&) = delete;
 
     // 代理配置管理
-    void setProxyConfig(ProxyType type, const QString &host = QString(), int port = 0, 
-                       const QString &username = QString(), const QString &password = QString()); // 设置代理配置
+    void setProxyConfig(ProxyType type, const QString &host = QString(), int port = 0,
+                        const QString &username = QString(), const QString &password = QString()); // 设置代理配置
     void applyProxyToManager(QNetworkAccessManager *manager); // 将代理配置应用到网络管理器
-    void clearProxyConfig(); // 清除代理配置
+    void clearProxyConfig();                                  // 清除代理配置
 
     // 代理信息获取
-    ProxyType getProxyType() const; // 获取当前代理类型
-    QString getProxyHost() const;   // 获取代理主机
-    int getProxyPort() const;       // 获取代理端口
+    ProxyType getProxyType() const;   // 获取当前代理类型
+    QString getProxyHost() const;     // 获取代理主机
+    int getProxyPort() const;         // 获取代理端口
     QString getProxyUsername() const; // 获取代理用户名
-    bool hasProxyAuth() const;      // 检查是否配置了代理认证
+    bool hasProxyAuth() const;        // 检查是否配置了代理认证
 
     // 配置文件操作
     void loadProxyConfigFromSettings(); // 从配置加载代理设置
     void saveProxyConfigToSettings();   // 保存代理设置到配置
 
     // 代理状态检查
-    bool isProxyEnabled() const;    // 检查代理是否启用
+    bool isProxyEnabled() const;         // 检查代理是否启用
     QString getProxyDescription() const; // 获取代理配置描述
 
   signals:
     void proxyConfigChanged(ProxyType type, const QString &host, int port); // 代理配置改变信号
 
   private:
+    // 构造函数和析构函数
+    explicit NetworkProxy(QObject *parent = nullptr);
+    ~NetworkProxy();
     // 内部方法
     QNetworkProxy createQNetworkProxy() const; // 创建QNetworkProxy对象
-    void updateProxyConfig(ProxyType type, const QString &host, int port, 
-                          const QString &username, const QString &password); // 更新代理配置
+    void updateProxyConfig(ProxyType type, const QString &host, int port, const QString &username,
+                           const QString &password); // 更新代理配置
 
     // 成员变量
-    ProxyType m_proxyType;     // 代理类型
-    QString m_proxyHost;       // 代理主机
-    int m_proxyPort;           // 代理端口
-    QString m_proxyUsername;   // 代理用户名
-    QString m_proxyPassword;   // 代理密码
-    bool m_proxyEnabled;       // 代理是否启用
+    ProxyType m_proxyType;   // 代理类型
+    QString m_proxyHost;     // 代理主机
+    int m_proxyPort;         // 代理端口
+    QString m_proxyUsername; // 代理用户名
+    QString m_proxyPassword; // 代理密码
+    bool m_proxyEnabled;     // 代理是否启用
 };

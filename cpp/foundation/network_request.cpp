@@ -17,7 +17,6 @@
 #include <QNetworkRequest>
 #include <QSslError>
 #include <QTimer>
-// QNetworkConfigurationManager已在Qt 6中弃用
 #include <QUrl>
 
 /**
@@ -33,7 +32,7 @@ NetworkRequest::NetworkRequest(QObject *parent)
       m_nextRequestId(1),
       m_isOnline(false),
       m_connectivityTimer(new QTimer(this)),
-      m_proxyManager(new NetworkProxy(this)) {
+      m_proxyManager(NetworkProxy::GetInstance()) {
     // 设置默认配置
     m_networkRequest->setProxy(QNetworkProxy::NoProxy);
 
@@ -46,7 +45,7 @@ NetworkRequest::NetworkRequest(QObject *parent)
     checkNetworkConnectivity();
     
     // 应用代理配置到网络管理器
-    m_proxyManager->applyProxyToManager(m_networkRequest);
+    m_proxyManager.applyProxyToManager(m_networkRequest);
 }
 
 /**
@@ -482,11 +481,3 @@ bool NetworkRequest::isDuplicateRequest(RequestType type) const { return m_activ
 void NetworkRequest::addActiveRequest(RequestType type, qint64 requestId) { m_activeRequests[type] = requestId; }
 
 void NetworkRequest::removeActiveRequest(RequestType type) { m_activeRequests.remove(type); }
-
-/**
- * @brief 获取代理管理器
- * @return 代理管理器指针
- */
-NetworkProxy* NetworkRequest::getProxyManager() const {
-    return m_proxyManager;
-}

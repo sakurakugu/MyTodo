@@ -188,8 +188,8 @@ class TodoModel : public QAbstractListModel {
     Q_INVOKABLE void deleteCategory(int id);                          // 删除类别
 
     // 排序相关
-    int sortType() const;                                              // 获取当前排序类型
-    void setSortType(int type);                                        // 设置排序类型
+    Q_INVOKABLE int sortType() const;                                              // 获取当前排序类型
+    Q_INVOKABLE void setSortType(int type);                                        // 设置排序类型
     Q_INVOKABLE void sortTodos();                                      // 对待办事项进行排序
 
   signals:

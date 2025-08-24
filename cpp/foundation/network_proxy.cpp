@@ -16,10 +16,7 @@
  * @param parent 父对象
  */
 NetworkProxy::NetworkProxy(QObject *parent)
-    : QObject(parent),
-      m_proxyType(NoProxy),
-      m_proxyPort(0),
-      m_proxyEnabled(false) {
+    : QObject(parent), m_proxyType(NoProxy), m_proxyPort(0), m_proxyEnabled(false) {
     // 从配置加载代理设置
     loadProxyConfigFromSettings();
 }
@@ -40,12 +37,12 @@ NetworkProxy::~NetworkProxy() {
  * @param username 代理用户名（可选）
  * @param password 代理密码（可选）
  */
-void NetworkProxy::setProxyConfig(ProxyType type, const QString &host, int port, 
-                                        const QString &username, const QString &password) {
+void NetworkProxy::setProxyConfig(ProxyType type, const QString &host, int port, const QString &username,
+                                  const QString &password) {
     updateProxyConfig(type, host, port, username, password);
     m_proxyEnabled = (type != NoProxy);
-    
-    qDebug() << "代理配置已更新:" << type << host << port;
+
+    qDebug() << "代理配置已更新" << getProxyDescription();
     emit proxyConfigChanged(type, host, port);
 }
 
@@ -55,14 +52,14 @@ void NetworkProxy::setProxyConfig(ProxyType type, const QString &host, int port,
  */
 void NetworkProxy::applyProxyToManager(QNetworkAccessManager *manager) {
     if (!manager) {
-        qWarning() << "NetworkAccessManager为空，无法应用代理配置";
+        qWarning() << "NetworkAccessManager 为空，无法应用代理配置";
         return;
     }
-    
+
     QNetworkProxy proxy = createQNetworkProxy();
     manager->setProxy(proxy);
-    
-    qDebug() << "代理配置已应用到NetworkAccessManager:" << m_proxyType << m_proxyHost << m_proxyPort;
+
+    qDebug() << "代理配置已应用" << getProxyDescription();
 }
 
 /**
@@ -117,33 +114,33 @@ bool NetworkProxy::hasProxyAuth() const {
  */
 void NetworkProxy::loadProxyConfigFromSettings() {
     Config &config = Config::GetInstance();
-    
+
     // 检查是否启用代理
     auto enabledResult = config.get(QStringLiteral("proxy/enabled"), false);
     m_proxyEnabled = enabledResult.has_value() ? enabledResult.value().toBool() : false;
-    
+
     if (!m_proxyEnabled) {
         updateProxyConfig(NoProxy, QString(), 0, QString(), QString());
         return;
     }
-    
+
     // 获取代理配置
     auto typeResult = config.get(QStringLiteral("proxy/type"), 0);
     auto hostResult = config.get(QStringLiteral("proxy/host"), QString());
     auto portResult = config.get(QStringLiteral("proxy/port"), 8080);
     auto usernameResult = config.get(QStringLiteral("proxy/username"), QString());
     auto passwordResult = config.get(QStringLiteral("proxy/password"), QString());
-    
+
     ProxyType type = static_cast<ProxyType>(typeResult.has_value() ? typeResult.value().toInt() : 0);
     QString host = hostResult.has_value() ? hostResult.value().toString() : QString();
     int port = portResult.has_value() ? portResult.value().toInt() : 8080;
     QString username = usernameResult.has_value() ? usernameResult.value().toString() : QString();
     QString password = passwordResult.has_value() ? passwordResult.value().toString() : QString();
-    
+
     // 应用代理配置
     updateProxyConfig(type, host, port, username, password);
-    
-    qDebug() << "已从配置加载代理设置:" << type << host << port;
+
+    qDebug() << "已从配置加载代理设置" << getProxyDescription();
 }
 
 /**
@@ -151,14 +148,14 @@ void NetworkProxy::loadProxyConfigFromSettings() {
  */
 void NetworkProxy::saveProxyConfigToSettings() {
     Config &config = Config::GetInstance();
-    
+
     config.save(QStringLiteral("proxy/enabled"), m_proxyEnabled);
     config.save(QStringLiteral("proxy/type"), static_cast<int>(m_proxyType));
     config.save(QStringLiteral("proxy/host"), m_proxyHost);
     config.save(QStringLiteral("proxy/port"), m_proxyPort);
     config.save(QStringLiteral("proxy/username"), m_proxyUsername);
     config.save(QStringLiteral("proxy/password"), m_proxyPassword);
-    
+
     qDebug() << "代理设置已保存到配置文件";
 }
 
@@ -176,9 +173,9 @@ bool NetworkProxy::isProxyEnabled() const {
  */
 QString NetworkProxy::getProxyDescription() const {
     if (!isProxyEnabled()) {
-        return QStringLiteral("无代理");
+        return QStringLiteral("未启用代理");
     }
-    
+
     QString typeStr;
     switch (m_proxyType) {
     case NoProxy:
@@ -194,16 +191,16 @@ QString NetworkProxy::getProxyDescription() const {
         typeStr = QStringLiteral("SOCKS5代理");
         break;
     }
-    
+
     if (m_proxyType == SystemProxy) {
         return typeStr;
     }
-    
+
     QString description = QString("%1 - %2:%3").arg(typeStr, m_proxyHost).arg(m_proxyPort);
     if (hasProxyAuth()) {
         description += QString(" (用户: %1)").arg(m_proxyUsername);
     }
-    
+
     return description;
 }
 
@@ -213,7 +210,7 @@ QString NetworkProxy::getProxyDescription() const {
  */
 QNetworkProxy NetworkProxy::createQNetworkProxy() const {
     QNetworkProxy proxy;
-    
+
     switch (m_proxyType) {
     case NoProxy:
         proxy.setType(QNetworkProxy::NoProxy);
@@ -240,7 +237,7 @@ QNetworkProxy NetworkProxy::createQNetworkProxy() const {
         }
         break;
     }
-    
+
     return proxy;
 }
 
@@ -252,8 +249,8 @@ QNetworkProxy NetworkProxy::createQNetworkProxy() const {
  * @param username 用户名
  * @param password 密码
  */
-void NetworkProxy::updateProxyConfig(ProxyType type, const QString &host, int port, 
-                                           const QString &username, const QString &password) {
+void NetworkProxy::updateProxyConfig(ProxyType type, const QString &host, int port, const QString &username,
+                                     const QString &password) {
     m_proxyType = type;
     m_proxyHost = host;
     m_proxyPort = port;

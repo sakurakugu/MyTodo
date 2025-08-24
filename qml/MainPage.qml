@@ -217,21 +217,17 @@ Page {
                             color: theme.textColor
                         }
 
-                        ComboBox {
+                        Switch {
                             id: importantFilter
                             Layout.fillWidth: true
                             Layout.preferredHeight: 36
-                            model: ["全部", "重要", "普通"]
-                            onCurrentTextChanged: {
-                                if (currentText === "全部") {
-                                    todoModel.currentFilter = ""; // 清除筛选
-                                } else if (currentText === "重要") {
+                            text: "重要任务"
+                            onCheckedChanged: {
+                                if (checked) {
                                     todoModel.currentFilter = "important";
                                     todoModel.currentImportant = true;
                                 } else {
-                                    // "普通"
-                                    todoModel.currentFilter = "important";
-                                    todoModel.currentImportant = false;
+                                    todoModel.currentFilter = ""; // 清除筛选
                                 }
                             }
                         }
@@ -493,7 +489,7 @@ Page {
 
                     delegate: Rectangle {
                         id: delegateItem
-                        width: parent.width
+                        width: parent ? parent.width : 0
                         height: 50
                         color: index % 2 === 0 ? theme.secondaryBackgroundColor : theme.backgroundColor
 

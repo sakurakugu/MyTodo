@@ -96,8 +96,6 @@ class NetworkRequest : public QObject {
     };
     Q_ENUM(NetworkError)
 
-
-
     /**
      * @struct RequestConfig
      * @brief 请求配置结构
@@ -129,9 +127,6 @@ class NetworkRequest : public QObject {
     bool isNetworkAvailable() const; // 检查网络是否可用
     void checkNetworkConnectivity(); // 检查网络连接状态
 
-    // 代理管理
-    NetworkProxy* getProxyManager() const; // 获取代理管理器
-
   signals:
     void requestCompleted(RequestType type, const QJsonObject &response);             // 请求完成信号
     void requestFailed(RequestType type, NetworkError error, const QString &message); // 请求失败信号
@@ -146,17 +141,18 @@ class NetworkRequest : public QObject {
   private:
     explicit NetworkRequest(QObject *parent = nullptr);
     ~NetworkRequest();
+
     /**
      * @struct PendingRequest
      * @brief 待处理请求结构
      */
     struct PendingRequest {
-        RequestType type;
-        RequestConfig config;
-        QNetworkReply *reply = nullptr;
-        QTimer *timeoutTimer = nullptr;
-        int currentRetry = 0;
-        qint64 requestId;
+        RequestType type;               // 请求类型
+        RequestConfig config;           // 请求配置
+        QNetworkReply *reply = nullptr; // 网络回复对象
+        QTimer *timeoutTimer = nullptr; // 超时定时器
+        int currentRetry = 0;           // 当前重试次数
+        qint64 requestId;               // 请求ID
     };
 
     // 内部方法
@@ -173,8 +169,6 @@ class NetworkRequest : public QObject {
     void setupDefaultHeaders(QNetworkRequest &request) const; // 设置默认请求头
     void addAuthHeader(QNetworkRequest &request) const;       // 添加认证头
 
-
-
     // 请求去重
     bool isDuplicateRequest(RequestType type) const;           // 检查是否为重复请求
     void addActiveRequest(RequestType type, qint64 requestId); // 添加活跃请求
@@ -185,18 +179,18 @@ class NetworkRequest : public QObject {
     QString m_authToken;                     // 认证令牌
     QString m_serverBaseUrl;                 // 服务器基础URL
     QString m_apiVersion;                    // API版本
-    
+
     QMap<qint64, PendingRequest> m_pendingRequests; // 待处理请求映射
     QMap<RequestType, qint64> m_activeRequests;     // 活跃请求映射（用于去重）
     qint64 m_nextRequestId;                         // 下一个请求ID
-    
+
     bool m_isOnline; // 是否在线
-    
+
     // 配置常量
     static const int DEFAULT_TIMEOUT_MS = 10000;
     static const int MAX_CONCURRENT_REQUESTS = 5;
     static const int CONNECTIVITY_CHECK_INTERVAL = 30000; // 30秒检查一次网络连接
-    
-    QTimer *m_connectivityTimer; // 连接定时器
-    NetworkProxy *m_proxyManager;     // 代理管理器
+
+    QTimer *m_connectivityTimer;  // 连接定时器
+    NetworkProxy &m_proxyManager; // 代理管理器
 };
