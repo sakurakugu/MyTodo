@@ -16,16 +16,15 @@
 
 #include "setting.h"
 
-// 静态成员初始化
-std::unique_ptr<UserAuth> UserAuth::s_instance = nullptr;
-
 UserAuth::UserAuth(QObject *parent)
-    : QObject(parent), m_networkRequest(NetworkRequest::GetInstance()), m_setting(Setting::GetInstance()) {
+    : QObject(parent), m_networkRequest(NetworkRequest::GetInstance()), m_isOnline(false),
+      m_setting(Setting::GetInstance()) {
 
     // 连接网络请求信号
     connect(&m_networkRequest, &NetworkRequest::requestCompleted, this, &UserAuth::onNetworkRequestCompleted);
     connect(&m_networkRequest, &NetworkRequest::requestFailed, this, &UserAuth::onNetworkRequestFailed);
     connect(&m_networkRequest, &NetworkRequest::authTokenExpired, this, &UserAuth::onAuthTokenExpired);
+    connect(&m_networkRequest, &NetworkRequest::networkStatusChanged, this, &UserAuth::onNetworkStatusChanged);
 
     // 初始化服务器配置
     initializeServerConfig();
@@ -113,6 +112,58 @@ void UserAuth::setAuthToken(const QString &accessToken) {
         m_accessToken = accessToken;
         m_networkRequest.setAuthToken(accessToken);
         saveCredentials();
+    }
+}
+
+/**
+ * @brief 获取当前在线状态
+ * @return 是否在线
+ */
+bool UserAuth::isOnline() const {
+    return m_isOnline;
+}
+
+/**
+ * @brief 设置在线状态
+ * @param online 新的在线状态
+ */
+void UserAuth::setIsOnline(bool online) {
+    // 如果已经是目标状态，则不做任何操作
+    if (m_isOnline == online) {
+        return;
+    }
+
+    if (online) {
+        // TODO: 这部分是不是可以复用 和 network_request中的checkNetworkConnectivity
+
+        // 尝试连接服务器，验证是否可以切换到在线模式
+        NetworkRequest::RequestConfig config;
+        config.url = getApiUrl(m_authApiEndpoint);
+        config.requiresAuth = UserAuth::GetInstance().isLoggedIn();
+        config.timeout = 5000; // 5秒超时
+
+        // 发送测试请求
+        m_networkRequest.sendRequest(NetworkRequest::FetchTodos, config);
+
+        // TODO: 暂时设置为在线状态，实际状态将在请求回调中确定
+        m_isOnline = online;
+        emit isOnlineChanged();
+        // 保存到设置，保持与autoSync一致
+        m_setting.save(QStringLiteral("setting/autoSync"), m_isOnline);
+    } else {
+        // 切换到离线模式不需要验证，直接更新状态
+        m_isOnline = online;
+        emit isOnlineChanged();
+        // 保存到设置，保持与autoSync一致
+        m_setting.save(QStringLiteral("setting/autoSync"), m_isOnline);
+    }
+}
+
+void UserAuth::onNetworkStatusChanged(bool isOnline) {
+    if (m_isOnline != isOnline) {
+        m_isOnline = isOnline;
+        emit isOnlineChanged();
+        qDebug() << "网络状态变更:" << (isOnline ? "在线" : "离线");
     }
 }
 

@@ -54,7 +54,6 @@
  */
 class TodoModel : public QAbstractListModel {
     Q_OBJECT
-    Q_PROPERTY(bool isOnline READ isOnline WRITE setIsOnline NOTIFY isOnlineChanged)
     Q_PROPERTY(QString currentCategory READ currentCategory WRITE setCurrentCategory NOTIFY currentCategoryChanged)
     Q_PROPERTY(QString currentFilter READ currentFilter WRITE setCurrentFilter NOTIFY currentFilterChanged)
     Q_PROPERTY(bool currentImportant READ currentImportant WRITE setCurrentImportant NOTIFY currentImportantChanged)
@@ -120,10 +119,6 @@ class TodoModel : public QAbstractListModel {
     bool setData(const QModelIndex &index, const QVariant &value,
                  int role = Qt::EditRole) override; // 设置指定索引和角色的数据
 
-    // 网络连接状态管理
-    bool isOnline() const;         // 获取当前在线状态
-    void setIsOnline(bool online); // 设置在线状态
-
     // 筛选和排序功能
     QString currentCategory() const;                  // 获取当前激活的分类筛选器
     void setCurrentCategory(const QString &category); // 设置分类筛选器
@@ -164,10 +159,6 @@ class TodoModel : public QAbstractListModel {
     Q_INVOKABLE QVariantList
     importTodosWithAutoResolution(const QString &filePath); // 自动导入无冲突项目，返回冲突项目列表
 
-    // 服务器配置相关
-    Q_INVOKABLE bool isHttpsUrl(const QString &url) const;       // 检查URL是否使用HTTPS
-    Q_INVOKABLE void updateServerConfig(const QString &baseUrl); // 更新服务器配置
-
     // 类别管理相关
     Q_INVOKABLE QStringList getCategories() const;                // 获取类别列表
     Q_INVOKABLE void fetchCategories();                           // 从服务器获取类别列表
@@ -181,7 +172,6 @@ class TodoModel : public QAbstractListModel {
     Q_INVOKABLE void sortTodos();           // 对待办事项进行排序
 
   signals:
-    void isOnlineChanged();                                                    // 在线状态变化信号
     void currentCategoryChanged();                                             // 当前分类筛选器变化信号
     void currentFilterChanged();                                               // 当前筛选条件变化信号
     void currentImportantChanged();                                            // 当前重要程度筛选器变化信号
@@ -198,16 +188,15 @@ class TodoModel : public QAbstractListModel {
     void onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response); // 处理网络请求成功
     void onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
                                 const QString &message); // 处理网络请求失败
-    void onNetworkStatusChanged(bool isOnline);          // 处理网络状态变化
-
+    void onBaseUrlChanged(const QString &newBaseUrl);    // 处理服务器基础URL变化
 
   private:
-    bool loadFromLocalStorage();                                      // 从本地存储加载待办事项
-    bool saveToLocalStorage();                                        // 将待办事项保存到本地存储
-    void fetchTodosFromServer();                                      // 从服务器获取最新的待办事项
-    void pushLocalChangesToServer();                                  // 将本地更改推送到服务器
-    void handleFetchTodosSuccess(const QJsonObject &response);        // 处理获取待办事项成功
-    void handlePushChangesSuccess(const QJsonObject &response);       // 处理推送更改成功
+    bool loadFromLocalStorage();                                // 从本地存储加载待办事项
+    bool saveToLocalStorage();                                  // 将待办事项保存到本地存储
+    void fetchTodosFromServer();                                // 从服务器获取最新的待办事项
+    void pushLocalChangesToServer();                            // 将本地更改推送到服务器
+    void handleFetchTodosSuccess(const QJsonObject &response);  // 处理获取待办事项成功
+    void handlePushChangesSuccess(const QJsonObject &response); // 处理推送更改成功
 
     void handleSyncSuccess(const QJsonObject &response);              // 处理同步成功
     void handleFetchCategoriesSuccess(const QJsonObject &response);   // 处理获取类别列表成功响应
@@ -227,7 +216,6 @@ class TodoModel : public QAbstractListModel {
     std::vector<std::unique_ptr<TodoItem>> m_todos; ///< 待办事项列表（使用智能指针）
     QList<TodoItem *> m_filteredTodos;              ///< 过滤后的待办事项列表（缓存）
     bool m_filterCacheDirty;                        ///< 过滤缓存是否需要更新
-    bool m_isOnline;                                ///< 是否在线
     QString m_currentCategory;                      ///< 当前分类筛选器
     QString m_currentFilter;                        ///< 当前筛选条件
     bool m_currentImportant;                        ///< 当前重要程度筛选器
@@ -236,6 +224,7 @@ class TodoModel : public QAbstractListModel {
     bool m_dateFilterEnabled;                       ///< 日期筛选是否启用
     NetworkRequest &m_networkRequest;               ///< 网络管理器
     Setting &m_setting;                             ///< 应用设置
+    bool m_isAutoSync;                              ///< 是否自动同步
 
     // 服务器配置
     QString m_serverBaseUrl;   ///< 服务器基础URL

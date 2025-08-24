@@ -56,6 +56,10 @@ class Setting : public QObject {
     Q_INVOKABLE void setProxyEnabled(bool enabled);             ///< 设置是否启用代理
     Q_INVOKABLE bool getProxyEnabled() const;                   ///< 获取是否启用代理
 
+    // 服务器配置相关
+    Q_INVOKABLE bool isHttpsUrl(const QString &url) const;       // 检查URL是否使用HTTPS
+    Q_INVOKABLE void updateServerConfig(const QString &baseUrl); // 更新服务器配置
+
     // 日志配置相关方法
     Q_INVOKABLE void setLogLevel(Logger::LogLevel logLevel); ///< 设置日志级别
     Q_INVOKABLE Logger::LogLevel getLogLevel() const;        ///< 获取日志级别
@@ -69,8 +73,10 @@ class Setting : public QObject {
     Q_INVOKABLE int getMaxLogFiles() const;                  ///< 获取最大日志文件数量
     Q_INVOKABLE QString getLogFilePath() const;              ///< 获取日志文件路径
     Q_INVOKABLE void clearLogs();                            ///< 清除所有日志文件
-
     Q_INVOKABLE void initializeDefaultServerConfig(); ///< 初始化默认服务器配置
+
+  signals:
+    void baseUrlChanged(const QString &newBaseUrl); // 服务器基础URL变化信号
 
   private:
     explicit Setting(QObject *parent = nullptr);

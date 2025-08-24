@@ -227,3 +227,32 @@ bool Setting::getProxyEnabled() const {
     auto result = m_config.get(QStringLiteral("proxy/enabled"), false);
     return result.has_value() ? result.value().toBool() : false;
 }
+
+/**
+ * @brief 检查URL是否使用HTTPS协议
+ * @param url 要检查的URL
+ * @return 如果使用HTTPS则返回true，否则返回false
+ */
+bool Setting::isHttpsUrl(const QString &url) const {
+    return url.startsWith("https://", Qt::CaseInsensitive);
+}
+
+/**
+ * @brief 更新服务器配置
+ * @param baseUrl 新的服务器基础URL
+ */
+void Setting::updateServerConfig(const QString &baseUrl) {
+    if (baseUrl.isEmpty()) {
+        qWarning() << "尝试设置空的服务器URL";
+        return;
+    }
+
+    // 保存到设置中
+    m_config.save(QStringLiteral("server/baseUrl"), baseUrl);
+
+    qDebug() << "服务器配置已更新:" << baseUrl;
+    qDebug() << "HTTPS状态:" << (isHttpsUrl(baseUrl) ? "安全" : "不安全");
+    
+    // 发出信号通知其他组件
+    emit baseUrlChanged(baseUrl);
+}

@@ -553,7 +553,7 @@ Page {
                                 return;
                             }
 
-                            todoModel.updateServerConfig(url);
+                            setting.updateServerConfig(url);
                             apiConfigSuccessDialog.open();
                         }
                         isDarkMode: settingPage.isDarkMode
@@ -1107,7 +1107,7 @@ Page {
             }
 
             onAccepted: {
-                todoModel.updateServerConfig(targetUrl);
+                setting.updateServerConfig(targetUrl);
                 apiConfigSuccessDialog.open();
             }
         }

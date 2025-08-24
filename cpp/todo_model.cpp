@@ -26,10 +26,9 @@
 #include "user_auth.h"
 
 TodoModel::TodoModel(QObject *parent)
-    : QAbstractListModel(parent), m_filterCacheDirty(true), m_isOnline(false), m_currentCategory(""),
-      m_currentFilter(""), m_currentImportant(false), m_dateFilterEnabled(false),
-      m_networkRequest(NetworkRequest::GetInstance()), m_setting(Setting::GetInstance()),
-      m_sortType(SortByCreatedTime) {
+    : QAbstractListModel(parent), m_filterCacheDirty(true), m_currentCategory(""), m_currentFilter(""),
+      m_currentImportant(false), m_dateFilterEnabled(false), m_networkRequest(NetworkRequest::GetInstance()),
+      m_setting(Setting::GetInstance()), m_isAutoSync(false), m_sortType(SortByCreatedTime) {
 
     // 初始化默认类别列表
     m_categories << "全部" << "工作" << "学习" << "生活" << "其他" << "未分类";
@@ -42,7 +41,9 @@ TodoModel::TodoModel(QObject *parent)
     // 连接网络管理器信号
     connect(&m_networkRequest, &NetworkRequest::requestCompleted, this, &TodoModel::onNetworkRequestCompleted);
     connect(&m_networkRequest, &NetworkRequest::requestFailed, this, &TodoModel::onNetworkRequestFailed);
-    connect(&m_networkRequest, &NetworkRequest::networkStatusChanged, this, &TodoModel::onNetworkStatusChanged);
+
+    // 连接设置变化信号
+    connect(&m_setting, &Setting::baseUrlChanged, this, &TodoModel::onBaseUrlChanged);
 
     // 加载本地数据
     if (!loadFromLocalStorage()) {
@@ -50,11 +51,10 @@ TodoModel::TodoModel(QObject *parent)
     }
 
     // 初始化在线状态
-    m_isOnline = m_setting.get(QStringLiteral("autoSync"), false).toBool();
-    emit isOnlineChanged();
+    m_isAutoSync = m_setting.get(QStringLiteral("autoSync"), false).toBool();
 
     // 如果已登录，获取类别列表
-    if (m_isOnline && UserAuth::GetInstance().isLoggedIn()) {
+    if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
         fetchCategories();
     }
 }
@@ -340,54 +340,6 @@ void TodoModel::invalidateFilterCache() {
 }
 
 /**
- * @brief 获取当前在线状态
- * @return 是否在线
- */
-bool TodoModel::isOnline() const {
-    return m_isOnline;
-}
-
-/**
- * @brief 设置在线状态
- * @param online 新的在线状态
- */
-void TodoModel::setIsOnline(bool online) {
-    // 如果已经是目标状态，则不做任何操作
-    if (m_isOnline == online) {
-        return;
-    }
-
-    if (online) {
-        // TODO: 这部分是不是可以复用
-
-        // 尝试连接服务器，验证是否可以切换到在线模式
-        NetworkRequest::RequestConfig config;
-        config.url = getApiUrl(m_todoApiEndpoint);
-        config.requiresAuth = UserAuth::GetInstance().isLoggedIn();
-        config.timeout = 5000; // 5秒超时
-
-        // 发送测试请求
-        m_networkRequest.sendRequest(NetworkRequest::FetchTodos, config);
-
-        // TODO: 暂时设置为在线状态，实际状态将在请求回调中确定
-        m_isOnline = online;
-        emit isOnlineChanged();
-        // 保存到设置，保持与autoSync一致
-        m_setting.save(QStringLiteral("setting/autoSync"), m_isOnline);
-
-        if (m_isOnline && UserAuth::GetInstance().isLoggedIn()) {
-            syncWithServer();
-        }
-    } else {
-        // 切换到离线模式不需要验证，直接更新状态
-        m_isOnline = online;
-        emit isOnlineChanged();
-        // 保存到设置，保持与autoSync一致
-        m_setting.save(QStringLiteral("setting/autoSync"), m_isOnline);
-    }
-}
-
-/**
  * @brief 获取当前激活的分类筛选器
  * @return 当前分类名称
  */
@@ -558,7 +510,7 @@ void TodoModel::addTodo(const QString &title, const QString &description, const 
 
     saveToLocalStorage();
 
-    if (m_isOnline && UserAuth::GetInstance().isLoggedIn()) {
+    if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
         // 如果在线且已登录，立即尝试同步到服务器
         syncWithServer();
     }
@@ -681,7 +633,7 @@ bool TodoModel::updateTodo(int index, const QVariantMap &todoData) {
                 qWarning() << "更新待办事项后无法保存到本地存储";
             }
 
-            if (m_isOnline && UserAuth::GetInstance().isLoggedIn()) {
+            if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
                 syncWithServer();
             }
 
@@ -731,7 +683,7 @@ bool TodoModel::removeTodo(int index) {
             qWarning() << "软删除待办事项后无法保存到本地存储";
         }
 
-        if (m_isOnline && UserAuth::GetInstance().isLoggedIn()) {
+        if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
             syncWithServer();
         }
 
@@ -784,7 +736,7 @@ bool TodoModel::restoreTodo(int index) {
             qWarning() << "恢复待办事项后无法保存到本地存储";
         }
 
-        if (m_isOnline && UserAuth::GetInstance().isLoggedIn()) {
+        if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
             syncWithServer();
         }
 
@@ -827,7 +779,7 @@ bool TodoModel::permanentlyDeleteTodo(int index) {
             qWarning() << "永久删除待办事项后无法保存到本地存储";
         }
 
-        if (m_isOnline && UserAuth::GetInstance().isLoggedIn()) {
+        if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
             syncWithServer();
         }
 
@@ -856,7 +808,7 @@ bool TodoModel::markAsDone(int index) {
         bool success = setData(modelIndex, true, IsCompletedRole);
 
         if (success) {
-            if (m_isOnline && UserAuth::GetInstance().isLoggedIn()) {
+            if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
                 syncWithServer();
             }
             qDebug() << "成功将索引" << index << "处的待办事项标记为已完成";
@@ -884,7 +836,7 @@ bool TodoModel::markAsDone(int index) {
  */
 void TodoModel::syncWithServer() {
     // 检查是否可以进行同步
-    if (!m_isOnline) {
+    if (!m_isAutoSync) {
         qDebug() << "无法同步：离线模式";
         return;
     }
@@ -974,11 +926,19 @@ void TodoModel::onNetworkRequestFailed(NetworkRequest::RequestType type, Network
     logError(typeStr, errorMessage);
 }
 
-void TodoModel::onNetworkStatusChanged(bool isOnline) {
-    if (m_isOnline != isOnline) {
-        m_isOnline = isOnline;
-        emit isOnlineChanged();
-        qDebug() << "网络状态变更:" << (isOnline ? "在线" : "离线");
+/**
+ * @brief 处理服务器基础URL变化
+ * @param newBaseUrl 新的服务器基础URL
+ */
+void TodoModel::onBaseUrlChanged(const QString &newBaseUrl) {
+    qDebug() << "服务器基础URL已更新:" << m_serverBaseUrl << "->" << newBaseUrl;
+    m_serverBaseUrl = newBaseUrl;
+
+    // 如果当前在线且已登录，可以选择重新同步数据
+    if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
+        // qDebug() << "服务器URL变化，准备重新同步数据";
+        // 可以选择立即同步或等待用户手动同步
+        // syncWithServer();
     }
 }
 
@@ -1234,7 +1194,7 @@ bool TodoModel::saveToLocalStorage() {
  * @brief 从服务器获取最新的待办事项
  */
 void TodoModel::fetchTodosFromServer() {
-    if (!m_isOnline || !UserAuth::GetInstance().isLoggedIn()) {
+    if (!m_isAutoSync || !UserAuth::GetInstance().isLoggedIn()) {
         qWarning() << "无法获取服务器数据：离线或未登录";
         return;
     }
@@ -1277,7 +1237,7 @@ void TodoModel::logError(const QString &context, const QString &error) {
  */
 void TodoModel::pushLocalChangesToServer() {
     // 检查网络和登录状态
-    if (!m_isOnline || !UserAuth::GetInstance().isLoggedIn()) {
+    if (!m_isAutoSync || !UserAuth::GetInstance().isLoggedIn()) {
         qDebug() << "无法推送更改：离线或未登录";
         return;
     }
@@ -1363,35 +1323,6 @@ void TodoModel::initializeServerConfig() {
  */
 QString TodoModel::getApiUrl(const QString &endpoint) const {
     return m_serverBaseUrl + endpoint;
-}
-
-/**
- * @brief 检查URL是否使用HTTPS协议
- * @param url 要检查的URL
- * @return 如果使用HTTPS则返回true，否则返回false
- */
-bool TodoModel::isHttpsUrl(const QString &url) const {
-    return url.startsWith("https://", Qt::CaseInsensitive);
-}
-
-/**
- * @brief 更新服务器配置
- * @param baseUrl 新的服务器基础URL
- */
-void TodoModel::updateServerConfig(const QString &baseUrl) {
-    if (baseUrl.isEmpty()) {
-        qWarning() << "尝试设置空的服务器URL";
-        return;
-    }
-
-    // 更新内存中的配置
-    m_serverBaseUrl = baseUrl;
-
-    // 保存到设置中
-    m_setting.save(QStringLiteral("server/baseUrl"), baseUrl);
-
-    qDebug() << "服务器配置已更新:" << baseUrl;
-    qDebug() << "HTTPS状态:" << (isHttpsUrl(baseUrl) ? "安全" : "不安全");
 }
 
 bool TodoModel::exportTodos(const QString &filePath) {

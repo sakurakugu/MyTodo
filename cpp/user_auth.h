@@ -46,6 +46,7 @@ class Setting;
  */
 class UserAuth : public QObject {
     Q_OBJECT
+    Q_PROPERTY(bool isOnline READ isOnline WRITE setIsOnline NOTIFY isOnlineChanged)
     Q_PROPERTY(QString username READ getUsername NOTIFY usernameChanged)
     Q_PROPERTY(QString email READ getEmail NOTIFY emailChanged)
     Q_PROPERTY(bool isLoggedIn READ isLoggedIn NOTIFY isLoggedInChanged)
@@ -79,6 +80,10 @@ class UserAuth : public QObject {
     QString getRefreshToken() const;               // 获取刷新令牌
     void setAuthToken(const QString &accessToken); // 设置访问令牌
 
+    // 网络连接状态管理
+    bool isOnline() const;         // 获取当前在线状态
+    void setIsOnline(bool online); // 设置在线状态
+
     // 服务器配置
     void setAuthApiEndpoint(const QString &endpoint); // 设置认证API端点
     QString getAuthApiEndpoint() const;               // 获取认证API端点
@@ -87,6 +92,7 @@ class UserAuth : public QObject {
     void usernameChanged();                        // 用户名变化信号
     void emailChanged();                           // 邮箱变化信号
     void isLoggedInChanged();                      // 登录状态变化信号
+    void isOnlineChanged();                        // 在线状态变化信号
     void loginSuccessful(const QString &username); // 登录成功信号
     void loginFailed(const QString &errorMessage); // 登录失败信号
     void loginRequired();                          // 需要登录信号
@@ -118,6 +124,7 @@ class UserAuth : public QObject {
     void clearCredentials();                              // 清除凭据
     QString getApiUrl(const QString &endpoint) const;     // 获取完整的API URL
     void initializeServerConfig();                        // 初始化服务器配置
+    void onNetworkStatusChanged(bool isOnline);           // 处理网络状态变化
 
     // 成员变量
     NetworkRequest &m_networkRequest; ///< 网络管理器引用
@@ -128,9 +135,9 @@ class UserAuth : public QObject {
     QString m_username;     ///< 用户名
     QString m_email;        ///< 邮箱
 
+    bool m_isOnline; ///< 是否在线
+
     // 服务器配置
     QString m_serverBaseUrl;   ///< 服务器基础URL
     QString m_authApiEndpoint; ///< 认证API端点
-
-    static std::unique_ptr<UserAuth> s_instance; ///< 单例实例
 };
