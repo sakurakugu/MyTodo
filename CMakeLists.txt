@@ -78,12 +78,14 @@ set(ITEM_SOURCES
 
 set(CORE_SOURCES
     # 核心数据模型
-    cpp/todo_model.cpp
-    cpp/todo_model.h
+    cpp/todo_manager.cpp
+    cpp/todo_manager.h
     cpp/todo_sync_server.cpp
     cpp/todo_sync_server.h
     cpp/todo_data_storage.cpp
     cpp/todo_data_storage.h
+    cpp/category_manager.cpp
+    cpp/category_manager.h
 )
 
 set(NETWORK_SOURCES
@@ -200,7 +202,7 @@ qt_add_qml_module(MyTodo
     QML_FILES ${QML_FILES}          # QML 文件列表
     SOURCES ${PROJECT_SOURCES}      # C++ 源文件
     RESOURCES ${RESOURCE_FILES}     # 资源文件
-    OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml/MyTodo  # 输出目录
+    OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml/MyTodo  # 输出目录  TODO: 到时候这个地址要改，至少MyTodo要没有
 )
 
 # 国际化翻译配置

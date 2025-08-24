@@ -38,7 +38,7 @@
  * 可以直接在QML中使用，实现数据绑定和自动更新UI。
  *
  * @note 所有属性都有对应的getter、setter方法和change信号
- * @see TodoModel
+ * @see TodoManager
  */
 class TodoItem : public QObject {
     Q_OBJECT

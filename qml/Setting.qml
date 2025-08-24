@@ -184,7 +184,7 @@ Page {
 
             Switch {
                 id: autoSyncSwitch
-                text: !todoModel.isLoggedIn ? qsTr("自动同步（未登录）") : qsTr("自动同步")
+                text: !todoManager.isLoggedIn ? qsTr("自动同步（未登录）") : qsTr("自动同步")
                 checked: setting.get("setting/autoSync", false)
 
                 property bool isInitialized: false
@@ -198,7 +198,7 @@ Page {
                         return; // 避免初始化时触发
                     }
 
-                    if (checked && !todoModel.isLoggedIn) {
+                    if (checked && !todoManager.isLoggedIn) {
                         // 如果要开启自动同步但未登录，显示提示并重置开关
                         autoSyncSwitch.checked = false;
                         loginStatusDialogs.showLoginRequired();
@@ -219,7 +219,7 @@ Page {
                     width: 12
                     height: 12
                     radius: 6
-                    color: todoModel.isOnline ? "#4CAF50" : "#F44336"
+                    color: todoManager.isOnline ? "#4CAF50" : "#F44336"
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
@@ -384,12 +384,12 @@ Page {
                     width: 12
                     height: 12
                     radius: 6
-                    color: todoModel.isOnline ? "#4CAF50" : "#F44336"
+                    color: todoManager.isOnline ? "#4CAF50" : "#F44336"
                     anchors.verticalCenter: parent.verticalCenter
                 }
                 Label {
-                    text: todoModel.isOnline ? qsTr("在线") : qsTr("离线")
-                    color: todoModel.isOnline ? "#4CAF50" : "#F44336"
+                    text: todoManager.isOnline ? qsTr("在线") : qsTr("离线")
+                    color: todoManager.isOnline ? "#4CAF50" : "#F44336"
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
@@ -547,7 +547,7 @@ Page {
                                 return;
                             }
 
-                            if (!todoModel.isHttpsUrl(url)) {
+                            if (!todoManager.isHttpsUrl(url)) {
                                 httpsWarningDialog.targetUrl = url;
                                 httpsWarningDialog.open();
                                 return;
@@ -586,7 +586,7 @@ Page {
             }
             onAccepted: {
                 var filePath = selectedFile.toString().replace("file:///", "");
-                if (todoModel.exportTodos(filePath)) {
+                if (todoManager.exportTodos(filePath)) {
                     exportSuccessDialog.open();
                 } else {
                     exportErrorDialog.open();
@@ -604,7 +604,7 @@ Page {
                 var filePath = selectedFile.toString().replace("file:///", "");
 
                 // 使用新的自动解决方法：先导入无冲突项目，返回冲突项目列表
-                var conflicts = todoModel.importTodosWithAutoResolution(filePath);
+                var conflicts = todoManager.importTodosWithAutoResolution(filePath);
 
                 if (conflicts.length > 0) {
                     // 有冲突，显示冲突处理对话框
@@ -1061,7 +1061,7 @@ Page {
                         font.pixelSize: 14
                     }
                     onClicked: {
-                        if (todoModel.importTodosWithIndividualResolution(conflictResolutionDialog.selectedFilePath, conflictResolutionDialog.conflictResolutions)) {
+                        if (todoManager.importTodosWithIndividualResolution(conflictResolutionDialog.selectedFilePath, conflictResolutionDialog.conflictResolutions)) {
                             conflictResolutionDialog.accept();
                             importSuccessDialog.open();
                         } else {

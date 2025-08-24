@@ -3,7 +3,7 @@
  * @brief AuthManager类的头文件
  *
  * 该文件定义了AuthManager类，用于管理用户认证功能。
- * 从TodoModel中拆分出来，专门负责用户登录、注销、令牌管理等认证相关操作。
+ * 从TodoManager中拆分出来，专门负责用户登录、注销、令牌管理等认证相关操作。
  *
  * @author Sakurakugu
  * @date 2025-08-24 20:05:55(UTC+8) 周六

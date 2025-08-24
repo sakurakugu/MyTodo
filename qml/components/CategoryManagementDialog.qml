@@ -103,7 +103,7 @@ Dialog {
                     onClicked: {
                         var categoryName = newCategoryField.text.trim()
                         if (categoryName !== "" && categoryName !== "全部") {
-                            todoModel.createCategory(categoryName)
+                            todoManager.createCategory(categoryName)
                             newCategoryField.text = ""
                         }
                     }
@@ -140,9 +140,9 @@ Dialog {
                     model: {
                         // 过滤掉"全部"类别，因为它不应该被删除
                         var filteredCategories = []
-                        for (var i = 0; i < todoModel.categories.length; i++) {
-                            if (todoModel.categories[i] !== "全部") {
-                                filteredCategories.push(todoModel.categories[i])
+                        for (var i = 0; i < todoManager.categories.length; i++) {
+                            if (todoManager.categories[i] !== "全部") {
+                                filteredCategories.push(todoManager.categories[i])
                             }
                         }
                         return filteredCategories
@@ -175,7 +175,7 @@ Dialog {
                                 
                                 onEditingFinished: {
                                     if (text.trim() !== "" && text.trim() !== modelData && text.trim() !== "全部") {
-                                        todoModel.updateCategory(modelData, text.trim())
+                                        todoManager.updateCategory(modelData, text.trim())
                                     } else {
                                         text = modelData // 恢复原值
                                     }
@@ -301,7 +301,7 @@ Dialog {
                     }
                     
                     onClicked: {
-                        todoModel.deleteCategory(confirmDeleteDialog.categoryToDelete)
+                        todoManager.deleteCategory(confirmDeleteDialog.categoryToDelete)
                         confirmDeleteDialog.close()
                     }
                 }
@@ -311,7 +311,7 @@ Dialog {
     
     // 监听类别操作完成信号
     Connections {
-        target: todoModel
+        target: todoManager
         function onCategoryOperationCompleted(success, message) {
             if (success) {
                 console.log("类别操作成功:", message)

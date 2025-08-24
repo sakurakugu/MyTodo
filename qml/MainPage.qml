@@ -144,7 +144,7 @@ Page {
                             Layout.preferredWidth: 120
                             Layout.preferredHeight: 36
                             model: ["按创建时间", "按截止日期", "按重要性", "按标题"]
-                            currentIndex: todoModel.sortType
+                            currentIndex: todoManager.sortType
 
                             background: Rectangle {
                                 color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
@@ -163,7 +163,7 @@ Page {
                             }
 
                             onCurrentIndexChanged: {
-                                todoModel.setSortType(currentIndex);
+                                todoManager.setSortType(currentIndex);
                             }
                         }
 
@@ -180,13 +180,13 @@ Page {
                             model: ["全部", "待办", "完成", "回收站"]
                             onCurrentTextChanged: {
                                 if (currentText === "全部") {
-                                    todoModel.currentFilter = "";
+                                    todoManager.currentFilter = "";
                                 } else if (currentText === "待办") {
-                                    todoModel.currentFilter = "todo";
+                                    todoManager.currentFilter = "todo";
                                 } else if (currentText === "完成") {
-                                    todoModel.currentFilter = "done";
+                                    todoManager.currentFilter = "done";
                                 } else if (currentText === "回收站") {
-                                    todoModel.currentFilter = "recycle";
+                                    todoManager.currentFilter = "recycle";
                                 }
                             }
                         }
@@ -201,12 +201,12 @@ Page {
                             id: categoryFilter
                             Layout.fillWidth: true
                             Layout.preferredHeight: 36
-                            model: todoModel.categories
+                            model: todoManager.categories
                             onCurrentTextChanged: {
                                 if (currentText === "全部") {
-                                    todoModel.currentCategory = "";
+                                    todoManager.currentCategory = "";
                                 } else {
-                                    todoModel.currentCategory = currentText;
+                                    todoManager.currentCategory = currentText;
                                 }
                             }
                         }
@@ -224,10 +224,10 @@ Page {
                             text: "重要任务"
                             onCheckedChanged: {
                                 if (checked) {
-                                    todoModel.currentFilter = "important";
-                                    todoModel.currentImportant = true;
+                                    todoManager.currentFilter = "important";
+                                    todoManager.currentImportant = true;
                                 } else {
-                                    todoModel.currentFilter = ""; // 清除筛选
+                                    todoManager.currentFilter = ""; // 清除筛选
                                 }
                             }
                         }
@@ -251,9 +251,9 @@ Page {
                             id: dateFilterEnabled
                             text: "启用日期筛选"
                             font.pixelSize: 12
-                            checked: todoModel.dateFilterEnabled
+                            checked: todoManager.dateFilterEnabled
                             onCheckedChanged: {
-                                todoModel.dateFilterEnabled = checked;
+                                todoManager.dateFilterEnabled = checked;
                             }
                         }
 
@@ -270,15 +270,15 @@ Page {
                             Layout.preferredHeight: 36
                             placeholderText: "选择开始日期 (yyyy-MM-dd)"
                             visible: dateFilterEnabled.checked
-                            text: todoModel.dateFilterStart.getTime() > 0 ? Qt.formatDate(todoModel.dateFilterStart, "yyyy-MM-dd") : ""
+                            text: todoManager.dateFilterStart.getTime() > 0 ? Qt.formatDate(todoManager.dateFilterStart, "yyyy-MM-dd") : ""
                             onTextChanged: {
                                 if (text.length === 10) {
                                     var date = Date.fromLocaleString(Qt.locale(), text, "yyyy-MM-dd");
                                     if (!isNaN(date.getTime())) {
-                                        todoModel.dateFilterStart = date;
+                                        todoManager.dateFilterStart = date;
                                     }
                                 } else if (text === "") {
-                                    todoModel.dateFilterStart = new Date(0); // 无效日期
+                                    todoManager.dateFilterStart = new Date(0); // 无效日期
                                 }
                             }
                         }
@@ -296,15 +296,15 @@ Page {
                             Layout.preferredHeight: 36
                             placeholderText: "选择结束日期 (yyyy-MM-dd)"
                             visible: dateFilterEnabled.checked
-                            text: todoModel.dateFilterEnd.getTime() > 0 ? Qt.formatDate(todoModel.dateFilterEnd, "yyyy-MM-dd") : ""
+                            text: todoManager.dateFilterEnd.getTime() > 0 ? Qt.formatDate(todoManager.dateFilterEnd, "yyyy-MM-dd") : ""
                             onTextChanged: {
                                 if (text.length === 10) {
                                     var date = Date.fromLocaleString(Qt.locale(), text, "yyyy-MM-dd");
                                     if (!isNaN(date.getTime())) {
-                                        todoModel.dateFilterEnd = date;
+                                        todoManager.dateFilterEnd = date;
                                     }
                                 } else if (text === "") {
-                                    todoModel.dateFilterEnd = new Date(0); // 无效日期
+                                    todoManager.dateFilterEnd = new Date(0); // 无效日期
                                 }
                             }
                         }
@@ -316,8 +316,8 @@ Page {
                             onClicked: {
                                 startDateField.text = "";
                                 endDateField.text = "";
-                                todoModel.dateFilterStart = new Date(0);
-                                todoModel.dateFilterEnd = new Date(0);
+                                todoManager.dateFilterStart = new Date(0);
+                                todoManager.dateFilterEnd = new Date(0);
                             }
                         }
                     }
@@ -376,7 +376,7 @@ Page {
                         color: theme.textColor
                         onAccepted: {
                             if (text.trim() !== "") {
-                                todoModel.addTodo(text.trim());
+                                todoManager.addTodo(text.trim());
                                 text = "";
                             }
                         }
@@ -386,7 +386,7 @@ Page {
                         text: qsTr("添加")
                         onClicked: {
                             if (newTodoField.text.trim() !== "") {
-                                todoModel.addTodo(newTodoField.text.trim());
+                                todoManager.addTodo(newTodoField.text.trim());
                                 newTodoField.text = "";
                             }
                         }
@@ -435,8 +435,8 @@ Page {
                     Layout.fillHeight: true
                     clip: true
 
-                    // 使用 C++ 的 TodoModel
-                    model: todoModel
+                    // 使用 C++ 的 TodoManager
+                    model: todoManager
 
                     // 下拉刷新相关属性与逻辑
                     property bool refreshing: false
@@ -449,7 +449,7 @@ Page {
                     onMovementEnded: {
                         if (contentY < -pullThreshold && atYBeginning && !refreshing) {
                             refreshing = true;
-                            todoModel.syncWithServer();
+                            todoManager.syncWithServer();
                         }
                     }
 
@@ -475,7 +475,7 @@ Page {
                     }
 
                     Connections {
-                        target: todoModel
+                        target: todoManager
                         function onSyncStarted() {
                             if (!todoListView.refreshing && todoListView.atYBeginning) {
                                 todoListView.refreshing = true;
@@ -532,7 +532,7 @@ Page {
                                 MouseArea {
                                     anchors.fill: parent
                                     onClicked: {
-                                        todoModel.markAsDone(index);
+                                        todoManager.markAsDone(index);
                                         mouse.accepted = true;  // 阻止事件传播
                                     }
                                 }
@@ -568,7 +568,7 @@ Page {
                                         // 设置当前项索引
                                         todoListView.currentIndex = index;
                                         // 删除待办
-                                        todoModel.removeTodo(index);
+                                        todoManager.removeTodo(index);
                                         // 延迟重新启用项目的MouseArea
                                         // 这是为了防止事件传播到下面的MouseArea
                                         timer.start();
@@ -691,7 +691,7 @@ Page {
                             onClicked: {
                                 if (selectedTodo && detailsTaskForm.isValid()) {
                                     var todoData = detailsTaskForm.getTodoData();
-                                    todoModel.updateTodo(todoListView.currentIndex, todoData);
+                                    todoManager.updateTodo(todoListView.currentIndex, todoData);
                                     showDetails = false;
                                     selectedTodo = null;
                                 }

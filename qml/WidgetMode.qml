@@ -120,7 +120,7 @@ Item {
                             return; // 避免初始化时触发
                         }
 
-                        if (checked && !todoModel.isLoggedIn) {
+                        if (checked && !todoManager.isLoggedIn) {
                             // 如果要开启自动同步但未登录，显示提示并重置开关
                             autoSyncSwitch.checked = false;
                             loginStatusDialogs.showLoginRequired();
@@ -187,7 +187,7 @@ Item {
                         onClicked: {
                             if (addTaskForm.isValid()) {
                                 var todoData = addTaskForm.getTodoData();
-                                todoModel.addTodo(todoData.title, todoData.description, todoData.category, todoData.important);
+                                todoManager.addTodo(todoData.title, todoData.description, todoData.category, todoData.important);
                                 addTaskForm.clear();
                                 globalState.isShowAddTask = false;
                             }
@@ -247,7 +247,7 @@ Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
-                    model: todoModel
+                    model: todoManager
 
                     // 下拉刷新相关属性与逻辑（在小组件模式的弹窗中）
                     property bool refreshing: false
@@ -260,7 +260,7 @@ Item {
                     onMovementEnded: {
                         if (contentY < -pullThreshold && atYBeginning && !refreshing) {
                             refreshing = true;
-                            todoModel.syncWithServer();
+                            todoManager.syncWithServer();
                         }
                     }
 
@@ -286,7 +286,7 @@ Item {
                     }
 
                     Connections {
-                        target: todoModel
+                        target: todoManager
                         function onSyncStarted() {
                             if (!todoListPopupView.refreshing && todoListPopupView.atYBeginning) {
                                 todoListPopupView.refreshing = true;
@@ -334,7 +334,7 @@ Item {
                                 MouseArea {
                                     anchors.fill: parent
                                     onClicked: {
-                                        todoModel.markAsDone(index);
+                                        todoManager.markAsDone(index);
                                         mouse.accepted = true;  // 阻止事件传播
                                     }
                                 }
@@ -362,7 +362,7 @@ Item {
                                 MouseArea {
                                     anchors.fill: parent
                                     onClicked: {
-                                        todoModel.removeTodo(index);
+                                        todoManager.removeTodo(index);
                                     }
                                 }
                             }
@@ -388,7 +388,7 @@ Item {
         isDarkMode: widgetMode.isDarkMode
 
         onTodoUpdated: function (index, todoData) {
-            todoModel.updateTodo(index, todoData);
+            todoManager.updateTodo(index, todoData);
         }
     }
 
@@ -494,7 +494,7 @@ Item {
                     backgroundColor: theme.primaryColor
                     isDarkMode: widgetMode.isDarkMode
                     onClicked: {
-                         todoModel.markAsDone(todoItemDropdown.currentTodoIndex);
+                         todoManager.markAsDone(todoItemDropdown.currentTodoIndex);
                          globalState.toggleDropdownVisible();
                      }
                 }
@@ -506,7 +506,7 @@ Item {
                     backgroundColor: "#e74c3c"
                     isDarkMode: widgetMode.isDarkMode
                     onClicked: {
-                         todoModel.removeTodo(todoItemDropdown.currentTodoIndex);
+                         todoManager.removeTodo(todoItemDropdown.currentTodoIndex);
                          globalState.toggleDropdownVisible();
                      }
                 }

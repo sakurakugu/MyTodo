@@ -294,7 +294,7 @@ Window {
                 font.bold: true
                 
                 // TODO: 新增或删除待办后，这里的文字没有更改（显示的是当前分类下的待办数量）
-                property int todoCount: todoModel.rowCount()
+                property int todoCount: todoManager.rowCount()
                 property bool isHovered: false
                 
                 text: {
@@ -604,7 +604,7 @@ Window {
         }
 
         MenuItem {
-            text: todoModel.isLoggedIn ? qsTr("退出登录") : qsTr("登录")
+            text: todoManager.isLoggedIn ? qsTr("退出登录") : qsTr("登录")
             contentItem: Row {
                 spacing: 8
                 Text {
@@ -623,7 +623,7 @@ Window {
                 }
             }
             onTriggered: {
-                if (todoModel.isLoggedIn) {
+                if (todoManager.isLoggedIn) {
                     loginStatusDialogs.showLogoutConfirm();
                 } else {
                     loginStatusDialogs.showLoginDialog();
@@ -719,7 +719,7 @@ Window {
                     scale: 0.7
 
                     onCheckedChanged: {
-                        if (checked && !todoModel.isLoggedIn) {
+                        if (checked && !todoManager.isLoggedIn) {
                             // 如果要开启自动同步但未登录，显示提示并重置开关
                             onlineSwitch.checked = false;
                             topMenu.close(); // 关闭菜单

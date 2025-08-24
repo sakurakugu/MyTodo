@@ -3,7 +3,7 @@
  * @brief TodoDataStorage类的头文件
  *
  * 该文件定义了TodoDataStorage类，专门负责待办事项的本地存储和文件导入导出功能。
- * 从TodoModel类中拆分出来，实现单一职责原则。
+ * 从TodoManager类中拆分出来，实现单一职责原则。
  *
  * @author Sakurakugu
  * @date 2025-01-25
@@ -42,7 +42,7 @@
  * - 高内聚：相关的数据操作集中管理
  *
  * **使用场景：**
- * - TodoModel需要加载/保存本地数据时
+ * - TodoManager需要加载/保存本地数据时
  * - 用户需要导入/导出待办事项文件时
  * - 需要处理数据冲突和合并时
  *

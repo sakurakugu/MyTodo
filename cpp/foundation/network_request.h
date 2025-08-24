@@ -51,7 +51,7 @@ class NetworkProxy;
  * - 网络状态监控
  *
  * @note 所有网络操作都是异步的，通过信号槽机制通知结果
- * @see TodoModel
+ * @see TodoManager
  */
 class NetworkRequest : public QObject {
     Q_OBJECT

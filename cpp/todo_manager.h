@@ -1,8 +1,8 @@
 /**
- * @file todo_model.h
- * @brief TodoModel类的头文件
+ * @file todo_manager.h
+ * @brief TodoManager类的头文件
  *
- * 该文件定义了TodoModel类，用于管理待办事项的数据模型。
+ * 该文件定义了TodoManager类，用于管理待办事项的数据模型。
  *
  * @author Sakurakugu
  * @date 2025-08-16 20:05:55(UTC+8) 周六
@@ -21,24 +21,22 @@
 #include <memory>
 #include <vector>
 
+#include "category_manager.h" // 类别管理器
 #include "foundation/network_request.h"
 #include "items/todo_item.h"
 #include "setting.h"
-#include "todo_sync_server.h" // 服务器同步管理器
 #include "todo_data_storage.h" // 数据管理器
+#include "todo_sync_server.h"  // 服务器同步管理器
 
 /**
- * @class TodoModel
+ * @class TodoManager
  * @brief 待办事项列表模型，负责管理所有待办事项的核心类
  *
- * TodoModel类是应用程序的核心数据模型，提供了完整的待办事项管理功能：
+ * TodoManager类是应用程序的核心数据模型，提供了完整的待办事项管理功能：
  *
  * **核心功能：**
  * - 待办事项的CRUD操作（创建、读取、更新、删除）
- * - 本地数据持久化存储
- * - 网络同步和离线支持
  * - 数据过滤和分类
- * - 用户认证和会话管理
  *
  * **架构特点：**
  * - 继承自QAbstractListModel，与Qt视图系统完美集成
@@ -54,7 +52,7 @@
  * @note 该类是线程安全的，所有网络操作都在后台线程执行
  * @see TodoItem, CategorieItem, NetworkRequest, Config
  */
-class TodoModel : public QAbstractListModel {
+class TodoManager : public QAbstractListModel {
     Q_OBJECT
     Q_PROPERTY(QString currentCategory READ currentCategory WRITE setCurrentCategory NOTIFY currentCategoryChanged)
     Q_PROPERTY(QString currentFilter READ currentFilter WRITE setCurrentFilter NOTIFY currentFilterChanged)
@@ -109,10 +107,10 @@ class TodoModel : public QAbstractListModel {
     /**
      * @brief 构造函数
      *
-     * 创建TodoModel实例，初始化网络管理器、设置对象和本地存储。
+     * 创建TodoManager实例，初始化网络管理器、设置对象和本地存储。
      */
-    explicit TodoModel(QObject *parent = nullptr);
-    ~TodoModel();
+    explicit TodoManager(QObject *parent = nullptr);
+    ~TodoManager();
 
     // QAbstractListModel 必要的实现方法
     int rowCount(const QModelIndex &parent = QModelIndex()) const override; // 获取模型中的行数（待办事项数量）
@@ -150,12 +148,13 @@ class TodoModel : public QAbstractListModel {
     // 网络同步操作
     Q_INVOKABLE void syncWithServer(); // 与服务器同步待办事项数据
 
-    // 类别管理相关
+    // 类别管理相关（委托给CategoryManager）
     Q_INVOKABLE QStringList getCategories() const;                // 获取类别列表
     Q_INVOKABLE void fetchCategories();                           // 从服务器获取类别列表
     Q_INVOKABLE void createCategory(const QString &name);         // 创建新类别
     Q_INVOKABLE void updateCategory(int id, const QString &name); // 更新类别名称
     Q_INVOKABLE void deleteCategory(int id);                      // 删除类别
+    CategoryManager *getCategoryManager() const;                  // 获取类别管理器
 
     // 排序相关
     Q_INVOKABLE int sortType() const;       // 获取当前排序类型
@@ -176,19 +175,14 @@ class TodoModel : public QAbstractListModel {
     void sortTypeChanged();                                                    // 排序类型变化信号
 
   private slots:
-    void onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response); // 处理网络请求成功
-    void onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
-                                const QString &message);                             // 处理网络请求失败
     void onSyncStarted();                                                            // 处理同步开始
     void onSyncCompleted(TodoSyncServer::SyncResult result, const QString &message); // 处理同步完成
     void onTodosUpdatedFromServer(const QJsonArray &todosArray);                     // 处理从服务器更新的待办事项
 
   private:
-    void handleFetchCategoriesSuccess(const QJsonObject &response);   // 处理获取类别列表成功响应
-    void handleCategoryOperationSuccess(const QJsonObject &response); // 处理类别操作成功响应
-    void updateTodosFromServer(const QJsonArray &todosArray);         // 从服务器数据更新待办事项
-    void updateSyncManagerData();                                     // 更新同步管理器的待办事项数据
-    void logError(const QString &context, const QString &error);      // 记录错误信息
+    void updateTodosFromServer(const QJsonArray &todosArray);    // 从服务器数据更新待办事项
+    void updateSyncManagerData();                                // 更新同步管理器的待办事项数据
+    void logError(const QString &context, const QString &error); // 记录错误信息
     QVariant getItemData(const TodoItem *item, int role) const;
 
     // 性能优化相关方法
@@ -211,13 +205,12 @@ class TodoModel : public QAbstractListModel {
     Setting &m_setting;                             ///< 应用设置
     bool m_isAutoSync;                              ///< 是否自动同步
 
-    // 同步管理器
-    TodoSyncServer *m_syncManager; ///< 同步管理器 - 负责所有服务器同步相关功能
-    TodoDataStorage *m_dataManager; ///< 数据管理器 - 负责本地存储和文件导入导出
+    // 管理器
+    TodoSyncServer *m_syncManager;      ///< 同步管理器 - 负责所有服务器同步相关功能
+    TodoDataStorage *m_dataManager;     ///< 数据管理器 - 负责本地存储和文件导入导出
+    CategoryManager *m_categoryManager; ///< 类别管理器 - 负责类别相关操作
 
-    // 类别相关
-    QStringList m_categories; ///< 类别列表
-    int m_sortType;           ///< 当前排序类型
+    int m_sortType; ///< 当前排序类型
 
     // 辅助方法
 };

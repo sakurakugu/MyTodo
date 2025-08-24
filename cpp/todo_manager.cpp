@@ -1,13 +1,13 @@
 /**
  * @brief 构造函数
  *
- * 初始化TodoModel对象，设置父对象为parent。
+ * 初始化TodoManager对象，设置父对象为parent。
  *
  * @param parent 父对象指针，默认值为nullptr。
  * @date 2025-08-16 20:05:55(UTC+8) 周六
  * @version 2025-08-23 21:09:00(UTC+8) 周六
  */
-#include "todo_model.h"
+#include "todo_manager.h"
 
 #include <QDateTime>
 #include <QDir>
@@ -22,16 +22,15 @@
 #include <algorithm>
 #include <map>
 
+#include "category_manager.h"
 #include "foundation/network_request.h"
 #include "user_auth.h"
 
-TodoModel::TodoModel(QObject *parent)
+TodoManager::TodoManager(QObject *parent)
     : QAbstractListModel(parent), m_filterCacheDirty(true), m_currentCategory(""), m_currentFilter(""),
       m_currentImportant(false), m_dateFilterEnabled(false), m_networkRequest(NetworkRequest::GetInstance()),
       m_setting(Setting::GetInstance()), m_isAutoSync(false), m_sortType(SortByCreatedTime) {
 
-    // 初始化默认类别列表
-    m_categories << "全部" << "工作" << "学习" << "生活" << "其他" << "未分类";
     // 初始化默认服务器配置
     m_setting.initializeDefaultServerConfig();
 
@@ -45,13 +44,15 @@ TodoModel::TodoModel(QObject *parent)
     m_syncManager = new TodoSyncServer(this);
 
     // 连接同步管理器信号
-    connect(m_syncManager, &TodoSyncServer::syncStarted, this, &TodoModel::onSyncStarted);
-    connect(m_syncManager, &TodoSyncServer::syncCompleted, this, &TodoModel::onSyncCompleted);
-    connect(m_syncManager, &TodoSyncServer::todosUpdatedFromServer, this, &TodoModel::onTodosUpdatedFromServer);
+    connect(m_syncManager, &TodoSyncServer::syncStarted, this, &TodoManager::onSyncStarted);
+    connect(m_syncManager, &TodoSyncServer::syncCompleted, this, &TodoManager::onSyncCompleted);
+    connect(m_syncManager, &TodoSyncServer::todosUpdatedFromServer, this, &TodoManager::onTodosUpdatedFromServer);
 
-    // 连接网络管理器信号（仅用于类别管理）
-    connect(&m_networkRequest, &NetworkRequest::requestCompleted, this, &TodoModel::onNetworkRequestCompleted);
-    connect(&m_networkRequest, &NetworkRequest::requestFailed, this, &TodoModel::onNetworkRequestFailed);
+    // 创建类别管理器
+    m_categoryManager = new CategoryManager(m_syncManager, this);
+    connect(m_categoryManager, &CategoryManager::categoriesChanged, this, &TodoManager::categoriesChanged);
+    connect(m_categoryManager, &CategoryManager::categoryOperationCompleted, this,
+            &TodoManager::categoryOperationCompleted);
 
     // 通过数据管理器加载本地数据
     // 从本地存储加载数据现在由TodoDataStorage处理
@@ -75,7 +76,7 @@ TodoModel::TodoModel(QObject *parent)
  *
  * 清理资源，保存未同步的数据到本地存储。
  */
-TodoModel::~TodoModel() {
+TodoManager::~TodoManager() {
     // 通过数据管理器保存数据
     if (m_dataManager) {
         m_dataManager->saveToLocalStorage(m_todos);
@@ -90,7 +91,7 @@ TodoModel::~TodoModel() {
  * @param parent 父索引，默认为无效索引（根）
  * @return 待办事项数量
  */
-int TodoModel::rowCount(const QModelIndex &parent) const {
+int TodoManager::rowCount(const QModelIndex &parent) const {
     if (parent.isValid())
         return 0;
 
@@ -100,7 +101,7 @@ int TodoModel::rowCount(const QModelIndex &parent) const {
     }
 
     // 使用缓存的过滤结果
-    const_cast<TodoModel *>(this)->updateFilterCache();
+    const_cast<TodoManager *>(this)->updateFilterCache();
     return m_filteredTodos.count();
 }
 
@@ -110,7 +111,7 @@ int TodoModel::rowCount(const QModelIndex &parent) const {
  * @param role 数据角色
  * @return 请求的数据值
  */
-QVariant TodoModel::data(const QModelIndex &index, int role) const {
+QVariant TodoManager::data(const QModelIndex &index, int role) const {
     if (!index.isValid())
         return QVariant();
 
@@ -122,7 +123,7 @@ QVariant TodoModel::data(const QModelIndex &index, int role) const {
     }
 
     // 使用缓存的过滤结果
-    const_cast<TodoModel *>(this)->updateFilterCache();
+    const_cast<TodoManager *>(this)->updateFilterCache();
     if (index.row() >= m_filteredTodos.size())
         return QVariant();
 
@@ -130,7 +131,7 @@ QVariant TodoModel::data(const QModelIndex &index, int role) const {
 }
 
 // 辅助方法，根据角色返回项目数据
-QVariant TodoModel::getItemData(const TodoItem *item, int role) const {
+QVariant TodoManager::getItemData(const TodoItem *item, int role) const {
     switch (role) {
     case IdRole:
         return item->id();
@@ -179,7 +180,7 @@ QVariant TodoModel::getItemData(const TodoItem *item, int role) const {
  * @brief 获取角色名称映射，用于QML访问
  * @return 角色ID到角色名称的映射
  */
-QHash<int, QByteArray> TodoModel::roleNames() const {
+QHash<int, QByteArray> TodoManager::roleNames() const {
     QHash<int, QByteArray> roles;
     roles[IdRole] = "id";
     roles[UuidRole] = "uuid";
@@ -210,7 +211,7 @@ QHash<int, QByteArray> TodoModel::roleNames() const {
  * @param role 数据角色
  * @return 设置是否成功
  */
-bool TodoModel::setData(const QModelIndex &index, const QVariant &value, int role) {
+bool TodoManager::setData(const QModelIndex &index, const QVariant &value, int role) {
     if (!index.isValid() || static_cast<size_t>(index.row()) >= m_todos.size())
         return false;
 
@@ -261,7 +262,7 @@ bool TodoModel::setData(const QModelIndex &index, const QVariant &value, int rol
 }
 
 // 性能优化相关方法实现
-void TodoModel::updateFilterCache() {
+void TodoManager::updateFilterCache() {
     if (!m_filterCacheDirty) {
         return; // 缓存仍然有效
     }
@@ -285,7 +286,7 @@ void TodoModel::updateFilterCache() {
     m_filterCacheDirty = false;
 }
 
-bool TodoModel::itemMatchesFilter(const TodoItem *item) const {
+bool TodoManager::itemMatchesFilter(const TodoItem *item) const {
     if (!item)
         return false;
 
@@ -338,8 +339,8 @@ bool TodoModel::itemMatchesFilter(const TodoItem *item) const {
     return categoryMatch && statusMatch && importantMatch && dateMatch;
 }
 
-TodoItem *TodoModel::getFilteredItem(int index) const {
-    const_cast<TodoModel *>(this)->updateFilterCache();
+TodoItem *TodoManager::getFilteredItem(int index) const {
+    const_cast<TodoManager *>(this)->updateFilterCache();
 
     if (index < 0 || index >= m_filteredTodos.size()) {
         return nullptr;
@@ -348,7 +349,7 @@ TodoItem *TodoModel::getFilteredItem(int index) const {
     return m_filteredTodos[index];
 }
 
-void TodoModel::invalidateFilterCache() {
+void TodoManager::invalidateFilterCache() {
     m_filterCacheDirty = true;
 }
 
@@ -356,7 +357,7 @@ void TodoModel::invalidateFilterCache() {
  * @brief 获取当前激活的分类筛选器
  * @return 当前分类名称
  */
-QString TodoModel::currentCategory() const {
+QString TodoManager::currentCategory() const {
     return m_currentCategory;
 }
 
@@ -364,7 +365,7 @@ QString TodoModel::currentCategory() const {
  * @brief 设置分类筛选器
  * @param category 分类名称，空字符串表示显示所有分类
  */
-void TodoModel::setCurrentCategory(const QString &category) {
+void TodoManager::setCurrentCategory(const QString &category) {
     if (m_currentCategory != category) {
         beginResetModel();
         m_currentCategory = category;
@@ -378,7 +379,7 @@ void TodoModel::setCurrentCategory(const QString &category) {
  * @brief 获取当前激活的筛选条件
  * @return 当前筛选条件
  */
-QString TodoModel::currentFilter() const {
+QString TodoManager::currentFilter() const {
     return m_currentFilter;
 }
 
@@ -386,7 +387,7 @@ QString TodoModel::currentFilter() const {
  * @brief 设置筛选条件
  * @param filter 筛选条件（如"完成"、"未完成"等）
  */
-void TodoModel::setCurrentFilter(const QString &filter) {
+void TodoManager::setCurrentFilter(const QString &filter) {
     if (m_currentFilter != filter) {
         beginResetModel();
         m_currentFilter = filter;
@@ -400,7 +401,7 @@ void TodoModel::setCurrentFilter(const QString &filter) {
  * @brief 获取当前激活的重要程度筛选器
  * @return 当前重要程度筛选器
  */
-bool TodoModel::currentImportant() const {
+bool TodoManager::currentImportant() const {
     return m_currentImportant;
 }
 
@@ -408,7 +409,7 @@ bool TodoModel::currentImportant() const {
  * @brief 设置重要程度筛选器
  * @param important 重要程度筛选器（true表示重要，false表示不重要）
  */
-void TodoModel::setCurrentImportant(bool important) {
+void TodoManager::setCurrentImportant(bool important) {
     if (m_currentImportant != important) {
         beginResetModel();
         m_currentImportant = important;
@@ -422,7 +423,7 @@ void TodoModel::setCurrentImportant(bool important) {
  * @brief 获取日期筛选开始日期
  * @return 日期筛选开始日期
  */
-QDate TodoModel::dateFilterStart() const {
+QDate TodoManager::dateFilterStart() const {
     return m_dateFilterStart;
 }
 
@@ -430,7 +431,7 @@ QDate TodoModel::dateFilterStart() const {
  * @brief 设置日期筛选开始日期
  * @param date 开始日期
  */
-void TodoModel::setDateFilterStart(const QDate &date) {
+void TodoManager::setDateFilterStart(const QDate &date) {
     if (m_dateFilterStart != date) {
         beginResetModel();
         m_dateFilterStart = date;
@@ -444,7 +445,7 @@ void TodoModel::setDateFilterStart(const QDate &date) {
  * @brief 获取日期筛选结束日期
  * @return 日期筛选结束日期
  */
-QDate TodoModel::dateFilterEnd() const {
+QDate TodoManager::dateFilterEnd() const {
     return m_dateFilterEnd;
 }
 
@@ -452,7 +453,7 @@ QDate TodoModel::dateFilterEnd() const {
  * @brief 设置日期筛选结束日期
  * @param date 结束日期
  */
-void TodoModel::setDateFilterEnd(const QDate &date) {
+void TodoManager::setDateFilterEnd(const QDate &date) {
     if (m_dateFilterEnd != date) {
         beginResetModel();
         m_dateFilterEnd = date;
@@ -466,7 +467,7 @@ void TodoModel::setDateFilterEnd(const QDate &date) {
  * @brief 获取日期筛选是否启用
  * @return 日期筛选是否启用
  */
-bool TodoModel::dateFilterEnabled() const {
+bool TodoManager::dateFilterEnabled() const {
     return m_dateFilterEnabled;
 }
 
@@ -474,7 +475,7 @@ bool TodoModel::dateFilterEnabled() const {
  * @brief 设置日期筛选是否启用
  * @param enabled 是否启用日期筛选
  */
-void TodoModel::setDateFilterEnabled(bool enabled) {
+void TodoManager::setDateFilterEnabled(bool enabled) {
     if (m_dateFilterEnabled != enabled) {
         beginResetModel();
         m_dateFilterEnabled = enabled;
@@ -491,7 +492,7 @@ void TodoModel::setDateFilterEnabled(bool enabled) {
  * @param category 任务分类（默认为"default"）
  * @param important 重要程度（默认为"medium"）
  */
-void TodoModel::addTodo(const QString &title, const QString &description, const QString &category, bool important,
+void TodoManager::addTodo(const QString &title, const QString &description, const QString &category, bool important,
                         const QString &deadline) {
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
 
@@ -535,7 +536,7 @@ void TodoModel::addTodo(const QString &title, const QString &description, const 
  * @param todoData 包含要更新字段的映射
  * @return 更新是否成功
  */
-bool TodoModel::updateTodo(int index, const QVariantMap &todoData) {
+bool TodoManager::updateTodo(int index, const QVariantMap &todoData) {
     // 检查索引是否有效
     if (index < 0 || static_cast<size_t>(index) >= m_todos.size()) {
         qWarning() << "尝试更新无效的索引:" << index;
@@ -672,7 +673,7 @@ bool TodoModel::updateTodo(int index, const QVariantMap &todoData) {
  * @param index 待删除事项的索引
  * @return 删除是否成功
  */
-bool TodoModel::removeTodo(int index) {
+bool TodoManager::removeTodo(int index) {
     // 检查索引是否有效
     if (index < 0 || static_cast<size_t>(index) >= m_todos.size()) {
         qWarning() << "尝试删除无效的索引:" << index;
@@ -718,7 +719,7 @@ bool TodoModel::removeTodo(int index) {
  * @param index 待办事项的索引
  * @return 操作是否成功
  */
-bool TodoModel::restoreTodo(int index) {
+bool TodoManager::restoreTodo(int index) {
     // 检查索引是否有效
     if (index < 0 || static_cast<size_t>(index) >= m_todos.size()) {
         qWarning() << "尝试恢复无效的索引:" << index;
@@ -766,7 +767,7 @@ bool TodoModel::restoreTodo(int index) {
     }
 }
 
-bool TodoModel::permanentlyDeleteTodo(int index) {
+bool TodoManager::permanentlyDeleteTodo(int index) {
     // 检查索引是否有效
     if (index < 0 || static_cast<size_t>(index) >= m_todos.size()) {
         qWarning() << "尝试永久删除无效的索引:" << index;
@@ -809,7 +810,7 @@ bool TodoModel::permanentlyDeleteTodo(int index) {
     }
 }
 
-bool TodoModel::markAsDone(int index) {
+bool TodoManager::markAsDone(int index) {
     // 检查索引是否有效
     if (index < 0 || static_cast<size_t>(index) >= m_todos.size()) {
         qWarning() << "尝试标记无效索引的待办事项为已完成:" << index;
@@ -847,7 +848,7 @@ bool TodoModel::markAsDone(int index) {
  * 该方法会先获取服务器上的最新数据，然后将本地更改推送到服务器。
  * 操作结果通过syncCompleted信号通知。
  */
-void TodoModel::syncWithServer() {
+void TodoManager::syncWithServer() {
     // 更新同步管理器的数据
     updateSyncManagerData();
 
@@ -855,63 +856,12 @@ void TodoModel::syncWithServer() {
     m_syncManager->syncWithServer(TodoSyncServer::Bidirectional);
 }
 
-void TodoModel::onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response) {
-    switch (type) {
-    case NetworkRequest::RequestType::FetchCategories:
-        handleFetchCategoriesSuccess(response);
-        break;
-    case NetworkRequest::RequestType::CreateCategory:
-    case NetworkRequest::RequestType::UpdateCategory:
-    case NetworkRequest::RequestType::DeleteCategory:
-        handleCategoryOperationSuccess(response);
-        break;
-    default:
-        // 同步相关的请求现在由TodoSyncServer处理
-        break;
-    }
-}
-
-void TodoModel::onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
-                                       const QString &errorMessage) {
-    Q_UNUSED(error) // 标记未使用的参数
-
-    QString typeStr;
-    switch (type) {
-    case NetworkRequest::RequestType::Login:
-    case NetworkRequest::RequestType::Logout:
-        // 认证相关错误现在由UserAuth处理
-        return;
-    case NetworkRequest::RequestType::FetchCategories:
-        typeStr = "获取类别";
-        emit categoryOperationCompleted(false, errorMessage);
-        break;
-    case NetworkRequest::RequestType::CreateCategory:
-        typeStr = "创建类别";
-        emit categoryOperationCompleted(false, errorMessage);
-        break;
-    case NetworkRequest::RequestType::UpdateCategory:
-        typeStr = "更新类别";
-        emit categoryOperationCompleted(false, errorMessage);
-        break;
-    case NetworkRequest::RequestType::DeleteCategory:
-        typeStr = "删除类别";
-        emit categoryOperationCompleted(false, errorMessage);
-        break;
-    default:
-        // 同步相关的请求现在由TodoSyncServer处理
-        return;
-    }
-
-    qWarning() << typeStr << "失败:" << errorMessage;
-    logError(typeStr, errorMessage);
-}
-
 // 同步管理器信号处理槽函数
-void TodoModel::onSyncStarted() {
+void TodoManager::onSyncStarted() {
     emit syncStarted();
 }
 
-void TodoModel::onSyncCompleted(TodoSyncServer::SyncResult result, const QString &message) {
+void TodoManager::onSyncCompleted(TodoSyncServer::SyncResult result, const QString &message) {
     bool success = (result == TodoSyncServer::Success);
     emit syncCompleted(success, message);
 
@@ -923,11 +873,11 @@ void TodoModel::onSyncCompleted(TodoSyncServer::SyncResult result, const QString
     }
 }
 
-void TodoModel::onTodosUpdatedFromServer(const QJsonArray &todosArray) {
+void TodoManager::onTodosUpdatedFromServer(const QJsonArray &todosArray) {
     updateTodosFromServer(todosArray);
 }
 
-void TodoModel::updateTodosFromServer(const QJsonArray &todosArray) {
+void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
     qDebug() << "从服务器更新" << todosArray.size() << "个待办事项";
 
     beginResetModel();
@@ -1005,7 +955,7 @@ void TodoModel::updateTodosFromServer(const QJsonArray &todosArray) {
 }
 
 // 更新同步管理器的待办事项数据
-void TodoModel::updateSyncManagerData() {
+void TodoManager::updateSyncManagerData() {
     QList<TodoItem *> todoItems;
     for (const auto &item : m_todos) {
         todoItems.append(item.get());
@@ -1018,7 +968,7 @@ void TodoModel::updateSyncManagerData() {
  * @param context 错误发生的上下文
  * @param error 错误信息
  */
-void TodoModel::logError(const QString &context, const QString &error) {
+void TodoManager::logError(const QString &context, const QString &error) {
     qCritical() << context << ":" << error;
 
     // 可以将错误记录到日志文件中
@@ -1028,16 +978,20 @@ void TodoModel::logError(const QString &context, const QString &error) {
 }
 
 // 类别管理相关方法实现
-QStringList TodoModel::getCategories() const {
-    return m_categories;
+QStringList TodoManager::getCategories() const {
+    return m_categoryManager->getCategories();
+}
+
+CategoryManager *TodoManager::getCategoryManager() const {
+    return m_categoryManager;
 }
 
 // 排序相关实现
-int TodoModel::sortType() const {
+int TodoManager::sortType() const {
     return m_sortType;
 }
 
-void TodoModel::setSortType(int type) {
+void TodoManager::setSortType(int type) {
     if (m_sortType != type) {
         m_sortType = type;
         sortTodos();
@@ -1045,7 +999,7 @@ void TodoModel::setSortType(int type) {
     }
 }
 
-void TodoModel::sortTodos() {
+void TodoManager::sortTodos() {
     if (m_todos.empty()) {
         return;
     }
@@ -1111,137 +1065,18 @@ void TodoModel::sortTodos() {
     m_dataManager->saveToLocalStorage(m_todos);
 }
 
-void TodoModel::fetchCategories() {
-    if (!UserAuth::GetInstance().isLoggedIn()) {
-        qWarning() << "用户未登录，无法获取类别列表";
-        emit categoryOperationCompleted(false, "用户未登录");
-        return;
-    }
-
-    QJsonObject requestData;
-    requestData["action"] = "list";
-
-    NetworkRequest::RequestConfig config;
-    config.url = m_syncManager->getApiUrl("categories_api.php");
-    config.data = requestData;
-    config.requiresAuth = true;
-    config.headers["Authorization"] = "Bearer " + UserAuth::GetInstance().getAccessToken();
-
-    m_networkRequest.sendRequest(NetworkRequest::FetchCategories, config);
+void TodoManager::fetchCategories() {
+    m_categoryManager->fetchCategories();
 }
 
-void TodoModel::createCategory(const QString &name) {
-    if (!UserAuth::GetInstance().isLoggedIn()) {
-        qWarning() << "用户未登录，无法创建类别";
-        emit categoryOperationCompleted(false, "用户未登录");
-        return;
-    }
-
-    if (name.trimmed().isEmpty()) {
-        emit categoryOperationCompleted(false, "类别名称不能为空");
-        return;
-    }
-
-    QJsonObject requestData;
-    requestData["action"] = "create";
-    requestData["name"] = name;
-
-    NetworkRequest::RequestConfig config;
-    config.url = m_syncManager->getApiUrl("categories_api.php");
-    config.data = requestData;
-    config.requiresAuth = true;
-    config.headers["Authorization"] = "Bearer " + UserAuth::GetInstance().getAccessToken();
-
-    m_networkRequest.sendRequest(NetworkRequest::CreateCategory, config);
+void TodoManager::createCategory(const QString &name) {
+    m_categoryManager->createCategory(name);
 }
 
-void TodoModel::updateCategory(int id, const QString &name) {
-    if (!UserAuth::GetInstance().isLoggedIn()) {
-        qWarning() << "用户未登录，无法更新类别";
-        emit categoryOperationCompleted(false, "用户未登录");
-        return;
-    }
-
-    if (name.trimmed().isEmpty()) {
-        emit categoryOperationCompleted(false, "类别名称不能为空");
-        return;
-    }
-
-    QJsonObject requestData;
-    requestData["action"] = "update";
-    requestData["id"] = id;
-    requestData["name"] = name;
-
-    NetworkRequest::RequestConfig config;
-    config.url = m_syncManager->getApiUrl("categories_api.php");
-    config.data = requestData;
-    config.requiresAuth = true;
-    config.headers["Authorization"] = "Bearer " + UserAuth::GetInstance().getAccessToken();
-
-    m_networkRequest.sendRequest(NetworkRequest::UpdateCategory, config);
+void TodoManager::updateCategory(int id, const QString &name) {
+    m_categoryManager->updateCategory(id, name);
 }
 
-void TodoModel::deleteCategory(int id) {
-    if (!UserAuth::GetInstance().isLoggedIn()) {
-        qWarning() << "用户未登录，无法删除类别";
-        emit categoryOperationCompleted(false, "用户未登录");
-        return;
-    }
-
-    QJsonObject requestData;
-    requestData["action"] = "delete";
-    requestData["id"] = id;
-
-    NetworkRequest::RequestConfig config;
-    config.url = m_syncManager->getApiUrl("categories_api.php");
-    config.data = requestData;
-    config.requiresAuth = true;
-    config.headers["Authorization"] = "Bearer " + UserAuth::GetInstance().getAccessToken();
-
-    m_networkRequest.sendRequest(NetworkRequest::DeleteCategory, config);
-}
-
-void TodoModel::handleFetchCategoriesSuccess(const QJsonObject &response) {
-    if (response["success"].toBool()) {
-        QJsonArray categoriesArray = response["categories"].toArray();
-        QStringList newCategories;
-
-        // 添加默认的"全部"选项
-        newCategories << "全部";
-
-        // 添加从服务器获取的类别
-        for (const QJsonValue &value : categoriesArray) {
-            QJsonObject categoryObj = value.toObject();
-            QString categoryName = categoryObj["name"].toString();
-            if (!categoryName.isEmpty()) {
-                newCategories << categoryName;
-            }
-        }
-
-        // 添加默认的"未分类"选项
-        if (!newCategories.contains("未分类")) {
-            newCategories << "未分类";
-        }
-
-        m_categories = newCategories;
-        emit categoriesChanged();
-
-        qDebug() << "成功获取类别列表:" << m_categories;
-    } else {
-        QString errorMessage = response["message"].toString();
-        qWarning() << "获取类别列表失败:" << errorMessage;
-        emit categoryOperationCompleted(false, errorMessage);
-    }
-}
-
-void TodoModel::handleCategoryOperationSuccess(const QJsonObject &response) {
-    bool success = response["success"].toBool();
-    QString message = response["message"].toString();
-
-    if (success) {
-        // 操作成功后重新获取类别列表
-        fetchCategories();
-    }
-
-    emit categoryOperationCompleted(success, message);
+void TodoManager::deleteCategory(int id) {
+    m_categoryManager->deleteCategory(id);
 }
