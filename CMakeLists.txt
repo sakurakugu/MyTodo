@@ -80,6 +80,8 @@ set(CORE_SOURCES
     # 核心数据模型
     cpp/todo_model.cpp
     cpp/todo_model.h
+    cpp/todo_sync_server.cpp
+    cpp/todo_sync_server.h
 )
 
 set(NETWORK_SOURCES

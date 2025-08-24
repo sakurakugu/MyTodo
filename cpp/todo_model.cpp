@@ -35,15 +35,17 @@ TodoModel::TodoModel(QObject *parent)
     // 初始化默认服务器配置
     m_setting.initializeDefaultServerConfig();
 
-    // 初始化服务器配置
-    initializeServerConfig();
+    // 创建同步管理器
+    m_syncManager = new TodoSyncServer(this);
+    
+    // 连接同步管理器信号
+    connect(m_syncManager, &TodoSyncServer::syncStarted, this, &TodoModel::onSyncStarted);
+    connect(m_syncManager, &TodoSyncServer::syncCompleted, this, &TodoModel::onSyncCompleted);
+    connect(m_syncManager, &TodoSyncServer::todosUpdatedFromServer, this, &TodoModel::onTodosUpdatedFromServer);
 
-    // 连接网络管理器信号
+    // 连接网络管理器信号（仅用于类别管理）
     connect(&m_networkRequest, &NetworkRequest::requestCompleted, this, &TodoModel::onNetworkRequestCompleted);
     connect(&m_networkRequest, &NetworkRequest::requestFailed, this, &TodoModel::onNetworkRequestFailed);
-
-    // 连接设置变化信号
-    connect(&m_setting, &Setting::baseUrlChanged, this, &TodoModel::onBaseUrlChanged);
 
     // 加载本地数据
     if (!loadFromLocalStorage()) {
@@ -52,6 +54,10 @@ TodoModel::TodoModel(QObject *parent)
 
     // 初始化在线状态
     m_isAutoSync = m_setting.get(QStringLiteral("autoSync"), false).toBool();
+    m_syncManager->setAutoSyncEnabled(m_isAutoSync);
+    
+    // 设置待办事项数据到同步管理器
+    updateSyncManagerData();
 
     // 如果已登录，获取类别列表
     if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
@@ -835,40 +841,15 @@ bool TodoModel::markAsDone(int index) {
  * 操作结果通过syncCompleted信号通知。
  */
 void TodoModel::syncWithServer() {
-    // 检查是否可以进行同步
-    if (!m_isAutoSync) {
-        qDebug() << "无法同步：离线模式";
-        return;
-    }
-
-    if (!UserAuth::GetInstance().UserAuth::GetInstance().isLoggedIn()) {
-        qDebug() << "无法同步：未登录";
-        return;
-    }
-
-    qDebug() << "开始同步待办事项...";
-    emit syncStarted();
-
-    // 准备同步请求配置
-    NetworkRequest::RequestConfig config;
-    config.url = getApiUrl(m_todoApiEndpoint);
-    config.requiresAuth = true;
-
-    // 发送同步请求
-    m_networkRequest.sendRequest(NetworkRequest::RequestType::Sync, config);
+    // 更新同步管理器的数据
+    updateSyncManagerData();
+    
+    // 委托给同步管理器处理
+    m_syncManager->syncWithServer(TodoSyncServer::Bidirectional);
 }
 
 void TodoModel::onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response) {
     switch (type) {
-    case NetworkRequest::RequestType::Sync:
-        handleSyncSuccess(response);
-        break;
-    case NetworkRequest::RequestType::FetchTodos:
-        handleFetchTodosSuccess(response);
-        break;
-    case NetworkRequest::RequestType::PushTodos:
-        handlePushChangesSuccess(response);
-        break;
     case NetworkRequest::RequestType::FetchCategories:
         handleFetchCategoriesSuccess(response);
         break;
@@ -878,6 +859,7 @@ void TodoModel::onNetworkRequestCompleted(NetworkRequest::RequestType type, cons
         handleCategoryOperationSuccess(response);
         break;
     default:
+        // 同步相关的请求现在由TodoSyncServer处理
         break;
     }
 }
@@ -892,18 +874,6 @@ void TodoModel::onNetworkRequestFailed(NetworkRequest::RequestType type, Network
     case NetworkRequest::RequestType::Logout:
         // 认证相关错误现在由UserAuth处理
         return;
-    case NetworkRequest::RequestType::Sync:
-        typeStr = "同步";
-        emit syncCompleted(false, errorMessage);
-        break;
-    case NetworkRequest::RequestType::FetchTodos:
-        typeStr = "获取待办事项";
-        emit syncCompleted(false, errorMessage);
-        break;
-    case NetworkRequest::RequestType::PushTodos:
-        typeStr = "推送更改";
-        emit syncCompleted(false, errorMessage);
-        break;
     case NetworkRequest::RequestType::FetchCategories:
         typeStr = "获取类别";
         emit categoryOperationCompleted(false, errorMessage);
@@ -920,78 +890,34 @@ void TodoModel::onNetworkRequestFailed(NetworkRequest::RequestType type, Network
         typeStr = "删除类别";
         emit categoryOperationCompleted(false, errorMessage);
         break;
+    default:
+        // 同步相关的请求现在由TodoSyncServer处理
+        return;
     }
 
     qWarning() << typeStr << "失败:" << errorMessage;
     logError(typeStr, errorMessage);
 }
 
-/**
- * @brief 处理服务器基础URL变化
- * @param newBaseUrl 新的服务器基础URL
- */
-void TodoModel::onBaseUrlChanged(const QString &newBaseUrl) {
-    qDebug() << "服务器基础URL已更新:" << m_serverBaseUrl << "->" << newBaseUrl;
-    m_serverBaseUrl = newBaseUrl;
+// 同步管理器信号处理槽函数
+void TodoModel::onSyncStarted() {
+    emit syncStarted();
+}
 
-    // 如果当前在线且已登录，可以选择重新同步数据
-    if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
-        // qDebug() << "服务器URL变化，准备重新同步数据";
-        // 可以选择立即同步或等待用户手动同步
-        // syncWithServer();
+void TodoModel::onSyncCompleted(TodoSyncServer::SyncResult result, const QString &message) {
+    bool success = (result == TodoSyncServer::Success);
+    emit syncCompleted(success, message);
+    
+    // 如果同步成功，保存到本地存储
+    if (success) {
+        if (!saveToLocalStorage()) {
+            qWarning() << "同步成功后无法保存到本地存储";
+        }
     }
 }
 
-void TodoModel::handleSyncSuccess(const QJsonObject &response) {
-    qDebug() << "同步成功";
-
-    // 处理同步响应数据
-    if (response.contains("todos")) {
-        QJsonArray todosArray = response["todos"].toArray();
-        // 更新本地数据
-        updateTodosFromServer(todosArray);
-    }
-
-    emit syncCompleted(true, "同步完成");
-}
-
-void TodoModel::handleFetchTodosSuccess(const QJsonObject &response) {
-    qDebug() << "获取待办事项成功";
-
-    if (response.contains("todos")) {
-        QJsonArray todosArray = response["todos"].toArray();
-        updateTodosFromServer(todosArray);
-    }
-
-    // 成功获取数据后，推送本地更改
-    pushLocalChangesToServer();
-
-    emit syncCompleted(true, "数据获取完成");
-}
-
-void TodoModel::handlePushChangesSuccess(const QJsonObject &response) {
-    qDebug() << "推送更改成功";
-
-    // 标记待同步项目为已同步
-    for (TodoItem *item : m_pendingUnsyncedItems) {
-        item->setSynced(true);
-    }
-
-    // 清空待同步项目列表
-    m_pendingUnsyncedItems.clear();
-
-    // 保存到本地存储
-    if (!saveToLocalStorage()) {
-        qWarning() << "无法在同步后保存本地存储";
-    }
-
-    // 处理推送响应
-    if (response.contains("updated_count")) {
-        int updatedCount = response["updated_count"].toInt();
-        qDebug() << "已更新" << updatedCount << "个待办事项";
-    }
-
-    emit syncCompleted(true, "更改推送完成");
+void TodoModel::onTodosUpdatedFromServer(const QJsonArray &todosArray) {
+    updateTodosFromServer(todosArray);
 }
 
 void TodoModel::updateTodosFromServer(const QJsonArray &todosArray) {
@@ -1190,32 +1116,13 @@ bool TodoModel::saveToLocalStorage() {
     return success;
 }
 
-/**
- * @brief 从服务器获取最新的待办事项
- */
-void TodoModel::fetchTodosFromServer() {
-    if (!m_isAutoSync || !UserAuth::GetInstance().isLoggedIn()) {
-        qWarning() << "无法获取服务器数据：离线或未登录";
-        return;
+// 更新同步管理器的待办事项数据
+void TodoModel::updateSyncManagerData() {
+    QList<TodoItem *> todoItems;
+    for (const auto &item : m_todos) {
+        todoItems.append(item.get());
     }
-
-    qDebug() << "从服务器获取待办事项...";
-
-    try {
-        NetworkRequest::RequestConfig config;
-        config.url = getApiUrl(m_todoApiEndpoint);
-        config.requiresAuth = true;
-
-        m_networkRequest.sendRequest(NetworkRequest::RequestType::FetchTodos, config);
-    } catch (const std::exception &e) {
-        qCritical() << "获取服务器数据时发生异常:" << e.what();
-        logError("获取服务器数据", QString("异常: %1").arg(e.what()));
-        emit syncCompleted(false, QString("获取服务器数据失败: %1").arg(e.what()));
-    } catch (...) {
-        qCritical() << "获取服务器数据时发生未知异常";
-        logError("获取服务器数据", "未知异常");
-        emit syncCompleted(false, "获取服务器数据失败：未知错误");
-    }
+    m_syncManager->setTodoItems(todoItems);
 }
 
 /**
@@ -1232,98 +1139,10 @@ void TodoModel::logError(const QString &context, const QString &error) {
     // 也可以在这里添加错误报告机制
 }
 
-/**
- * @brief 将本地更改推送到服务器
- */
-void TodoModel::pushLocalChangesToServer() {
-    // 检查网络和登录状态
-    if (!m_isAutoSync || !UserAuth::GetInstance().isLoggedIn()) {
-        qDebug() << "无法推送更改：离线或未登录";
-        return;
-    }
 
-    // 找出所有未同步的项目
-    QList<TodoItem *> unsyncedItems;
-    for (const auto &item : std::as_const(m_todos)) {
-        if (!item->synced()) {
-            unsyncedItems.append(item.get());
-        }
-    }
 
-    if (unsyncedItems.isEmpty()) {
-        qDebug() << "没有需要同步的项目";
-        return; // 没有未同步的项目
-    }
 
-    qDebug() << "推送" << unsyncedItems.size() << "个项目到服务器";
 
-    try {
-        // 创建一个包含所有未同步项目的JSON数组
-        QJsonArray jsonArray;
-        for (TodoItem *item : std::as_const(unsyncedItems)) {
-            QJsonObject obj;
-            obj["id"] = item->id();
-            obj["uuid"] = item->uuid().toString(); // 将QUuid转换为QString以便JSON序列化
-            obj["user_id"] = item->userId();
-            obj["title"] = item->title();
-            obj["description"] = item->description();
-            obj["category"] = item->category();
-            obj["important"] = item->important();
-            obj["deadline"] = item->deadline().toString(Qt::ISODate);
-            obj["recurrence_interval"] = item->recurrenceInterval();
-            obj["recurrence_count"] = item->recurrenceCount();
-            obj["recurrence_start_date"] = item->recurrenceStartDate().toString(Qt::ISODate);
-            obj["is_completed"] = item->isCompleted();
-            obj["completed_at"] = item->completedAt().toString(Qt::ISODate);
-            obj["is_deleted"] = item->isDeleted();
-            obj["deleted_at"] = item->deletedAt().toString(Qt::ISODate);
-            obj["created_at"] = item->createdAt().toString(Qt::ISODate);
-            obj["updated_at"] = item->updatedAt().toString(Qt::ISODate);
-            obj["last_modified_at"] = item->lastModifiedAt().toString(Qt::ISODate);
-            // obj["status"] = item->status();
-
-            jsonArray.append(obj);
-        }
-
-        NetworkRequest::RequestConfig config;
-        config.url = getApiUrl(m_todoApiEndpoint);
-        config.requiresAuth = true;
-        config.data["todos"] = jsonArray;
-
-        // 存储未同步项目的引用，用于成功后标记为已同步
-        m_pendingUnsyncedItems = unsyncedItems;
-
-        m_networkRequest.sendRequest(NetworkRequest::RequestType::PushTodos, config);
-    } catch (const std::exception &e) {
-        qCritical() << "推送更改时发生异常:" << e.what();
-        logError("推送更改", QString("异常: %1").arg(e.what()));
-    } catch (...) {
-        qCritical() << "推送更改时发生未知异常";
-        logError("推送更改", "未知异常");
-    }
-}
-
-/**
- * @brief 初始化服务器配置
- */
-void TodoModel::initializeServerConfig() {
-    // 从设置中读取服务器配置，如果不存在则使用默认值
-    m_serverBaseUrl = m_setting.get(QStringLiteral("server/baseUrl"), "https://api.example.com").toString();
-    m_todoApiEndpoint = m_setting.get(QStringLiteral("server/todoApiEndpoint"), "/todo/todo_api.php").toString();
-
-    qDebug() << "服务器配置已初始化:";
-    qDebug() << "  基础URL:" << m_serverBaseUrl;
-    qDebug() << "  待办事项API:" << m_todoApiEndpoint;
-}
-
-/**
- * @brief 获取完整的API URL
- * @param endpoint API端点路径
- * @return 完整的API URL
- */
-QString TodoModel::getApiUrl(const QString &endpoint) const {
-    return m_serverBaseUrl + endpoint;
-}
 
 bool TodoModel::exportTodos(const QString &filePath) {
     QJsonArray todosArray;
@@ -1469,7 +1288,7 @@ void TodoModel::fetchCategories() {
     requestData["action"] = "list";
 
     NetworkRequest::RequestConfig config;
-    config.url = getApiUrl("categories_api.php");
+    config.url = m_syncManager->getApiUrl("categories_api.php");
     config.data = requestData;
     config.requiresAuth = true;
     config.headers["Authorization"] = "Bearer " + UserAuth::GetInstance().getAccessToken();
@@ -1494,7 +1313,7 @@ void TodoModel::createCategory(const QString &name) {
     requestData["name"] = name;
 
     NetworkRequest::RequestConfig config;
-    config.url = getApiUrl("categories_api.php");
+    config.url = m_syncManager->getApiUrl("categories_api.php");
     config.data = requestData;
     config.requiresAuth = true;
     config.headers["Authorization"] = "Bearer " + UserAuth::GetInstance().getAccessToken();
@@ -1520,7 +1339,7 @@ void TodoModel::updateCategory(int id, const QString &name) {
     requestData["name"] = name;
 
     NetworkRequest::RequestConfig config;
-    config.url = getApiUrl("categories_api.php");
+    config.url = m_syncManager->getApiUrl("categories_api.php");
     config.data = requestData;
     config.requiresAuth = true;
     config.headers["Authorization"] = "Bearer " + UserAuth::GetInstance().getAccessToken();
@@ -1540,7 +1359,7 @@ void TodoModel::deleteCategory(int id) {
     requestData["id"] = id;
 
     NetworkRequest::RequestConfig config;
-    config.url = getApiUrl("categories_api.php");
+    config.url = m_syncManager->getApiUrl("categories_api.php");
     config.data = requestData;
     config.requiresAuth = true;
     config.headers["Authorization"] = "Bearer " + UserAuth::GetInstance().getAccessToken();

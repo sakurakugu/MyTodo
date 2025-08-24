@@ -24,6 +24,7 @@
 #include "foundation/network_request.h"
 #include "items/todo_item.h"
 #include "setting.h"
+#include "todo_sync_server.h" // 服务器同步管理器
 
 /**
  * @class TodoModel
@@ -187,24 +188,20 @@ class TodoModel : public QAbstractListModel {
   private slots:
     void onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response); // 处理网络请求成功
     void onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
-                                const QString &message); // 处理网络请求失败
-    void onBaseUrlChanged(const QString &newBaseUrl);    // 处理服务器基础URL变化
+                                const QString &message);                             // 处理网络请求失败
+    void onSyncStarted();                                                            // 处理同步开始
+    void onSyncCompleted(TodoSyncServer::SyncResult result, const QString &message); // 处理同步完成
+    void onTodosUpdatedFromServer(const QJsonArray &todosArray);                     // 处理从服务器更新的待办事项
 
   private:
-    bool loadFromLocalStorage();                                // 从本地存储加载待办事项
-    bool saveToLocalStorage();                                  // 将待办事项保存到本地存储
-    void fetchTodosFromServer();                                // 从服务器获取最新的待办事项
-    void pushLocalChangesToServer();                            // 将本地更改推送到服务器
-    void handleFetchTodosSuccess(const QJsonObject &response);  // 处理获取待办事项成功
-    void handlePushChangesSuccess(const QJsonObject &response); // 处理推送更改成功
-
-    void handleSyncSuccess(const QJsonObject &response);              // 处理同步成功
+    bool loadFromLocalStorage();                                      // 从本地存储加载待办事项
+    bool saveToLocalStorage();                                        // 将待办事项保存到本地存储
     void handleFetchCategoriesSuccess(const QJsonObject &response);   // 处理获取类别列表成功响应
     void handleCategoryOperationSuccess(const QJsonObject &response); // 处理类别操作成功响应
     void updateTodosFromServer(const QJsonArray &todosArray);         // 从服务器数据更新待办事项
+    void updateSyncManagerData();                                     // 更新同步管理器的待办事项数据
     void logError(const QString &context, const QString &error);      // 记录错误信息
     QVariant getItemData(const TodoItem *item, int role) const;
-    void initializeServerConfig(); // 初始化服务器配置
 
     // 性能优化相关方法
     void updateFilterCache();                           // 更新过滤缓存
@@ -226,17 +223,12 @@ class TodoModel : public QAbstractListModel {
     Setting &m_setting;                             ///< 应用设置
     bool m_isAutoSync;                              ///< 是否自动同步
 
-    // 服务器配置
-    QString m_serverBaseUrl;   ///< 服务器基础URL
-    QString m_todoApiEndpoint; ///< 待办事项API端点
-
-    // 待同步项目的临时存储
-    QList<TodoItem *> m_pendingUnsyncedItems; ///< 待同步项目列表
+    // 同步管理器
+    TodoSyncServer *m_syncManager; ///< 同步管理器 - 负责所有服务器同步相关功能
 
     // 类别管理相关
     QStringList m_categories; ///< 类别列表
     int m_sortType;           ///< 当前排序类型
 
     // 辅助方法
-    QString getApiUrl(const QString &endpoint) const; ///< 获取完整的API URL
 };
