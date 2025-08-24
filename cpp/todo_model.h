@@ -21,8 +21,8 @@
 #include <memory>
 #include <vector>
 
-#include "items/todo_item.h"
 #include "foundation/network_request.h"
+#include "items/todo_item.h"
 #include "setting.h"
 
 /**
@@ -99,10 +99,10 @@ class TodoModel : public QAbstractListModel {
      * @brief 定义待办事项的排序类型
      */
     enum SortType {
-        SortByCreatedTime = 0,     // 按创建时间排序（默认）
-        SortByDeadline = 1,        // 按截止日期排序
-        SortByImportance = 2,      // 按重要程度排序
-        SortByTitle = 3            // 按标题排序
+        SortByCreatedTime = 0, // 按创建时间排序（默认）
+        SortByDeadline = 1,    // 按截止日期排序
+        SortByImportance = 2,  // 按重要程度排序
+        SortByTitle = 3        // 按标题排序
     };
     Q_ENUM(SortType)
 
@@ -132,14 +132,14 @@ class TodoModel : public QAbstractListModel {
     void setCurrentFilter(const QString &filter);     // 设置筛选条件
     bool currentImportant() const;                    // 获取当前激活的重要程度筛选器
     void setCurrentImportant(bool important);         // 设置重要程度筛选器
-    
+
     // 日期筛选相关方法
-    QDate dateFilterStart() const;                   // 获取日期筛选开始日期
-    void setDateFilterStart(const QDate &date);      // 设置日期筛选开始日期
-    QDate dateFilterEnd() const;                     // 获取日期筛选结束日期
-    void setDateFilterEnd(const QDate &date);        // 设置日期筛选结束日期
-    bool dateFilterEnabled() const;                  // 获取日期筛选是否启用
-    void setDateFilterEnabled(bool enabled);         // 设置日期筛选是否启用
+    QDate dateFilterStart() const;              // 获取日期筛选开始日期
+    void setDateFilterStart(const QDate &date); // 设置日期筛选开始日期
+    QDate dateFilterEnd() const;                // 获取日期筛选结束日期
+    void setDateFilterEnd(const QDate &date);   // 设置日期筛选结束日期
+    bool dateFilterEnabled() const;             // 获取日期筛选是否启用
+    void setDateFilterEnabled(bool enabled);    // 设置日期筛选是否启用
 
     // CRUD操作
     Q_INVOKABLE void addTodo(const QString &title, const QString &description = QString(),
@@ -148,8 +148,8 @@ class TodoModel : public QAbstractListModel {
     Q_INVOKABLE bool updateTodo(int index, const QVariantMap &todoData); // 更新现有待办事项
     Q_INVOKABLE bool removeTodo(int index);
     Q_INVOKABLE bool restoreTodo(int index);
-    Q_INVOKABLE bool permanentlyDeleteTodo(int index);                              // 删除待办事项
-    Q_INVOKABLE bool markAsDone(int index);                              // 将待办事项标记为已完成
+    Q_INVOKABLE bool permanentlyDeleteTodo(int index); // 删除待办事项
+    Q_INVOKABLE bool markAsDone(int index);            // 将待办事项标记为已完成
 
     // 网络同步操作
     Q_INVOKABLE void syncWithServer();                                        // 与服务器同步待办事项数据
@@ -171,26 +171,21 @@ class TodoModel : public QAbstractListModel {
     Q_INVOKABLE QVariantList
     importTodosWithAutoResolution(const QString &filePath); // 自动导入无冲突项目，返回冲突项目列表
 
-    // 获取设置对象
-    Q_INVOKABLE Config &config() {
-        return m_config;
-    }
-
     // 服务器配置相关
     Q_INVOKABLE bool isHttpsUrl(const QString &url) const;       // 检查URL是否使用HTTPS
     Q_INVOKABLE void updateServerConfig(const QString &baseUrl); // 更新服务器配置
 
     // 类别管理相关
-    Q_INVOKABLE QStringList getCategories() const;                    // 获取类别列表
-    Q_INVOKABLE void fetchCategories();                               // 从服务器获取类别列表
-    Q_INVOKABLE void createCategory(const QString &name);             // 创建新类别
-    Q_INVOKABLE void updateCategory(int id, const QString &name);     // 更新类别名称
-    Q_INVOKABLE void deleteCategory(int id);                          // 删除类别
+    Q_INVOKABLE QStringList getCategories() const;                // 获取类别列表
+    Q_INVOKABLE void fetchCategories();                           // 从服务器获取类别列表
+    Q_INVOKABLE void createCategory(const QString &name);         // 创建新类别
+    Q_INVOKABLE void updateCategory(int id, const QString &name); // 更新类别名称
+    Q_INVOKABLE void deleteCategory(int id);                      // 删除类别
 
     // 排序相关
-    Q_INVOKABLE int sortType() const;                                              // 获取当前排序类型
-    Q_INVOKABLE void setSortType(int type);                                        // 设置排序类型
-    Q_INVOKABLE void sortTodos();                                      // 对待办事项进行排序
+    Q_INVOKABLE int sortType() const;       // 获取当前排序类型
+    Q_INVOKABLE void setSortType(int type); // 设置排序类型
+    Q_INVOKABLE void sortTodos();           // 对待办事项进行排序
 
   signals:
     void isOnlineChanged();                                                    // 在线状态变化信号
@@ -209,7 +204,7 @@ class TodoModel : public QAbstractListModel {
     void loginRequired();                                                      // 需要登录信号
     void logoutSuccessful();                                                   // 退出登录成功信号
     void categoriesChanged();                                                  // 类别列表变化信号
-    void categoryOperationCompleted(bool success, const QString &message);    // 类别操作完成信号
+    void categoryOperationCompleted(bool success, const QString &message);     // 类别操作完成信号
     void sortTypeChanged();                                                    // 排序类型变化信号
 
   private slots:
@@ -220,18 +215,18 @@ class TodoModel : public QAbstractListModel {
     void onAuthTokenExpired();                           // 处理认证令牌过期
 
   private:
-    bool loadFromLocalStorage();                                 // 从本地存储加载待办事项
-    bool saveToLocalStorage();                                   // 将待办事项保存到本地存储
-    void fetchTodosFromServer();                                 // 从服务器获取最新的待办事项
-    void pushLocalChangesToServer();                             // 将本地更改推送到服务器
-    void handleFetchTodosSuccess(const QJsonObject &response);   // 处理获取待办事项成功
-    void handlePushChangesSuccess(const QJsonObject &response);  // 处理推送更改成功
-    void handleLoginSuccess(const QJsonObject &response);        // 处理登录成功
-    void handleSyncSuccess(const QJsonObject &response);         // 处理同步成功
-    void handleFetchCategoriesSuccess(const QJsonObject &response);               // 处理获取类别列表成功响应
-    void handleCategoryOperationSuccess(const QJsonObject &response);             // 处理类别操作成功响应
-    void updateTodosFromServer(const QJsonArray &todosArray);    // 从服务器数据更新待办事项
-    void logError(const QString &context, const QString &error); // 记录错误信息
+    bool loadFromLocalStorage();                                      // 从本地存储加载待办事项
+    bool saveToLocalStorage();                                        // 将待办事项保存到本地存储
+    void fetchTodosFromServer();                                      // 从服务器获取最新的待办事项
+    void pushLocalChangesToServer();                                  // 将本地更改推送到服务器
+    void handleFetchTodosSuccess(const QJsonObject &response);        // 处理获取待办事项成功
+    void handlePushChangesSuccess(const QJsonObject &response);       // 处理推送更改成功
+    void handleLoginSuccess(const QJsonObject &response);             // 处理登录成功
+    void handleSyncSuccess(const QJsonObject &response);              // 处理同步成功
+    void handleFetchCategoriesSuccess(const QJsonObject &response);   // 处理获取类别列表成功响应
+    void handleCategoryOperationSuccess(const QJsonObject &response); // 处理类别操作成功响应
+    void updateTodosFromServer(const QJsonArray &todosArray);         // 从服务器数据更新待办事项
+    void logError(const QString &context, const QString &error);      // 记录错误信息
     QVariant getItemData(const TodoItem *item, int role) const;
     void initializeServerConfig(); // 初始化服务器配置
 
@@ -253,7 +248,6 @@ class TodoModel : public QAbstractListModel {
     QDate m_dateFilterEnd;                          ///< 日期筛选结束日期
     bool m_dateFilterEnabled;                       ///< 日期筛选是否启用
     NetworkRequest &m_networkRequest;               ///< 网络管理器
-    Config &m_config;                               ///< 应用配置
     Setting &m_setting;                             ///< 应用设置
 
     QString m_accessToken;  ///< 访问令牌
