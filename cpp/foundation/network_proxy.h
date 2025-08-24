@@ -15,6 +15,10 @@
 #include <QNetworkProxy>
 #include <QObject>
 #include <QString>
+#include <concepts>
+#include <expected>
+#include <optional>
+#include <string_view>
 
 /**
  * @class NetworkProxy
@@ -51,11 +55,11 @@ class NetworkProxy : public QObject {
      * @enum ProxyType
      * @brief 代理类型枚举
      */
-    enum ProxyType {
-        NoProxy,     // 不使用代理
-        SystemProxy, // 使用系统代理
-        HttpProxy,   // HTTP代理
-        Socks5Proxy  // SOCKS5代理
+    enum class ProxyType : std::uint8_t {
+        NoProxy = 0,     // 不使用代理
+        SystemProxy = 1, // 使用系统代理
+        HttpProxy = 2,   // HTTP代理
+        Socks5Proxy = 3  // SOCKS5代理
     };
     Q_ENUM(ProxyType)
 
@@ -63,7 +67,8 @@ class NetworkProxy : public QObject {
         static NetworkProxy instance;
         return instance;
     }
-    // 禁用拷贝构造和赋值操作
+
+    // 禁用拷贝和移动操作
     NetworkProxy(const NetworkProxy &) = delete;
     NetworkProxy &operator=(const NetworkProxy &) = delete;
     NetworkProxy(NetworkProxy &&) = delete;
@@ -72,23 +77,23 @@ class NetworkProxy : public QObject {
     // 代理配置管理
     void setProxyConfig(ProxyType type, const QString &host = QString(), int port = 0,
                         const QString &username = QString(), const QString &password = QString()); // 设置代理配置
-    void applyProxyToManager(QNetworkAccessManager *manager); // 将代理配置应用到网络管理器
-    void clearProxyConfig();                                  // 清除代理配置
+    void applyProxyToManager(QNetworkAccessManager *manager) noexcept; // 将代理配置应用到网络管理器
+    void clearProxyConfig() noexcept;                                  // 清除代理配置
 
     // 代理信息获取
-    ProxyType getProxyType() const;   // 获取当前代理类型
-    QString getProxyHost() const;     // 获取代理主机
-    int getProxyPort() const;         // 获取代理端口
-    QString getProxyUsername() const; // 获取代理用户名
-    bool hasProxyAuth() const;        // 检查是否配置了代理认证
+    constexpr ProxyType getProxyType() const noexcept; // 获取当前代理类型
+    const QString &getProxyHost() const noexcept;      // 获取代理主机
+    constexpr int getProxyPort() const noexcept;       // 获取代理端口
+    const QString &getProxyUsername() const noexcept;  // 获取代理用户名
+    constexpr bool hasProxyAuth() const noexcept;      // 检查是否配置了代理认证
 
     // 配置文件操作
-    void loadProxyConfigFromSettings(); // 从配置加载代理设置
-    void saveProxyConfigToSettings();   // 保存代理设置到配置
+    void loadProxyConfigFromSettings() noexcept; // 从配置加载代理设置
+    void saveProxyConfigToSettings() noexcept;   // 保存代理设置到配置
 
     // 代理状态检查
-    bool isProxyEnabled() const;         // 检查代理是否启用
-    QString getProxyDescription() const; // 获取代理配置描述
+    constexpr bool isProxyEnabled() const noexcept; // 检查代理是否启用
+    QString getProxyDescription() const noexcept;   // 获取代理配置描述
 
   signals:
     void proxyConfigChanged(ProxyType type, const QString &host, int port); // 代理配置改变信号
@@ -97,10 +102,11 @@ class NetworkProxy : public QObject {
     // 构造函数和析构函数
     explicit NetworkProxy(QObject *parent = nullptr);
     ~NetworkProxy();
+
     // 内部方法
-    QNetworkProxy createQNetworkProxy() const; // 创建QNetworkProxy对象
+    QNetworkProxy createQNetworkProxy() const noexcept; // 创建QNetworkProxy对象
     void updateProxyConfig(ProxyType type, const QString &host, int port, const QString &username,
-                           const QString &password); // 更新代理配置
+                           const QString &password) noexcept; // 更新代理配置
 
     // 成员变量
     ProxyType m_proxyType;   // 代理类型
