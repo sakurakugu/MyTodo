@@ -63,7 +63,7 @@ class TodoSorter : public QObject {
 
     // 排序属性访问器
     int sortType() const;          // 获取当前排序类型
-    void setSortType(int type);    // 设置排序类型
+    Q_INVOKABLE void setSortType(int type);    // 设置排序类型
     bool descending() const;       // 获取是否倒序
     void setDescending(bool desc); // 设置是否倒序
 

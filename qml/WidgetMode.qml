@@ -329,7 +329,7 @@ Item {
                                 width: 16
                                 height: 16
                                 radius: 8
-                                color: model.status === "done" ? theme.completedColor : model.important === "高" ? theme.highImportantColor : model.important === "中" ? theme.mediumImportantColor : theme.lowImportantColor
+                                color: model.isCompleted ? theme.completedColor : theme.lowImportantColor
 
                                 MouseArea {
                                     anchors.fill: parent

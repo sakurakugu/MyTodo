@@ -322,32 +322,34 @@ void TodoManager::invalidateFilterCache() {
  * @param title 任务标题（必填）
  * @param description 任务描述（可选）
  * @param category 任务分类（默认为"default"）
- * @param important 重要程度（默认为"medium"）
+ * @param important 重要程度（默认为false）
  */
 void TodoManager::addTodo(const QString &title, const QString &description, const QString &category, bool important,
                           const QString &deadline) {
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
 
-    auto newItem = std::make_unique<TodoItem>(0,                                            // id (auto-generated)
-                                              QUuid::createUuid(),                          // uuid
-                                              QUuid(),                                      // userUuid
-                                              title,                                        // title
-                                              description,                                  // description
-                                              category,                                     // category
-                                              important,                                    // important
-                                              QDateTime::fromString(deadline, Qt::ISODate), // deadline
-                                              0,                                            // recurrenceInterval
-                                              -1,                                           // recurrenceCount
-                                              QDate(),                                      // recurrenceStartDate
-                                              false,                                        // isCompleted
-                                              QDateTime(),                                  // completedAt
-                                              false,                                        // isDeleted
-                                              QDateTime(),                                  // deletedAt
-                                              QDateTime::currentDateTime(),                 // createdAt
-                                              QDateTime::currentDateTime(),                 // updatedAt
-                                              QDateTime::currentDateTime(),                 // lastModifiedAt
-                                              false,                                        // synced
-                                              this);
+    auto newItem = std::make_unique<TodoItem>(        //
+        0,                                            // id (auto-generated)
+        QUuid::createUuid(),                          // uuid
+        QUuid(),                                      // userUuid
+        title,                                        // title
+        description,                                  // description
+        category,                                     // category
+        important,                                    // important
+        QDateTime::fromString(deadline, Qt::ISODate), // deadline
+        0,                                            // recurrenceInterval
+        -1,                                           // recurrenceCount
+        QDate(),                                      // recurrenceStartDate
+        false,                                        // isCompleted
+        QDateTime(),                                  // completedAt
+        false,                                        // isDeleted
+        QDateTime(),                                  // deletedAt
+        QDateTime::currentDateTime(),                 // createdAt
+        QDateTime::currentDateTime(),                 // updatedAt
+        QDateTime::currentDateTime(),                 // lastModifiedAt
+        false,                                        // synced
+        this                                          //
+    );
 
     m_todos.push_back(std::move(newItem));
     invalidateFilterCache();
@@ -358,7 +360,7 @@ void TodoManager::addTodo(const QString &title, const QString &description, cons
 
     if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
         // 如果在线且已登录，立即尝试同步到服务器
-        syncWithServer();
+        // syncWithServer();
     }
 }
 

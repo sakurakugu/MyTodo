@@ -223,8 +223,10 @@ bool TodoFilter::checkStatusMatch(const TodoItem *item) const {
     // 状态筛选逻辑：
     // - 如果m_currentFilter为"recycle"，则只显示已删除的项目
     // - 否则只显示未删除的项目，并根据完成状态进一步筛选
-    // - 如果m_currentFilter为空，则显示所有项目
-    if (m_currentFilter == "recycle") {
+    // - 如果m_currentFilter为"all"，则显示所有项目
+    if (m_currentFilter == "all") {
+        return !item->isDeleted();
+    } if (m_currentFilter == "recycle") {
         // 回收站模式：只显示已删除的项目
         return item->isDeleted();
     } else {

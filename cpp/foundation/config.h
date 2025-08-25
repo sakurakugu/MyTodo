@@ -54,7 +54,6 @@ class Config : public QObject {
     explicit Config(QObject *parent = nullptr);
     ~Config() noexcept override;
 
-    // std::unique_ptr<QSettings> m_config;
     mutable toml::value m_tomlData; // 配置数据
     QString m_configFilePath;       // 配置文件路径
     mutable bool m_isChanged = false; // 配置是否已修改

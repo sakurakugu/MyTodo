@@ -280,11 +280,9 @@ bool Config::saveToFile() const noexcept {
  * @return 默认配置文件路径
  */
 QString Config::getDefaultConfigPath() const noexcept {
-    // 尝试获取应用程序配置目录
-    QString configDir = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    QString configDir = QDir::currentPath();
     if (configDir.isEmpty()) {
-        // 如果失败，回退到用户主目录
-        configDir = QDir::currentPath();
+        configDir = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
     }
     return configDir + "/config.toml";
 }

@@ -191,7 +191,7 @@ Page {
                             model: ["全部", "待办", "完成", "回收站"]
                             onCurrentTextChanged: {
                                 if (currentText === "全部") {
-                                    todoFilter.currentFilter = "";
+                                    todoFilter.currentFilter = "all";
                                 } else if (currentText === "待办") {
                                     todoFilter.currentFilter = "todo";
                                 } else if (currentText === "完成") {
@@ -215,9 +215,9 @@ Page {
                             model: categoryManager.categories
                             onCurrentTextChanged: {
                                 if (currentText === "全部") {
-                                    categoryManager.currentCategory = "";
+                                    todoFilter.currentCategory = "all";
                                 } else {
-                                    categoryManager.currentCategory = currentText;
+                                    todoFilter.currentCategory = currentText;
                                 }
                             }
                         }
@@ -517,7 +517,7 @@ Page {
                                 width: 16
                                 height: 16
                                 radius: 8
-                                color: model.status === "done" ? theme.completedColor : model.important ? theme.highImportantColor : theme.lowImportantColor
+                                color: model.isCompleted ? theme.completedColor : model.important ? theme.highImportantColor : theme.lowImportantColor
 
                                 MouseArea {
                                     anchors.fill: parent
@@ -531,7 +531,7 @@ Page {
                             // 待办标题
                             Label {
                                 text: model.title
-                                font.strikeout: model.status === "done"
+                                font.strikeout: model.isCompleted
                                 color: theme.textColor
                                 Layout.fillWidth: true
                             }

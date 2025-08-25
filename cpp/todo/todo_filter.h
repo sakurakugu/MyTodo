@@ -57,7 +57,6 @@ class TodoFilter : public QObject {
     void setCurrentCategory(const QString &category); // 设置分类筛选器
     QString currentFilter() const;                    // 获取当前激活的筛选条件
     void setCurrentFilter(const QString &filter);     // 设置筛选条件
-    void setCurrentImportant(bool important);         // 设置重要程度筛选器
 
     // 日期筛选相关方法
     QDate dateFilterStart() const;              // 获取日期筛选开始日期

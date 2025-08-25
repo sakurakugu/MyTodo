@@ -27,7 +27,7 @@ TodoDataStorage::TodoDataStorage(Setting &setting, QObject *parent) : QObject(pa
 }
 
 TodoDataStorage::~TodoDataStorage() {
-    qDebug() << "TodoDataStorage 析构";
+    qDebug() << "TodoDataStorage 已销毁";
 }
 
 /**
