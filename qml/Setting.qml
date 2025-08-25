@@ -547,7 +547,7 @@ Page {
                                 return;
                             }
 
-                            if (!todoManager.isHttpsUrl(url)) {
+                            if (!setting.isHttpsUrl(url)) {
                                 httpsWarningDialog.targetUrl = url;
                                 httpsWarningDialog.open();
                                 return;

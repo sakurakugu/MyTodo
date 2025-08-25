@@ -105,6 +105,41 @@ bool TodoDataStorage::saveToLocalStorage(const std::vector<std::unique_ptr<TodoI
     bool success = true;
 
     try {
+        // 如果是空列表，先删除所有现有的待办事项条目
+        if (todos.empty()) {
+            // 获取当前存储的待办事项数量
+            int currentSize = m_setting.get(QStringLiteral("todos/size"), 0).toInt();
+            
+            // 删除所有现有的待办事项条目
+            for (int i = 0; i < currentSize; ++i) {
+                QString prefix = QString("todos/%1").arg(i);
+                
+                // 删除该待办事项的所有属性
+                m_setting.remove(prefix + "/id");
+                m_setting.remove(prefix + "/uuid");
+                m_setting.remove(prefix + "/userUuid");
+                m_setting.remove(prefix + "/title");
+                m_setting.remove(prefix + "/description");
+                m_setting.remove(prefix + "/category");
+                m_setting.remove(prefix + "/important");
+                m_setting.remove(prefix + "/createdAt");
+                m_setting.remove(prefix + "/updatedAt");
+                m_setting.remove(prefix + "/synced");
+                m_setting.remove(prefix + "/deadline");
+                m_setting.remove(prefix + "/recurrenceInterval");
+                m_setting.remove(prefix + "/recurrenceCount");
+                m_setting.remove(prefix + "/recurrenceStartDate");
+                m_setting.remove(prefix + "/isCompleted");
+                m_setting.remove(prefix + "/completedAt");
+                m_setting.remove(prefix + "/isDeleted");
+                m_setting.remove(prefix + "/deletedAt");
+                m_setting.remove(prefix + "/lastModifiedAt");
+                
+                // 删除整个待办事项条目
+                m_setting.remove(prefix);
+            }
+        }
+        
         // 保存待办事项数量
         m_setting.save(QStringLiteral("todos/size"), static_cast<int>(todos.size()));
 

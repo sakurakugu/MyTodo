@@ -52,8 +52,9 @@ TodoManager::TodoManager(QObject *parent)
         endResetModel();
     });
 
-    // 连接排序器信号，当排序类型变化时重新排序
+    // 连接排序器信号，当排序类型或倒序状态变化时重新排序
     connect(m_sorter, &TodoSorter::sortTypeChanged, this, &TodoManager::sortTodos);
+    connect(m_sorter, &TodoSorter::descendingChanged, this, &TodoManager::sortTodos);
 
     // 创建数据管理器
     m_dataManager = new TodoDataStorage(m_setting, this);
@@ -331,7 +332,7 @@ void TodoManager::addTodo(const QString &title, const QString &description, cons
     auto newItem = std::make_unique<TodoItem>(        //
         0,                                            // id (auto-generated)
         QUuid::createUuid(),                          // uuid
-        QUuid(),                                      // userUuid
+        UserAuth::GetInstance().getUuid(),            // userUuid
         title,                                        // title
         description,                                  // description
         category,                                     // category
@@ -360,7 +361,7 @@ void TodoManager::addTodo(const QString &title, const QString &description, cons
 
     if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
         // 如果在线且已登录，立即尝试同步到服务器
-        // syncWithServer();
+        syncWithServer();
     }
 }
 
@@ -632,6 +633,117 @@ bool TodoManager::permanentlyDeleteTodo(int index) {
         return false;
     } catch (...) {
         qCritical() << "永久删除待办事项时发生未知异常";
+        return false;
+    }
+}
+
+/**
+ * @brief 删除所有待办事项
+ * @param deleteLocal 是否删除本地数据
+ */
+void TodoManager::deleteAllTodos(bool deleteLocal) {
+    try {
+        qDebug() << "删除所有待办事项" << deleteLocal;
+        if (!deleteLocal) {
+            // 如果不删除本地数据，只更新用户UUID
+            qDebug() << "不删除本地数据，只更新用户UUID";
+            updateAllTodosUserUuid();
+            return;
+        }
+
+        // 删除本地数据
+
+        if (m_todos.empty()) {
+            qDebug() << "没有待办事项需要删除";
+        }
+
+        // 开始重置模型
+        beginResetModel();
+
+        // 清空所有待办事项
+        m_todos.clear();
+
+        // 使筛选缓存失效
+        invalidateFilterCache();
+
+        // 结束重置模型
+        endResetModel();
+
+        // 保存到本地存储
+        if (!m_dataManager->saveToLocalStorage(m_todos)) {
+            qWarning() << "删除所有待办事项后无法保存到本地存储";
+        }
+
+        // 如果在线且已登录，同步到服务器
+        if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
+            syncWithServer();
+        }
+
+        qDebug() << "成功删除所有待办事项";
+    } catch (const std::exception &e) {
+        qCritical() << "删除所有待办事项时发生异常:" << e.what();
+    } catch (...) {
+        qCritical() << "删除所有待办事项时发生未知异常";
+    }
+}
+
+/**
+ * @brief 更新所有待办事项的用户UUID
+ * @param newUserUuid 新的用户UUID
+ * @return 更新是否成功
+ */
+bool TodoManager::updateAllTodosUserUuid() {
+    try {
+        if (m_todos.empty()) {
+            qDebug() << "没有待办事项需要更新用户UUID";
+            return true;
+        }
+
+        bool hasChanges = false;
+
+        // 获取当前用户UUID
+        QUuid newUserUuid = UserAuth::GetInstance().getUuid();
+
+        // 遍历所有待办事项，更新用户UUID
+        for (auto &todoItem : m_todos) {
+            if (todoItem->userUuid() != newUserUuid) {
+                todoItem->setUserUuid(newUserUuid);
+                todoItem->setLastModifiedAt(QDateTime::currentDateTime());
+                todoItem->setSynced(false); // 标记为未同步
+                hasChanges = true;
+            }
+        }
+
+        if (hasChanges) {
+            // 通知模型数据已更改
+            beginResetModel();
+            invalidateFilterCache();
+            endResetModel();
+
+            // 保存到本地存储
+            if (!m_dataManager->saveToLocalStorage(m_todos)) {
+                qWarning() << "更新用户UUID后无法保存到本地存储";
+            }
+
+            // 更新同步管理器的数据
+            updateSyncManagerData();
+
+            // 如果在线且已登录，同步到服务器
+            if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
+                syncWithServer();
+            }
+
+            qDebug() << "成功更新所有待办事项的用户UUID为:" << newUserUuid.toString();
+        } else {
+            qDebug() << "所有待办事项的用户UUID已经是最新的";
+        }
+
+        return true;
+    } catch (const std::exception &e) {
+        qCritical() << "更新用户UUID时发生异常:" << e.what();
+        return false;
+    } catch (...) {
+        qCritical() << "更新用户UUID时发生未知异常";
         return false;
     }
 }

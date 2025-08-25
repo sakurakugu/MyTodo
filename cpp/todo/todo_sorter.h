@@ -65,7 +65,7 @@ class TodoSorter : public QObject {
     int sortType() const;          // 获取当前排序类型
     Q_INVOKABLE void setSortType(int type);    // 设置排序类型
     bool descending() const;       // 获取是否倒序
-    void setDescending(bool desc); // 设置是否倒序
+    Q_INVOKABLE void setDescending(bool desc); // 设置是否倒序
 
     void sortTodos(std::vector<std::unique_ptr<TodoItem>> &todos) const; // 对待办事项列表进行排序
     void sortTodoPointers(QList<TodoItem *> &todos) const;               // 对待办事项指针列表进行排序

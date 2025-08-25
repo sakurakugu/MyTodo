@@ -215,7 +215,7 @@ Page {
                             model: categoryManager.categories
                             onCurrentTextChanged: {
                                 if (currentText === "全部") {
-                                    todoFilter.currentCategory = "all";
+                                    todoFilter.currentCategory = "";
                                 } else {
                                     todoFilter.currentCategory = currentText;
                                 }

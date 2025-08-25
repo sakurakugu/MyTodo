@@ -26,9 +26,9 @@
 #include "items/todo_item.h"
 #include "setting.h"
 #include "todo_data_storage.h" // 数据管理器
-#include "todo_sync_server.h"  // 服务器同步管理器
 #include "todo_filter.h"       // 筛选管理器
 #include "todo_sorter.h"       // 排序管理器
+#include "todo_sync_server.h"  // 服务器同步管理器
 
 /**
  * @class TodoManager
@@ -101,8 +101,8 @@ class TodoManager : public QAbstractListModel {
 
     // 筛选和排序功能访问器
     // 访问器
-    Q_INVOKABLE TodoFilter* filter() const;
-    Q_INVOKABLE TodoSorter* sorter() const;
+    Q_INVOKABLE TodoFilter *filter() const;
+    Q_INVOKABLE TodoSorter *sorter() const;
 
     // CRUD操作
     Q_INVOKABLE void addTodo(const QString &title, const QString &description = QString(),
@@ -112,13 +112,15 @@ class TodoManager : public QAbstractListModel {
     Q_INVOKABLE bool removeTodo(int index);
     Q_INVOKABLE bool restoreTodo(int index);
     Q_INVOKABLE bool permanentlyDeleteTodo(int index); // 删除待办事项
+    Q_INVOKABLE void deleteAllTodos(bool deleteLocal); // 删除所有待办事项
     Q_INVOKABLE bool markAsDone(int index);            // 将待办事项标记为已完成
+    Q_INVOKABLE bool updateAllTodosUserUuid();         // 更新所有待办事项的用户UUID
 
     // 网络同步操作
     Q_INVOKABLE void syncWithServer(); // 与服务器同步待办事项数据
 
     // 排序相关
-    Q_INVOKABLE void sortTodos();           // 对待办事项进行排序
+    Q_INVOKABLE void sortTodos(); // 对待办事项进行排序
 
   signals:
     void syncStarted();                                                        // 同步操作开始信号
@@ -131,14 +133,14 @@ class TodoManager : public QAbstractListModel {
     void onTodosUpdatedFromServer(const QJsonArray &todosArray);                     // 处理从服务器更新的待办事项
 
   private:
-    void updateTodosFromServer(const QJsonArray &todosArray);    // 从服务器数据更新待办事项
-    void updateSyncManagerData();                                // 更新同步管理器的待办事项数据
+    void updateTodosFromServer(const QJsonArray &todosArray); // 从服务器数据更新待办事项
+    void updateSyncManagerData();                             // 更新同步管理器的待办事项数据
     QVariant getItemData(const TodoItem *item, int role) const;
 
     // 性能优化相关方法
-    void updateFilterCache();                           // 更新过滤缓存
-    TodoItem *getFilteredItem(int index) const;         // 获取过滤后的项目（带边界检查）
-    void invalidateFilterCache();                       // 使过滤缓存失效
+    void updateFilterCache();                   // 更新过滤缓存
+    TodoItem *getFilteredItem(int index) const; // 获取过滤后的项目（带边界检查）
+    void invalidateFilterCache();               // 使过滤缓存失效
 
     // 成员变量
     std::vector<std::unique_ptr<TodoItem>> m_todos; ///< 待办事项列表（使用智能指针）

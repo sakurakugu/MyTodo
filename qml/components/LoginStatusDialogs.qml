@@ -162,6 +162,14 @@ Item {
         contentSpacing: 10  // 减少内容区域间距
         isDarkMode: loginStatusDialogs.isDarkMode
 
+        // 文本测量组件（用于计算错误消息高度）
+        TextMetrics {
+            id: textMetrics
+            font.pixelSize: 12
+            elide: Text.ElideNone
+            elideWidth: 280  // 与对话框宽度保持一致，减去左右边距
+        }
+
         // 错误消息显示区域
         Label {
             id: errorLabel
@@ -357,9 +365,29 @@ Item {
         * @param message 错误消息文本
         */
         function setErrorMessage(message) {
-            setMaxHeight(280);
             resetLoginState();
             errorMessage = message;
+
+            // 根据消息长度动态计算高度
+            if (message !== "") {
+                // 使用TextMetrics测量文本高度
+                textMetrics.text = message;
+                var textHeight = textMetrics.boundingRect.height;
+
+                // 基础高度：对话框标题栏、表单区域、按钮区域等固定内容的高度
+                var baseHeight = 250;
+
+                // 错误消息区域的额外高度：文本高度 + 上下边距
+                var errorAreaHeight = textHeight + 30; // 20px为上下边距
+
+                // 计算总高度，设置最小高度为280，最大高度为400
+                var totalHeight = Math.max(280, Math.min(400, baseHeight + errorAreaHeight));
+                console.log(totalHeight);
+                setMaxHeight(totalHeight);
+            } else {
+                // 没有错误消息时使用默认高度
+                setMaxHeight(250);
+            }
         }
     }
 
@@ -375,10 +403,12 @@ Item {
         maxDialogHeight: 140
         showStandardButtons: false
         isDarkMode: loginStatusDialogs.isDarkMode
+        contentSpacing: 10 // 缩小整体竖向间距，便于减小复选框到按钮的距离
 
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
+            Layout.margins: 6
         }
 
         Label {
@@ -390,10 +420,52 @@ Item {
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
+            Layout.margins: 6
+        }
+
+        CheckBox {
+            id: deleteAllTodosCheckBox
+            text: qsTr("同时删除所有待办事项")
+            checked: false
+            Layout.alignment: Qt.AlignHCenter
+            Layout.bottomMargin: 0
+            topPadding: 0
+            bottomPadding: 0
+
+            indicator: Rectangle {
+                implicitWidth: 16
+                implicitHeight: 16
+                x: deleteAllTodosCheckBox.leftPadding
+                y: parent.height / 2 - height / 2
+                radius: 2
+                border.color: theme.borderColor
+                border.width: 1
+                color: deleteAllTodosCheckBox.checked ? theme.primaryColor : theme.secondaryBackgroundColor
+
+                Rectangle {
+                    width: 8
+                    height: 8
+                    x: 4
+                    y: 4
+                    radius: 1
+                    color: "white"
+                    visible: deleteAllTodosCheckBox.checked
+                }
+            }
+
+            contentItem: Text {
+                text: deleteAllTodosCheckBox.text
+                font.pixelSize: 12
+                // color: theme.textColor
+                color: "gray" // 灰色
+                verticalAlignment: Text.AlignVCenter
+                leftPadding: deleteAllTodosCheckBox.indicator.width + deleteAllTodosCheckBox.spacing
+            }
         }
 
         RowLayout {
             Layout.alignment: Qt.AlignRight
+            Layout.topMargin: 0    // 减小与上方复选框之间的间距
             spacing: 10
 
             Button {
@@ -422,6 +494,7 @@ Item {
                     logoutConfirmDialog.close();
                     loginStatusDialogs.logoutConfirmed();
                     userAuth.logout();
+                    todoManager.deleteAllTodos(deleteAllTodosCheckBox.checked);
                 }
 
                 background: Rectangle {

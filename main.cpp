@@ -121,6 +121,11 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("todoManager", &todoManager);
     engine.rootContext()->setContextProperty("globalState", &globalState);
 
+    // 连接用户登录成功信号到TodoManager的更新用户UUID函数
+    QObject::connect(&userAuth, &UserAuth::loginSuccessful, &todoManager, [&todoManager](const QString &username) {
+        todoManager.updateAllTodosUserUuid();
+    });
+
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app, []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);

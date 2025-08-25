@@ -604,7 +604,7 @@ Window {
         }
 
         MenuItem {
-            text: todoManager.isLoggedIn ? qsTr("退出登录") : qsTr("登录")
+            text: userAuth.isLoggedIn ? qsTr("退出登录") : qsTr("登录")
             contentItem: Row {
                 spacing: 8
                 Text {
@@ -623,7 +623,7 @@ Window {
                 }
             }
             onTriggered: {
-                if (todoManager.isLoggedIn) {
+                if (userAuth.isLoggedIn) {
                     loginStatusDialogs.showLogoutConfirm();
                 } else {
                     loginStatusDialogs.showLoginDialog();
@@ -719,7 +719,7 @@ Window {
                     scale: 0.7
 
                     onCheckedChanged: {
-                        if (checked && !todoManager.isLoggedIn) {
+                        if (checked && !userAuth.isLoggedIn) {
                             // 如果要开启自动同步但未登录，显示提示并重置开关
                             onlineSwitch.checked = false;
                             topMenu.close(); // 关闭菜单
