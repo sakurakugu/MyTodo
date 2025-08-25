@@ -50,11 +50,11 @@ Dialog {
     title: dialogTitle
     modal: true
     anchors.centerIn: parent
-    
+
     // 动态尺寸设置
     width: autoSize ? Math.max(dialogWidth, Math.min(maxDialogWidth, contentColumn.implicitWidth + contentMargins * 2)) : dialogWidth
     height: autoSize ? Math.max(dialogHeight, Math.min(maxDialogHeight, contentColumn.implicitHeight + contentMargins * 2 + (header ? header.height : 0) + (footer ? footer.height : 0))) : dialogHeight
-    
+
     standardButtons: showStandardButtons ? standardButtonFlags : Dialog.NoButton
 
     // 自定义标题栏以支持主题颜色
@@ -66,7 +66,7 @@ Dialog {
         visible: baseDialog.dialogTitle !== ""
         topLeftRadius: 10                                     ///< 左上角圆角
         topRightRadius: 10                                    ///< 右上角圆角
-        
+
         // 底部分割线
         Rectangle {
             anchors.left: parent.left
@@ -108,13 +108,13 @@ Dialog {
         id: contentColumn
         spacing: baseDialog.contentSpacing
         anchors.margins: baseDialog.contentMargins
-        
+
         // 支持自动尺寸调整
         Layout.fillWidth: true
         Layout.fillHeight: true
         Layout.preferredWidth: implicitWidth
         Layout.preferredHeight: implicitHeight
-        
+
         // 子类可以在这里添加自定义内容
     }
 
@@ -176,7 +176,7 @@ Dialog {
             autoSize = enableAutoSize;
         }
     }
-    
+
     /**
      * @brief 设置对话框标题
      * @param titleText 标题文本
@@ -184,7 +184,7 @@ Dialog {
     function setTitle(titleText) {
         dialogTitle = titleText;
     }
-    
+
     /**
      * @brief 启用或禁用自动尺寸调整
      * @param enable 是否启用自动尺寸调整
@@ -192,7 +192,7 @@ Dialog {
     function setAutoSize(enable) {
         autoSize = enable;
     }
-    
+
     /**
      * @brief 设置最大尺寸限制
      * @param maxWidth 最大宽度

@@ -457,8 +457,8 @@ Item {
                             anchors.fill: parent
                             hoverEnabled: true
                             onClicked: {
-                                 globalState.toggleDropdownVisible();
-                             }
+                                globalState.toggleDropdownVisible();
+                            }
                             onEntered: {
                                 parent.color = theme.borderColor;
                             }
@@ -482,9 +482,9 @@ Item {
                     backgroundColor: theme.backgroundColor
                     isDarkMode: widgetMode.isDarkMode
                     onClicked: {
-                         globalState.toggleDropdownVisible();
-                         todoDetailsDialog.openTodoDetails(todoItemDropdown.currentTodoData, todoItemDropdown.currentTodoIndex);
-                     }
+                        globalState.toggleDropdownVisible();
+                        todoDetailsDialog.openTodoDetails(todoItemDropdown.currentTodoData, todoItemDropdown.currentTodoIndex);
+                    }
                 }
 
                 CustomButton {
@@ -494,9 +494,9 @@ Item {
                     backgroundColor: theme.primaryColor
                     isDarkMode: widgetMode.isDarkMode
                     onClicked: {
-                         todoManager.markAsDone(todoItemDropdown.currentTodoIndex);
-                         globalState.toggleDropdownVisible();
-                     }
+                        todoManager.markAsDone(todoItemDropdown.currentTodoIndex);
+                        globalState.toggleDropdownVisible();
+                    }
                 }
 
                 CustomButton {
@@ -506,9 +506,9 @@ Item {
                     backgroundColor: "#e74c3c"
                     isDarkMode: widgetMode.isDarkMode
                     onClicked: {
-                         todoManager.removeTodo(todoItemDropdown.currentTodoIndex);
-                         globalState.toggleDropdownVisible();
-                     }
+                        todoManager.removeTodo(todoItemDropdown.currentTodoIndex);
+                        globalState.toggleDropdownVisible();
+                    }
                 }
             }
         }

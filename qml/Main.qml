@@ -292,29 +292,29 @@ Window {
                 color: theme.titleBarTextColor
                 font.pixelSize: 14
                 font.bold: true
-                
+
                 // TODO: 新增或删除待办后，这里的文字没有更改（显示的是当前分类下的待办数量）
                 property int todoCount: todoManager.rowCount()
                 property bool isHovered: false
-                
+
                 text: {
                     if (isHovered) {
-                        return todoCount > 0 ? todoCount + "个待办" : "没有待办"
+                        return todoCount > 0 ? todoCount + "个待办" : "没有待办";
                     } else {
-                        return todoCount > 0 ? todoCount + "个待办" : "我的待办"
+                        return todoCount > 0 ? todoCount + "个待办" : "我的待办";
                     }
                 }
-                
+
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: true
-                    
+
                     onEntered: {
-                        parent.isHovered = true
+                        parent.isHovered = true;
                     }
-                    
+
                     onExited: {
-                        parent.isHovered = false
+                        parent.isHovered = false;
                     }
                 }
             }

@@ -46,6 +46,14 @@ else()
     endif()
 endif()
 
+# 添加外部库 toml11
+include(FetchContent)
+FetchContent_Declare(
+    toml11
+    GIT_REPOSITORY https://github.com/ToruNiina/toml11.git
+    GIT_TAG        v4.4.0
+)
+FetchContent_MakeAvailable(toml11)
 
 # Qt6 组件配置
 set(QT_COMPONENTS 
@@ -64,6 +72,7 @@ set(PRIVATE_LIBRARIES
     Qt6::Quick
     Qt6::Network
     Qt6::Concurrent
+    toml11::toml11
 )
 
 # 项目源文件配置

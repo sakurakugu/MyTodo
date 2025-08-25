@@ -45,8 +45,8 @@ Item {
 
         function onLoginSuccessful(username) {
             loginDialog.close();
-            // 因为会发送两次信号，不知道为什么，所以这里注释掉
-            // loginMessageDialog.showMessage(qsTr("欢迎回来，%1！").arg(username));
+        // 因为会发送两次信号，不知道为什么，所以这里注释掉
+        // loginMessageDialog.showMessage(qsTr("欢迎回来，%1！").arg(username));
         }
 
         function onLoginFailed(errorMessage) {

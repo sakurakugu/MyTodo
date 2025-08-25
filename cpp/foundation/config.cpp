@@ -62,13 +62,7 @@ std::expected<QVariant, ConfigError> Config::get(QStringView key, const QVariant
     }
 
     try {
-        QVariant value = m_config->value(key.toString(), defaultValue);
-
-        if (isBooleanKey(key)) {
-            value = processBooleanValue(value);
-        }
-
-        return value;
+        return m_config->value(key.toString(), defaultValue);
     } catch (...) {
         return std::unexpected(ConfigError::InvalidValue);
     }
@@ -170,31 +164,4 @@ std::expected<void, ConfigError> Config::openConfigFilePath() const noexcept {
     } catch (...) {
         return std::unexpected(ConfigError::InvalidValue);
     }
-}
-
-/**
- * @brief 检查键是否为布尔类型
- * @param key 设置键名
- * @return 是否为布尔类型键
- */
-bool Config::isBooleanKey(QStringView key) const noexcept {
-    const auto keyStr = key.toString().toStdString();
-    return std::ranges::any_of(booleanKeys, [&keyStr](const auto &boolKey) { return keyStr == boolKey; });
-}
-
-/**
- * @brief 处理布尔值转换
- * @param value 原始值
- * @return 处理后的布尔值
- */
-QVariant Config::processBooleanValue(const QVariant &value) const noexcept {
-    if (value.typeId() == QMetaType::QString) {
-        const QString strValue = value.toString().toLower();
-        if (strValue == "true" || strValue == "1") {
-            return QVariant(true);
-        } else if (strValue == "false" || strValue == "0") {
-            return QVariant(false);
-        }
-    }
-    return value;
 }

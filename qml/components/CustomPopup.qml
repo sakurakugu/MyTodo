@@ -16,7 +16,7 @@ import QtQuick.Layouts
 
 Popup {
     id: customPopup
-    
+
     // 自定义属性
     property string title: ""
     property color backgroundColor: "white"
@@ -25,32 +25,32 @@ Popup {
     property bool showCloseButton: true
     property int contentMargins: 10
     property alias contentLayout: contentColumn
-    
+
     // 信号
-    signal closeRequested()
-    
+    signal closeRequested
+
     // 默认属性
     modal: false
     focus: true
     closePolicy: Popup.NoAutoClose
-    
+
     // 内容区域
     contentItem: Rectangle {
         color: backgroundColor
         border.color: borderColor
         border.width: 1
         radius: 8
-        
+
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: contentMargins
             spacing: 10
-            
+
             // 标题栏
             RowLayout {
                 Layout.fillWidth: true
                 visible: title !== "" || showCloseButton
-                
+
                 Label {
                     text: title
                     font.bold: true
@@ -58,7 +58,7 @@ Popup {
                     color: titleColor
                     Layout.fillWidth: true
                 }
-                
+
                 Button {
                     text: "✕"
                     flat: true
@@ -66,17 +66,17 @@ Popup {
                     implicitHeight: 24
                     visible: showCloseButton
                     onClicked: {
-                        customPopup.closeRequested()
-                        customPopup.close()
+                        customPopup.closeRequested();
+                        customPopup.close();
                     }
-                    
+
                     background: Rectangle {
                         color: "transparent"
                         radius: 12
                         border.width: parent.hovered ? 1 : 0
                         border.color: titleColor
                     }
-                    
+
                     contentItem: Text {
                         text: parent.text
                         color: titleColor
@@ -86,7 +86,7 @@ Popup {
                     }
                 }
             }
-            
+
             // 分割线
             Rectangle {
                 Layout.fillWidth: true
@@ -94,7 +94,7 @@ Popup {
                 color: borderColor
                 visible: title !== ""
             }
-            
+
             // 内容区域
             ColumnLayout {
                 id: contentColumn
@@ -104,7 +104,7 @@ Popup {
             }
         }
     }
-    
+
     // 添加进入和退出动画
     enter: Transition {
         NumberAnimation {
@@ -122,7 +122,7 @@ Popup {
             easing.type: Easing.OutQuad
         }
     }
-    
+
     exit: Transition {
         NumberAnimation {
             property: "opacity"

@@ -22,18 +22,18 @@ import QtQuick.Layouts
  */
 BaseDialog {
     id: confirmDialog
-    
+
     // 公共属性
     property string message: ""                    ///< 对话框显示的消息内容
     property string yesButtonText: qsTr("确定")     ///< 确认按钮文本
     property string noButtonText: qsTr("取消")      ///< 取消按钮文本
-    
+
     // 对话框设置
     dialogTitle: qsTr("确认")
     dialogWidth: Math.max(300, messageLabel.implicitWidth + 80)
     dialogHeight: Math.max(150, contentLayout.implicitHeight + 100)
     showStandardButtons: false
-    
+
     // 消息文本
     Label {
         id: messageLabel
@@ -44,26 +44,24 @@ BaseDialog {
         Layout.preferredWidth: 220
         horizontalAlignment: Text.AlignHCenter
     }
-    
+
     // 按钮区域
     RowLayout {
         Layout.alignment: Qt.AlignRight
         spacing: 10
-        
+
         // 取消按钮
         Button {
             text: confirmDialog.noButtonText
             onClicked: confirmDialog.reject()
-            
+
             background: Rectangle {
-                color: parent.pressed ? theme.pressedColor : 
-                       parent.hovered ? theme.hoverColor : 
-                       theme.secondaryBackgroundColor
+                color: parent.pressed ? theme.pressedColor : parent.hovered ? theme.hoverColor : theme.secondaryBackgroundColor
                 border.color: theme.borderColor
                 border.width: 1
                 radius: 4
             }
-            
+
             contentItem: Text {
                 text: parent.text
                 color: theme.textColor
@@ -72,21 +70,19 @@ BaseDialog {
                 font.pixelSize: 14
             }
         }
-        
+
         // 确认按钮
         Button {
             text: confirmDialog.yesButtonText
             onClicked: confirmDialog.accept()
-            
+
             background: Rectangle {
-                color: parent.pressed ? theme.pressedColor : 
-                       parent.hovered ? theme.primaryColorLight : 
-                       theme.primaryColor
+                color: parent.pressed ? theme.pressedColor : parent.hovered ? theme.primaryColorLight : theme.primaryColor
                 border.color: theme.borderColor
                 border.width: 1
                 radius: 4
             }
-            
+
             contentItem: Text {
                 text: parent.text
                 color: "white"
@@ -96,7 +92,7 @@ BaseDialog {
             }
         }
     }
-    
+
     /**
      * @brief 打开确认对话框
      * @param msg 要显示的消息
@@ -105,8 +101,10 @@ BaseDialog {
      */
     function openConfirm(msg, yesText, noText) {
         message = msg || "";
-        if (yesText) yesButtonText = yesText;
-        if (noText) noButtonText = noText;
+        if (yesText)
+            yesButtonText = yesText;
+        if (noText)
+            noButtonText = noText;
         open();
     }
 }

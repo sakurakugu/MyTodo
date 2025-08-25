@@ -22,7 +22,7 @@ import QtQuick.Layouts
  */
 BaseDialog {
     id: messageDialog
-    
+
     // 消息类型枚举
     enum MessageType {
         Info,       ///< 信息
@@ -30,57 +30,57 @@ BaseDialog {
         Warning,    ///< 警告
         Error       ///< 错误
     }
-    
+
     // 公共属性
     property string message: ""                           ///< 消息内容
     property int messageType: MessageDialog.MessageType.Info  ///< 消息类型
     property string buttonText: qsTr("确定")              ///< 按钮文本
     property bool autoClose: false                        ///< 是否自动关闭
     property int autoCloseDelay: 3000                     ///< 自动关闭延迟（毫秒）
-    
+
     // 对话框设置
     dialogWidth: Math.max(300, messageLabel.implicitWidth + iconText.implicitWidth + 100)
     dialogHeight: Math.max(150, contentLayout.implicitHeight + 100)
     showStandardButtons: false
-    
+
     // 根据消息类型设置标题
     dialogTitle: {
         switch (messageType) {
-            case MessageDialog.MessageType.Success:
-                return qsTr("成功");
-            case MessageDialog.MessageType.Warning:
-                return qsTr("警告");
-            case MessageDialog.MessageType.Error:
-                return qsTr("错误");
-            default:
-                return qsTr("提示");
+        case MessageDialog.MessageType.Success:
+            return qsTr("成功");
+        case MessageDialog.MessageType.Warning:
+            return qsTr("警告");
+        case MessageDialog.MessageType.Error:
+            return qsTr("错误");
+        default:
+            return qsTr("提示");
         }
     }
-    
+
     // 图标和消息区域
     RowLayout {
         Layout.fillWidth: true
         spacing: 15
-        
+
         // 消息类型图标
         Text {
             id: iconText
             text: {
                 switch (messageDialog.messageType) {
-                    case MessageDialog.MessageType.Success:
-                        return "✅";
-                    case MessageDialog.MessageType.Warning:
-                        return "⚠️";
-                    case MessageDialog.MessageType.Error:
-                        return "❌";
-                    default:
-                        return "ℹ️";
+                case MessageDialog.MessageType.Success:
+                    return "✅";
+                case MessageDialog.MessageType.Warning:
+                    return "⚠️";
+                case MessageDialog.MessageType.Error:
+                    return "❌";
+                default:
+                    return "ℹ️";
                 }
             }
             font.pixelSize: 24
             Layout.alignment: Qt.AlignTop
         }
-        
+
         // 消息文本
         Label {
             id: messageLabel
@@ -92,60 +92,60 @@ BaseDialog {
             verticalAlignment: Text.AlignVCenter
         }
     }
-        
-        // 按钮区域
-        RowLayout {
-            Layout.alignment: Qt.AlignRight
-            
-            Button {
-                text: messageDialog.buttonText
-                onClicked: messageDialog.close()
-                
-                background: Rectangle {
-                    color: {
-                        if (parent.pressed) return theme.pressedColor;
-                        if (parent.hovered) {
-                            // 根据消息类型设置悬停颜色
-                            switch (messageDialog.messageType) {
-                                case MessageDialog.MessageType.Success:
-                                    return "#66BB6A";  // 浅绿色
-                                case MessageDialog.MessageType.Warning:
-                                    return "#FFB74D";  // 浅橙色
-                                case MessageDialog.MessageType.Error:
-                                    return "#EF5350";  // 浅红色
-                                default:
-                                    return theme.primaryColorLight;
-                            }
-                        }
-                        
-                        // 根据消息类型设置按钮颜色
+
+    // 按钮区域
+    RowLayout {
+        Layout.alignment: Qt.AlignRight
+
+        Button {
+            text: messageDialog.buttonText
+            onClicked: messageDialog.close()
+
+            background: Rectangle {
+                color: {
+                    if (parent.pressed)
+                        return theme.pressedColor;
+                    if (parent.hovered) {
+                        // 根据消息类型设置悬停颜色
                         switch (messageDialog.messageType) {
-                            case MessageDialog.MessageType.Success:
-                                return "#4CAF50";  // 绿色
-                            case MessageDialog.MessageType.Warning:
-                                return "#FF9800";  // 橙色
-                            case MessageDialog.MessageType.Error:
-                                return "#F44336";  // 红色
-                            default:
-                                return theme.primaryColor;
+                        case MessageDialog.MessageType.Success:
+                            return "#66BB6A";  // 浅绿色
+                        case MessageDialog.MessageType.Warning:
+                            return "#FFB74D";  // 浅橙色
+                        case MessageDialog.MessageType.Error:
+                            return "#EF5350";  // 浅红色
+                        default:
+                            return theme.primaryColorLight;
                         }
                     }
-                    border.color: theme.borderColor
-                    border.width: 1
-                    radius: 4
+
+                    // 根据消息类型设置按钮颜色
+                    switch (messageDialog.messageType) {
+                    case MessageDialog.MessageType.Success:
+                        return "#4CAF50";  // 绿色
+                    case MessageDialog.MessageType.Warning:
+                        return "#FF9800";  // 橙色
+                    case MessageDialog.MessageType.Error:
+                        return "#F44336";  // 红色
+                    default:
+                        return theme.primaryColor;
+                    }
                 }
-                
-                contentItem: Text {
-                    text: parent.text
-                    color: "white"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    font.pixelSize: 14
-                }
+                border.color: theme.borderColor
+                border.width: 1
+                radius: 4
+            }
+
+            contentItem: Text {
+                text: parent.text
+                color: "white"
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                font.pixelSize: 14
             }
         }
-    
-    
+    }
+
     // 自动关闭定时器
     Timer {
         id: autoCloseTimer
@@ -154,19 +154,19 @@ BaseDialog {
         repeat: false
         onTriggered: messageDialog.close()
     }
-    
+
     // 对话框打开时的处理
     onOpened: {
         if (autoClose) {
             autoCloseTimer.start();
         }
     }
-    
+
     // 对话框关闭时的处理
     onClosed: {
         autoCloseTimer.stop();
     }
-    
+
     /**
      * @brief 显示信息消息
      * @param msg 消息内容
@@ -180,7 +180,7 @@ BaseDialog {
         autoClose = autoCloseEnabled || false;
         open();
     }
-    
+
     /**
      * @brief 显示成功消息
      * @param msg 消息内容
@@ -194,7 +194,7 @@ BaseDialog {
         autoClose = autoCloseEnabled || false;
         open();
     }
-    
+
     /**
      * @brief 显示警告消息
      * @param msg 消息内容
@@ -208,7 +208,7 @@ BaseDialog {
         autoClose = autoCloseEnabled || false;
         open();
     }
-    
+
     /**
      * @brief 显示错误消息
      * @param msg 消息内容

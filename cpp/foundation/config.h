@@ -58,7 +58,6 @@ class Config : public QObject {
     ~Config() noexcept override;
 
     std::unique_ptr<QSettings> m_config;
-    static constexpr auto booleanKeys = DefaultValues::booleanKeys;
 
     // 辅助方法
     bool isBooleanKey(QStringView key) const noexcept;

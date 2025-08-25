@@ -100,8 +100,6 @@ int main(int argc, char *argv[]) {
     UserAuth &userAuth = UserAuth::GetInstance();     // 获取UserAuth实例
     TodoSyncServer todoSyncServer;                    // 创建TodoSyncServer实例
     CategoryManager categoryManager(&todoSyncServer); // 创建CategoryManager实例
-    TodoFilter todoFilter;                            // 创建TodoFilter实例
-    TodoSorter todoSorter;                            // 创建TodoSorter实例
     TodoManager todoManager;                          // 创建TodoManager实例
     GlobalState globalState;                          // 创建GlobalState实例
 
@@ -118,8 +116,8 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("setting", &setting);
     engine.rootContext()->setContextProperty("userAuth", &userAuth);
     engine.rootContext()->setContextProperty("categoryManager", &categoryManager);
-    engine.rootContext()->setContextProperty("todoFilter", &todoFilter);
-    engine.rootContext()->setContextProperty("todoSorter", &todoSorter);
+    engine.rootContext()->setContextProperty("todoFilter", todoManager.filter());
+    engine.rootContext()->setContextProperty("todoSorter", todoManager.sorter());
     engine.rootContext()->setContextProperty("todoManager", &todoManager);
     engine.rootContext()->setContextProperty("globalState", &globalState);
 

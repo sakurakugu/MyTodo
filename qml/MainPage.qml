@@ -144,7 +144,6 @@ Page {
                             Layout.preferredWidth: 120
                             Layout.preferredHeight: 36
                             model: ["按创建时间", "按截止日期", "按重要性", "按标题"]
-                            currentIndex: todoSorter.sortType
 
                             background: Rectangle {
                                 color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
@@ -163,7 +162,7 @@ Page {
                             }
 
                             onCurrentIndexChanged: {
-                                todoSorter.setSortType(currentIndex);
+                                    todoSorter.setSortType(currentIndex);
                             }
                         }
 
@@ -174,9 +173,8 @@ Page {
                             Layout.preferredHeight: 36
                             text: "倒序排列"
                             font.pixelSize: 12
-                            checked: todoSorter.descending
                             onCheckedChanged: {
-                                todoSorter.setDescending(checked);
+                                    todoSorter.setDescending(checked);
                             }
                         }
 
