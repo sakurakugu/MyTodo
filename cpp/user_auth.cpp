@@ -135,6 +135,7 @@ bool UserAuth::isOnline() const {
  * @param online 新的在线状态
  */
 void UserAuth::setIsOnline(bool online) {
+    // TODO： 这个函数好像没什么用，以前是自动同步，现在是否在线好像和是否登录冲突了
     // 如果已经是目标状态，则不做任何操作
     if (m_isOnline == online) {
         return;
@@ -156,13 +157,13 @@ void UserAuth::setIsOnline(bool online) {
         m_isOnline = online;
         emit isOnlineChanged();
         // 保存到设置，保持与autoSync一致
-        m_setting.save(QStringLiteral("setting/autoSync"), m_isOnline);
+        // m_setting.save(QStringLiteral("sync/autoSyncEnabled"), m_isOnline);
     } else {
         // 切换到离线模式不需要验证，直接更新状态
         m_isOnline = online;
         emit isOnlineChanged();
         // 保存到设置，保持与autoSync一致
-        m_setting.save(QStringLiteral("setting/autoSync"), m_isOnline);
+        // m_setting.save(QStringLiteral("sync/autoSyncEnabled"), m_isOnline);
     }
 }
 

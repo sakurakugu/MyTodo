@@ -445,9 +445,7 @@ void NetworkRequest::setupDefaultHeaders(QNetworkRequest &request) const {
     // TODO: 应用名 / 版本 (平台)
     request.setRawHeader("User-Agent", "MyTodoApp/1.0 (Qt)");
     request.setRawHeader("Accept", "application/json");
-    // TODO: 干脆删掉还是伪造成一个浏览器来源?
-    // 一般来说，对于客户端/移动端是不用加的，到时候如果有网页版，要不要添加？到时候c++的后端会不会改？
-    request.setRawHeader("Origin", "https://example.com");
+    request.setRawHeader("Origin", "app://MyTodoApp(Windows)");
 }
 
 void NetworkRequest::addAuthHeader(QNetworkRequest &request) const {

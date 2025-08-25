@@ -185,7 +185,7 @@ Page {
             Switch {
                 id: autoSyncSwitch
                 text: !todoManager.isLoggedIn ? qsTr("自动同步（未登录）") : qsTr("自动同步")
-                checked: setting.get("setting/autoSync", false)
+                checked: todoSyncServer.isAutoSyncEnabled
 
                 property bool isInitialized: false
 
@@ -203,7 +203,7 @@ Page {
                         autoSyncSwitch.checked = false;
                         loginStatusDialogs.showLoginRequired();
                     } else {
-                        setting.save("setting/autoSync", checked);
+                        todoSyncServer.setAutoSyncEnabled(checked);
                     }
                 }
             }

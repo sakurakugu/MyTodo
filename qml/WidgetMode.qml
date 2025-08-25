@@ -107,7 +107,7 @@ Item {
                 Switch {
                     id: autoSyncSwitch
                     text: "自动同步"
-                    checked: setting.get("setting/autoSync", false)
+                    checked: todoSyncServer.isAutoSyncEnabled
 
                     property bool isInitialized: false
 
@@ -125,7 +125,7 @@ Item {
                             autoSyncSwitch.checked = false;
                             loginStatusDialogs.showLoginRequired();
                         } else {
-                            setting.save("setting/autoSync", checked);
+                            todoSyncServer.setAutoSyncEnabled(checked);
                         }
                     }
                 }

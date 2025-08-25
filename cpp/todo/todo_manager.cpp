@@ -67,6 +67,17 @@ TodoManager::TodoManager(QObject *parent)
     connect(m_syncManager, &TodoSyncServer::syncCompleted, this, &TodoManager::onSyncCompleted);
     connect(m_syncManager, &TodoSyncServer::todosUpdatedFromServer, this, &TodoManager::onTodosUpdatedFromServer);
 
+    // 连接用户认证信号，登录成功后触发同步
+    connect(&UserAuth::GetInstance(), &UserAuth::loginSuccessful, this, [this](const QString &username) {
+        Q_UNUSED(username)
+        if (m_isAutoSync) {
+            // 登录成功后立即同步
+            syncWithServer();
+            // 获取类别列表
+            m_categoryManager->fetchCategories();
+        }
+    });
+
     // 创建待办事项类别管理器
     m_categoryManager = new CategoryManager(m_syncManager, this);
     connect(m_categoryManager, &CategoryManager::categoryOperationCompleted, this,
@@ -76,7 +87,7 @@ TodoManager::TodoManager(QObject *parent)
     m_dataManager->loadFromLocalStorage(m_todos);
 
     // 初始化在线状态
-    m_isAutoSync = m_setting.get(QStringLiteral("autoSync"), false).toBool();
+    m_isAutoSync = m_setting.get(QStringLiteral("sync/autoSyncEnabled"), false).toBool();
     m_syncManager->setAutoSyncEnabled(m_isAutoSync);
 
     // 设置待办事项数据到同步管理器

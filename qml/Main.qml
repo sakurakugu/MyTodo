@@ -715,7 +715,7 @@ Window {
                 Switch {
                     id: onlineSwitch
                     leftPadding: 0
-                    checked: setting.get("setting/autoSync", false)
+                    checked: todoSyncServer.isAutoSyncEnabled
                     scale: 0.7
 
                     onCheckedChanged: {
@@ -725,7 +725,7 @@ Window {
                             topMenu.close(); // 关闭菜单
                             loginStatusDialogs.showLoginRequired();
                         } else {
-                            setting.save("setting/autoSync", checked);
+                            todoSyncServer.setAutoSyncEnabled(checked);
                         }
                     }
                 }

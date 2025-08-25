@@ -146,7 +146,7 @@ void CategoryManager::fetchCategories() {
     config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
     config.data = requestData;
     config.requiresAuth = true;
-    config.headers["Authorization"] = "Bearer " + m_userAuth.getAccessToken();
+    // 移除重复的Authorization头设置，由addAuthHeader方法统一处理
 
     m_networkRequest.sendRequest(NetworkRequest::FetchCategories, config);
 }
@@ -184,7 +184,7 @@ void CategoryManager::createCategory(const QString &name) {
     config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
     config.data = requestData;
     config.requiresAuth = true;
-    config.headers["Authorization"] = "Bearer " + m_userAuth.getAccessToken();
+    // 移除重复的Authorization头设置，由addAuthHeader方法统一处理
 
     m_networkRequest.sendRequest(NetworkRequest::CreateCategory, config);
 }
@@ -223,7 +223,7 @@ void CategoryManager::updateCategory(int id, const QString &name) {
     config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
     config.data = requestData;
     config.requiresAuth = true;
-    config.headers["Authorization"] = "Bearer " + m_userAuth.getAccessToken();
+    // 移除重复的Authorization头设置，由addAuthHeader方法统一处理
 
     m_networkRequest.sendRequest(NetworkRequest::UpdateCategory, config);
 }
@@ -256,7 +256,7 @@ void CategoryManager::deleteCategory(int id) {
     config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
     config.data = requestData;
     config.requiresAuth = true;
-    config.headers["Authorization"] = "Bearer " + m_userAuth.getAccessToken();
+    // 移除重复的Authorization头设置，由addAuthHeader方法统一处理
 
     m_networkRequest.sendRequest(NetworkRequest::DeleteCategory, config);
 }

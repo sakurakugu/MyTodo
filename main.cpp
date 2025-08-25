@@ -115,6 +115,7 @@ int main(int argc, char *argv[]) {
     // 将类注册到QML上下文
     engine.rootContext()->setContextProperty("setting", &setting);
     engine.rootContext()->setContextProperty("userAuth", &userAuth);
+    engine.rootContext()->setContextProperty("todoSyncServer", &todoSyncServer);
     engine.rootContext()->setContextProperty("categoryManager", &categoryManager);
     engine.rootContext()->setContextProperty("todoFilter", todoManager.filter());
     engine.rootContext()->setContextProperty("todoSorter", todoManager.sorter());
