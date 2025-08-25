@@ -44,7 +44,7 @@ class TodoItem : public QObject {
     Q_OBJECT
     Q_PROPERTY(int id READ id WRITE setId NOTIFY idChanged)
     Q_PROPERTY(QUuid uuid READ uuid WRITE setUuid NOTIFY uuidChanged)
-    Q_PROPERTY(int userId READ userId WRITE setUserId NOTIFY userIdChanged)
+    Q_PROPERTY(QUuid userUuid READ userUuid WRITE setUserUuid NOTIFY userUuidChanged)
     Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)
     Q_PROPERTY(QString description READ description WRITE setDescription NOTIFY descriptionChanged)
     Q_PROPERTY(QString category READ category WRITE setCategory NOTIFY categoryChanged)
@@ -68,7 +68,7 @@ class TodoItem : public QObject {
     explicit TodoItem(QObject *parent = nullptr);
     TodoItem(int id,                           ///< 待办事项唯一标识符
              const QUuid &uuid,                ///< 唯一标识符
-             int userId,                       ///< 用户ID
+             const QUuid &userUuid,            ///< 用户UUID
              const QString &title,             ///< 待办事项标题
              const QString &description,       ///< 待办事项详细描述
              const QString &category,          ///< 待办事项分类
@@ -93,8 +93,8 @@ class TodoItem : public QObject {
     QUuid uuid() const noexcept { return m_uuid; } // 获取UUID
     void setUuid(const QUuid &uuid);               // 设置UUID
 
-    int userId() const noexcept { return m_userId; } // 获取用户ID
-    void setUserId(int userId);                      // 设置用户ID
+    QUuid userUuid() const noexcept { return m_userUuid; } // 获取用户UUID
+    void setUserUuid(const QUuid &userUuid);               // 设置用户UUID
 
     QString title() const noexcept { return m_title; } // 获取标题
     void setTitle(const QString &title);               // 设置标题
@@ -158,7 +158,7 @@ class TodoItem : public QObject {
   signals:
     void idChanged();                  ///< ID改变信号
     void uuidChanged();                ///< UUID改变信号
-    void userIdChanged();              ///< 用户ID改变信号
+    void userUuidChanged();            ///< 用户UUID改变信号
     void titleChanged();               ///< 标题改变信号
     void descriptionChanged();         ///< 描述改变信号
     void categoryChanged();            ///< 分类改变信号
@@ -195,7 +195,7 @@ class TodoItem : public QObject {
     // 成员变量
     int m_id;                    // 任务ID
     QUuid m_uuid;                // 任务UUID
-    int m_userId;                // 用户ID
+    QUuid m_userUuid;            // 用户UUID
     QString m_title;             // 任务标题
     QString m_description;       // 任务描述
     QString m_category;          // 任务分类

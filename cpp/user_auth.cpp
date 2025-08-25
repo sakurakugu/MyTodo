@@ -83,6 +83,7 @@ void UserAuth::logout() {
     // 发出信号
     emit usernameChanged();
     emit emailChanged();
+    emit uuidChanged();
     emit isLoggedInChanged();
     emit logoutSuccessful();
 
@@ -99,6 +100,10 @@ QString UserAuth::getUsername() const {
 
 QString UserAuth::getEmail() const {
     return m_email;
+}
+
+QUuid UserAuth::getUuid() const {
+    return m_uuid;
 }
 
 QString UserAuth::getAccessToken() const {
@@ -221,6 +226,7 @@ void UserAuth::onAuthTokenExpired() {
     clearCredentials();
     emit usernameChanged();
     emit emailChanged();
+    emit uuidChanged();
     emit isLoggedInChanged();
     emit loginRequired();
 }
@@ -239,6 +245,7 @@ void UserAuth::handleLoginSuccess(const QJsonObject &response) {
     QJsonObject userObj = response["user"].toObject();
     m_username = userObj["username"].toString();
     m_email = userObj.value("email").toString();
+    m_uuid = QUuid::fromString(userObj.value("uuid").toString());
 
     // 设置网络管理器的认证令牌
     m_networkRequest.setAuthToken(m_accessToken);
@@ -251,6 +258,7 @@ void UserAuth::handleLoginSuccess(const QJsonObject &response) {
     // 发出信号
     emit usernameChanged();
     emit emailChanged();
+    emit uuidChanged();
     emit isLoggedInChanged();
     emit loginSuccessful(m_username);
 }
@@ -262,6 +270,7 @@ void UserAuth::loadStoredCredentials() {
         m_refreshToken = m_setting.get(QStringLiteral("user/refreshToken")).toString();
         m_username = m_setting.get(QStringLiteral("user/username")).toString();
         m_email = m_setting.get(QStringLiteral("user/email")).toString();
+        m_uuid = QUuid::fromString(m_setting.get(QStringLiteral("user/uuid")).toString());
 
         // 设置网络管理器的认证令牌
         if (!m_accessToken.isEmpty()) {
@@ -278,6 +287,7 @@ void UserAuth::saveCredentials() {
         m_setting.save(QStringLiteral("user/refreshToken"), m_refreshToken);
         m_setting.save(QStringLiteral("user/username"), m_username);
         m_setting.save(QStringLiteral("user/email"), m_email);
+        m_setting.save(QStringLiteral("user/uuid"), m_uuid);
     }
 }
 
@@ -287,12 +297,14 @@ void UserAuth::clearCredentials() {
     m_refreshToken.clear();
     m_username.clear();
     m_email.clear();
+    m_uuid = QUuid();
 
     // 清除设置中的凭据
     m_setting.remove(QStringLiteral("user/accessToken"));
     m_setting.remove(QStringLiteral("user/refreshToken"));
     m_setting.remove(QStringLiteral("user/username"));
     m_setting.remove(QStringLiteral("user/email"));
+    m_setting.remove(QStringLiteral("user/uuid"));
 
     // 清除网络管理器的认证令牌
     m_networkRequest.setAuthToken("");

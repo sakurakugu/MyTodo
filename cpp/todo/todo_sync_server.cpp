@@ -376,7 +376,7 @@ void TodoSyncServer::pushLocalChangesToServer() {
             QJsonObject obj;
             obj["id"] = item->id();
             obj["uuid"] = item->uuid().toString();
-            obj["user_id"] = item->userId();
+            obj["user_uuid"] = item->userUuid().toString();
             obj["title"] = item->title();
             obj["description"] = item->description();
             obj["category"] = item->category();

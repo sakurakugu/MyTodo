@@ -78,18 +78,18 @@ set(ITEM_SOURCES
 
 set(CORE_SOURCES
     # 核心数据模型
-    cpp/todo_manager.cpp
-    cpp/todo_manager.h
-    cpp/todo_sync_server.cpp
-    cpp/todo_sync_server.h
-    cpp/todo_data_storage.cpp
-    cpp/todo_data_storage.h
-    cpp/category_manager.cpp
-    cpp/category_manager.h
-    cpp/todo_sorter.cpp
-    cpp/todo_sorter.h
-    cpp/todo_filter.cpp
-    cpp/todo_filter.h
+    cpp/todo/todo_manager.cpp
+    cpp/todo/todo_manager.h
+    cpp/todo/todo_sync_server.cpp
+    cpp/todo/todo_sync_server.h
+    cpp/todo/todo_data_storage.cpp
+    cpp/todo/todo_data_storage.h
+    cpp/todo/category_manager.cpp
+    cpp/todo/category_manager.h
+    cpp/todo/todo_sorter.cpp
+    cpp/todo/todo_sorter.h
+    cpp/todo/todo_filter.cpp
+    cpp/todo/todo_filter.h
 )
 
 set(NETWORK_SOURCES

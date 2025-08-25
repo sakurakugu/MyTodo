@@ -58,7 +58,7 @@ bool TodoDataStorage::loadFromLocalStorage(std::vector<std::unique_ptr<TodoItem>
             auto item = std::make_unique<TodoItem>(
                 m_setting.get(prefix + "id").toInt(),                                              // id
                 QUuid::fromString(m_setting.get(prefix + "uuid").toString()),                      // uuid
-                m_setting.get(prefix + "userId", 0).toInt(),                                       // userId
+                QUuid::fromString(m_setting.get(prefix + "userUuid").toString()),                  // userUuid
                 m_setting.get(prefix + "title").toString(),                                        // title
                 m_setting.get(prefix + "description").toString(),                                  // description
                 m_setting.get(prefix + "category").toString(),                                     // category
@@ -117,7 +117,7 @@ bool TodoDataStorage::saveToLocalStorage(const std::vector<std::unique_ptr<TodoI
 
             m_setting.save(prefix + "id", item->id());
             m_setting.save(prefix + "uuid", item->uuid());
-            m_setting.save(prefix + "userId", item->userId());
+            m_setting.save(prefix + "userUuid", item->userUuid());
             m_setting.save(prefix + "title", item->title());
             m_setting.save(prefix + "description", item->description());
             m_setting.save(prefix + "category", item->category());
@@ -677,7 +677,7 @@ std::unique_ptr<TodoItem> TodoDataStorage::createTodoFromJson(const QJsonObject 
     return std::make_unique<TodoItem>(
         jsonObject["id"].toInt(),                                                       // id
         QUuid::fromString(jsonObject["uuid"].toString()),                               // uuid
-        jsonObject["userId"].toInt(0),                                                  // userId
+        QUuid::fromString(jsonObject["userUuid"].toString()),                           // userUuid
         jsonObject["title"].toString(),                                                 // title
         jsonObject["description"].toString(),                                           // description
         jsonObject["category"].toString(),                                              // category
@@ -706,7 +706,7 @@ QJsonObject TodoDataStorage::todoToJson(const TodoItem *todo) {
     QJsonObject todoObj;
     todoObj["id"] = todo->id();
     todoObj["uuid"] = todo->uuid().toString();
-    todoObj["userId"] = todo->userId();
+    todoObj["userUuid"] = todo->userUuid().toString();
     todoObj["title"] = todo->title();
     todoObj["description"] = todo->description();
     todoObj["category"] = todo->category();

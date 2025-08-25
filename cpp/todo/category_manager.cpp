@@ -17,7 +17,8 @@
 #include <algorithm>
 
 CategoryManager::CategoryManager(TodoSyncServer *syncManager, QObject *parent)
-    : QObject(parent), m_networkRequest(NetworkRequest::GetInstance()), m_syncManager(syncManager) {
+    : QObject(parent), m_networkRequest(NetworkRequest::GetInstance()), m_syncManager(syncManager),
+      m_userAuth(UserAuth::GetInstance()) {
 
     // 连接网络请求信号
     connect(&m_networkRequest, &NetworkRequest::requestCompleted, this, &CategoryManager::onNetworkRequestCompleted);
@@ -28,7 +29,6 @@ CategoryManager::CategoryManager(TodoSyncServer *syncManager, QObject *parent)
 }
 
 CategoryManager::~CategoryManager() {
-    // 智能指针会自动清理内存
 }
 
 /**
@@ -86,7 +86,7 @@ void CategoryManager::addDefaultCategories() {
     m_categories << "全部";
 
     // 添加默认的"未分类"选项
-    auto defaultCategory = std::make_unique<CategorieItem>(0, "未分类", 0, true, QDateTime::currentDateTime(), true);
+    auto defaultCategory = std::make_unique<CategorieItem>(1, "未分类", m_userAuth.getUuid(), true, QDateTime::currentDateTime(), false);
     m_categoryItems.push_back(std::move(defaultCategory));
     m_categories << "未分类";
 
@@ -264,7 +264,7 @@ void CategoryManager::onNetworkRequestCompleted(NetworkRequest::RequestType type
  */
 void CategoryManager::onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
                                              const QString &message) {
-    QString errorMessage = QString("网络请求失败: %1").arg(message);
+    QString errorMessage = QString("网络请求失败: %1, 错误类型: %2").arg(message).arg(error);
 
     switch (type) {
     case NetworkRequest::FetchCategories:
@@ -341,13 +341,13 @@ void CategoryManager::updateCategoriesFromJson(const QJsonArray &categoriesArray
 
         int id = categoryObj["id"].toInt();
         QString name = categoryObj["name"].toString();
-        int userId = categoryObj["user_id"].toInt();
+        QString userUuid = categoryObj["user_uuid"].toString();
         bool isDefault = categoryObj["is_default"].toBool();
         QString createdAtStr = categoryObj["created_at"].toString();
         QDateTime createdAt = QDateTime::fromString(createdAtStr, Qt::ISODate);
 
         if (!name.isEmpty()) {
-            auto categoryItem = std::make_unique<CategorieItem>(id, name, userId, isDefault, createdAt, true);
+            auto categoryItem = std::make_unique<CategorieItem>(id, name, QUuid::fromString(userUuid), isDefault, createdAt, true);
             m_categoryItems.push_back(std::move(categoryItem));
             m_categories << name;
         }
@@ -356,7 +356,7 @@ void CategoryManager::updateCategoriesFromJson(const QJsonArray &categoriesArray
     // 添加默认的"未分类"选项（如果不存在）
     if (!m_categories.contains("未分类")) {
         auto defaultCategory =
-            std::make_unique<CategorieItem>(0, "未分类", 0, true, QDateTime::currentDateTime(), true);
+            std::make_unique<CategorieItem>(0, "未分类", QUuid(), true, QDateTime::currentDateTime(), true);
         m_categoryItems.push_back(std::move(defaultCategory));
         m_categories << "未分类";
     }

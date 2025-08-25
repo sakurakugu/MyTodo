@@ -24,9 +24,9 @@
 
 #include "category_manager.h"
 #include "foundation/network_request.h"
-#include "user_auth.h"
 #include "todo_filter.h"
 #include "todo_sorter.h"
+#include "user_auth.h"
 
 TodoManager::TodoManager(QObject *parent)
     : QAbstractListModel(parent), m_filterCacheDirty(true), m_networkRequest(NetworkRequest::GetInstance()),
@@ -37,17 +37,17 @@ TodoManager::TodoManager(QObject *parent)
 
     // 初始化筛选管理器
     m_filter = new TodoFilter(this);
-    
+
     // 初始化排序管理器
     m_sorter = new TodoSorter(this);
-    
+
     // 连接筛选器信号，当筛选条件变化时更新缓存
     connect(m_filter, &TodoFilter::filtersChanged, this, [this]() {
         beginResetModel();
         invalidateFilterCache();
         endResetModel();
     });
-    
+
     // 连接排序器信号，当排序类型变化时重新排序
     connect(m_sorter, &TodoSorter::sortTypeChanged, this, &TodoManager::sortTodos);
 
@@ -153,8 +153,8 @@ QVariant TodoManager::getItemData(const TodoItem *item, int role) const {
         return item->id();
     case UuidRole:
         return item->uuid();
-    case UserIdRole:
-        return item->userId();
+    case UserUuidRole:
+        return item->userUuid();
     case TitleRole:
         return item->title();
     case DescriptionRole:
@@ -200,7 +200,7 @@ QHash<int, QByteArray> TodoManager::roleNames() const {
     QHash<int, QByteArray> roles;
     roles[IdRole] = "id";
     roles[UuidRole] = "uuid";
-    roles[UserIdRole] = "userId";
+    roles[UserUuidRole] = "userUuid";
     roles[TitleRole] = "title";
     roles[DescriptionRole] = "description";
     roles[CategoryRole] = "category";
@@ -284,14 +284,12 @@ void TodoManager::updateFilterCache() {
     }
 
     m_filteredTodos.clear();
-    
+
     // 使用新的筛选器进行筛选
     m_filteredTodos = m_filter->filterTodos(m_todos);
 
     m_filterCacheDirty = false;
 }
-
-
 
 TodoItem *TodoManager::getFilteredItem(int index) const {
     const_cast<TodoManager *>(this)->updateFilterCache();
@@ -307,8 +305,6 @@ void TodoManager::invalidateFilterCache() {
     m_filterCacheDirty = true;
 }
 
-
-
 /**
  * @brief 添加新的待办事项
  * @param title 任务标题（必填）
@@ -317,12 +313,12 @@ void TodoManager::invalidateFilterCache() {
  * @param important 重要程度（默认为"medium"）
  */
 void TodoManager::addTodo(const QString &title, const QString &description, const QString &category, bool important,
-                        const QString &deadline) {
+                          const QString &deadline) {
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
 
     auto newItem = std::make_unique<TodoItem>(0,                                            // id (auto-generated)
                                               QUuid::createUuid(),                          // uuid
-                                              0,                                            // userId
+                                              QUuid(),                                      // userUuid
                                               title,                                        // title
                                               description,                                  // description
                                               category,                                     // category
@@ -744,8 +740,8 @@ void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
             // 创建新项目
             auto newItem = std::make_unique<TodoItem>();
             newItem->setId(todoObj["id"].toInt());
-            newItem->setUuid(QUuid::fromString(uuid));
-            newItem->setUserId(todoObj["user_id"].toInt());
+            newItem->setUuid(QUuid(todoObj["uuid"].toString()));
+            newItem->setUserUuid(QUuid(todoObj["user_uuid"].toString()));
             newItem->setTitle(todoObj["title"].toString());
             newItem->setDescription(todoObj["description"].toString());
             newItem->setCategory(todoObj["category"].toString());
@@ -802,11 +798,11 @@ void TodoManager::logError(const QString &context, const QString &error) {
 }
 
 // 访问器方法
-TodoFilter* TodoManager::filter() const {
+TodoFilter *TodoManager::filter() const {
     return m_filter;
 }
 
-TodoSorter* TodoManager::sorter() const {
+TodoSorter *TodoManager::sorter() const {
     return m_sorter;
 }
 
@@ -817,15 +813,15 @@ void TodoManager::sortTodos() {
     }
 
     beginResetModel();
-     
+
     // 委托给排序器进行排序
     m_sorter->sortTodos(m_todos);
-     
+
     // 排序后需要更新过滤缓存
     invalidateFilterCache();
-     
+
     endResetModel();
-     
+
     // 保存到本地存储
     m_dataManager->saveToLocalStorage(m_todos);
 }

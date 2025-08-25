@@ -13,7 +13,6 @@
 
 #include "todo_item.h"
 #include <utility>
-#include <utility>
 
 /**
  * @brief 默认构造函数
@@ -27,7 +26,7 @@ TodoItem::TodoItem(QObject *parent)
     : QObject(parent),                                // 初始化父对象
       m_id(0),                                        // 初始化待办事项ID为0
       m_uuid(QUuid::createUuid()),                    // 初始化UUID
-      m_userId(0),                                    // 初始化用户ID为0
+      m_userUuid(""),                                 // 初始化用户UUID为空字符串
       m_important(false),                             // 初始化重要程度为false
       m_recurrenceInterval(0),                        // 初始化循环间隔为0
       m_recurrenceCount(0),                           // 初始化循环次数为0
@@ -48,7 +47,7 @@ TodoItem::TodoItem(QObject *parent)
  */
 TodoItem::TodoItem(int id,                           ///< 待办事项唯一标识符
                    const QUuid &uuid,                ///< 唯一标识符
-                   int userId,                       ///< 用户ID
+                   const QUuid &userUuid,            ///< 用户UUID
                    const QString &title,             ///< 待办事项标题
                    const QString &description,       ///< 待办事项详细描述
                    const QString &category,          ///< 待办事项分类
@@ -70,7 +69,7 @@ TodoItem::TodoItem(int id,                           ///< 待办事项唯一标�
     : QObject(parent),                               ///< 初始化父对象
       m_id(id),                                      ///< 初始化待办事项ID
       m_uuid(uuid),                                  ///< 初始化待办事项UUID
-      m_userId(userId),                              ///< 初始化用户ID
+      m_userUuid(userUuid),                          ///< 初始化用户UUID
       m_title(title),                                ///< 初始化待办事项标题
       m_description(description),                    ///< 初始化待办事项描述
       m_category(category),                          ///< 初始化待办事项分类
@@ -107,11 +106,11 @@ void TodoItem::setUuid(const QUuid &uuid) {
 }
 
 /**
- * @brief 设置用户ID
- * @param userId 新的用户ID
+ * @brief 设置用户UUID
+ * @param userUuid 新的用户UUID
  */
-void TodoItem::setUserId(int userId) {
-    setProperty(m_userId, userId, &TodoItem::userIdChanged);
+void TodoItem::setUserUuid(const QUuid &userUuid) {
+    setProperty(m_userUuid, userUuid, &TodoItem::userUuidChanged);
 }
 
 /**
@@ -401,7 +400,7 @@ bool TodoItem::isInRecurrencePeriod(const QDate &checkDate) const noexcept {
 bool TodoItem::operator==(const TodoItem &other) const {
     return m_id == other.m_id &&                                   // 主键ID
            m_uuid == other.m_uuid &&                               // 唯一标识符
-           m_userId == other.m_userId &&                           // 用户ID
+           m_userUuid == other.m_userUuid &&                       // 用户ID
            m_title == other.m_title &&                             // 标题
            m_description == other.m_description &&                 // 描述
            m_category == other.m_category &&                       // 类别

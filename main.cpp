@@ -28,7 +28,8 @@
 #include "cpp/foundation/logger.h"
 #include "cpp/global_state.h"
 #include "cpp/setting.h"
-#include "cpp/todo_manager.h"
+#include "cpp/todo/category_manager.h"
+#include "cpp/todo/todo_manager.h"
 #include "cpp/user_auth.h"
 
 #include <QDebug>

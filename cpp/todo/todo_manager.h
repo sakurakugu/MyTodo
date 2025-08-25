@@ -64,8 +64,8 @@ class TodoManager : public QAbstractListModel {
      */
     enum TodoRoles {
         IdRole = Qt::UserRole + 1, // 任务ID
-        UserIdRole,                // 用户ID
         UuidRole,                  // 任务UUID
+        UserUuidRole,              // 用户UUID
         TitleRole,                 // 任务标题
         DescriptionRole,           // 任务描述
         CategoryRole,              // 任务分类

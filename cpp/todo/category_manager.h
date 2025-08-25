@@ -22,6 +22,7 @@
 #include "foundation/network_request.h"
 #include "items/categorie_item.h"
 #include "todo_sync_server.h"
+#include "user_auth.h"
 
 /**
  * @class CategoryManager
@@ -107,4 +108,5 @@ class CategoryManager : public QObject {
     QStringList m_categories;                                    ///< 类别名称列表（缓存）
     NetworkRequest &m_networkRequest;                            ///< 网络管理器引用
     TodoSyncServer *m_syncManager;                               ///< 同步管理器指针
+    UserAuth &m_userAuth;                                        ///< 用户认证引用
 };

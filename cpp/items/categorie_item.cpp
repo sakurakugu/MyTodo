@@ -25,7 +25,8 @@
 CategorieItem::CategorieItem(QObject *parent)
     : QObject(parent),                           // 初始化父对象
       m_id(0),                                   // 初始化分类ID为0
-      m_userId(0),                               // 初始化用户ID为0
+      m_name(""),                                // 初始化分类名称为空字符串
+      m_userUuid(QUuid()),                       // 初始化用户UUID为空UUID
       m_isDefault(false),                        // 初始化是否为默认分类为false
       m_createdAt(QDateTime::currentDateTime()), // 初始化创建时间为当前时间
       m_synced(false)                            // 初始化是否已同步为false
@@ -38,20 +39,20 @@ CategorieItem::CategorieItem(QObject *parent)
  * 使用指定的参数创建CategorieItem对象。这个构造函数通常用于
  * 从数据库或网络加载已存在的分类数据。
  */
-CategorieItem::CategorieItem(int id,                    ///< 分类唯一标识符
-                             const QString &name,       ///< 分类名称
-                             int userId,                ///< 用户ID
-                             bool isDefault,            ///< 是否为默认分类
+CategorieItem::CategorieItem(int id,                     ///< 分类唯一标识符
+                             const QString &name,        ///< 分类名称
+                             const QUuid &userUuid,      ///< 用户UUID
+                             bool isDefault,             ///< 是否为默认分类
                              const QDateTime &createdAt, ///< 创建时间
-                             bool synced,               ///< 是否已与服务器同步
-                             QObject *parent)           ///< 父对象指针
-    : QObject(parent),       ///< 初始化父对象
-      m_id(id),              ///< 初始化分类ID
-      m_name(name),          ///< 初始化分类名称
-      m_userId(userId),      ///< 初始化用户ID
-      m_isDefault(isDefault), ///< 初始化是否为默认分类
-      m_createdAt(createdAt), ///< 初始化创建时间
-      m_synced(synced)       ///< 初始化同步状态
+                             bool synced,                ///< 是否已与服务器同步
+                             QObject *parent)            ///< 父对象指针
+    : QObject(parent),                                   ///< 初始化父对象
+      m_id(id),                                          ///< 初始化分类ID
+      m_name(name),                                      ///< 初始化分类名称
+      m_userUuid(userUuid),                              ///< 初始化用户UUID
+      m_isDefault(isDefault),                            ///< 初始化是否为默认分类
+      m_createdAt(createdAt),                            ///< 初始化创建时间
+      m_synced(synced)                                   ///< 初始化同步状态
 {
 }
 
@@ -78,11 +79,11 @@ void CategorieItem::setName(const QString &name) {
 }
 
 /**
- * @brief 设置用户ID
- * @param userId 新的用户ID
+ * @brief 设置用户UUID
+ * @param userUuid 新的用户UUID
  */
-void CategorieItem::setUserId(int userId) {
-    setProperty(m_userId, userId, &CategorieItem::userIdChanged);
+void CategorieItem::setUserUuid(const QUuid &userUuid) {
+    setProperty(m_userUuid, userUuid, &CategorieItem::userUuidChanged);
 }
 
 /**
@@ -153,12 +154,12 @@ bool CategorieItem::canBeDeleted() const noexcept {
  * @return 如果相等返回true，否则返回false
  */
 bool CategorieItem::operator==(const CategorieItem &other) const {
-    return m_id == other.m_id &&                 // 主键ID
-           m_name == other.m_name &&             // 分类名称
-           m_userId == other.m_userId &&         // 用户ID
-           m_isDefault == other.m_isDefault &&   // 是否为默认分类
-           m_createdAt == other.m_createdAt &&   // 创建时间
-           m_synced == other.m_synced;           // 同步状态
+    return m_id == other.m_id &&               // 主键ID
+           m_name == other.m_name &&           // 分类名称
+           m_userUuid == other.m_userUuid &&   // 用户ID
+           m_isDefault == other.m_isDefault && // 是否为默认分类
+           m_createdAt == other.m_createdAt && // 创建时间
+           m_synced == other.m_synced;         // 同步状态
 }
 
 /**

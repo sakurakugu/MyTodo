@@ -15,6 +15,7 @@
 #include <QJsonObject>
 #include <QObject>
 #include <QString>
+#include <QUuid>
 #include <memory>
 
 #include "./foundation/network_request.h"
@@ -49,6 +50,7 @@ class UserAuth : public QObject {
     Q_PROPERTY(bool isOnline READ isOnline WRITE setIsOnline NOTIFY isOnlineChanged)
     Q_PROPERTY(QString username READ getUsername NOTIFY usernameChanged)
     Q_PROPERTY(QString email READ getEmail NOTIFY emailChanged)
+    Q_PROPERTY(QUuid uuid READ getUuid NOTIFY uuidChanged)
     Q_PROPERTY(bool isLoggedIn READ isLoggedIn NOTIFY isLoggedInChanged)
 
   public:
@@ -74,6 +76,7 @@ class UserAuth : public QObject {
     // 用户信息获取
     Q_INVOKABLE QString getUsername() const; // 获取用户名
     Q_INVOKABLE QString getEmail() const;    // 获取邮箱
+    Q_INVOKABLE QUuid getUuid() const;       // 获取用户UUID
 
     // 令牌管理
     QString getAccessToken() const;                // 获取访问令牌
@@ -91,6 +94,7 @@ class UserAuth : public QObject {
   signals:
     void usernameChanged();                        // 用户名变化信号
     void emailChanged();                           // 邮箱变化信号
+    void uuidChanged();                            // UUID变化信号
     void isLoggedInChanged();                      // 登录状态变化信号
     void isOnlineChanged();                        // 在线状态变化信号
     void loginSuccessful(const QString &username); // 登录成功信号
@@ -134,6 +138,7 @@ class UserAuth : public QObject {
     QString m_refreshToken; ///< 刷新令牌
     QString m_username;     ///< 用户名
     QString m_email;        ///< 邮箱
+    QUuid m_uuid;           ///< 用户UUID
 
     bool m_isOnline; ///< 是否在线
 

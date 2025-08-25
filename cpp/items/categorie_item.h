@@ -14,6 +14,7 @@
 #include <QObject>
 #include <QString>
 #include <QDateTime>
+#include <QUuid>
 #include <concepts>
 #include <type_traits>
 
@@ -36,7 +37,7 @@ class CategorieItem : public QObject {
     Q_OBJECT
     Q_PROPERTY(int id READ id WRITE setId NOTIFY idChanged)
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
-    Q_PROPERTY(int userId READ userId WRITE setUserId NOTIFY userIdChanged)
+    Q_PROPERTY(QUuid userUuid READ userUuid WRITE setUserUuid NOTIFY userUuidChanged)
     Q_PROPERTY(bool isDefault READ isDefault WRITE setIsDefault NOTIFY isDefaultChanged)
     Q_PROPERTY(QDateTime createdAt READ createdAt WRITE setCreatedAt NOTIFY createdAtChanged)
     Q_PROPERTY(bool synced READ synced WRITE setSynced NOTIFY syncedChanged)
@@ -45,12 +46,12 @@ class CategorieItem : public QObject {
     CategorieItem(const CategorieItem &) = delete;
     CategorieItem &operator=(const CategorieItem &) = delete;
     explicit CategorieItem(QObject *parent = nullptr);
-    CategorieItem(int id,                    ///< 分类唯一标识符
-                  const QString &name,       ///< 分类名称
-                  int userId,                ///< 用户ID
-                  bool isDefault,            ///< 是否为默认分类
+    CategorieItem(int id,                     ///< 分类唯一标识符
+                  const QString &name,        ///< 分类名称
+                  const QUuid &userUuid,      ///< 用户UUID
+                  bool isDefault,             ///< 是否为默认分类
                   const QDateTime &createdAt, ///< 创建时间
-                  bool synced,               ///< 是否已与服务器同步
+                  bool synced,                ///< 是否已与服务器同步
                   QObject *parent = nullptr);
 
     int id() const noexcept { return m_id; } // 获取ID
@@ -59,8 +60,8 @@ class CategorieItem : public QObject {
     QString name() const noexcept { return m_name; } // 获取分类名称
     void setName(const QString &name);               // 设置分类名称
 
-    int userId() const noexcept { return m_userId; } // 获取用户ID
-    void setUserId(int userId);                      // 设置用户ID
+    QUuid userUuid() const noexcept { return m_userUuid; } // 获取用户UUID
+    void setUserUuid(const QUuid &userUuid);               // 设置用户UUID
 
     bool isDefault() const noexcept { return m_isDefault; } // 获取是否为默认分类
     void setIsDefault(bool isDefault);                      // 设置是否为默认分类
@@ -84,7 +85,7 @@ class CategorieItem : public QObject {
   signals:
     void idChanged();        ///< ID改变信号
     void nameChanged();      ///< 分类名称改变信号
-    void userIdChanged();    ///< 用户ID改变信号
+    void userUuidChanged();  ///< 用户UUID改变信号
     void isDefaultChanged(); ///< 默认分类状态改变信号
     void createdAtChanged(); ///< 创建时间改变信号
     void syncedChanged();    ///< 同步状态改变信号
@@ -108,7 +109,7 @@ class CategorieItem : public QObject {
     // 成员变量
     int m_id;                // 分类ID
     QString m_name;          // 分类名称
-    int m_userId;            // 用户ID
+    QUuid m_userUuid;        // 用户UUID
     bool m_isDefault;        // 是否为默认分类
     QDateTime m_createdAt;   // 分类创建时间
     bool m_synced;           // 分类是否已同步
