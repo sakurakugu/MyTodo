@@ -144,7 +144,7 @@ Page {
                             Layout.preferredWidth: 120
                             Layout.preferredHeight: 36
                             model: ["按创建时间", "按截止日期", "按重要性", "按标题"]
-                            currentIndex: todoManager.sortType
+                            currentIndex: todoSorter.sortType
 
                             background: Rectangle {
                                 color: parent.pressed ? (isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (isDarkMode ? "#3c5a78" : "#e0e0e0") : (isDarkMode ? "#2c3e50" : "#f0f0f0")
@@ -163,7 +163,7 @@ Page {
                             }
 
                             onCurrentIndexChanged: {
-                                todoManager.setSortType(currentIndex);
+                                todoSorter.setSortType(currentIndex);
                             }
                         }
 
@@ -174,9 +174,9 @@ Page {
                             Layout.preferredHeight: 36
                             text: "倒序排列"
                             font.pixelSize: 12
-                            checked: todoManager.descending
+                            checked: todoSorter.descending
                             onCheckedChanged: {
-                                todoManager.setDescending(checked);
+                                todoSorter.setDescending(checked);
                             }
                         }
 
@@ -193,13 +193,13 @@ Page {
                             model: ["全部", "待办", "完成", "回收站"]
                             onCurrentTextChanged: {
                                 if (currentText === "全部") {
-                                    todoManager.currentFilter = "";
+                                    todoFilter.currentFilter = "";
                                 } else if (currentText === "待办") {
-                                    todoManager.currentFilter = "todo";
+                                    todoFilter.currentFilter = "todo";
                                 } else if (currentText === "完成") {
-                                    todoManager.currentFilter = "done";
+                                    todoFilter.currentFilter = "done";
                                 } else if (currentText === "回收站") {
-                                    todoManager.currentFilter = "recycle";
+                                    todoFilter.currentFilter = "recycle";
                                 }
                             }
                         }
@@ -214,12 +214,12 @@ Page {
                             id: categoryFilter
                             Layout.fillWidth: true
                             Layout.preferredHeight: 36
-                            model: todoManager.categories
+                            model: categoryManager.categories
                             onCurrentTextChanged: {
                                 if (currentText === "全部") {
-                                    todoManager.currentCategory = "";
+                                    categoryManager.currentCategory = "";
                                 } else {
-                                    todoManager.currentCategory = currentText;
+                                    categoryManager.currentCategory = currentText;
                                 }
                             }
                         }
@@ -243,9 +243,9 @@ Page {
                             id: dateFilterEnabled
                             text: "启用日期筛选"
                             font.pixelSize: 12
-                            checked: todoManager.dateFilterEnabled
+                            checked: todoFilter.dateFilterEnabled
                             onCheckedChanged: {
-                                todoManager.dateFilterEnabled = checked;
+                                todoFilter.dateFilterEnabled = checked;
                             }
                         }
 
@@ -262,15 +262,15 @@ Page {
                             Layout.preferredHeight: 36
                             placeholderText: "选择开始日期 (yyyy-MM-dd)"
                             visible: dateFilterEnabled.checked
-                            text: todoManager.dateFilterStart.getTime() > 0 ? Qt.formatDate(todoManager.dateFilterStart, "yyyy-MM-dd") : ""
+                            text: todoFilter.dateFilterStart.getTime() > 0 ? Qt.formatDate(todoFilter.dateFilterStart, "yyyy-MM-dd") : ""
                             onTextChanged: {
                                 if (text.length === 10) {
                                     var date = Date.fromLocaleString(Qt.locale(), text, "yyyy-MM-dd");
                                     if (!isNaN(date.getTime())) {
-                                        todoManager.dateFilterStart = date;
+                                        todoFilter.dateFilterStart = date;
                                     }
                                 } else if (text === "") {
-                                    todoManager.dateFilterStart = new Date(0); // 无效日期
+                                    todoFilter.dateFilterStart = new Date(0); // 无效日期
                                 }
                             }
                         }
@@ -288,15 +288,15 @@ Page {
                             Layout.preferredHeight: 36
                             placeholderText: "选择结束日期 (yyyy-MM-dd)"
                             visible: dateFilterEnabled.checked
-                            text: todoManager.dateFilterEnd.getTime() > 0 ? Qt.formatDate(todoManager.dateFilterEnd, "yyyy-MM-dd") : ""
+                            text: todoFilter.dateFilterEnd.getTime() > 0 ? Qt.formatDate(todoFilter.dateFilterEnd, "yyyy-MM-dd") : ""
                             onTextChanged: {
                                 if (text.length === 10) {
                                     var date = Date.fromLocaleString(Qt.locale(), text, "yyyy-MM-dd");
                                     if (!isNaN(date.getTime())) {
-                                        todoManager.dateFilterEnd = date;
+                                        todoFilter.dateFilterEnd = date;
                                     }
                                 } else if (text === "") {
-                                    todoManager.dateFilterEnd = new Date(0); // 无效日期
+                                    todoFilter.dateFilterEnd = new Date(0); // 无效日期
                                 }
                             }
                         }
@@ -308,8 +308,8 @@ Page {
                             onClicked: {
                                 startDateField.text = "";
                                 endDateField.text = "";
-                                todoManager.dateFilterStart = new Date(0);
-                                todoManager.dateFilterEnd = new Date(0);
+                                todoFilter.dateFilterStart = new Date(0);
+                                todoFilter.dateFilterEnd = new Date(0);
                             }
                         }
                     }

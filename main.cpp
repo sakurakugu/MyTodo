@@ -29,7 +29,9 @@
 #include "cpp/global_state.h"
 #include "cpp/setting.h"
 #include "cpp/todo/category_manager.h"
+#include "cpp/todo/todo_filter.h"
 #include "cpp/todo/todo_manager.h"
+#include "cpp/todo/todo_sorter.h"
 #include "cpp/user_auth.h"
 
 #include <QDebug>
@@ -95,9 +97,13 @@ int main(int argc, char *argv[]) {
     setting.setMaxLogFiles(setting.getMaxLogFiles());
 
     qInfo() << "日志系统初始化完成，日志文件路径:" << setting.getLogFilePath();
-    UserAuth &userAuth = UserAuth::GetInstance(); // 获取UserAuth实例
-    TodoManager todoManager(nullptr);                 // 创建TodoManager实例
-    GlobalState globalState;                        // 创建GlobalState实例
+    UserAuth &userAuth = UserAuth::GetInstance();     // 获取UserAuth实例
+    TodoSyncServer todoSyncServer;                    // 创建TodoSyncServer实例
+    CategoryManager categoryManager(&todoSyncServer); // 创建CategoryManager实例
+    TodoFilter todoFilter;                            // 创建TodoFilter实例
+    TodoSorter todoSorter;                            // 创建TodoSorter实例
+    TodoManager todoManager;                          // 创建TodoManager实例
+    GlobalState globalState;                          // 创建GlobalState实例
 
     // 检查是否通过开机自启动启动
     QStringList arguments = app.arguments();
@@ -111,6 +117,9 @@ int main(int argc, char *argv[]) {
     // 将类注册到QML上下文
     engine.rootContext()->setContextProperty("setting", &setting);
     engine.rootContext()->setContextProperty("userAuth", &userAuth);
+    engine.rootContext()->setContextProperty("categoryManager", &categoryManager);
+    engine.rootContext()->setContextProperty("todoFilter", &todoFilter);
+    engine.rootContext()->setContextProperty("todoSorter", &todoSorter);
     engine.rootContext()->setContextProperty("todoManager", &todoManager);
     engine.rootContext()->setContextProperty("globalState", &globalState);
 

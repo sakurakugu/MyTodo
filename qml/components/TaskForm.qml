@@ -100,11 +100,11 @@ ColumnLayout {
     ComboBox {
         id: categoryCombo
         model: {
-            // 从todoManager.categories中过滤掉"全部"选项
+            // categoryManager.categories中过滤掉"全部"选项
             var filteredCategories = [];
-            for (var i = 0; i < todoManager.categories.length; i++) {
-                if (todoManager.categories[i] !== "全部") {
-                    filteredCategories.push(todoManager.categories[i]);
+            for (var i = 0; i < categoryManager.categories.length; i++) {
+                if (categoryManager.categories[i] !== "全部") {
+                    filteredCategories.push(categoryManager.categories[i]);
                 }
             }
             return filteredCategories;

@@ -11,11 +11,11 @@
 
 #pragma once
 
-#include <QObject>
-#include <QDate>
-#include <QString>
-#include <QList>
 #include "items/todo_item.h"
+#include <QDate>
+#include <QList>
+#include <QObject>
+#include <QString>
 
 /**
  * @class TodoFilter
@@ -25,8 +25,7 @@
  *
  * **筛选功能：**
  * - 分类筛选（按类别过滤）
- * - 状态筛选（全部/完成/未完成/回收站）
- * - 重要性筛选（重要/不重要）
+ * - 状态筛选（完成/未完成/回收站）
  * - 日期筛选（按截止日期范围过滤）
  *
  * **架构特点：**
@@ -41,12 +40,11 @@ class TodoFilter : public QObject {
     Q_OBJECT
     Q_PROPERTY(QString currentCategory READ currentCategory WRITE setCurrentCategory NOTIFY currentCategoryChanged)
     Q_PROPERTY(QString currentFilter READ currentFilter WRITE setCurrentFilter NOTIFY currentFilterChanged)
-    Q_PROPERTY(bool currentImportant READ currentImportant WRITE setCurrentImportant NOTIFY currentImportantChanged)
     Q_PROPERTY(QDate dateFilterStart READ dateFilterStart WRITE setDateFilterStart NOTIFY dateFilterStartChanged)
     Q_PROPERTY(QDate dateFilterEnd READ dateFilterEnd WRITE setDateFilterEnd NOTIFY dateFilterEndChanged)
     Q_PROPERTY(bool dateFilterEnabled READ dateFilterEnabled WRITE setDateFilterEnabled NOTIFY dateFilterEnabledChanged)
 
-public:
+  public:
     /**
      * @brief 构造函数
      * @param parent 父对象
@@ -59,7 +57,6 @@ public:
     void setCurrentCategory(const QString &category); // 设置分类筛选器
     QString currentFilter() const;                    // 获取当前激活的筛选条件
     void setCurrentFilter(const QString &filter);     // 设置筛选条件
-    bool currentImportant() const;                    // 获取当前激活的重要程度筛选器
     void setCurrentImportant(bool important);         // 设置重要程度筛选器
 
     // 日期筛选相关方法
@@ -71,32 +68,13 @@ public:
     void setDateFilterEnabled(bool enabled);    // 设置日期筛选是否启用
 
     // 筛选核心方法
-    /**
-     * @brief 检查项目是否匹配当前筛选条件
-     * @param item 待检查的待办事项
-     * @return 如果匹配返回true，否则返回false
-     */
-    bool itemMatchesFilter(const TodoItem *item) const;
+    bool itemMatchesFilter(const TodoItem *item) const; ///< 检查项目是否匹配当前筛选条件
+    QList<TodoItem *> filterTodos(
+        const std::vector<std::unique_ptr<TodoItem>> &todos) const; ///< 从待办事项列表中筛选出匹配的项目
+    void resetFilters();                                            ///< 重置所有筛选条件
+    bool hasActiveFilters() const;                                  ///< 检查是否有任何筛选条件被激活
 
-    /**
-     * @brief 从待办事项列表中筛选出匹配的项目
-     * @param todos 原始待办事项列表
-     * @return 筛选后的待办事项列表
-     */
-    QList<TodoItem *> filterTodos(const std::vector<std::unique_ptr<TodoItem>> &todos) const;
-
-    /**
-     * @brief 重置所有筛选条件
-     */
-    void resetFilters();
-
-    /**
-     * @brief 检查是否有任何筛选条件被激活
-     * @return 如果有筛选条件被激活返回true，否则返回false
-     */
-    bool hasActiveFilters() const;
-
-signals:
+  signals:
     void currentCategoryChanged();   // 当前分类筛选器变化信号
     void currentFilterChanged();     // 当前筛选条件变化信号
     void currentImportantChanged();  // 当前重要程度筛选器变化信号
@@ -105,20 +83,18 @@ signals:
     void dateFilterEnabledChanged(); // 日期筛选启用状态变化信号
     void filtersChanged();           // 任何筛选条件变化的通用信号
 
-private:
+  private:
     // 筛选条件成员变量
-    QString m_currentCategory;   ///< 当前分类筛选器
-    QString m_currentFilter;     ///< 当前筛选条件
-    bool m_currentImportant;     ///< 当前重要程度筛选器
-    QDate m_dateFilterStart;     ///< 日期筛选开始日期
-    QDate m_dateFilterEnd;       ///< 日期筛选结束日期
-    bool m_dateFilterEnabled;    ///< 日期筛选是否启用
+    QString m_currentCategory; ///< 当前分类筛选器
+    QString m_currentFilter;   ///< 当前筛选条件
+    QDate m_dateFilterStart;   ///< 日期筛选开始日期
+    QDate m_dateFilterEnd;     ///< 日期筛选结束日期
+    bool m_dateFilterEnabled;  ///< 日期筛选是否启用
 
     // 辅助方法
     bool checkCategoryMatch(const TodoItem *item) const; // 检查分类筛选条件
-    bool checkStatusMatch(const TodoItem *item) const; // 检查状态筛选条件
-    bool checkImportantMatch(const TodoItem *item) const; // 检查重要性筛选条件
-    bool checkDateMatch(const TodoItem *item) const; // 检查日期筛选条件
+    bool checkStatusMatch(const TodoItem *item) const;   // 检查状态筛选条件
+    bool checkDateMatch(const TodoItem *item) const;     // 检查日期筛选条件
 
     /**
      * @brief 发射筛选条件变化信号
