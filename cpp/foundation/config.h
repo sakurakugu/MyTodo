@@ -12,19 +12,17 @@
 
 #include "../default_value.h"
 
+#include <QDebug>
+#include <QDir>
 #include <QObject>
-#include <QSettings>
+#include <QStandardPaths>
+#include <QString>
+#include <QStringList>
+#include <QVariant>
 #include <expected>
-
-// 错误类型枚举
-enum class ConfigError {
-    InvalidConfig, // 无效的配置文件
-    KeyNotFound,   // 键不存在
-    SaveFailed,    // 保存失败
-    InvalidValue,  // 无效的值
-    TypeMismatch,  // 类型不匹配
-    GetFailed      // 获取失败
-};
+#include <fstream>
+#include <map>
+#include <toml.hpp>
 
 class Config : public QObject {
     Q_OBJECT
@@ -41,26 +39,30 @@ class Config : public QObject {
     Config(Config &&) = delete;
     Config &operator=(Config &&) = delete;
 
-    std::expected<void, ConfigError> save(QStringView key, const QVariant &value) noexcept;
-    std::expected<QVariant, ConfigError> get(QStringView key,
-                                                           const QVariant &defaultValue = QVariant{}) const noexcept;
-    std::expected<void, ConfigError> remove(QStringView key) noexcept;
+    bool save(QStringView key, const QVariant &value) noexcept;
+    QVariant get(QStringView key, const QVariant &defaultValue = QVariant{}) const noexcept;
+    void remove(QStringView key) noexcept;
     bool contains(QStringView key) const noexcept;
     QStringList allKeys() const noexcept;
-    std::expected<void, ConfigError> clear() noexcept;
+    void clear() noexcept;
 
     // 存储类型和路径管理相关方法
-    std::expected<void, ConfigError> openConfigFilePath() const noexcept;
+    bool openConfigFilePath() const noexcept;
     QString getConfigFilePath() const noexcept;
 
   private:
     explicit Config(QObject *parent = nullptr);
     ~Config() noexcept override;
 
-    std::unique_ptr<QSettings> m_config;
+    // std::unique_ptr<QSettings> m_config;
+    mutable toml::value m_tomlData; // 配置数据
+    QString m_configFilePath;       // 配置文件路径
+    mutable bool m_isChanged = false; // 配置是否已修改
 
     // 辅助方法
-    bool isBooleanKey(QStringView key) const noexcept;
-    QVariant processBooleanValue(const QVariant &value) const noexcept;
+    void loadFromFile() const noexcept;
+    bool saveToFile() const noexcept;
+    QString getDefaultConfigPath() const noexcept;
+    toml::value variantToToml(const QVariant &value) const noexcept;
+    QVariant tomlToVariant(const toml::value &value) const noexcept;
 };
-

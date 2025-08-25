@@ -18,14 +18,6 @@ namespace DefaultValues {
     inline constexpr std::string_view todoApiEndpoint{"/todo/todo_api.php"};
     inline constexpr std::string_view userAuthApiEndpoint{"/auth_api.php"};
     inline constexpr std::string_view categoriesApiEndpoint{"/todo/categories_api.php"};
-    
-    inline constexpr std::array<std::string_view, 5> booleanKeys{
-        "setting/isDarkMode",      // 是否启用深色模式
-        "setting/preventDragging", // 是否防止窗口拖动
-        "setting/autoSync",        // 是否自动同步
-        "log/logToFile",           // 是否记录到文件
-        "log/logToConsole"         // 是否输出到控制台
-    };
-    
+
     inline constexpr std::string_view logFileName{"MyTodo"}; // 日志文件名（不包括后缀 ".log")
 } // namespace DefaultValues

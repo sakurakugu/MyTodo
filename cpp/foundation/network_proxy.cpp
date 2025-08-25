@@ -127,7 +127,7 @@ void NetworkProxy::loadProxyConfigFromSettings() noexcept {
 
         // 检查是否启用代理
         auto enabledResult = config.get(QStringLiteral("proxy/enabled"), false);
-        m_proxyEnabled = enabledResult.has_value() ? enabledResult.value().toBool() : false;
+        m_proxyEnabled = enabledResult.isValid() ? enabledResult.toBool() : false;
 
         if (!m_proxyEnabled) {
             updateProxyConfig(ProxyType::NoProxy, QString{}, 0, QString{}, QString{});
@@ -141,11 +141,11 @@ void NetworkProxy::loadProxyConfigFromSettings() noexcept {
         auto usernameResult = config.get(QStringLiteral("proxy/username"), QString());
         auto passwordResult = config.get(QStringLiteral("proxy/password"), QString());
 
-        ProxyType type = static_cast<ProxyType>(typeResult.has_value() ? typeResult.value().toInt() : 0);
-        QString host = hostResult.has_value() ? hostResult.value().toString() : QString();
-        int port = portResult.has_value() ? portResult.value().toInt() : 8080;
-        QString username = usernameResult.has_value() ? usernameResult.value().toString() : QString();
-        QString password = passwordResult.has_value() ? passwordResult.value().toString() : QString();
+        ProxyType type = static_cast<ProxyType>(typeResult.isValid() ? typeResult.toInt() : 0);
+        QString host = hostResult.isValid() ? hostResult.toString() : QString();
+        int port = portResult.isValid() ? portResult.toInt() : 8080;
+        QString username = usernameResult.isValid() ? usernameResult.toString() : QString();
+        QString password = passwordResult.isValid() ? passwordResult.toString() : QString();
 
         // 应用代理配置
         updateProxyConfig(type, host, port, username, password);
