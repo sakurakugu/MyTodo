@@ -16,7 +16,8 @@
 
 TodoSorter::TodoSorter(QObject *parent)
     : QObject(parent),
-      m_sortType(SortByCreatedTime) {
+      m_sortType(SortByCreatedTime),
+      m_descending(false) {
 }
 
 TodoSorter::~TodoSorter() {
@@ -42,44 +43,64 @@ void TodoSorter::setSortType(int type) {
 }
 
 /**
+ * @brief 获取是否倒序
+ * @return 是否倒序
+ */
+bool TodoSorter::descending() const {
+    return m_descending;
+}
+
+/**
+ * @brief 设置是否倒序
+ * @param desc 是否倒序
+ */
+void TodoSorter::setDescending(bool desc) {
+    if (m_descending != desc) {
+        m_descending = desc;
+        emit descendingChanged();
+    }
+}
+
+/**
  * @brief 对待办事项列表进行排序
  * @param todos 待排序的待办事项列表
  */
 void TodoSorter::sortTodos(std::vector<std::unique_ptr<TodoItem>> &todos) const {
     switch (static_cast<SortType>(m_sortType)) {
     case SortByDeadline:
-        std::sort(todos.begin(), todos.end(), [](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
+        std::sort(todos.begin(), todos.end(), [this](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
             QDateTime deadlineA = a->deadline();
             QDateTime deadlineB = b->deadline();
             if (deadlineA.isValid() && !deadlineB.isValid()) {
-                return true;
+                return !m_descending;
             }
             if (!deadlineA.isValid() && deadlineB.isValid()) {
-                return false;
+                return m_descending;
             }
             if (!deadlineA.isValid() && !deadlineB.isValid()) {
-                return a->createdAt() > b->createdAt();
+                return m_descending ? (a->createdAt() < b->createdAt()) : (a->createdAt() > b->createdAt());
             }
-            return deadlineA < deadlineB;
+            return m_descending ? (deadlineA > deadlineB) : (deadlineA < deadlineB);
         });
         break;
     case SortByImportance:
-        std::sort(todos.begin(), todos.end(), [](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
+        std::sort(todos.begin(), todos.end(), [this](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
             if (a->important() != b->important()) {
-                return a->important() > b->important();
+                return m_descending ? (a->important() < b->important()) : (a->important() > b->important());
             }
-            return a->createdAt() > b->createdAt();
+            return m_descending ? (a->createdAt() < b->createdAt()) : (a->createdAt() > b->createdAt());
         });
         break;
     case SortByTitle:
-        std::sort(todos.begin(), todos.end(), [](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
-            return a->title().compare(b->title(), Qt::CaseInsensitive) < 0;
+        std::sort(todos.begin(), todos.end(), [this](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
+            int result = a->title().compare(b->title(), Qt::CaseInsensitive);
+            return m_descending ? (result > 0) : (result < 0);
         });
         break;
     case SortByCreatedTime:
     default:
-        std::sort(todos.begin(), todos.end(), [](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
-            return a->createdAt() > b->createdAt();
+        std::sort(todos.begin(), todos.end(), [this](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
+            return m_descending ? (a->createdAt() < b->createdAt()) : (a->createdAt() > b->createdAt());
         });
         break;
     }
@@ -92,38 +113,39 @@ void TodoSorter::sortTodos(std::vector<std::unique_ptr<TodoItem>> &todos) const 
 void TodoSorter::sortTodoPointers(QList<TodoItem *> &todos) const {
     switch (static_cast<SortType>(m_sortType)) {
     case SortByDeadline:
-        std::sort(todos.begin(), todos.end(), [](const TodoItem *a, const TodoItem *b) {
+        std::sort(todos.begin(), todos.end(), [this](const TodoItem *a, const TodoItem *b) {
             QDateTime deadlineA = a->deadline();
             QDateTime deadlineB = b->deadline();
             if (deadlineA.isValid() && !deadlineB.isValid()) {
-                return true;
+                return !m_descending;
             }
             if (!deadlineA.isValid() && deadlineB.isValid()) {
-                return false;
+                return m_descending;
             }
             if (!deadlineA.isValid() && !deadlineB.isValid()) {
-                return a->createdAt() > b->createdAt();
+                return m_descending ? (a->createdAt() < b->createdAt()) : (a->createdAt() > b->createdAt());
             }
-            return deadlineA < deadlineB;
+            return m_descending ? (deadlineA > deadlineB) : (deadlineA < deadlineB);
         });
         break;
     case SortByImportance:
-        std::sort(todos.begin(), todos.end(), [](const TodoItem *a, const TodoItem *b) {
+        std::sort(todos.begin(), todos.end(), [this](const TodoItem *a, const TodoItem *b) {
             if (a->important() != b->important()) {
-                return a->important() > b->important();
+                return m_descending ? (a->important() < b->important()) : (a->important() > b->important());
             }
-            return a->createdAt() > b->createdAt();
+            return m_descending ? (a->createdAt() < b->createdAt()) : (a->createdAt() > b->createdAt());
         });
         break;
     case SortByTitle:
-        std::sort(todos.begin(), todos.end(), [](const TodoItem *a, const TodoItem *b) {
-            return a->title().compare(b->title(), Qt::CaseInsensitive) < 0;
+        std::sort(todos.begin(), todos.end(), [this](const TodoItem *a, const TodoItem *b) {
+            int result = a->title().compare(b->title(), Qt::CaseInsensitive);
+            return m_descending ? (result > 0) : (result < 0);
         });
         break;
     case SortByCreatedTime:
     default:
-        std::sort(todos.begin(), todos.end(), [](const TodoItem *a, const TodoItem *b) {
-            return a->createdAt() > b->createdAt();
+        std::sort(todos.begin(), todos.end(), [this](const TodoItem *a, const TodoItem *b) {
+            return m_descending ? (a->createdAt() < b->createdAt()) : (a->createdAt() > b->createdAt());
         });
         break;
     }

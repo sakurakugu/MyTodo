@@ -12,6 +12,7 @@
 #include "foundation/config.h"
 
 Setting::Setting(QObject *parent) : QObject(parent), m_logger(Logger::GetInstance()), m_config(Config::GetInstance()) {
+    initializeDefaultServerConfig();
 }
 
 /**
@@ -169,7 +170,13 @@ void Setting::initializeDefaultServerConfig() {
     // 检查并设置默认的认证API端点
     if (!m_config.contains(QStringLiteral("server/authApiEndpoint"))) {
         m_config.save(QStringLiteral("server/authApiEndpoint"),
-                      QString::fromStdString(std::string{DefaultValues::userApiEndpoint}));
+                      QString::fromStdString(std::string{DefaultValues::userAuthApiEndpoint}));
+    }
+
+    // 检查并设置默认的分类API端点
+    if (!m_config.contains(QStringLiteral("server/categoriesApiEndpoint"))) {
+        m_config.save(QStringLiteral("server/categoriesApiEndpoint"),
+                      QString::fromStdString(std::string{DefaultValues::categoriesApiEndpoint}));
     }
 }
 

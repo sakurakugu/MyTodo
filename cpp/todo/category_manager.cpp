@@ -11,6 +11,7 @@
  */
 
 #include "category_manager.h"
+#include "default_value.h"
 #include "user_auth.h"
 #include <QDebug>
 #include <QJsonDocument>
@@ -18,11 +19,17 @@
 
 CategoryManager::CategoryManager(TodoSyncServer *syncManager, QObject *parent)
     : QObject(parent), m_networkRequest(NetworkRequest::GetInstance()), m_syncManager(syncManager),
-      m_userAuth(UserAuth::GetInstance()) {
+      m_userAuth(UserAuth::GetInstance()), m_setting(Setting::GetInstance()) {
 
     // 连接网络请求信号
     connect(&m_networkRequest, &NetworkRequest::requestCompleted, this, &CategoryManager::onNetworkRequestCompleted);
     connect(&m_networkRequest, &NetworkRequest::requestFailed, this, &CategoryManager::onNetworkRequestFailed);
+
+    // 从配置中加载服务器配置
+    m_categoriesApiEndpoint = m_setting
+                                  .get(QStringLiteral("server/categoriesApiEndpoint"),
+                                       QString::fromStdString(std::string{DefaultValues::categoriesApiEndpoint}))
+                                  .toString();
 
     // 添加默认类别
     addDefaultCategories();
@@ -41,6 +48,22 @@ QStringList CategoryManager::getCategories() const {
 
 const std::vector<std::unique_ptr<CategorieItem>> &CategoryManager::getCategoryItems() const {
     return m_categoryItems;
+}
+
+// 配置管理实现
+void CategoryManager::updateServerConfig(const QString &apiEndpoint) {
+    bool changed = false;
+
+    if (m_categoriesApiEndpoint != apiEndpoint) {
+        m_categoriesApiEndpoint = apiEndpoint;
+        m_setting.save(QStringLiteral("server/categoriesApiEndpoint"), apiEndpoint);
+        changed = true;
+    }
+
+    if (changed) {
+        qDebug() << "服务器配置已更新:";
+        qDebug() << "  待办类别API端点:" << m_categoriesApiEndpoint;
+    }
 }
 
 /**
@@ -86,7 +109,8 @@ void CategoryManager::addDefaultCategories() {
     m_categories << "全部";
 
     // 添加默认的"未分类"选项
-    auto defaultCategory = std::make_unique<CategorieItem>(1, "未分类", m_userAuth.getUuid(), true, QDateTime::currentDateTime(), false);
+    auto defaultCategory =
+        std::make_unique<CategorieItem>(1, "未分类", m_userAuth.getUuid(), QDateTime::currentDateTime(), false);
     m_categoryItems.push_back(std::move(defaultCategory));
     m_categories << "未分类";
 
@@ -103,7 +127,7 @@ void CategoryManager::clearCategories() {
 }
 
 void CategoryManager::fetchCategories() {
-    if (!UserAuth::GetInstance().isLoggedIn()) {
+    if (!m_userAuth.isLoggedIn()) {
         qWarning() << "用户未登录，无法获取类别列表";
         emit fetchCategoriesCompleted(false, "用户未登录");
         return;
@@ -119,16 +143,17 @@ void CategoryManager::fetchCategories() {
     requestData["action"] = "fetch";
 
     NetworkRequest::RequestConfig config;
-    config.url = m_syncManager->getApiUrl("categories_api.php");
+    config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
     config.data = requestData;
     config.requiresAuth = true;
-    config.headers["Authorization"] = "Bearer " + UserAuth::GetInstance().getAccessToken();
+    config.headers["Authorization"] = "Bearer " + m_userAuth.getAccessToken();
 
     m_networkRequest.sendRequest(NetworkRequest::FetchCategories, config);
 }
 
 void CategoryManager::createCategory(const QString &name) {
-    if (!UserAuth::GetInstance().isLoggedIn()) {
+    // TODO: 用户未登录时，可以创建，之后还要处理如何与服务端同步的问题
+    if (!m_userAuth.isLoggedIn()) {
         qWarning() << "用户未登录，无法创建类别";
         emit createCategoryCompleted(false, "用户未登录");
         return;
@@ -144,6 +169,7 @@ void CategoryManager::createCategory(const QString &name) {
         return;
     }
 
+    // TODO: 同上
     if (!m_syncManager) {
         qWarning() << "同步管理器未初始化";
         emit createCategoryCompleted(false, "同步管理器未初始化");
@@ -155,16 +181,16 @@ void CategoryManager::createCategory(const QString &name) {
     requestData["name"] = name;
 
     NetworkRequest::RequestConfig config;
-    config.url = m_syncManager->getApiUrl("categories_api.php");
+    config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
     config.data = requestData;
     config.requiresAuth = true;
-    config.headers["Authorization"] = "Bearer " + UserAuth::GetInstance().getAccessToken();
+    config.headers["Authorization"] = "Bearer " + m_userAuth.getAccessToken();
 
     m_networkRequest.sendRequest(NetworkRequest::CreateCategory, config);
 }
 
 void CategoryManager::updateCategory(int id, const QString &name) {
-    if (!UserAuth::GetInstance().isLoggedIn()) {
+    if (!m_userAuth.isLoggedIn()) {
         qWarning() << "用户未登录，无法更新类别";
         emit updateCategoryCompleted(false, "用户未登录");
         return;
@@ -194,16 +220,16 @@ void CategoryManager::updateCategory(int id, const QString &name) {
     requestData["name"] = name;
 
     NetworkRequest::RequestConfig config;
-    config.url = m_syncManager->getApiUrl("categories_api.php");
+    config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
     config.data = requestData;
     config.requiresAuth = true;
-    config.headers["Authorization"] = "Bearer " + UserAuth::GetInstance().getAccessToken();
+    config.headers["Authorization"] = "Bearer " + m_userAuth.getAccessToken();
 
     m_networkRequest.sendRequest(NetworkRequest::UpdateCategory, config);
 }
 
 void CategoryManager::deleteCategory(int id) {
-    if (!UserAuth::GetInstance().isLoggedIn()) {
+    if (!m_userAuth.isLoggedIn()) {
         qWarning() << "用户未登录，无法删除类别";
         emit deleteCategoryCompleted(false, "用户未登录");
         return;
@@ -227,10 +253,10 @@ void CategoryManager::deleteCategory(int id) {
     requestData["id"] = id;
 
     NetworkRequest::RequestConfig config;
-    config.url = m_syncManager->getApiUrl("categories_api.php");
+    config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
     config.data = requestData;
     config.requiresAuth = true;
-    config.headers["Authorization"] = "Bearer " + UserAuth::GetInstance().getAccessToken();
+    config.headers["Authorization"] = "Bearer " + m_userAuth.getAccessToken();
 
     m_networkRequest.sendRequest(NetworkRequest::DeleteCategory, config);
 }
@@ -268,19 +294,19 @@ void CategoryManager::onNetworkRequestFailed(NetworkRequest::RequestType type, N
 
     switch (type) {
     case NetworkRequest::FetchCategories:
-        logError("获取类别列表", errorMessage);
+        qWarning() << "获取类别列表失败:" << errorMessage;
         emit fetchCategoriesCompleted(false, errorMessage);
         break;
     case NetworkRequest::CreateCategory:
-        logError("创建类别", errorMessage);
+        qWarning() << "创建类别失败:" << errorMessage;
         emit createCategoryCompleted(false, errorMessage);
         break;
     case NetworkRequest::UpdateCategory:
-        logError("更新类别", errorMessage);
+        qWarning() << "更新类别失败:" << errorMessage;
         emit updateCategoryCompleted(false, errorMessage);
         break;
     case NetworkRequest::DeleteCategory:
-        logError("删除类别", errorMessage);
+        qWarning() << "删除类别失败:" << errorMessage;
         emit deleteCategoryCompleted(false, errorMessage);
         break;
     default:
@@ -298,11 +324,11 @@ void CategoryManager::handleFetchCategoriesSuccess(const QJsonObject &response) 
         QJsonArray categoriesArray = response["categories"].toArray();
         updateCategoriesFromJson(categoriesArray);
 
-        qDebug() << "成功获取类别列表:" << m_categories;
-        emit fetchCategoriesCompleted(true, "获取类别列表成功");
+        qDebug() << "成功获取待办类别列表:" << m_categories;
+        emit fetchCategoriesCompleted(true, "获取待办类别列表成功");
     } else {
         QString errorMessage = response["message"].toString();
-        qWarning() << "获取类别列表失败:" << errorMessage;
+        qWarning() << "获取待办类别列表失败:" << errorMessage;
         emit fetchCategoriesCompleted(false, errorMessage);
     }
 }
@@ -342,12 +368,11 @@ void CategoryManager::updateCategoriesFromJson(const QJsonArray &categoriesArray
         int id = categoryObj["id"].toInt();
         QString name = categoryObj["name"].toString();
         QString userUuid = categoryObj["user_uuid"].toString();
-        bool isDefault = categoryObj["is_default"].toBool();
         QString createdAtStr = categoryObj["created_at"].toString();
         QDateTime createdAt = QDateTime::fromString(createdAtStr, Qt::ISODate);
 
         if (!name.isEmpty()) {
-            auto categoryItem = std::make_unique<CategorieItem>(id, name, QUuid::fromString(userUuid), isDefault, createdAt, true);
+            auto categoryItem = std::make_unique<CategorieItem>(id, name, QUuid::fromString(userUuid), createdAt, true);
             m_categoryItems.push_back(std::move(categoryItem));
             m_categories << name;
         }
@@ -356,21 +381,12 @@ void CategoryManager::updateCategoriesFromJson(const QJsonArray &categoriesArray
     // 添加默认的"未分类"选项（如果不存在）
     if (!m_categories.contains("未分类")) {
         auto defaultCategory =
-            std::make_unique<CategorieItem>(0, "未分类", QUuid(), true, QDateTime::currentDateTime(), true);
+            std::make_unique<CategorieItem>(1, "未分类", QUuid(), QDateTime::currentDateTime(), true);
         m_categoryItems.push_back(std::move(defaultCategory));
         m_categories << "未分类";
     }
 
     emit categoriesChanged();
-}
-
-/**
- * @brief 记录错误信息
- * @param context 错误上下文
- * @param error 错误信息
- */
-void CategoryManager::logError(const QString &context, const QString &error) {
-    qWarning() << QString("[CategoryManager] %1: %2").arg(context, error);
 }
 
 /**

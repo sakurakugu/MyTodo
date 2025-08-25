@@ -16,7 +16,8 @@
 namespace DefaultValues {
     inline constexpr std::string_view baseUrl{"https://api.example.com"};
     inline constexpr std::string_view todoApiEndpoint{"/todo/todo_api.php"};
-    inline constexpr std::string_view userApiEndpoint{"/user/user_api.php"};
+    inline constexpr std::string_view userAuthApiEndpoint{"/auth_api.php"};
+    inline constexpr std::string_view categoriesApiEndpoint{"/todo/categories_api.php"};
     
     inline constexpr std::array<std::string_view, 5> booleanKeys{
         "setting/isDarkMode",      // 是否启用深色模式

@@ -159,7 +159,6 @@ class TodoSyncServer : public QObject {
     // 辅助方法
     void initializeServerConfig();                     // 初始化服务器配置
     void updateLastSyncTime();                         // 更新最后同步时间
-    void logError(const QString &context, const QString &error); // 记录错误
     bool canPerformSync() const;                       // 检查是否可以执行同步
     void startAutoSyncTimer();                         // 启动自动同步定时器
     void stopAutoSyncTimer();                          // 停止自动同步定时器

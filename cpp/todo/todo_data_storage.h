@@ -96,7 +96,6 @@ class TodoDataStorage : public QObject {
                                                  QObject *parent);                       // 从JSON对象创建TodoItem
     QJsonObject todoToJson(const TodoItem *todo);                                        // 将TodoItem转换为JSON对象
     TodoItem *findTodoById(const std::vector<std::unique_ptr<TodoItem>> &todos, int id); // 查找具有指定ID的待办事项
-    void logError(const QString &context, const QString &error);                         // 记录错误信息
 
     // 成员变量
     Setting &m_setting; ///< 设置对象引用

@@ -10,6 +10,8 @@
  */
 
 #include "todo_sync_server.h"
+#include "user_auth.h"
+#include "default_value.h"
 
 #include <QDateTime>
 #include <QDebug>
@@ -20,11 +22,14 @@
 #include <QUuid>
 #include <algorithm>
 
-#include "user_auth.h"
-
 TodoSyncServer::TodoSyncServer(QObject *parent)
-    : QObject(parent), m_networkRequest(NetworkRequest::GetInstance()), m_setting(Setting::GetInstance()),
-      m_autoSyncTimer(new QTimer(this)), m_isAutoSyncEnabled(false), m_isSyncing(false), m_autoSyncInterval(30),
+    : QObject(parent),                                 //
+      m_networkRequest(NetworkRequest::GetInstance()), //
+      m_setting(Setting::GetInstance()),               //
+      m_autoSyncTimer(new QTimer(this)),               //
+      m_isAutoSyncEnabled(false),                      //
+      m_isSyncing(false),                              //
+      m_autoSyncInterval(30),                          //
       m_currentSyncDirection(Bidirectional) {
 
     // 初始化服务器配置
@@ -128,7 +133,7 @@ void TodoSyncServer::syncWithServer(SyncDirection direction) {
 
 void TodoSyncServer::cancelSync() {
     if (m_isSyncing) {
-        // 这里可以添加取消网络请求的逻辑
+        // TODO：这里可以添加取消网络请求的逻辑，需要吗？
         m_isSyncing = false;
         emit syncingChanged();
         emit syncCompleted(NetworkError, "同步已取消");
@@ -195,7 +200,7 @@ void TodoSyncServer::updateServerConfig(const QString &baseUrl, const QString &a
         emit serverConfigChanged();
         qDebug() << "服务器配置已更新:";
         qDebug() << "  基础URL:" << m_serverBaseUrl;
-        qDebug() << "  API端点:" << m_todoApiEndpoint;
+        qDebug() << "  待办事项API端点:" << m_todoApiEndpoint;
     }
 }
 
@@ -263,7 +268,6 @@ void TodoSyncServer::onNetworkRequestFailed(NetworkRequest::RequestType type, Ne
     emit syncCompleted(result, message);
 
     qWarning() << typeStr << "失败:" << message;
-    logError(typeStr, message);
 }
 
 void TodoSyncServer::onAutoSyncTimer() {
@@ -280,8 +284,8 @@ void TodoSyncServer::onBaseUrlChanged(const QString &newBaseUrl) {
 
     // 如果当前启用自动同步且已登录，可以选择重新同步数据
     if (m_isAutoSyncEnabled && UserAuth::GetInstance().isLoggedIn()) {
-        // 可以选择立即同步或等待用户手动同步
-        // syncWithServer(Bidirectional);
+        // 立即同步
+        syncWithServer(Bidirectional);
     }
 }
 
@@ -328,14 +332,12 @@ void TodoSyncServer::fetchTodosFromServer() {
         m_networkRequest.sendRequest(NetworkRequest::RequestType::FetchTodos, config);
     } catch (const std::exception &e) {
         qCritical() << "获取服务器数据时发生异常:" << e.what();
-        logError("获取服务器数据", QString("异常: %1").arg(e.what()));
 
         m_isSyncing = false;
         emit syncingChanged();
         emit syncCompleted(UnknownError, QString("获取服务器数据失败: %1").arg(e.what()));
     } catch (...) {
         qCritical() << "获取服务器数据时发生未知异常";
-        logError("获取服务器数据", "未知异常");
 
         m_isSyncing = false;
         emit syncingChanged();
@@ -407,14 +409,12 @@ void TodoSyncServer::pushLocalChangesToServer() {
         m_networkRequest.sendRequest(NetworkRequest::RequestType::PushTodos, config);
     } catch (const std::exception &e) {
         qCritical() << "推送更改时发生异常:" << e.what();
-        logError("推送更改", QString("异常: %1").arg(e.what()));
 
         m_isSyncing = false;
         emit syncingChanged();
         emit syncCompleted(UnknownError, QString("推送更改失败: %1").arg(e.what()));
     } catch (...) {
         qCritical() << "推送更改时发生未知异常";
-        logError("推送更改", "未知异常");
 
         m_isSyncing = false;
         emit syncingChanged();
@@ -489,12 +489,10 @@ void TodoSyncServer::handlePushChangesSuccess(const QJsonObject &response) {
 // 辅助方法实现
 void TodoSyncServer::initializeServerConfig() {
     // 从设置中读取服务器配置，如果不存在则使用默认值
-    m_serverBaseUrl = m_setting.get(QStringLiteral("server/baseUrl"), "https://api.example.com").toString();
-    m_todoApiEndpoint = m_setting.get(QStringLiteral("server/todoApiEndpoint"), "/todo/todo_api.php").toString();
+    m_serverBaseUrl = m_setting.get(QStringLiteral("server/baseUrl"), QString::fromStdString(std::string{DefaultValues::baseUrl})).toString();
+    m_todoApiEndpoint = m_setting.get(QStringLiteral("server/todoApiEndpoint"), QString::fromStdString(std::string{DefaultValues::todoApiEndpoint})).toString();
 
-    qDebug() << "服务器配置已初始化:";
-    qDebug() << "  基础URL:" << m_serverBaseUrl;
-    qDebug() << "  待办事项API:" << m_todoApiEndpoint;
+    qDebug() << "服务器配置 - 基础URL:" << m_serverBaseUrl << ", 待办事项API:" << m_todoApiEndpoint;
 }
 
 QString TodoSyncServer::getApiUrl(const QString &endpoint) const {
@@ -519,15 +517,6 @@ void TodoSyncServer::updateLastSyncTime() {
     m_lastSyncTime = QDateTime::currentDateTime().toString(Qt::ISODate);
     m_setting.save(QStringLiteral("sync/lastSyncTime"), m_lastSyncTime);
     emit lastSyncTimeChanged();
-}
-
-void TodoSyncServer::logError(const QString &context, const QString &error) {
-    qCritical() << context << ":" << error;
-
-    // 可以将错误记录到日志文件中
-    // TODO: 实现日志文件记录
-
-    // 也可以在这里添加错误报告机制
 }
 
 bool TodoSyncServer::canPerformSync() const {

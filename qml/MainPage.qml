@@ -167,6 +167,19 @@ Page {
                             }
                         }
 
+                        // 倒序开关
+                        Switch {
+                            id: descendingSwitch
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 36
+                            text: "倒序排列"
+                            font.pixelSize: 12
+                            checked: todoManager.descending
+                            onCheckedChanged: {
+                                todoManager.setDescending(checked);
+                            }
+                        }
+
                         Label {
                             text: "状态"
                             font.pixelSize: 14
@@ -207,27 +220,6 @@ Page {
                                     todoManager.currentCategory = "";
                                 } else {
                                     todoManager.currentCategory = currentText;
-                                }
-                            }
-                        }
-
-                        Label {
-                            text: "重要程度"
-                            font.pixelSize: 14
-                            color: theme.textColor
-                        }
-
-                        Switch {
-                            id: importantFilter
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 36
-                            text: "重要任务"
-                            onCheckedChanged: {
-                                if (checked) {
-                                    todoManager.currentFilter = "important";
-                                    todoManager.currentImportant = true;
-                                } else {
-                                    todoManager.currentFilter = ""; // 清除筛选
                                 }
                             }
                         }

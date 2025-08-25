@@ -38,7 +38,6 @@ class CategorieItem : public QObject {
     Q_PROPERTY(int id READ id WRITE setId NOTIFY idChanged)
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
     Q_PROPERTY(QUuid userUuid READ userUuid WRITE setUserUuid NOTIFY userUuidChanged)
-    Q_PROPERTY(bool isDefault READ isDefault WRITE setIsDefault NOTIFY isDefaultChanged)
     Q_PROPERTY(QDateTime createdAt READ createdAt WRITE setCreatedAt NOTIFY createdAtChanged)
     Q_PROPERTY(bool synced READ synced WRITE setSynced NOTIFY syncedChanged)
 
@@ -49,7 +48,6 @@ class CategorieItem : public QObject {
     CategorieItem(int id,                     ///< 分类唯一标识符
                   const QString &name,        ///< 分类名称
                   const QUuid &userUuid,      ///< 用户UUID
-                  bool isDefault,             ///< 是否为默认分类
                   const QDateTime &createdAt, ///< 创建时间
                   bool synced,                ///< 是否已与服务器同步
                   QObject *parent = nullptr);
@@ -62,9 +60,6 @@ class CategorieItem : public QObject {
 
     QUuid userUuid() const noexcept { return m_userUuid; } // 获取用户UUID
     void setUserUuid(const QUuid &userUuid);               // 设置用户UUID
-
-    bool isDefault() const noexcept { return m_isDefault; } // 获取是否为默认分类
-    void setIsDefault(bool isDefault);                      // 设置是否为默认分类
 
     QDateTime createdAt() const noexcept { return m_createdAt; } // 获取创建时间
     void setCreatedAt(const QDateTime &createdAt);               // 设置创建时间
@@ -86,7 +81,6 @@ class CategorieItem : public QObject {
     void idChanged();        ///< ID改变信号
     void nameChanged();      ///< 分类名称改变信号
     void userUuidChanged();  ///< 用户UUID改变信号
-    void isDefaultChanged(); ///< 默认分类状态改变信号
     void createdAtChanged(); ///< 创建时间改变信号
     void syncedChanged();    ///< 同步状态改变信号
 
@@ -110,7 +104,6 @@ class CategorieItem : public QObject {
     int m_id;                // 分类ID
     QString m_name;          // 分类名称
     QUuid m_userUuid;        // 用户UUID
-    bool m_isDefault;        // 是否为默认分类
     QDateTime m_createdAt;   // 分类创建时间
     bool m_synced;           // 分类是否已同步
 };

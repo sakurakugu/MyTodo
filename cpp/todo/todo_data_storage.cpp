@@ -86,12 +86,10 @@ bool TodoDataStorage::loadFromLocalStorage(std::vector<std::unique_ptr<TodoItem>
     } catch (const std::exception &e) {
         qCritical() << "加载本地存储时发生异常:" << e.what();
         success = false;
-        logError("加载本地存储", QString("异常: %1").arg(e.what()));
         emit dataOperationCompleted(false, QString("加载失败: %1").arg(e.what()));
     } catch (...) {
         qCritical() << "加载本地存储时发生未知异常";
         success = false;
-        logError("加载本地存储", "未知异常");
         emit dataOperationCompleted(false, "加载失败: 未知异常");
     }
 
@@ -142,12 +140,10 @@ bool TodoDataStorage::saveToLocalStorage(const std::vector<std::unique_ptr<TodoI
     } catch (const std::exception &e) {
         qCritical() << "保存到本地存储时发生异常:" << e.what();
         success = false;
-        logError("保存本地存储", QString("异常: %1").arg(e.what()));
         emit dataOperationCompleted(false, QString("保存失败: %1").arg(e.what()));
     } catch (...) {
         qCritical() << "保存到本地存储时发生未知异常";
         success = false;
-        logError("保存本地存储", "未知异常");
         emit dataOperationCompleted(false, "保存失败: 未知异常");
     }
 
@@ -648,19 +644,19 @@ QVariantList TodoDataStorage::importTodosWithAutoResolution(std::vector<std::uni
 bool TodoDataStorage::validateJsonFormat(const QJsonObject &jsonObject) {
     // 检查版本字段
     if (!jsonObject.contains("version")) {
-        logError("JSON验证", "缺少版本字段");
+        qWarning() << "JSON验证" << "缺少版本字段";
         return false;
     }
 
     QString version = jsonObject["version"].toString();
     if (version != "1.0") {
-        logError("JSON验证", QString("不支持的文件版本: %1").arg(version));
+        qWarning() << "JSON验证" << QString("不支持的文件版本: %1").arg(version);
         return false;
     }
 
     // 检查todos数组
     if (!jsonObject.contains("todos") || !jsonObject["todos"].isArray()) {
-        logError("JSON验证", "缺少或无效的todos数组");
+        qWarning() << "JSON验证" << "缺少或无效的todos数组";
         return false;
     }
 
@@ -736,18 +732,4 @@ TodoItem *TodoDataStorage::findTodoById(const std::vector<std::unique_ptr<TodoIt
     auto it = std::find_if(todos.begin(), todos.end(),
                            [id](const std::unique_ptr<TodoItem> &todo) { return todo->id() == id; });
     return (it != todos.end()) ? it->get() : nullptr;
-}
-
-/**
- * @brief 记录错误信息
- * @param context 错误发生的上下文
- * @param error 错误信息
- */
-void TodoDataStorage::logError(const QString &context, const QString &error) {
-    qCritical() << context << ":" << error;
-
-    // 可以将错误记录到日志文件中
-    // TODO: 实现日志文件记录
-
-    // 也可以在这里添加错误报告机制
 }

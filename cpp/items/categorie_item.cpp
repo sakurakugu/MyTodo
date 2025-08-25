@@ -27,7 +27,6 @@ CategorieItem::CategorieItem(QObject *parent)
       m_id(0),                                   // 初始化分类ID为0
       m_name(""),                                // 初始化分类名称为空字符串
       m_userUuid(QUuid()),                       // 初始化用户UUID为空UUID
-      m_isDefault(false),                        // 初始化是否为默认分类为false
       m_createdAt(QDateTime::currentDateTime()), // 初始化创建时间为当前时间
       m_synced(false)                            // 初始化是否已同步为false
 {
@@ -42,7 +41,6 @@ CategorieItem::CategorieItem(QObject *parent)
 CategorieItem::CategorieItem(int id,                     ///< 分类唯一标识符
                              const QString &name,        ///< 分类名称
                              const QUuid &userUuid,      ///< 用户UUID
-                             bool isDefault,             ///< 是否为默认分类
                              const QDateTime &createdAt, ///< 创建时间
                              bool synced,                ///< 是否已与服务器同步
                              QObject *parent)            ///< 父对象指针
@@ -50,7 +48,6 @@ CategorieItem::CategorieItem(int id,                     ///< 分类唯一标识
       m_id(id),                                          ///< 初始化分类ID
       m_name(name),                                      ///< 初始化分类名称
       m_userUuid(userUuid),                              ///< 初始化用户UUID
-      m_isDefault(isDefault),                            ///< 初始化是否为默认分类
       m_createdAt(createdAt),                            ///< 初始化创建时间
       m_synced(synced)                                   ///< 初始化同步状态
 {
@@ -87,14 +84,6 @@ void CategorieItem::setUserUuid(const QUuid &userUuid) {
 }
 
 /**
- * @brief 设置是否为默认分类
- * @param isDefault 新的默认分类状态
- */
-void CategorieItem::setIsDefault(bool isDefault) {
-    setProperty(m_isDefault, isDefault, &CategorieItem::isDefaultChanged);
-}
-
-/**
  * @brief 设置分类创建时间
  * @param createdAt 新的创建时间
  */
@@ -125,7 +114,7 @@ bool CategorieItem::isValidName() const noexcept {
  * @return 如果是系统默认分类返回true，否则返回false
  */
 bool CategorieItem::isSystemDefault() const noexcept {
-    return m_isDefault && (m_name == "unclassified" || m_name == "未分类" || m_name == "默认分类");
+    return m_id == 1;
 }
 
 /**
@@ -157,7 +146,6 @@ bool CategorieItem::operator==(const CategorieItem &other) const {
     return m_id == other.m_id &&               // 主键ID
            m_name == other.m_name &&           // 分类名称
            m_userUuid == other.m_userUuid &&   // 用户ID
-           m_isDefault == other.m_isDefault && // 是否为默认分类
            m_createdAt == other.m_createdAt && // 创建时间
            m_synced == other.m_synced;         // 同步状态
 }

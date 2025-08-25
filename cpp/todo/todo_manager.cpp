@@ -29,8 +29,12 @@
 #include "user_auth.h"
 
 TodoManager::TodoManager(QObject *parent)
-    : QAbstractListModel(parent), m_filterCacheDirty(true), m_networkRequest(NetworkRequest::GetInstance()),
-      m_setting(Setting::GetInstance()), m_isAutoSync(false) {
+    : QAbstractListModel(parent),                      //
+      m_filterCacheDirty(true),                        //
+      m_networkRequest(NetworkRequest::GetInstance()), //
+      m_setting(Setting::GetInstance()),               //
+      m_isAutoSync(false)                              //
+{
 
     // 初始化默认服务器配置
     m_setting.initializeDefaultServerConfig();
@@ -54,9 +58,6 @@ TodoManager::TodoManager(QObject *parent)
     // 创建数据管理器
     m_dataManager = new TodoDataStorage(m_setting, this);
 
-    // 连接TodoDataStorage的信号
-    // 移除不存在的信号连接
-
     // 创建同步管理器
     m_syncManager = new TodoSyncServer(this);
 
@@ -65,13 +66,12 @@ TodoManager::TodoManager(QObject *parent)
     connect(m_syncManager, &TodoSyncServer::syncCompleted, this, &TodoManager::onSyncCompleted);
     connect(m_syncManager, &TodoSyncServer::todosUpdatedFromServer, this, &TodoManager::onTodosUpdatedFromServer);
 
-    // 创建类别管理器
+    // 创建待办事项类别管理器
     m_categoryManager = new CategoryManager(m_syncManager, this);
     connect(m_categoryManager, &CategoryManager::categoryOperationCompleted, this,
             &TodoManager::categoryOperationCompleted);
 
     // 通过数据管理器加载本地数据
-    // 从本地存储加载数据现在由TodoDataStorage处理
     m_dataManager->loadFromLocalStorage(m_todos);
 
     // 初始化在线状态
@@ -261,6 +261,18 @@ bool TodoManager::setData(const QModelIndex &index, const QVariant &value, int r
         break;
     case RecurrenceStartDateRole:
         item->setRecurrenceStartDate(value.toDate());
+        changed = true;
+        break;
+    case DeadlineRole:
+        item->setDeadline(value.toDateTime());
+        changed = true;
+        break;
+    case IsCompletedRole:
+        item->setIsCompleted(value.toBool());
+        changed = true;
+        break;
+    case IsDeletedRole:
+        item->setIsDeleted(value.toBool());
         changed = true;
         break;
     }
@@ -479,11 +491,9 @@ bool TodoManager::updateTodo(int index, const QVariantMap &todoData) {
         }
     } catch (const std::exception &e) {
         qCritical() << "更新待办事项时发生异常:" << e.what();
-        logError("更新待办事项", QString("异常: %1").arg(e.what()));
         return false;
     } catch (...) {
         qCritical() << "更新待办事项时发生未知异常";
-        logError("更新待办事项", "未知异常");
         return false;
     }
 }
@@ -501,7 +511,7 @@ bool TodoManager::removeTodo(int index) {
     }
 
     try {
-        // 软删除：设置isDeleted为true和deletedAt时间戳，而不是物理删除
+        // 软删除
         auto &todoItem = m_todos[index];
         todoItem->setIsDeleted(true);
         todoItem->setDeletedAt(QDateTime::currentDateTime());
@@ -525,11 +535,9 @@ bool TodoManager::removeTodo(int index) {
         return true;
     } catch (const std::exception &e) {
         qCritical() << "软删除待办事项时发生异常:" << e.what();
-        logError("软删除待办事项", QString("异常: %1").arg(e.what()));
         return false;
     } catch (...) {
         qCritical() << "软删除待办事项时发生未知异常";
-        logError("软删除待办事项", "未知异常");
         return false;
     }
 }
@@ -578,11 +586,9 @@ bool TodoManager::restoreTodo(int index) {
         return true;
     } catch (const std::exception &e) {
         qCritical() << "恢复待办事项时发生异常:" << e.what();
-        logError("恢复待办事项", QString("异常: %1").arg(e.what()));
         return false;
     } catch (...) {
         qCritical() << "恢复待办事项时发生未知异常";
-        logError("恢复待办事项", "未知异常");
         return false;
     }
 }
@@ -621,11 +627,9 @@ bool TodoManager::permanentlyDeleteTodo(int index) {
         return true;
     } catch (const std::exception &e) {
         qCritical() << "永久删除待办事项时发生异常:" << e.what();
-        logError("永久删除待办事项", QString("异常: %1").arg(e.what()));
         return false;
     } catch (...) {
         qCritical() << "永久删除待办事项时发生未知异常";
-        logError("永久删除待办事项", "未知异常");
         return false;
     }
 }
@@ -653,11 +657,9 @@ bool TodoManager::markAsDone(int index) {
         return success;
     } catch (const std::exception &e) {
         qCritical() << "标记待办事项为已完成时发生异常:" << e.what();
-        logError("标记为已完成", QString("异常: %1").arg(e.what()));
         return false;
     } catch (...) {
         qCritical() << "标记待办事项为已完成时发生未知异常";
-        logError("标记为已完成", "未知异常");
         return false;
     }
 }
@@ -781,20 +783,6 @@ void TodoManager::updateSyncManagerData() {
         todoItems.append(item.get());
     }
     m_syncManager->setTodoItems(todoItems);
-}
-
-/**
- * @brief 记录错误信息
- * @param context 错误发生的上下文
- * @param error 错误信息
- */
-void TodoManager::logError(const QString &context, const QString &error) {
-    qCritical() << context << ":" << error;
-
-    // 可以将错误记录到日志文件中
-    // TODO: 实现日志文件记录
-
-    // 也可以在这里添加错误报告机制
 }
 
 // 访问器方法

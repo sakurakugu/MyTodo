@@ -11,10 +11,10 @@
 
 #pragma once
 
+#include "items/todo_item.h"
 #include <QObject>
 #include <memory>
 #include <vector>
-#include "items/todo_item.h"
 
 /**
  * @class TodoSorter
@@ -39,8 +39,9 @@
 class TodoSorter : public QObject {
     Q_OBJECT
     Q_PROPERTY(int sortType READ sortType WRITE setSortType NOTIFY sortTypeChanged)
+    Q_PROPERTY(bool descending READ descending WRITE setDescending NOTIFY descendingChanged)
 
-public:
+  public:
     /**
      * @enum SortType
      * @brief 定义待办事项的排序类型
@@ -61,17 +62,21 @@ public:
     ~TodoSorter();
 
     // 排序属性访问器
-    int sortType() const;       // 获取当前排序类型
-    void setSortType(int type); // 设置排序类型
+    int sortType() const;          // 获取当前排序类型
+    void setSortType(int type);    // 设置排序类型
+    bool descending() const;       // 获取是否倒序
+    void setDescending(bool desc); // 设置是否倒序
 
     void sortTodos(std::vector<std::unique_ptr<TodoItem>> &todos) const; // 对待办事项列表进行排序
-    void sortTodoPointers(QList<TodoItem *> &todos) const; // 对待办事项指针列表进行排序
-    static QString getSortTypeName(SortType type); // 获取排序类型的显示名称
-    static QList<SortType> getAvailableSortTypes(); // 获取所有可用的排序类型
+    void sortTodoPointers(QList<TodoItem *> &todos) const;               // 对待办事项指针列表进行排序
+    static QString getSortTypeName(SortType type);                       // 获取排序类型的显示名称
+    static QList<SortType> getAvailableSortTypes();                      // 获取所有可用的排序类型
 
-signals:
-    void sortTypeChanged(); // 排序类型变化信号
+  signals:
+    void sortTypeChanged();   // 排序类型变化信号
+    void descendingChanged(); // 倒序状态变化信号
 
-private:
-    int m_sortType; ///< 当前排序类型
+  private:
+    int m_sortType;    ///< 当前排序类型
+    bool m_descending; ///< 是否倒序排列
 };

@@ -38,7 +38,6 @@
  *
  * **核心功能：**
  * - 待办事项的CRUD操作（创建、读取、更新、删除）
- * - 数据过滤和分类
  *
  * **架构特点：**
  * - 继承自QAbstractListModel，与Qt视图系统完美集成
@@ -70,9 +69,6 @@ class TodoManager : public QAbstractListModel {
         DescriptionRole,           // 任务描述
         CategoryRole,              // 任务分类
         ImportantRole,             // 任务重要程度
-        CreatedAtRole,             // 任务创建时间
-        UpdatedAtRole,             // 任务更新时间
-        SyncedRole,                // 任务是否已同步
         DeadlineRole,              // 任务截止时间
         RecurrenceIntervalRole,    // 循环间隔
         RecurrenceCountRole,       // 循环次数
@@ -81,11 +77,12 @@ class TodoManager : public QAbstractListModel {
         CompletedAtRole,           // 任务完成时间
         IsDeletedRole,             // 任务是否已删除
         DeletedAtRole,             // 任务删除时间
-        LastModifiedAtRole         // 任务最后修改时间
+        CreatedAtRole,             // 任务创建时间
+        UpdatedAtRole,             // 任务更新时间
+        LastModifiedAtRole,        // 任务最后修改时间
+        SyncedRole                 // 任务是否已同步
     };
     Q_ENUM(TodoRoles)
-
-
 
     /**
      * @brief 构造函数
@@ -136,7 +133,6 @@ class TodoManager : public QAbstractListModel {
   private:
     void updateTodosFromServer(const QJsonArray &todosArray);    // 从服务器数据更新待办事项
     void updateSyncManagerData();                                // 更新同步管理器的待办事项数据
-    void logError(const QString &context, const QString &error); // 记录错误信息
     QVariant getItemData(const TodoItem *item, int role) const;
 
     // 性能优化相关方法

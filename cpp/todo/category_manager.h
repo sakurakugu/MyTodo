@@ -21,6 +21,7 @@
 
 #include "foundation/network_request.h"
 #include "items/categorie_item.h"
+#include "setting.h"
 #include "todo_sync_server.h"
 #include "user_auth.h"
 
@@ -100,13 +101,16 @@ class CategoryManager : public QObject {
     void handleFetchCategoriesSuccess(const QJsonObject &response);   ///< 处理获取类别列表成功响应
     void handleCategoryOperationSuccess(const QJsonObject &response); ///< 处理类别操作成功响应
     void updateCategoriesFromJson(const QJsonArray &categoriesArray); ///< 从JSON数组更新类别列表
-    void logError(const QString &context, const QString &error);      ///< 记录错误信息
     bool isValidCategoryName(const QString &name) const;              ///< 验证类别名称
+    void updateServerConfig(const QString &apiEndpoint);              ///< 更新服务器配置
 
     // 成员变量
     std::vector<std::unique_ptr<CategorieItem>> m_categoryItems; ///< 类别项目列表
     QStringList m_categories;                                    ///< 类别名称列表（缓存）
-    NetworkRequest &m_networkRequest;                            ///< 网络管理器引用
-    TodoSyncServer *m_syncManager;                               ///< 同步管理器指针
-    UserAuth &m_userAuth;                                        ///< 用户认证引用
+    QString m_categoriesApiEndpoint;                             ///< 类别API端点
+
+    NetworkRequest &m_networkRequest; ///< 网络管理器引用
+    TodoSyncServer *m_syncManager;    ///< 同步管理器指针
+    UserAuth &m_userAuth;             ///< 用户认证引用
+    Setting &m_setting;               ///< 配置管理
 };
