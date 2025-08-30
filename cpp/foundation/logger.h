@@ -112,7 +112,11 @@ class Logger : public QObject {
     QString formatLogMessage(QtMsgType type, const QMessageLogContext &context,
                                            const QString &msg) const noexcept;
 
+    // 格式化带颜色的控制台日志消息
+    QString formatColoredLogMessage(QtMsgType type, const QString &msg) const noexcept;
+
     static QString messageTypeToString(QtMsgType type) noexcept;
+    static QString getColorCode(QtMsgType type) noexcept;
 
     std::unique_ptr<QFile> m_logFile;         // 日志文件
     std::unique_ptr<QTextStream> m_logStream; // 日志流

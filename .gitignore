@@ -6,8 +6,11 @@
 
 # 临时
 服务器文件/
-image/app_icon/icon.ico
 image/font_icon/
+image/app_icon/
+
+# 不排除
+!image/app_icon/icon.rc
 
 *~
 *.autosave

@@ -8,6 +8,7 @@
 {
     "files.associations": {
         "*.dbclient-js": "javascript",
+        "*.json5": "json5",
         "*.json": "jsonc",
         "random": "cpp",
         "chrono": "cpp",
@@ -100,7 +101,9 @@
         "source_location": "cpp",
         "valarray": "cpp",
         "qobject": "cpp",
-        "qjsondocument": "cpp"
+        "qjsondocument": "cpp",
+        "shared_mutex": "cpp",
+        "text_encoding": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "search.useIgnoreFiles": false, // 禁用git忽略文件

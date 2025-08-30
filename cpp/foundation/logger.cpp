@@ -257,7 +257,8 @@ void Logger::writeLog(QtMsgType type, const QMessageLogContext &context, const Q
 
         // 输出到控制台 - 无锁操作
         if (toConsole) {
-            std::cout << formattedMsg.toLocal8Bit().toStdString() << std::endl;
+            QString coloredMsg = formatColoredLogMessage(type, formattedMsg);
+            std::cout << coloredMsg.toLocal8Bit().toStdString() << std::endl;
         }
 
         // 输出到文件 - 需要升级为独占锁
@@ -463,5 +464,52 @@ QString Logger::messageTypeToString(QtMsgType type) noexcept {
         return "致命";
     default:
         return "未知";
+    }
+}
+
+/**
+ * @brief 获取日志类型对应的ANSI颜色代码
+ *
+ * @param type 日志类型
+ * @return QString ANSI颜色代码
+ */
+QString Logger::getColorCode(QtMsgType type) noexcept {
+    switch (type) {
+    case QtDebugMsg:
+        return "\033[36m";    // 青色
+    case QtInfoMsg:
+        return "\033[32m";    // 绿色
+    case QtWarningMsg:
+        return "\033[33m";    // 黄色
+    case QtCriticalMsg:
+        return "\033[31m";    // 红色
+    case QtFatalMsg:
+        return "\033[35m";    // 紫色
+    default:
+        return "\033[0m";     // 重置颜色
+    }
+}
+
+/**
+ * @brief 格式化带颜色的控制台日志消息
+ *
+ * @param type 日志类型
+ * @param context 日志上下文
+ * @param msg 日志消息
+ * @return QString 格式化后的带颜色日志消息
+ */
+QString Logger::formatColoredLogMessage(QtMsgType type, const QString &msg) const noexcept {
+    try {
+        // 添加颜色代码
+        const QString colorCode = getColorCode(type);
+        const QString resetCode = "\033[0m";
+        
+        return colorCode + msg + resetCode;
+    } catch (const std::exception &) {
+        // 回退到简单格式
+        const QString colorCode = getColorCode(type);
+        const QString resetCode = "\033[0m";
+        return QString("%1%2%3")
+            .arg(colorCode, msg, resetCode);
     }
 }
