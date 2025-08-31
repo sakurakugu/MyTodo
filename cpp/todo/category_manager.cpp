@@ -144,6 +144,7 @@ void CategoryManager::fetchCategories() {
 
     NetworkRequest::RequestConfig config;
     config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
+    config.method = "GET";  // 获取分类使用GET方法
     config.data = requestData;
     config.requiresAuth = true;
     // 移除重复的Authorization头设置，由addAuthHeader方法统一处理
@@ -182,6 +183,7 @@ void CategoryManager::createCategory(const QString &name) {
 
     NetworkRequest::RequestConfig config;
     config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
+    config.method = "POST";  // 创建分类使用POST方法
     config.data = requestData;
     config.requiresAuth = true;
     // 移除重复的Authorization头设置，由addAuthHeader方法统一处理
@@ -221,6 +223,7 @@ void CategoryManager::updateCategory(int id, const QString &name) {
 
     NetworkRequest::RequestConfig config;
     config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
+    config.method = "PUT";   // 更新分类使用PUT方法
     config.data = requestData;
     config.requiresAuth = true;
     // 移除重复的Authorization头设置，由addAuthHeader方法统一处理
@@ -254,6 +257,7 @@ void CategoryManager::deleteCategory(int id) {
 
     NetworkRequest::RequestConfig config;
     config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
+    config.method = "DELETE"; // 删除分类使用DELETE方法
     config.data = requestData;
     config.requiresAuth = true;
     // 移除重复的Authorization头设置，由addAuthHeader方法统一处理

@@ -59,6 +59,7 @@ void UserAuth::login(const QString &username, const QString &password) {
     // 准备请求配置
     NetworkRequest::RequestConfig config;
     config.url = getApiUrl(m_authApiEndpoint) + "?action=login";
+    config.method = "POST"; // 登录使用POST方法
     config.requiresAuth = false; // 登录请求不需要认证
 
     // 创建登录数据
@@ -147,6 +148,7 @@ void UserAuth::setIsOnline(bool online) {
         // 尝试连接服务器，验证是否可以切换到在线模式
         NetworkRequest::RequestConfig config;
         config.url = getApiUrl(m_authApiEndpoint);
+        config.method = "GET"; // 明确指定GET方法
         config.requiresAuth = UserAuth::GetInstance().isLoggedIn();
         config.timeout = 5000; // 5秒超时
 
@@ -332,12 +334,9 @@ QString UserAuth::getApiUrl(const QString &endpoint) const {
 void UserAuth::initializeServerConfig() {
     // 从设置中加载服务器配置
     m_serverBaseUrl =
-        m_setting.get(QStringLiteral("server/baseUrl"), QString::fromStdString(std::string{DefaultValues::baseUrl}))
-            .toString();
-    m_authApiEndpoint = m_setting
-                            .get(QStringLiteral("server/authApiEndpoint"),
-                                 QString::fromStdString(std::string{DefaultValues::userAuthApiEndpoint}))
-                            .toString();
+        m_setting.get(QStringLiteral("server/baseUrl"), QString::fromStdString(std::string{DefaultValues::baseUrl})).toString();
+    m_authApiEndpoint =
+        m_setting.get(QStringLiteral("server/authApiEndpoint"), QString::fromStdString(std::string{DefaultValues::userAuthApiEndpoint})).toString();
 
     qDebug() << "服务器配置 - 基础URL:" << m_serverBaseUrl << ", 认证端点:" << m_authApiEndpoint;
 }

@@ -271,7 +271,7 @@ void TodoSyncServer::onNetworkRequestFailed(NetworkRequest::RequestType type, Ne
 }
 
 void TodoSyncServer::onAutoSyncTimer() {
-    if (canPerformSync() && !m_isSyncing) {
+    if (canPerformSync() && m_isAutoSyncEnabled&& !m_isSyncing) {
         qDebug() << "自动同步定时器触发，开始同步";
         syncWithServer(Bidirectional);
     }
@@ -327,6 +327,7 @@ void TodoSyncServer::fetchTodosFromServer() {
     try {
         NetworkRequest::RequestConfig config;
         config.url = getApiUrl(m_todoApiEndpoint);
+        config.method = "GET";  // 明确指定使用GET方法
         config.requiresAuth = true;
 
         m_networkRequest.sendRequest(NetworkRequest::RequestType::FetchTodos, config);
@@ -400,6 +401,7 @@ void TodoSyncServer::pushLocalChangesToServer() {
 
         NetworkRequest::RequestConfig config;
         config.url = getApiUrl(m_todoApiEndpoint);
+        config.method = "POST";  // 推送数据使用POST方法
         config.requiresAuth = true;
         config.data["todos"] = jsonArray;
 
@@ -520,11 +522,6 @@ void TodoSyncServer::updateLastSyncTime() {
 }
 
 bool TodoSyncServer::canPerformSync() const {
-    if (!m_isAutoSyncEnabled) {
-        qDebug() << "无法同步：离线模式";
-        return false;
-    }
-
     if (!UserAuth::GetInstance().isLoggedIn()) {
         qDebug() << "无法同步：未登录";
         return false;

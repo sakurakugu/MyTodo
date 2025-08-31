@@ -157,11 +157,12 @@ class TodoSyncServer : public QObject {
     void handlePushChangesSuccess(const QJsonObject &response); // 处理推送更改成功
 
     // 辅助方法
-    void initializeServerConfig(); // 初始化服务器配置
-    void updateLastSyncTime();     // 更新最后同步时间
-    bool canPerformSync() const;   // 检查是否可以执行同步
-    void startAutoSyncTimer();     // 启动自动同步定时器
-    void stopAutoSyncTimer();      // 停止自动同步定时器
+    void initializeServerConfig();   // 初始化服务器配置
+    void updateLastSyncTime();       // 更新最后同步时间
+    bool canPerformSync() const;     // 检查是否可以执行同步
+    void startAutoSyncTimer();       // 启动自动同步定时器
+    void stopAutoSyncTimer();        // 停止自动同步定时器
+    QString SyncDirectionToString(SyncDirection direction); // 同步方向转字符串
 
     // 成员变量
     NetworkRequest &m_networkRequest; ///< 网络请求管理器

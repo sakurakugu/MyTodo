@@ -6,6 +6,7 @@
  * @version 2025-08-22 23:04:19(UTC+8) 周五
  */
 #include "network_request.h"
+#include "config.h"
 #include "network_proxy.h"
 
 #include <QCoreApplication>
@@ -320,15 +321,29 @@ void NetworkRequest::onSslErrors(const QList<QSslError> &errors) {
 void NetworkRequest::executeRequest(PendingRequest &request) {
     QNetworkRequest networkRequest = createNetworkRequest(request.config);
 
-    // 发送POST请求
+    qDebug() << "发送网络请求:" << request.type << "到" << networkRequest.url().toString();
+
+    // 准备请求数据
     QByteArray requestData;
     if (!request.config.data.isEmpty()) {
         requestData = QJsonDocument(request.config.data).toJson(QJsonDocument::Compact);
     }
 
-    qDebug() << "发送网络请求:" << request.type << "到" << networkRequest.url().toString();
-
-    request.reply = m_networkRequest->post(networkRequest, requestData);
+    // 根据HTTP方法发送请求
+    QString method = request.config.method.toUpper();
+    if (method == "GET") {
+        request.reply = m_networkRequest->get(networkRequest);
+    } else if (method == "POST") {
+        request.reply = m_networkRequest->post(networkRequest, requestData);
+    } else if (method == "PUT") {
+        request.reply = m_networkRequest->put(networkRequest, requestData);
+    } else if (method == "DELETE") {
+        request.reply = m_networkRequest->deleteResource(networkRequest);
+    } else {
+        // 默认使用POST（向后兼容）
+        qWarning() << "不支持的HTTP方法:" << method << ", 使用POST代替";
+        request.reply = m_networkRequest->post(networkRequest, requestData);
+    }
 
     // 连接信号
     connect(request.reply, &QNetworkReply::finished, this, &NetworkRequest::onReplyFinished);

@@ -7,6 +7,7 @@ Page {
 
     property var root
     property var stackView
+    property var selectedTodo: null  // 当前选中的待办事项
 
     // 主布局
     RowLayout {
@@ -105,7 +106,7 @@ Page {
 
                     onClicked: {
                         rotationAnimation.start();  // 开始旋转动画
-                        todoManager.refresh();
+                        todoManager.syncWithServer();
                     }
 
                     textColor: theme.textColor
@@ -268,8 +269,6 @@ Page {
                                     category: model.category,
                                     important: model.important
                                 };
-                                detailsTaskForm.setFormData(selectedTodo);
-                                showDetails = true;
                                 todoListView.currentIndex = index;
                             }
                         }
@@ -496,7 +495,7 @@ Page {
                             }
 
                             Text {
-                                text: todoListView.currentItem ? (todoListView.model.get(todoListView.currentIndex).title || "无标题") : ""
+                                text: todoListView.currentItem ? (todoListView.model.data(todoListView.model.index(todoListView.currentIndex, 0), todoManager.TitleRole) || "无标题") : ""
                                 font.pixelSize: 16
                                 Layout.fillWidth: true
                                 wrapMode: Text.WordWrap
@@ -514,7 +513,7 @@ Page {
                             }
 
                             Text {
-                                text: todoListView.currentItem ? (todoListView.model.get(todoListView.currentIndex).description || "无描述") : ""
+                                text: todoListView.currentItem ? (todoListView.model.data(todoListView.model.index(todoListView.currentIndex, 0), todoManager.DescriptionRole) || "无描述") : ""
                                 font.pixelSize: 14
                                 Layout.fillWidth: true
                                 wrapMode: Text.WordWrap

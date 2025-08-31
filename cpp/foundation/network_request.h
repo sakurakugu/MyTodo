@@ -18,6 +18,7 @@
 #include <QObject>
 #include <QQueue>
 #include <QTimer>
+#include <functional>
 
 // 前向声明
 class NetworkProxy;
@@ -101,6 +102,7 @@ class NetworkRequest : public QObject {
      */
     struct RequestConfig {
         QString url;                    // 请求URL
+        QString method = "GET";         // HTTP方法，默认GET
         QJsonObject data;               // 请求数据，JSON格式
         QMap<QString, QString> headers; // 请求头，键值对格式
         int timeout = 10000;            // 默认10秒超时
