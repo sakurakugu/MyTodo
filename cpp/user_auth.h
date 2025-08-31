@@ -16,7 +16,6 @@
 #include <QObject>
 #include <QString>
 #include <QUuid>
-#include <memory>
 
 #include "./foundation/network_request.h"
 

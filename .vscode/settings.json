@@ -103,7 +103,8 @@
         "qobject": "cpp",
         "qjsondocument": "cpp",
         "shared_mutex": "cpp",
-        "text_encoding": "cpp"
+        "text_encoding": "cpp",
+        "qnetworkaccessmanager": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "search.useIgnoreFiles": false, // 禁用git忽略文件

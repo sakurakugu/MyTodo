@@ -12,7 +12,6 @@
  */
 
 #include "categorie_item.h"
-#include <utility>
 
 /**
  * @brief 默认构造函数

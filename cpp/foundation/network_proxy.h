@@ -15,10 +15,6 @@
 #include <QNetworkProxy>
 #include <QObject>
 #include <QString>
-#include <concepts>
-#include <expected>
-#include <optional>
-#include <string_view>
 
 /**
  * @class NetworkProxy

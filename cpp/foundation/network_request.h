@@ -18,7 +18,6 @@
 #include <QObject>
 #include <QQueue>
 #include <QTimer>
-#include <functional>
 
 // 前向声明
 class NetworkProxy;

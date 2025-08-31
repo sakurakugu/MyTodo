@@ -10,11 +10,11 @@
  */
 
 #include "user_auth.h"
+#include "setting.h"
+#include "default_value.h"
 
 #include <QDebug>
 #include <QJsonObject>
-
-#include "setting.h"
 
 UserAuth::UserAuth(QObject *parent)
     : QObject(parent),                                 //
@@ -332,9 +332,12 @@ QString UserAuth::getApiUrl(const QString &endpoint) const {
 void UserAuth::initializeServerConfig() {
     // 从设置中加载服务器配置
     m_serverBaseUrl =
-        m_setting.get(QStringLiteral("server/baseUrl"), QString::fromStdString(std::string{DefaultValues::baseUrl})).toString();
-    m_authApiEndpoint =
-        m_setting.get(QStringLiteral("server/authApiEndpoint"), QString::fromStdString(std::string{DefaultValues::userAuthApiEndpoint})).toString();
+        m_setting.get(QStringLiteral("server/baseUrl"), QString::fromStdString(std::string{DefaultValues::baseUrl}))
+            .toString();
+    m_authApiEndpoint = m_setting
+                            .get(QStringLiteral("server/authApiEndpoint"),
+                                 QString::fromStdString(std::string{DefaultValues::userAuthApiEndpoint}))
+                            .toString();
 
     qDebug() << "服务器配置 - 基础URL:" << m_serverBaseUrl << ", 认证端点:" << m_authApiEndpoint;
 }

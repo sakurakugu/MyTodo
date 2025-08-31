@@ -6,7 +6,6 @@
  * @version 2025-08-22 23:04:19(UTC+8) 周五
  */
 #include "network_request.h"
-#include "config.h"
 #include "network_proxy.h"
 
 #include <QCoreApplication>

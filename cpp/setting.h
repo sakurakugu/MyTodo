@@ -11,7 +11,6 @@
 
 #pragma once
 
-#include "default_value.h"
 #include "foundation/logger.h"
 
 #include <QObject>

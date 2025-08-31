@@ -15,8 +15,6 @@
 #include <QString>
 #include <QDateTime>
 #include <QUuid>
-#include <concepts>
-#include <type_traits>
 
 /**
  * @class CategorieItem

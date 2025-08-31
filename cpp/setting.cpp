@@ -8,7 +8,7 @@
  * @version 2025-08-23 21:09:00(UTC+8) 周六
  */
 #include "setting.h"
-
+#include "default_value.h"
 #include "foundation/config.h"
 
 Setting::Setting(QObject *parent) : QObject(parent), m_logger(Logger::GetInstance()), m_config(Config::GetInstance()) {

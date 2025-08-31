@@ -10,8 +10,6 @@
  */
 #pragma once
 
-#include "../default_value.h"
-
 #include <QDebug>
 #include <QDir>
 #include <QObject>
@@ -19,9 +17,6 @@
 #include <QString>
 #include <QStringList>
 #include <QVariant>
-#include <expected>
-#include <fstream>
-#include <map>
 #include <toml.hpp>
 
 class Config : public QObject {

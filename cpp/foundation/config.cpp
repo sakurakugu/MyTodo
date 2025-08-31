@@ -6,7 +6,6 @@
  * @version 2025-08-22 16:24:28(UTC+8) 周五
  */
 #include "config.h"
-#include "default_value.h"
 
 #if defined(Q_OS_WIN)
 #include <QProcess>
