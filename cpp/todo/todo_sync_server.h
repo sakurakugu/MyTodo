@@ -152,17 +152,21 @@ class TodoSyncServer : public QObject {
     void performSync(SyncDirection direction);                  // 执行同步操作
     void fetchTodosFromServer();                                // 从服务器获取待办事项
     void pushLocalChangesToServer();                            // 推送本地更改到服务器
+    void pushSingleItem(TodoItem *item);                        // 推送单个待办事项
+    void pushNextItem();                                         // 推送下一个待办事项
+    void handleSingleItemPushSuccess(const QJsonObject &response); // 处理单个项目推送成功
     void handleSyncSuccess(const QJsonObject &response);        // 处理同步成功
     void handleFetchTodosSuccess(const QJsonObject &response);  // 处理获取待办事项成功
     void handlePushChangesSuccess(const QJsonObject &response); // 处理推送更改成功
+    void pushBatchToServer(const QList<TodoItem*> &batch);      // 推送批次到服务器
+    void pushNextBatch();                                        // 推送下一个批次
 
     // 辅助方法
-    void initializeServerConfig();   // 初始化服务器配置
-    void updateLastSyncTime();       // 更新最后同步时间
-    bool canPerformSync() const;     // 检查是否可以执行同步
-    void startAutoSyncTimer();       // 启动自动同步定时器
-    void stopAutoSyncTimer();        // 停止自动同步定时器
-    QString SyncDirectionToString(SyncDirection direction); // 同步方向转字符串
+    void initializeServerConfig(); // 初始化服务器配置
+    void updateLastSyncTime();     // 更新最后同步时间
+    bool canPerformSync() const;   // 检查是否可以执行同步
+    void startAutoSyncTimer();     // 启动自动同步定时器
+    void stopAutoSyncTimer();      // 停止自动同步定时器
 
     // 成员变量
     NetworkRequest &m_networkRequest; ///< 网络请求管理器
@@ -182,5 +186,10 @@ class TodoSyncServer : public QObject {
 
     // 数据管理
     QList<TodoItem *> m_todoItems;            ///< 待同步的待办事项列表
-    QList<TodoItem *> m_pendingUnsyncedItems; ///< 待同步项目的临时存储
+    QList<TodoItem *> m_pendingUnsyncedItems; ///< 等待推送的未同步项目
+    QList<TodoItem *> m_allUnsyncedItems;     ///< 存储所有待同步项目
+    int m_currentPushIndex;                    ///< 当前推送的项目索引
+    int m_currentBatchIndex;                   ///< 当前批次索引
+    int m_totalBatches;                        ///< 总批次数
+    static const int m_maxBatchSize = 100;    ///< 最大批次大小
 };

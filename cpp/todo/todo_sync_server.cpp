@@ -30,7 +30,10 @@ TodoSyncServer::TodoSyncServer(QObject *parent)
       m_isAutoSyncEnabled(false),                      //
       m_isSyncing(false),                              //
       m_autoSyncInterval(30),                          //
-      m_currentSyncDirection(Bidirectional) {
+      m_currentSyncDirection(Bidirectional),          //
+      m_currentPushIndex(0),                           //
+      m_currentBatchIndex(0),                          //
+      m_totalBatches(0) {
 
     // 初始化服务器配置
     initializeServerConfig();
@@ -271,7 +274,7 @@ void TodoSyncServer::onNetworkRequestFailed(NetworkRequest::RequestType type, Ne
 }
 
 void TodoSyncServer::onAutoSyncTimer() {
-    if (canPerformSync() && m_isAutoSyncEnabled&& !m_isSyncing) {
+    if (canPerformSync() && m_isAutoSyncEnabled && !m_isSyncing) {
         qDebug() << "自动同步定时器触发，开始同步";
         syncWithServer(Bidirectional);
     }
@@ -370,12 +373,33 @@ void TodoSyncServer::pushLocalChangesToServer() {
     }
 
     qDebug() << "推送" << unsyncedItems.size() << "个项目到服务器";
-    emit syncProgress(75, QString("正在推送 %1 个更改到服务器...").arg(unsyncedItems.size()));
+    
+    // 服务器限制：一次最多同步100个项目
+    const int maxBatchSize = 100;
+    
+    if (unsyncedItems.size() <= maxBatchSize) {
+        // 项目数量在限制范围内，直接推送
+        m_pendingUnsyncedItems = unsyncedItems;
+        pushBatchToServer(unsyncedItems);
+    } else {
+        // 项目数量超过限制，需要分批推送
+        qDebug() << "项目数量超过" << maxBatchSize << "个，将分批推送";
+        m_allUnsyncedItems = unsyncedItems;
+        m_currentBatchIndex = 0;
+        m_totalBatches = (unsyncedItems.size() + maxBatchSize - 1) / maxBatchSize;
+        
+        // 开始推送第一批
+        pushNextBatch();
+    }
+}
+
+void TodoSyncServer::pushBatchToServer(const QList<TodoItem *> &batch) {
+    emit syncProgress(75, QString("正在推送 %1 个更改到服务器...").arg(batch.size()));
 
     try {
-        // 创建一个包含所有未同步项目的JSON数组
+        // 创建一个包含当前批次项目的JSON数组
         QJsonArray jsonArray;
-        for (TodoItem *item : std::as_const(unsyncedItems)) {
+        for (TodoItem *item : std::as_const(batch)) {
             QJsonObject obj;
             obj["id"] = item->id();
             obj["uuid"] = item->uuid().toString();
@@ -401,12 +425,12 @@ void TodoSyncServer::pushLocalChangesToServer() {
 
         NetworkRequest::RequestConfig config;
         config.url = getApiUrl(m_todoApiEndpoint);
-        config.method = "POST";  // 推送数据使用POST方法
+        config.method = "POST";  // 批量推送使用POST方法
         config.requiresAuth = true;
         config.data["todos"] = jsonArray;
 
-        // 存储未同步项目的引用，用于成功后标记为已同步
-        m_pendingUnsyncedItems = unsyncedItems;
+        // 存储当前批次的未同步项目引用，用于成功后标记为已同步
+        m_pendingUnsyncedItems = batch;
 
         m_networkRequest.sendRequest(NetworkRequest::RequestType::PushTodos, config);
     } catch (const std::exception &e) {
@@ -422,6 +446,38 @@ void TodoSyncServer::pushLocalChangesToServer() {
         emit syncingChanged();
         emit syncCompleted(UnknownError, "推送更改失败：未知错误");
     }
+}
+
+void TodoSyncServer::pushNextBatch() {
+    const int maxBatchSize = 100;
+    int startIndex = m_currentBatchIndex * maxBatchSize;
+    int endIndex = qMin(startIndex + maxBatchSize, m_allUnsyncedItems.size());
+    
+    if (startIndex >= m_allUnsyncedItems.size()) {
+        // 所有批次都已推送完成
+        qDebug() << "所有批次推送完成";
+        m_isSyncing = false;
+        emit syncingChanged();
+        updateLastSyncTime();
+        emit syncCompleted(Success, QString("分批同步完成，共推送 %1 个项目").arg(m_allUnsyncedItems.size()));
+        
+        // 清理临时数据
+        m_allUnsyncedItems.clear();
+        m_currentBatchIndex = 0;
+        m_totalBatches = 0;
+        return;
+    }
+    
+    // 获取当前批次的项目
+    QList<TodoItem *> currentBatch;
+    for (int i = startIndex; i < endIndex; ++i) {
+        currentBatch.append(m_allUnsyncedItems[i]);
+    }
+    
+    qDebug() << "推送第" << (m_currentBatchIndex + 1) << "批，共" << m_totalBatches << "批，当前批次" << currentBatch.size() << "个项目";
+    
+    // 推送当前批次
+    pushBatchToServer(currentBatch);
 }
 
 void TodoSyncServer::handleSyncSuccess(const QJsonObject &response) {
@@ -463,9 +519,8 @@ void TodoSyncServer::handleFetchTodosSuccess(const QJsonObject &response) {
 
 void TodoSyncServer::handlePushChangesSuccess(const QJsonObject &response) {
     qDebug() << "推送更改成功";
-    emit syncProgress(100, "更改推送完成");
-
-    // 标记待同步项目为已同步
+    
+    // 标记当前批次的项目为已同步
     for (TodoItem *item : m_pendingUnsyncedItems) {
         item->setSynced(true);
     }
@@ -473,19 +528,46 @@ void TodoSyncServer::handlePushChangesSuccess(const QJsonObject &response) {
     // 发出本地更改已上传信号
     emit localChangesUploaded(m_pendingUnsyncedItems);
 
-    // 清空待同步项目列表
-    m_pendingUnsyncedItems.clear();
-
     // 处理推送响应
     if (response.contains("updated_count")) {
         int updatedCount = response["updated_count"].toInt();
         qDebug() << "已更新" << updatedCount << "个待办事项";
     }
-
-    m_isSyncing = false;
-    emit syncingChanged();
-    updateLastSyncTime();
-    emit syncCompleted(Success, "更改推送完成");
+    
+    // 检查是否还有更多批次需要推送
+    if (!m_allUnsyncedItems.isEmpty() && m_currentBatchIndex < m_totalBatches - 1) {
+        // 还有更多批次需要推送
+        m_currentBatchIndex++;
+        
+        // 更新进度
+        int progress = 75 + (20 * m_currentBatchIndex / m_totalBatches);
+        emit syncProgress(progress, QString("正在推送第 %1/%2 批...").arg(m_currentBatchIndex + 1).arg(m_totalBatches));
+        
+        // 清空当前批次的待同步项目列表
+        m_pendingUnsyncedItems.clear();
+        
+        // 推送下一批
+        pushNextBatch();
+    } else {
+        // 所有批次都已完成或这是单批次推送
+        emit syncProgress(100, "更改推送完成");
+        
+        // 清空待同步项目列表
+        m_pendingUnsyncedItems.clear();
+        
+        if (!m_allUnsyncedItems.isEmpty()) {
+            // 分批推送完成
+            qDebug() << "所有批次推送完成，共" << m_allUnsyncedItems.size() << "个项目";
+            m_allUnsyncedItems.clear();
+            m_currentBatchIndex = 0;
+            m_totalBatches = 0;
+        }
+        
+        m_isSyncing = false;
+        emit syncingChanged();
+        updateLastSyncTime();
+        emit syncCompleted(Success, "更改推送完成");
+    }
 }
 
 // 辅助方法实现
@@ -545,5 +627,94 @@ void TodoSyncServer::stopAutoSyncTimer() {
     if (m_autoSyncTimer->isActive()) {
         m_autoSyncTimer->stop();
         qDebug() << "自动同步定时器已停止";
+    }
+}
+
+void TodoSyncServer::pushSingleItem(TodoItem *item) {
+    if (!item) {
+        // 如果项目无效，跳到下一个
+        pushNextItem();
+        return;
+    }
+
+    qDebug() << "推送单个项目到服务器:" << item->title();
+
+    NetworkRequest::RequestConfig config;
+    config.url = getApiUrl(m_todoApiEndpoint);
+    config.requiresAuth = true;
+
+    // 准备项目数据
+    QJsonObject itemData;
+    itemData["title"] = item->title();
+    itemData["description"] = item->description();
+    itemData["category"] = item->category();
+    itemData["important"] = item->important();
+    itemData["is_completed"] = item->isCompleted();
+    
+    // 处理可选的日期时间字段
+    if (item->deadline().isValid()) {
+        itemData["deadline"] = item->deadline().toString(Qt::ISODate);
+    }
+    if (item->recurrenceInterval() > 0) {
+        itemData["recurrence_interval"] = item->recurrenceInterval();
+        itemData["recurrence_count"] = item->recurrenceCount();
+        if (item->recurrenceStartDate().isValid()) {
+            itemData["recurrence_start_date"] = item->recurrenceStartDate().toString(Qt::ISODate);
+        }
+    }
+
+    // 根据项目状态决定使用的HTTP方法
+    if (item->id() > 0) {
+        // 已存在的项目，使用PATCH更新
+        config.method = "PATCH";
+        itemData["id"] = item->id();
+    } else {
+        // 新项目，使用POST创建
+        config.method = "POST";
+    }
+
+    config.data = itemData;
+    m_networkRequest.sendRequest(NetworkRequest::RequestType::PushTodos, config);
+}
+
+void TodoSyncServer::handleSingleItemPushSuccess(const QJsonObject &response) {
+    qDebug() << "单个项目推送成功";
+    
+    // 标记当前项目为已同步
+    if (m_currentPushIndex < m_pendingUnsyncedItems.size()) {
+        TodoItem *item = m_pendingUnsyncedItems[m_currentPushIndex];
+        if (item) {
+            // TODO: 标记项目为已同步的逻辑
+            // item->setIsSynced(true);
+        }
+    }
+
+    // 推送下一个项目
+    pushNextItem();
+}
+
+void TodoSyncServer::pushNextItem() {
+    m_currentPushIndex++;
+    
+    if (m_currentPushIndex < m_pendingUnsyncedItems.size()) {
+        // 还有更多项目需要推送
+        TodoItem *nextItem = m_pendingUnsyncedItems[m_currentPushIndex];
+        pushSingleItem(nextItem);
+        
+        // 更新进度
+        int progress = 75 + (25 * m_currentPushIndex / m_pendingUnsyncedItems.size());
+        emit syncProgress(progress, QString("正在推送项目 %1/%2...").arg(m_currentPushIndex + 1).arg(m_pendingUnsyncedItems.size()));
+    } else {
+        // 所有项目都已推送完成
+        qDebug() << "所有项目推送完成";
+        
+        m_isSyncing = false;
+        emit syncingChanged();
+        updateLastSyncTime();
+        emit syncCompleted(Success, "同步完成");
+        
+        // 清理临时数据
+        m_pendingUnsyncedItems.clear();
+        m_currentPushIndex = 0;
     }
 }
