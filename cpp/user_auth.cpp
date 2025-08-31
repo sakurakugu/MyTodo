@@ -194,6 +194,11 @@ void UserAuth::onNetworkRequestCompleted(NetworkRequest::RequestType type, const
         // 注销成功处理
         emit logoutSuccessful();
         break;
+    case NetworkRequest::RequestType::FetchTodos:
+        // 如果是token验证请求成功，说明token有效
+        qDebug() << "存储的访问令牌验证成功，用户已自动登录：" << m_username;
+        emit loginSuccessful(m_username);
+        break;
     default:
         // 其他请求类型不在此处理
         break;
@@ -213,6 +218,15 @@ void UserAuth::onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkR
         // 即使注销失败，也清除本地凭据
         clearCredentials();
         emit logoutSuccessful();
+        break;
+    case NetworkRequest::RequestType::FetchTodos:
+        // 如果是token验证请求失败，说明token无效
+        if (error == NetworkRequest::NetworkError::AuthenticationError) {
+            qWarning() << "存储的访问令牌无效，清除凭据并要求重新登录";
+            clearCredentials();
+            emit loginRequired();
+            return;
+        }
         break;
     default:
         // 其他请求类型的错误处理
@@ -278,9 +292,30 @@ void UserAuth::loadStoredCredentials() {
         // 设置网络管理器的认证令牌
         if (!m_accessToken.isEmpty()) {
             m_networkRequest.setAuthToken(m_accessToken);
-            qDebug() << "使用存储的凭据自动登录用户：" << m_username;
+            qDebug() << "加载存储的凭据，用户：" << m_username;
+            
+            // 验证令牌是否仍然有效
+            validateStoredToken();
         }
     }
+}
+
+void UserAuth::validateStoredToken() {
+    if (m_accessToken.isEmpty()) {
+        return;
+    }
+    
+    qDebug() << "验证存储的访问令牌有效性...";
+    
+    // 发送一个简单的验证请求到服务器
+    NetworkRequest::RequestConfig config;
+    config.url = getApiUrl("/todo/todo_api.php/health"); // 使用health端点验证
+    config.method = "GET";
+    config.requiresAuth = true;
+    config.timeout = 5000; // 5秒超时
+    
+    // 这个请求会通过onNetworkRequestCompleted/Failed处理
+    m_networkRequest.sendRequest(NetworkRequest::RequestType::FetchTodos, config);
 }
 
 void UserAuth::saveCredentials() {

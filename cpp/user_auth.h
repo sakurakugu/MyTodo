@@ -16,6 +16,7 @@
 #include <QObject>
 #include <QString>
 #include <QUuid>
+#include <memory>
 
 #include "./foundation/network_request.h"
 
@@ -125,6 +126,7 @@ class UserAuth : public QObject {
     void loadStoredCredentials();                         // 加载存储的凭据
     void saveCredentials();                               // 保存凭据到本地存储
     void clearCredentials();                              // 清除凭据
+    void validateStoredToken();                           // 验证存储的令牌是否有效
     QString getApiUrl(const QString &endpoint) const;     // 获取完整的API URL
     void initializeServerConfig();                        // 初始化服务器配置
     void onNetworkStatusChanged(bool isOnline);           // 处理网络状态变化
