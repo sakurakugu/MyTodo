@@ -836,6 +836,7 @@ void TodoManager::onTodosUpdatedFromServer(const QJsonArray &todosArray) {
 
 void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
     qDebug() << "从服务器更新" << todosArray.size() << "个待办事项";
+    qDebug() << "当前本地有" << m_todos.size() << "个待办事项";
 
     beginResetModel();
 
@@ -847,9 +848,14 @@ void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
         QString uuid = todoObj["uuid"].toString();
         TodoItem *existingItem = nullptr;
 
+        qDebug() << "处理服务器项目，UUID:" << uuid << ", 标题:" << todoObj["title"].toString();
+
         for (const auto &item : m_todos) {
-            if (item->uuid().toString() == uuid) {
+            QString localUuid = item->uuid().toString(QUuid::WithoutBraces); // 去掉花括号
+            qDebug() << "比较本地项目 UUID:" << localUuid << " vs 服务器 UUID:" << uuid;
+            if (localUuid == uuid && !uuid.isEmpty()) {
                 existingItem = item.get();
+                qDebug() << "找到现有项目，UUID:" << uuid;
                 break;
             }
         }
@@ -875,6 +881,7 @@ void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
             existingItem->setSynced(true);
         } else {
             // 创建新项目
+            qDebug() << "未找到现有项目，创建新项目，UUID:" << uuid;
             auto newItem = std::make_unique<TodoItem>();
             newItem->setId(todoObj["id"].toInt());
             newItem->setUuid(QUuid(todoObj["uuid"].toString()));
@@ -909,6 +916,9 @@ void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
     if (!m_dataManager->saveToLocalStorage(m_todos)) {
         qWarning() << "无法在服务器更新后保存本地存储";
     }
+    
+    // 更新同步管理器的数据
+    updateSyncManagerData();
 }
 
 // 更新同步管理器的待办事项数据

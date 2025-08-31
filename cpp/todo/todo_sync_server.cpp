@@ -162,11 +162,28 @@ void TodoSyncServer::setTodoItems(const QList<TodoItem *> &items) {
 
 QList<TodoItem *> TodoSyncServer::getUnsyncedItems() const {
     QList<TodoItem *> unsyncedItems;
+    int totalItems = 0;
+    int syncedItems = 0;
+    
     for (TodoItem *item : m_todoItems) {
+        totalItems++;
         if (!item->synced()) {
             unsyncedItems.append(item);
+        } else {
+            syncedItems++;
         }
     }
+    
+    qDebug() << QString("同步状态检查: 总计=%1, 已同步=%2, 未同步=%3")
+                .arg(totalItems).arg(syncedItems).arg(unsyncedItems.size());
+    
+    // 打印前5个未同步项目的详细信息
+    for (int i = 0; i < qMin(5, unsyncedItems.size()); i++) {
+        TodoItem *item = unsyncedItems[i];
+        qDebug() << QString("未同步项目 %1: ID=%2, 标题='%3', synced=%4")
+                    .arg(i+1).arg(item->id()).arg(item->title()).arg(item->synced());
+    }
+    
     return unsyncedItems;
 }
 
