@@ -1,36 +1,19 @@
-/**
- * @file Setting.qml
- * @brief 设置页面组件
- *
- * 该文件定义了应用程序的设置页面组件，包含外观设置、窗口行为设置等功能。
- * 用户可以在该页面中调整应用程序的主题、窗口行为、自动启动等设置。
- *
- * @author Sakurakugu
- * @date 2025-08-16 20:05:55(UTC+8) 周六
- * @version 2025-08-23 21:09:00(UTC+8) 周六
- */
-
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
 import QtQuick.Dialogs
-import "components"
 
 Page {
     id: settingPage
-    objectName: "settingPage"  // 用于在Main.qml中识别当前页面
 
-    // 从父栈传入的属性
-    property bool isDarkMode: setting.get("setting/isDarkMode", false)
-    property bool preventDragging: false
-    // 根窗口引用，用于更新全局属性
-    property var rootWindow: null
+    property var root
+    property var stackView
+    property bool preventDragging: setting.get("setting/preventDragging", false) // 是否允许拖动
 
     // 主题管理器
     ThemeManager {
         id: theme
-        isDarkMode: settingPage.isDarkMode
     }
 
     // 应用代理设置函数
@@ -49,18 +32,94 @@ Page {
         }
     }
 
-    background: Rectangle {
-        color: theme.backgroundColor
-    }
-
     // 登录相关对话框组件
     LoginStatusDialogs {
         id: loginStatusDialogs
-        isDarkMode: settingPage.isDarkMode
+    }
+
+    // 标题栏
+    Rectangle {
+        id: titleBar
+        height: 30
+        width: parent.width
+        color: theme.backgroundColor
+
+        // 窗口拖拽处理区域
+        WindowDragHandler {
+            anchors.fill: parent
+            targetWindow: root
+        }
+
+        // 左侧返回按钮和标题
+        RowLayout {
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            height: 30
+            spacing: 8
+
+            IconButton {
+                text: "\ue8fa"
+                textColor: theme.textColor
+                fontSize: 16
+                onClicked: stackView.pop()
+                isDarkMode: globalState.isDarkMode
+            }
+
+            Text {
+                text: qsTr("设置")
+                font.bold: true
+                font.pixelSize: 16
+                color: theme.textColor
+            }
+        }
+
+        // 右侧窗口控制按钮
+        RowLayout {
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            height: 30
+            spacing: 0
+
+            // 最小化按钮
+            IconButton {
+                text: "\ue65a"
+                onClicked: homePage.showMinimized()
+                textColor: theme.textColor
+                fontSize: 16
+                isDarkMode: globalState.isDarkMode
+            }
+
+            // 最大化/恢复按钮
+            IconButton {
+                text: root.visibility === Window.Maximized ? "\ue600" : "\ue65b"
+                onClicked: {
+                    if (root.visibility === Window.Maximized) {
+                        root.showNormal();
+                    } else {
+                        root.showMaximized();
+                    }
+                }
+                textColor: theme.textColor
+                fontSize: 16
+                isDarkMode: globalState.isDarkMode
+            }
+
+            // 关闭按钮
+            IconButton {
+                text: "\ue8d1"
+                onClicked: root.close()
+                fontSize: 16
+                textColor: theme.textColor
+                isDarkMode: globalState.isDarkMode
+            }
+        }
     }
 
     ScrollView {
-        anchors.fill: parent
+        anchors.top: titleBar.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
         contentWidth: availableWidth
 
         ColumnLayout {
@@ -72,6 +131,42 @@ Page {
             anchors.rightMargin: 20
             spacing: 15
 
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+
+                RowLayout {
+                    id: userProfileContent
+                    spacing: 10
+
+                    // 显示用户头像
+                    Rectangle {
+                        width: 30
+                        height: 30
+                        radius: 15                               ///< 圆形头像
+                        color: theme.secondaryBackgroundColor    ///< 使用主题次要背景色
+                        Layout.alignment: Qt.AlignVCenter        ///< 垂直居中对齐
+
+                        /// 头像图标
+                        Text {
+                            anchors.centerIn: parent
+                            text: "👤"                      ///< 默认用户图标
+                            font.pixelSize: 18
+                        }
+                    }
+
+                    // 显示用户名
+                    Text {
+                        text: userAuth.username !== "" ? userAuth.username : qsTr("未登录")
+                        color: theme.textColor      ///< 使用主题文本颜色
+                        font.bold: true                     ///< 粗体字
+                        font.pixelSize: 16                  ///< 字体大小
+                        Layout.alignment: Qt.AlignVCenter   ///< 垂直居中对齐
+                        horizontalAlignment: Text.AlignLeft ///< 水平左对齐
+                    }
+                }
+            }
+
             Label {
                 text: qsTr("外观设置")
                 font.bold: true
@@ -82,7 +177,7 @@ Page {
             Switch {
                 id: darkModeCheckBox
                 text: qsTr("深色模式")
-                checked: settingPage.isDarkMode
+                checked: globalState.isDarkMode
                 enabled: !followSystemThemeCheckBox.checked
 
                 property bool isInitialized: false
@@ -95,11 +190,9 @@ Page {
                     if (!isInitialized) {
                         return; // 避免初始化时触发
                     }
-                    settingPage.isDarkMode = checked;
+                    globalState.isDarkMode = checked;
                     // 保存设置到配置文件
                     setting.save("setting/isDarkMode", checked);
-                    if (settingPage.rootWindow)
-                        settingPage.rootWindow.isDarkMode = settingPage.isDarkMode;
                 }
             }
 
@@ -115,11 +208,9 @@ Page {
                     if (checked) {
                         // 如果启用跟随系统，立即同步系统主题
                         var systemDarkMode = globalState.isSystemDarkMode;
-                        if (settingPage.isDarkMode !== systemDarkMode) {
-                            settingPage.isDarkMode = systemDarkMode;
+                        if (globalState.isDarkMode !== systemDarkMode) {
+                            globalState.isDarkMode = systemDarkMode;
                             setting.save("setting/isDarkMode", systemDarkMode);
-                            if (settingPage.rootWindow)
-                                settingPage.rootWindow.isDarkMode = settingPage.isDarkMode;
                         }
                     }
                 }
@@ -134,11 +225,9 @@ Page {
                     if (checked) {
                         // 启用跟随系统时，立即同步系统主题
                         var systemDarkMode = globalState.isSystemDarkMode;
-                        if (settingPage.isDarkMode !== systemDarkMode) {
-                            settingPage.isDarkMode = systemDarkMode;
+                        if (globalState.isDarkMode !== systemDarkMode) {
+                            globalState.isDarkMode = systemDarkMode;
                             setting.save("setting/isDarkMode", systemDarkMode);
-                            if (settingPage.rootWindow)
-                                settingPage.rootWindow.isDarkMode = settingPage.isDarkMode;
                         }
                     }
                 }
@@ -149,11 +238,9 @@ Page {
                     function onSystemDarkModeChanged() {
                         if (followSystemThemeCheckBox.checked) {
                             var systemDarkMode = globalState.isSystemDarkMode;
-                            if (settingPage.isDarkMode !== systemDarkMode) {
-                                settingPage.isDarkMode = systemDarkMode;
+                            if (globalState.isDarkMode !== systemDarkMode) {
+                                globalState.isDarkMode = systemDarkMode;
                                 setting.save("setting/isDarkMode", systemDarkMode);
-                                if (settingPage.rootWindow)
-                                    settingPage.rootWindow.isDarkMode = settingPage.isDarkMode;
                             }
                         }
                     }
@@ -168,8 +255,6 @@ Page {
                 onCheckedChanged: {
                     settingPage.preventDragging = checked;
                     setting.save("setting/preventDragging", settingPage.preventDragging);
-                    if (settingPage.rootWindow)
-                        settingPage.rootWindow.preventDragging = settingPage.preventDragging;
                 }
             }
 
@@ -405,20 +490,22 @@ Page {
             RowLayout {
                 spacing: 10
 
-                CustomButton {
+                Button {
                     text: qsTr("导出待办事项")
-                    textColor: "white"
-                    backgroundColor: "#27ae60"
+                    background: Rectangle {
+                        color: "#27ae60"
+                        radius: 4
+                    }
                     onClicked: exportFileDialog.open()
-                    isDarkMode: settingPage.isDarkMode
                 }
 
-                CustomButton {
+                Button {
                     text: qsTr("导入待办事项")
-                    textColor: "white"
-                    backgroundColor: "#3498db"
+                    background: Rectangle {
+                        color: "#3498db"
+                        radius: 4
+                    }
                     onClicked: importFileDialog.open()
-                    isDarkMode: settingPage.isDarkMode
                 }
             }
 
@@ -430,12 +517,13 @@ Page {
                 Layout.topMargin: 10
             }
 
-            CustomButton {
+            Button {
                 text: qsTr("GitHub主页")
-                textColor: "white"
-                backgroundColor: "#0f85d3"
+                background: Rectangle {
+                    color: "#0f85d3"
+                    radius: 4
+                }
                 onClicked: Qt.openUrlExternally("https://github.com/sakurakugu/MyTodo")
-                isDarkMode: settingPage.isDarkMode
             }
 
             Label {
@@ -477,24 +565,26 @@ Page {
                     RowLayout {
                         spacing: 10
 
-                        CustomButton {
+                        Button {
                             text: qsTr("打开目录")
-                            textColor: "white"
-                            backgroundColor: "#27ae60"
+                            background: Rectangle {
+                                color: "#27ae60"
+                                radius: 4
+                            }
                             onClicked: {
                                 if (!setting.openConfigFilePath()) {
                                     openDirErrorDialog.open();
                                 }
                             }
-                            isDarkMode: settingPage.isDarkMode
                         }
 
-                        CustomButton {
+                        Button {
                             text: qsTr("清空配置")
-                            textColor: "white"
-                            backgroundColor: "#e74c3c"
+                            background: Rectangle {
+                                color: "#e74c3c"
+                                radius: 4
+                            }
                             onClicked: clearConfigDialog.open()
-                            isDarkMode: settingPage.isDarkMode
                         }
                     }
                 }
@@ -534,10 +624,12 @@ Page {
                 RowLayout {
                     spacing: 10
 
-                    CustomButton {
+                    Button {
                         text: qsTr("保存配置")
-                        textColor: "white"
-                        backgroundColor: "#27ae60"
+                        background: Rectangle {
+                            color: "#27ae60"
+                            radius: 4
+                        }
                         enabled: apiUrlField.text.length > 0
                         onClicked: {
                             var url = apiUrlField.text.trim();
@@ -556,19 +648,24 @@ Page {
                             setting.updateServerConfig(url);
                             apiConfigSuccessDialog.open();
                         }
-                        isDarkMode: settingPage.isDarkMode
                     }
 
-                    CustomButton {
+                    Button {
                         text: qsTr("重置为默认")
-                        textColor: "white"
-                        backgroundColor: "#95a5a6"
+                        background: Rectangle {
+                            color: "#95a5a6"
+                            radius: 4
+                        }
                         onClicked: {
                             apiUrlField.text = "https://api.example.com";
                         }
-                        isDarkMode: settingPage.isDarkMode
                     }
                 }
+            }
+
+            Item {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 30
             }
         }
 
@@ -625,7 +722,6 @@ Page {
             dialogWidth: 300
             dialogHeight: 150
             showStandardButtons: true
-            isDarkMode: mainPage.isDarkMode
 
             Label {
                 text: qsTr("待办事项已成功导出！")
@@ -643,7 +739,6 @@ Page {
             dialogWidth: 400
             dialogHeight: 180
             showStandardButtons: true
-            isDarkMode: mainPage.isDarkMode
 
             Label {
                 text: qsTr("导出待办事项时发生错误，请检查文件路径和权限。")
@@ -662,7 +757,6 @@ Page {
             dialogWidth: 300
             dialogHeight: 150
             showStandardButtons: true
-            isDarkMode: mainPage.isDarkMode
 
             Label {
                 text: qsTr("待办事项已成功导入！")
@@ -680,7 +774,6 @@ Page {
             dialogWidth: 400
             dialogHeight: 180
             showStandardButtons: true
-            isDarkMode: mainPage.isDarkMode
 
             Label {
                 text: qsTr("导入待办事项时发生错误，请检查文件格式和内容。")
@@ -699,7 +792,6 @@ Page {
             dialogWidth: Math.min(800, parent.width * 0.9)
             dialogHeight: Math.min(600, parent.height * 0.8)
             showStandardButtons: false
-            isDarkMode: mainPage.isDarkMode
 
             property var conflicts: []
             property string selectedFilePath: ""
@@ -1119,7 +1211,6 @@ Page {
             dialogWidth: 350
             dialogHeight: 200
             showStandardButtons: true
-            isDarkMode: mainPage.isDarkMode
             standardButtons: Dialog.Yes | Dialog.No
 
             Label {
@@ -1144,7 +1235,6 @@ Page {
             dialogWidth: 300
             dialogHeight: 150
             showStandardButtons: true
-            isDarkMode: mainPage.isDarkMode
 
             Label {
                 text: qsTr("存储类型已成功更改！")
@@ -1161,7 +1251,6 @@ Page {
             dialogWidth: 300
             dialogHeight: 150
             showStandardButtons: true
-            isDarkMode: mainPage.isDarkMode
 
             Label {
                 text: qsTr("更改存储类型时发生错误，请重试。")
@@ -1178,7 +1267,6 @@ Page {
             dialogWidth: 300
             dialogHeight: 150
             showStandardButtons: true
-            isDarkMode: mainPage.isDarkMode
 
             Label {
                 text: qsTr("配置文件路径已成功更改！")
@@ -1195,7 +1283,6 @@ Page {
             dialogWidth: 350
             dialogHeight: 150
             showStandardButtons: true
-            isDarkMode: mainPage.isDarkMode
 
             Label {
                 text: qsTr("更改配置文件路径时发生错误，请检查路径是否有效。")
@@ -1212,7 +1299,6 @@ Page {
             dialogWidth: 350
             dialogHeight: 150
             showStandardButtons: true
-            isDarkMode: settingPage.isDarkMode
 
             Label {
                 text: qsTr("配置文件路径已重置为选定的默认位置！")
@@ -1229,7 +1315,6 @@ Page {
             dialogWidth: 300
             dialogHeight: 150
             showStandardButtons: true
-            isDarkMode: settingPage.isDarkMode
 
             Label {
                 text: qsTr("重置配置文件路径时发生错误。")
@@ -1246,7 +1331,6 @@ Page {
             dialogWidth: 300
             dialogHeight: 150
             showStandardButtons: true
-            isDarkMode: settingPage.isDarkMode
 
             Label {
                 text: qsTr("所有配置已清空！")
@@ -1263,7 +1347,6 @@ Page {
             dialogWidth: 350
             dialogHeight: 150
             showStandardButtons: true
-            isDarkMode: settingPage.isDarkMode
 
             Label {
                 text: qsTr("无法打开配置文件目录。")

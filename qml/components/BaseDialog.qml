@@ -25,7 +25,6 @@ Dialog {
     id: baseDialog
 
     // 公共属性
-    property bool isDarkMode: false                    ///< 深色模式开关
     property string dialogTitle: ""                    ///< 对话框标题
     property int dialogWidth: 300                      ///< 对话框最小宽度
     property int dialogHeight: 200                     ///< 对话框最小高度
@@ -43,7 +42,6 @@ Dialog {
     // 主题管理器
     ThemeManager {
         id: theme
-        isDarkMode: baseDialog.isDarkMode
     }
 
     // 对话框基本设置

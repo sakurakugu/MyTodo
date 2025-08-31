@@ -1,15 +1,3 @@
-/**
- * @file WidgetMode.qml
- * @brief 小组件模式组件
- *
- * 该文件定义了应用程序的小组件模式组件，用于在桌面小组件中显示和管理待办事项。
- * 它包含侧边栏、任务列表和任务详情等功能，用户可以在小组件中查看和管理待办事项。
- *
- * @author Sakurakugu
- * @date 2025-08-17 03:57:06(UTC+8) 周日
- * @version 2025-08-21 23:33:39(UTC+8) 周四
- */
-
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -17,27 +5,114 @@ import "components"
 
 Item {
     id: widgetMode
+    visible: globalState.isDesktopWidget
 
-    // 从父组件传入的属性
-    property bool isDesktopWidget: false
-    property bool isShowAddTask: globalState.isShowAddTask
-    property bool isShowSetting: globalState.isShowSetting
-    property bool isShowTodos: false
-    property bool isShowDropdown: globalState.isShowDropdown
-    property bool isDarkMode: false
-    property bool preventDragging: false
+    property bool preventDragging: setting.get("setting/preventDragging", false) // 是否允许拖动
 
-    // 自定义信号定义
-    signal preventDraggingToggled(bool value)
-    signal darkModeToggled(bool value)
-
-    // 主题管理器
     ThemeManager {
         id: theme
-        isDarkMode: widgetMode.isDarkMode
     }
 
-    // 小组件模式的设置弹出窗口
+    // 登录相关对话框组件
+    LoginStatusDialogs {
+        id: loginStatusDialogs
+    }
+
+    /// 标题栏
+    Rectangle {
+        id: titleBar
+        anchors.top: parent.top
+        width: 400
+        height: 35
+        color: theme.primaryColor
+        border.width: 0                               ///< 边框宽度
+        radius: 5                                     ///< 圆角
+        visible: globalState.isDesktopWidget
+
+        // 窗口拖拽处理区域
+        WindowDragHandler {
+            anchors.fill: parent
+            targetWindow: root
+        }
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 5   ///< 左边距
+            anchors.rightMargin: 5  ///< 右边距
+
+            IconButton {
+                text: "\ue90f"              ///< 菜单图标
+                onClicked: globalState.toggleSettingsVisible()
+                textColor: theme.textColor
+                fontSize: 16
+                isDarkMode: globalState.isDarkMode
+            }
+
+            /// 待办状态指示器
+            Text {
+                id: todoStatusIndicator
+                Layout.alignment: Qt.AlignVCenter
+                color: theme.textColor
+                font.pixelSize: 14
+                font.bold: true
+
+                // TODO: 新增或删除待办后，这里的文字没有更改（显示的是当前分类下的待办数量）
+                property int todoCount: todoManager.rowCount()
+                property bool isHovered: false
+
+                text: {
+                    if (isHovered) {
+                        return todoCount > 0 ? todoCount + "个待办" : "没有待办";
+                    } else {
+                        return todoCount > 0 ? todoCount + "个待办" : "我的待办";
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onEntered: parent.isHovered = true
+                    onExited: parent.isHovered = false
+                }
+            }
+
+            Item {
+                Layout.fillWidth: true
+            }
+
+            /// 任务列表展开/收起按钮
+            IconButton {
+                text: globalState.isShowTodos ? "\ue667" : "\ue669"     ///< 根据状态显示箭头
+                onClicked: globalState.toggleTodosVisible()     ///< 切换任务列表显示
+                textColor: theme.textColor
+                fontSize: 16
+                isDarkMode: globalState.isDarkMode
+            }
+
+            /// 添加任务按钮
+            IconButton {
+                text: "\ue903"                                 ///< 加号图标
+                onClicked: globalState.toggleAddTaskVisible()   ///< 切换添加任务界面显示
+                textColor: theme.textColor
+                fontSize: 16
+                isDarkMode: globalState.isDarkMode
+            }
+
+            /// 普通模式和小组件模式切换按钮
+            IconButton {
+                text: "\ue620"
+                /// 鼠标按下事件处理
+                onClicked: {
+                    globalState.toggleWidgetMode();
+                }
+                textColor: theme.textColor
+                fontSize: 18
+                isDarkMode: globalState.isDarkMode
+            }
+        }
+    }
+
+    // 设置窗口
     Popup {
         id: settingsPopup
         y: 50
@@ -48,7 +123,7 @@ Item {
         modal: false // 非模态，允许同时打开多个弹出窗口
         focus: true
         closePolicy: Popup.NoAutoClose
-        visible: isDesktopWidget && isShowSetting
+        visible: globalState.isDesktopWidget && globalState.isShowSetting
 
         contentItem: Rectangle {
             color: theme.secondaryBackgroundColor
@@ -72,7 +147,7 @@ Item {
                 Switch {
                     id: darkModeCheckBox
                     text: "深色模式"
-                    checked: isDarkMode
+                    checked: globalState.isDarkMode
 
                     property bool isInitialized: false
 
@@ -87,20 +162,20 @@ Item {
                         // 保存设置到配置文件
                         setting.save("setting/isDarkMode", checked);
                         // 发出信号通知父组件
-                        widgetMode.darkModeToggled(checked);
+                        globalState.isDarkMode = checked;
                     }
                 }
 
                 Switch {
                     id: preventDraggingCheckBox
                     text: "防止拖动窗口（小窗口模式）"
-                    checked: preventDragging
-                    enabled: isDesktopWidget
+                    checked: widgetMode.preventDragging
+                    enabled: globalState.isDesktopWidget
                     onCheckedChanged: {
                         // 保存设置到配置文件
                         setting.save("setting/preventDragging", checked);
                         // 发出信号通知父组件
-                        widgetMode.preventDraggingToggled(checked);
+                        widgetMode.preventDragging = checked;
                     }
                 }
 
@@ -133,7 +208,7 @@ Item {
         }
     }
 
-    // 小组件模式的添加任务弹出窗口
+    // 添加任务窗口
     Popup {
         id: addTaskPopup
         y: settingsPopup.visible ? settingsPopup.y + 250 + 6 : 50
@@ -142,7 +217,7 @@ Item {
         modal: false // 非模态，允许同时打开多个弹出窗口
         focus: true
         closePolicy: Popup.NoAutoClose
-        visible: isDesktopWidget && isShowAddTask
+        visible: globalState.isDesktopWidget && globalState.isShowAddTask
 
         contentItem: Rectangle {
             color: theme.secondaryBackgroundColor
@@ -166,24 +241,14 @@ Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
-
-                    TaskForm {
-                        id: addTaskForm
-                        width: parent.width
-                        theme: widgetMode.theme
-                        isCompactMode: true
-                    }
                 }
 
                 RowLayout {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignRight
 
-                    CustomButton {
+                    Button {
                         text: "添加"
-                        textColor: "white"
-                        backgroundColor: theme.primaryColor
-                        isDarkMode: widgetMode.isDarkMode
                         onClicked: {
                             if (addTaskForm.isValid()) {
                                 var todoData = addTaskForm.getTodoData();
@@ -198,7 +263,7 @@ Item {
         }
     }
 
-    // 小组件模式的主内容区弹出窗口
+    // 主内容区窗口
     Popup {
         id: mainContentPopup
 
@@ -221,7 +286,7 @@ Item {
         modal: false // 非模态，允许同时打开多个弹出窗口
         focus: true
         closePolicy: Popup.NoAutoClose
-        visible: isDesktopWidget && isShowTodos // 在小组件模式下且需要显示所有任务时显示
+        visible: globalState.isDesktopWidget && globalState.isShowTodos // 在小组件模式下且需要显示所有任务时显示
 
         contentItem: Rectangle {
             color: theme.secondaryBackgroundColor
@@ -376,23 +441,7 @@ Item {
         }
     }
 
-    // 登录状态相关对话框组件
-    LoginStatusDialogs {
-        id: loginStatusDialogs
-        isDarkMode: widgetMode.isDarkMode
-    }
-
-    // 待办详情/编辑对话框组件
-    TodoDetailsDialog {
-        id: todoDetailsDialog
-        isDarkMode: widgetMode.isDarkMode
-
-        onTodoUpdated: function (index, todoData) {
-            todoManager.updateTodo(index, todoData);
-        }
-    }
-
-    // 待办事项下拉窗口
+    // 待办事项详情窗口
     Popup {
         id: todoItemDropdown
 
@@ -407,7 +456,7 @@ Item {
         modal: false
         focus: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-        visible: isDesktopWidget && isShowDropdown
+        visible: globalState.isDesktopWidget && globalState.isShowDropdown
 
         property int currentTodoIndex: -1
         property var currentTodoData: null
@@ -475,36 +524,27 @@ Item {
                     color: theme.borderColor
                 }
 
-                CustomButton {
+                Button {
                     text: "查看详情"
                     Layout.fillWidth: true
-                    textColor: theme.textColor
-                    backgroundColor: theme.backgroundColor
-                    isDarkMode: widgetMode.isDarkMode
                     onClicked: {
                         globalState.toggleDropdownVisible();
                         todoDetailsDialog.openTodoDetails(todoItemDropdown.currentTodoData, todoItemDropdown.currentTodoIndex);
                     }
                 }
 
-                CustomButton {
+                Button {
                     text: "标记完成"
                     Layout.fillWidth: true
-                    textColor: "white"
-                    backgroundColor: theme.primaryColor
-                    isDarkMode: widgetMode.isDarkMode
                     onClicked: {
                         todoManager.markAsDone(todoItemDropdown.currentTodoIndex);
                         globalState.toggleDropdownVisible();
                     }
                 }
 
-                CustomButton {
+                Button {
                     text: "删除任务"
                     Layout.fillWidth: true
-                    textColor: "white"
-                    backgroundColor: "#e74c3c"
-                    isDarkMode: widgetMode.isDarkMode
                     onClicked: {
                         todoManager.removeTodo(todoItemDropdown.currentTodoIndex);
                         globalState.toggleDropdownVisible();

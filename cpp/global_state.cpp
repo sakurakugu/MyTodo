@@ -16,10 +16,27 @@
 #include <QStandardPaths>
 
 GlobalState::GlobalState(QObject *parent)
-    : QObject(parent), m_isDesktopWidget(false), m_isShowAddTask(false), m_isShowTodos(true), m_isShowSetting(false), m_isShowDropdown(false) {
+    : QObject(parent),          // 初始化父对象
+      m_isDarkMode(false),      // 初始化是否为深色模式为false
+      m_isDesktopWidget(false), // 初始化是否为桌面窗口为false
+      m_isShowAddTask(false),   // 初始化是否显示添加任务为false
+      m_isShowTodos(true),      // 初始化是否显示待办事项为true
+      m_isShowSetting(false),   // 初始化是否显示设置为false
+      m_isShowDropdown(false) { // 初始化是否显示下拉菜单为false
 
     // 监听系统主题变化
     connect(QGuiApplication::instance(), SIGNAL(paletteChanged(QPalette)), this, SIGNAL(systemDarkModeChanged()));
+}
+
+bool GlobalState::isDarkMode() const {
+    return m_isDarkMode;
+}
+
+void GlobalState::setIsDarkMode(bool value) {
+    if (m_isDarkMode != value) {
+        m_isDarkMode = value;
+        emit isDarkModeChanged();
+    }
 }
 
 bool GlobalState::isDesktopWidget() const {
@@ -74,6 +91,17 @@ void GlobalState::setIsShowDropdown(bool value) {
     if (m_isShowDropdown != value) {
         m_isShowDropdown = value;
         emit isShowDropdownChanged();
+    }
+}
+
+bool GlobalState::preventDragging() const {
+    return m_preventDragging;
+}
+
+void GlobalState::setPreventDragging(bool value) {
+    if (m_preventDragging != value) {
+        m_preventDragging = value;
+        emit preventDraggingChanged();
     }
 }
 

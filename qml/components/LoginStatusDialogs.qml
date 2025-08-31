@@ -23,9 +23,6 @@ import QtQuick.Layouts
 Item {
     id: loginStatusDialogs
 
-    // 公共属性
-    property bool isDarkMode: false  ///< 深色模式开关
-
     // 信号定义
     signal loginSuccessMessage(string message)  ///< 登录成功消息信号
     signal logoutSuccessMessage(string message) ///< 退出登录成功消息信号
@@ -34,7 +31,6 @@ Item {
     // 主题管理器
     ThemeManager {
         id: theme
-        isDarkMode: loginStatusDialogs.isDarkMode
     }
 
     anchors.centerIn: parent
@@ -69,7 +65,6 @@ Item {
         dialogWidth: 280
         maxDialogHeight: 140
         showStandardButtons: false
-        isDarkMode: loginStatusDialogs.isDarkMode
 
         Item {
             Layout.fillWidth: true
@@ -160,7 +155,6 @@ Item {
         maxDialogHeight: 250
         showStandardButtons: false
         contentSpacing: 10  // 减少内容区域间距
-        isDarkMode: loginStatusDialogs.isDarkMode
 
         // 文本测量组件（用于计算错误消息高度）
         TextMetrics {
@@ -402,7 +396,6 @@ Item {
         dialogWidth: 280
         maxDialogHeight: 140
         showStandardButtons: false
-        isDarkMode: loginStatusDialogs.isDarkMode
         contentSpacing: 10 // 缩小整体竖向间距，便于减小复选框到按钮的距离
 
         Item {
@@ -528,7 +521,6 @@ Item {
         // maxDialogHeight: 100
         autoSize: false
         showStandardButtons: false
-        isDarkMode: loginStatusDialogs.isDarkMode
 
         property string message: ""
 

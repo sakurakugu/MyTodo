@@ -16,7 +16,7 @@ QtObject {
     id: themeManager
 
     // 主题状态
-    property bool isDarkMode: false
+    property bool isDarkMode: globalState.isDarkMode
 
     // 主色调
     readonly property color primaryColor: isDarkMode ? "#2c3e50" : "#4a86e8"
@@ -29,7 +29,6 @@ QtObject {
     readonly property color cardBackgroundColor: isDarkMode ? "#34495e" : "#ffffff"
 
     // 文本色
-    readonly property color titleBarTextColor: isDarkMode ? "white" : "#ecf0f1"
     readonly property color textColor: isDarkMode ? "#ecf0f1" : "black"
     readonly property color secondaryTextColor: isDarkMode ? "#bdc3c7" : "#666666"
     readonly property color placeholderTextColor: isDarkMode ? "#7f8c8d" : "#999999"

@@ -141,25 +141,20 @@ set(PROJECT_SOURCES
 # 按功能模块组织 QML 文件
 set(QML_MAIN_FILES
     # 主要界面文件
-    qml/Main.qml                    # 主窗口
-    qml/MainPage.qml                # 主页面
-    qml/Setting.qml                 # 设置页面
-    qml/WidgetMode.qml              # 小组件模式
+    qml/Main.qml                    # 入口文件
+    qml/HomePage.qml                # 主窗口
+    qml/SettingPage.qml               # 登录窗口
+    qml/WidgetMode.qml              # 小窗口模式
 )
 
 set(QML_COMPONENT_FILES
     # 可重用组件文件
-    qml/components/CustomButton.qml                 # 自定义按钮
-    qml/components/CustomPopup.qml                  # 自定义弹窗
-    qml/components/TaskForm.qml                     # 任务表单
     qml/components/ThemeManager.qml                 # 主题管理器
-    qml/components/ConfirmDialog.qml                # 通用确认对话框
-    qml/components/MessageDialog.qml                # 消息提示对话框
     qml/components/LoginStatusDialogs.qml           # 登录状态相关对话框
-    qml/components/TodoDetailsDialog.qml            # 待办详情对话框
-    qml/components/CategoryManagementDialog.qml     # 分类管理对话框
-    qml/components/BaseDialog.qml                   # 基础对话框
     qml/components/IconButton.qml                   # 图标按钮
+    qml/components/BaseDialog.qml                   # 基础对话框
+    qml/components/WindowDragHandler.qml            # 窗口拖拽处理
+
 )
 
 # 合并所有 QML 文件
