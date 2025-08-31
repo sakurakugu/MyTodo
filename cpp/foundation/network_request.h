@@ -18,7 +18,6 @@
 #include <QObject>
 #include <QQueue>
 #include <QTimer>
-#include <functional>
 
 // 前向声明
 class NetworkProxy;
@@ -75,6 +74,7 @@ class NetworkRequest : public QObject {
         FetchTodos,      // 获取待办事项请求
         PushTodos,       // 推送待办事项请求
         Logout,          // 退出登录请求
+        RefreshToken,    // 刷新令牌请求
         FetchCategories, // 获取类别列表请求
         CreateCategory,  // 创建类别请求
         UpdateCategory,  // 更新类别请求

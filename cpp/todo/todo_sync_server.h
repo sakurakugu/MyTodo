@@ -149,17 +149,17 @@ class TodoSyncServer : public QObject {
 
   private:
     // 同步操作实现
-    void performSync(SyncDirection direction);                  // 执行同步操作
-    void fetchTodosFromServer();                                // 从服务器获取待办事项
-    void pushLocalChangesToServer();                            // 推送本地更改到服务器
-    void pushSingleItem(TodoItem *item);                        // 推送单个待办事项
-    void pushNextItem();                                         // 推送下一个待办事项
+    void performSync(SyncDirection direction);                     // 执行同步操作
+    void fetchTodosFromServer();                                   // 从服务器获取待办事项
+    void pushLocalChangesToServer();                               // 推送本地更改到服务器
+    void pushSingleItem(TodoItem *item);                           // 推送单个待办事项
+    void pushNextItem();                                           // 推送下一个待办事项
     void handleSingleItemPushSuccess(const QJsonObject &response); // 处理单个项目推送成功
-    void handleSyncSuccess(const QJsonObject &response);        // 处理同步成功
-    void handleFetchTodosSuccess(const QJsonObject &response);  // 处理获取待办事项成功
-    void handlePushChangesSuccess(const QJsonObject &response); // 处理推送更改成功
-    void pushBatchToServer(const QList<TodoItem*> &batch);      // 推送批次到服务器
-    void pushNextBatch();                                        // 推送下一个批次
+    void handleSyncSuccess(const QJsonObject &response);           // 处理同步成功
+    void handleFetchTodosSuccess(const QJsonObject &response);     // 处理获取待办事项成功
+    void handlePushChangesSuccess(const QJsonObject &response);    // 处理推送更改成功
+    void pushBatchToServer(const QList<TodoItem *> &batch);        // 推送批次到服务器
+    void pushNextBatch();                                          // 推送下一个批次
 
     // 辅助方法
     void initializeServerConfig(); // 初始化服务器配置
@@ -188,8 +188,8 @@ class TodoSyncServer : public QObject {
     QList<TodoItem *> m_todoItems;            ///< 待同步的待办事项列表
     QList<TodoItem *> m_pendingUnsyncedItems; ///< 等待推送的未同步项目
     QList<TodoItem *> m_allUnsyncedItems;     ///< 存储所有待同步项目
-    int m_currentPushIndex;                    ///< 当前推送的项目索引
-    int m_currentBatchIndex;                   ///< 当前批次索引
-    int m_totalBatches;                        ///< 总批次数
+    int m_currentPushIndex;                   ///< 当前推送的项目索引
+    int m_currentBatchIndex;                  ///< 当前批次索引
+    int m_totalBatches;                       ///< 总批次数
     static const int m_maxBatchSize = 100;    ///< 最大批次大小
 };

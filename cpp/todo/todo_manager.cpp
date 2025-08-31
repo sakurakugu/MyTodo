@@ -295,6 +295,10 @@ bool TodoManager::setData(const QModelIndex &index, const QVariant &value, int r
         invalidateFilterCache();
         emit dataChanged(index, index, QVector<int>() << role);
         m_dataManager->saveToLocalStorage(m_todos);
+
+        // 更新同步管理器的数据
+        updateSyncManagerData();
+
         return true;
     }
 
@@ -369,6 +373,9 @@ void TodoManager::addTodo(const QString &title, const QString &description, cons
     endInsertRows();
 
     m_dataManager->saveToLocalStorage(m_todos);
+
+    // 更新同步管理器的数据
+    updateSyncManagerData();
 
     if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
         // 如果在线且已登录，立即尝试同步到服务器
@@ -492,6 +499,9 @@ bool TodoManager::updateTodo(int index, const QVariantMap &todoData) {
             if (!m_dataManager->saveToLocalStorage(m_todos)) {
                 qWarning() << "更新待办事项后无法保存到本地存储";
             }
+
+            // 更新同步管理器的数据
+            updateSyncManagerData();
 
             if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
                 syncWithServer();
