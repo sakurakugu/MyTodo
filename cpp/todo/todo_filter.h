@@ -40,6 +40,7 @@ class TodoFilter : public QObject {
     Q_OBJECT
     Q_PROPERTY(QString currentCategory READ currentCategory WRITE setCurrentCategory NOTIFY currentCategoryChanged)
     Q_PROPERTY(QString currentFilter READ currentFilter WRITE setCurrentFilter NOTIFY currentFilterChanged)
+    Q_PROPERTY(QString searchText READ searchText WRITE setSearchText NOTIFY searchTextChanged)
     Q_PROPERTY(QDate dateFilterStart READ dateFilterStart WRITE setDateFilterStart NOTIFY dateFilterStartChanged)
     Q_PROPERTY(QDate dateFilterEnd READ dateFilterEnd WRITE setDateFilterEnd NOTIFY dateFilterEndChanged)
     Q_PROPERTY(bool dateFilterEnabled READ dateFilterEnabled WRITE setDateFilterEnabled NOTIFY dateFilterEnabledChanged)
@@ -57,6 +58,8 @@ class TodoFilter : public QObject {
     void setCurrentCategory(const QString &category); // 设置分类筛选器
     QString currentFilter() const;                    // 获取当前激活的筛选条件
     void setCurrentFilter(const QString &filter);     // 设置筛选条件
+    QString searchText() const;                       // 获取搜索文本
+    void setSearchText(const QString &text);          // 设置搜索文本
 
     // 日期筛选相关方法
     QDate dateFilterStart() const;              // 获取日期筛选开始日期
@@ -77,6 +80,7 @@ class TodoFilter : public QObject {
     void currentCategoryChanged();   // 当前分类筛选器变化信号
     void currentFilterChanged();     // 当前筛选条件变化信号
     void currentImportantChanged();  // 当前重要程度筛选器变化信号
+    void searchTextChanged();        // 搜索文本变化信号
     void dateFilterStartChanged();   // 日期筛选开始日期变化信号
     void dateFilterEndChanged();     // 日期筛选结束日期变化信号
     void dateFilterEnabledChanged(); // 日期筛选启用状态变化信号
@@ -86,6 +90,7 @@ class TodoFilter : public QObject {
     // 筛选条件成员变量
     QString m_currentCategory; ///< 当前分类筛选器
     QString m_currentFilter;   ///< 当前筛选条件
+    QString m_searchText;      ///< 搜索文本
     QDate m_dateFilterStart;   ///< 日期筛选开始日期
     QDate m_dateFilterEnd;     ///< 日期筛选结束日期
     bool m_dateFilterEnabled;  ///< 日期筛选是否启用
@@ -93,6 +98,7 @@ class TodoFilter : public QObject {
     // 辅助方法
     bool checkCategoryMatch(const TodoItem *item) const; // 检查分类筛选条件
     bool checkStatusMatch(const TodoItem *item) const;   // 检查状态筛选条件
+    bool checkSearchMatch(const TodoItem *item) const;   // 检查搜索文本筛选条件
     bool checkDateMatch(const TodoItem *item) const;     // 检查日期筛选条件
 
     /**

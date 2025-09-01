@@ -16,6 +16,7 @@ TodoFilter::TodoFilter(QObject *parent)
     : QObject(parent),           //
       m_currentCategory(""),     //
       m_currentFilter(""),       //
+      m_searchText(""),          //
       m_dateFilterEnabled(false) //
 {
 }
@@ -59,6 +60,26 @@ void TodoFilter::setCurrentFilter(const QString &filter) {
     if (m_currentFilter != filter) {
         m_currentFilter = filter;
         emit currentFilterChanged();
+        emitFiltersChanged();
+    }
+}
+
+/**
+ * @brief 获取搜索文本
+ * @return 当前搜索文本
+ */
+QString TodoFilter::searchText() const {
+    return m_searchText;
+}
+
+/**
+ * @brief 设置搜索文本
+ * @param text 搜索文本
+ */
+void TodoFilter::setSearchText(const QString &text) {
+    if (m_searchText != text) {
+        m_searchText = text;
+        emit searchTextChanged();
         emitFiltersChanged();
     }
 }
@@ -132,7 +153,7 @@ bool TodoFilter::itemMatchesFilter(const TodoItem *item) const {
     if (!item)
         return false;
 
-    return checkCategoryMatch(item) && checkStatusMatch(item) && checkDateMatch(item);
+    return checkCategoryMatch(item) && checkStatusMatch(item) && checkSearchMatch(item) && checkDateMatch(item);
 }
 
 /**
@@ -170,6 +191,12 @@ void TodoFilter::resetFilters() {
         changed = true;
     }
 
+    if (!m_searchText.isEmpty()) {
+        m_searchText.clear();
+        emit searchTextChanged();
+        changed = true;
+    }
+
     if (m_dateFilterEnabled) {
         m_dateFilterEnabled = false;
         emit dateFilterEnabledChanged();
@@ -198,7 +225,7 @@ void TodoFilter::resetFilters() {
  * @return 如果有筛选条件被激活返回true，否则返回false
  */
 bool TodoFilter::hasActiveFilters() const {
-    return !m_currentCategory.isEmpty() || !m_currentFilter.isEmpty() || m_dateFilterEnabled;
+    return !m_currentCategory.isEmpty() || !m_currentFilter.isEmpty() || !m_searchText.isEmpty() || m_dateFilterEnabled;
 }
 
 /**
@@ -244,6 +271,23 @@ bool TodoFilter::checkStatusMatch(const TodoItem *item) const {
 
         return statusMatch;
     }
+}
+
+/**
+ * @brief 检查搜索文本筛选条件
+ * @param item 待检查的待办事项
+ * @return 如果匹配返回true，否则返回false
+ */
+bool TodoFilter::checkSearchMatch(const TodoItem *item) const {
+    if (m_searchText.isEmpty()) {
+        return true; // 没有搜索文本，显示全部
+    }
+
+    // 在标题、描述和分类中搜索
+    QString searchLower = m_searchText.toLower();
+    return item->title().toLower().contains(searchLower) ||
+           item->description().toLower().contains(searchLower) ||
+           item->category().toLower().contains(searchLower);
 }
 
 /**

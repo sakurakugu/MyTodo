@@ -69,14 +69,96 @@ Page {
                     }
                 }
 
-                // 各种筛选分类
+                // 全部、未完成、已完成、回收站
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: implicitHeight
+                    implicitHeight: column.implicitHeight + 20  // Column高度 + 上下边距
+                    color: theme.borderColor
+                    radius: 50
+
+                    Column {
+                        id: column
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        spacing: 10
+
+                        IconButton {
+                            text: "\ue8df"              ///< 全部图标
+                            onClicked: todoFilter.currentFilter = "all"
+                            textColor: theme.textColor
+                            fontSize: 16
+                            isDarkMode: globalState.isDarkMode
+                            width: parent.width
+                        }
+
+                        IconButton {
+                            text: "\ue7fc"              ///< 未完成图标
+                            onClicked: todoFilter.currentFilter = "todo"
+                            textColor: theme.textColor
+                            fontSize: 16
+                            isDarkMode: globalState.isDarkMode
+                            width: parent.width
+                        }
+
+                        IconButton {
+                            text: "\ue7fa"              ///< 已完成图标
+                            onClicked: todoFilter.currentFilter = "done"
+                            textColor: theme.textColor
+                            fontSize: 16
+                            isDarkMode: globalState.isDarkMode
+                            width: parent.width
+                        }
+
+                        IconButton {
+                            text: "\ue922"              ///< 回收站图标
+                            onClicked: todoFilter.currentFilter = "recycle"
+                            textColor: theme.textColor
+                            fontSize: 16
+                            isDarkMode: globalState.isDarkMode
+                            width: parent.width
+                        }
+                    }
+                }
+
+                // 排序方向
+                IconButton {
+                    property bool isDescending: false            // 排序方向
+                    text: isHovered ? (isDescending ? "\ue8c3" : "\ue8c4") : ("\ue8c5")
+                    onClicked: {
+                        isDescending = !isDescending;
+                        todoSorter.setDescending(isDescending);
+                    }
+                    textColor: theme.textColor
+                    fontSize: 16
+                    isDarkMode: globalState.isDarkMode
+                    width: parent.width
+                }
+
+                // 筛选菜单
                 IconButton {
                     id: filterButton
-                    text: "\ue90f"              ///< 筛选图标
+                    Layout.alignment: Qt.AlignHCenter
+                    text: "\ue8db"              ///< 筛选图标
                     onClicked: {
                         // 计算菜单位置，固定在筛选按钮右侧
                         var pos = mapToItem(null, width, height);
                         filterMenu.popup(pos.x, pos.y);
+                    }
+                    textColor: theme.textColor
+                    fontSize: 16
+                    isDarkMode: globalState.isDarkMode
+                }
+
+                //  种类筛选
+                IconButton {
+                    id: categoryFilterButton
+                    Layout.alignment: Qt.AlignHCenter
+                    text: "\ue90f"              ///< 筛选图标
+                    onClicked: {
+                        // 计算菜单位置，固定在筛选按钮右侧
+                        var pos = mapToItem(null, width, height);
+                        categoryFilterMenu.popup(pos.x, pos.y);
                     }
                     textColor: theme.textColor
                     fontSize: 16
@@ -92,7 +174,7 @@ Page {
                 // 刷新
                 IconButton {
                     id: refreshButton
-                    text: "\ue8ef"              ///< 刷新图标
+                    text: "\ue8e2"              ///< 刷新图标
 
                     // 添加旋转动画
                     RotationAnimation {
@@ -168,15 +250,41 @@ Page {
                         anchors.margins: 16
                         spacing: 8
 
-                        // 搜索框
-                        TextField {
-                            id: searchField
+                        // 搜索框容器
+                        Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 36
-                            placeholderText: "搜索"
-                            selectByMouse: true
-                            onTextChanged: {
-                                todoFilter.setSearchText(text);
+                            color: theme.backgroundColor
+                            border.color: theme.borderColor
+                            border.width: 1
+                            radius: 4
+
+                            // 搜索图标
+                            Text {
+                                anchors.left: parent.left
+                                anchors.leftMargin: 10
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "\ue8f2"              ///< 查询图标
+                                color: theme.textColor
+                                font.pixelSize: 16
+                                font.family: "iconfont"
+                            }
+
+                            // 搜索框
+                            TextField {
+                                id: searchField
+                                anchors.fill: parent
+                                anchors.leftMargin: 35  // 为图标留出空间
+                                anchors.rightMargin: 10
+                                placeholderText: "搜索"
+                                selectByMouse: true
+                                verticalAlignment: TextInput.AlignVCenter
+                                background: Rectangle {
+                                    color: "transparent"
+                                }
+                                onTextChanged: {
+                                    todoFilter.searchText = text;
+                                }
                             }
                         }
 
@@ -368,7 +476,7 @@ Page {
                     id: titleBar
                     Layout.preferredHeight: 30
                     Layout.fillWidth: true
-                    
+
                     // 窗口拖拽处理区域
                     WindowDragHandler {
                         anchors.fill: parent
@@ -397,7 +505,7 @@ Page {
                         // 最小化按钮
                         IconButton {
                             text: "\ue65a"
-                            onClicked: homePage.showMinimized()
+                            onClicked: root.showMinimized()
                             textColor: theme.textColor
                             fontSize: 16
                             isDarkMode: globalState.isDarkMode
@@ -453,7 +561,7 @@ Page {
                         }
 
                         IconButton {
-                            text: "\ue90f"                      ///< 菜单图标
+                            text: "\ue955"                      ///< 更多图标
                             // TODO：点击弹出详情相关的设置菜单
                             textColor: theme.textColor
                             fontSize: 16
@@ -652,101 +760,14 @@ Page {
                 font.pixelSize: 12
             }
         }
+    }
 
-        MenuSeparator {
-            contentItem: Rectangle {
-                implicitHeight: 1
-                color: theme.borderColor
-            }
-        }
-
-        // 倒序选项
-        MenuItem {
-            id: descendingMenuItem
-            contentItem: RowLayout {
-                spacing: 12
-                Text {
-                    text: qsTr("倒序排列")
-                    color: theme.textColor
-                    font.pixelSize: 12
-                }
-                Switch {
-                    id: descendingSwitch
-                    leftPadding: 0
-                    scale: 0.7
-                    onCheckedChanged: {
-                        todoSorter.setDescending(checked);
-                    }
-                }
-            }
-            onTriggered: {}
-        }
-
-        MenuSeparator {
-            contentItem: Rectangle {
-                implicitHeight: 1
-                color: theme.borderColor
-            }
-        }
-
-        // 状态筛选
-        MenuItem {
-            text: qsTr("状态筛选")
-            enabled: false
-            contentItem: Text {
-                text: parent.text
-                color: theme.textColor
-                font.bold: true
-                font.pixelSize: 14
-            }
-        }
-
-        MenuItem {
-            text: qsTr("全部")
-            onTriggered: todoFilter.currentFilter = "all"
-            contentItem: Text {
-                text: parent.text
-                color: theme.textColor
-                font.pixelSize: 12
-            }
-        }
-
-        MenuItem {
-            text: qsTr("待办")
-            onTriggered: todoFilter.currentFilter = "todo"
-            contentItem: Text {
-                text: parent.text
-                color: theme.textColor
-                font.pixelSize: 12
-            }
-        }
-
-        MenuItem {
-            text: qsTr("完成")
-            onTriggered: todoFilter.currentFilter = "done"
-            contentItem: Text {
-                text: parent.text
-                color: theme.textColor
-                font.pixelSize: 12
-            }
-        }
-
-        MenuItem {
-            text: qsTr("回收站")
-            onTriggered: todoFilter.currentFilter = "recycle"
-            contentItem: Text {
-                text: parent.text
-                color: theme.textColor
-                font.pixelSize: 12
-            }
-        }
-
-        MenuSeparator {
-            contentItem: Rectangle {
-                implicitHeight: 1
-                color: theme.borderColor
-            }
-        }
+    // 种类筛选菜单（从筛选按钮点击弹出）
+    Menu {
+        id: categoryFilterMenu
+        width: 200
+        height: implicitHeight
+        z: 10000  // 确保菜单显示在最上层
 
         // 分类筛选
         MenuItem {
@@ -757,16 +778,6 @@ Page {
                 color: theme.textColor
                 font.bold: true
                 font.pixelSize: 14
-            }
-        }
-
-        MenuItem {
-            text: qsTr("全部分类")
-            onTriggered: todoFilter.currentCategory = ""
-            contentItem: Text {
-                text: parent.text
-                color: theme.textColor
-                font.pixelSize: 12
             }
         }
 
