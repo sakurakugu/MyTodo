@@ -14,6 +14,7 @@ Page {
 
     // 组件完成时设置默认过滤器为"all"
     Component.onCompleted: {
+        // TODO: 测试完后这里改成todo
         todoFilter.currentFilter = "all";
     }
 
@@ -468,7 +469,7 @@ Page {
                                     width: 16
                                     height: 16
                                     radius: 8
-                                    color: model.isCompleted ? theme.completedColor : model.important ? theme.highImportantColor : theme.lowImportantColor
+                                    color: (model.isCompleted || false) ? theme.completedColor : (model.important || false) ? theme.highImportantColor : theme.lowImportantColor
 
                                     MouseArea {
                                         anchors.fill: parent
@@ -484,8 +485,8 @@ Page {
                                 // 待办标题
                                 Label {
                                     text: model.title
-                                    font.strikeout: model.isCompleted
-                                    color: theme.textColor
+                                    font.strikeout: model.isCompleted || false
+                                    color: (model.isCompleted || false) ? theme.secondaryTextColor : theme.textColor
                                     Layout.fillWidth: true
                                 }
 
@@ -514,7 +515,45 @@ Page {
                             }
                         }
 
-                        // 左滑删除背景
+                        // 右划完成背景
+                        Rectangle {
+                            id: completeBackground
+                            anchors.left: parent.left
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            width: Math.abs(delegateItem.swipeOffset)
+                            color: (model.isCompleted || false) ? "orange" : "green"
+                            visible: delegateItem.swipeOffset > 0
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: (model.isCompleted || false) ? "未完成" : "已完成"
+                                color: "white"
+                                font.pixelSize: 14
+                            }
+
+                            MouseArea {
+                                id: completeMouseArea
+                                anchors.fill: parent
+                                z: 10  // 确保在最上层
+                                hoverEnabled: true
+                                onClicked: {
+                                    itemMouseArea.enabled = false; // 先禁用以防多次点
+                                    todoListView.currentIndex = index; // 设置当前项索引
+                                    todoManager.markAsDoneOrTodo(index);     // 切换完成状态
+                                    // model.isCompleted = !model.isCompleted;
+
+                                    // 延迟重新启用项目的MouseArea
+                                    Qt.callLater(function () {
+                                        if (itemMouseArea) {
+                                            itemMouseArea.enabled = true;
+                                        }
+                                    });
+                                }
+                            }
+                        }
+
+                        // 左划删除背景
                         Rectangle {
                             id: deleteBackground
                             anchors.right: parent.right
@@ -561,7 +600,7 @@ Page {
                             }
                         }
 
-                        // 左滑手势处理
+                        // 左划手势处理
                         MouseArea {
                             id: swipeArea
                             anchors.fill: parent
@@ -580,6 +619,11 @@ Page {
                                     mouse.accepted = false;
                                     return;
                                 }
+                                // 如果点击在完成区域，不处理
+                                if (delegateItem.swipeOffset > 0 && mouse.x < delegateItem.swipeOffset) {
+                                    mouse.accepted = false;
+                                    return;
+                                }
                                 startX = mouse.x;
                                 isDragging = false;
                                 isLongPressed = false;  // 重置长按状态
@@ -593,6 +637,11 @@ Page {
                                         mouse.accepted = false;
                                         return;
                                     }
+                                    // 如果点击在完成区域，不处理拖动
+                                    if (delegateItem.swipeOffset > 0 && mouse.x < delegateItem.swipeOffset) {
+                                        mouse.accepted = false;
+                                        return;
+                                    }
 
                                     var deltaX = mouse.x - startX;
                                     if (Math.abs(deltaX) > 20) {
@@ -601,11 +650,18 @@ Page {
                                     }
 
                                     if (isDragging && deltaX < 0) {
+                                        // 左划删除
                                         delegateItem.swipeOffset = Math.max(deltaX, -80);
                                         delegateItem.swipeActive = true;
-                                    } else if (isDragging && deltaX > 0 && delegateItem.swipeOffset < 0) {
-                                        // 允许向右滑动回弹
-                                        delegateItem.swipeOffset = Math.min(0, delegateItem.swipeOffset + deltaX);
+                                    } else if (isDragging && deltaX > 0) {
+                                        if (delegateItem.swipeOffset < 0) {
+                                            // 从左划状态向右滑动回弹
+                                            delegateItem.swipeOffset = Math.min(0, delegateItem.swipeOffset + deltaX);
+                                        } else {
+                                            // 右划切换完成状态
+                                            delegateItem.swipeOffset = Math.min(deltaX, 80);
+                                            delegateItem.swipeActive = true;
+                                        }
                                     }
                                 }
                             }
@@ -619,10 +675,21 @@ Page {
                                     delegateItem.swipeActive = false;
                                     return;
                                 }
+                                // 如果点击在完成区域，直接传递事件
+                                if (delegateItem.swipeOffset > 0 && mouse.x < delegateItem.swipeOffset) {
+                                    mouse.accepted = false;
+                                    isDragging = false;
+                                    delegateItem.swipeActive = false;
+                                    return;
+                                }
 
                                 if (isDragging) {
-                                    // 如果滑动距离不够，回弹
-                                    if (delegateItem.swipeOffset > -40) {
+                                    // 如果左划距离不够，回弹
+                                    if (delegateItem.swipeOffset > -40 && delegateItem.swipeOffset < 0) {
+                                        swipeResetAnimation.start();
+                                    } else
+                                    // 如果右划距离不够，回弹
+                                    if (delegateItem.swipeOffset < 40 && delegateItem.swipeOffset > 0) {
                                         swipeResetAnimation.start();
                                     }
                                 } else if (!delegateItem.swipeActive && !isLongPressed) {

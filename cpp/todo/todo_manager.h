@@ -113,7 +113,7 @@ class TodoManager : public QAbstractListModel {
     Q_INVOKABLE bool restoreTodo(int index);
     Q_INVOKABLE bool permanentlyDeleteTodo(int index); // 删除待办事项
     Q_INVOKABLE void deleteAllTodos(bool deleteLocal); // 删除所有待办事项
-    Q_INVOKABLE bool markAsDone(int index);            // 将待办事项标记为已完成
+    Q_INVOKABLE bool markAsDoneOrTodo(int index);      // 将待办事项标记为已完成或未完成
     Q_INVOKABLE bool updateAllTodosUserUuid();         // 更新所有待办事项的用户UUID
 
     // 网络同步操作
@@ -136,6 +136,7 @@ class TodoManager : public QAbstractListModel {
     void updateTodosFromServer(const QJsonArray &todosArray); // 从服务器数据更新待办事项
     void updateSyncManagerData();                             // 更新同步管理器的待办事项数据
     QVariant getItemData(const TodoItem *item, int role) const;
+    QModelIndex indexFromItem(TodoItem *todoItem) const; // 获取指定TodoItem的模型索引
 
     // 性能优化相关方法
     void updateFilterCache();                   // 更新过滤缓存

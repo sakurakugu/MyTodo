@@ -202,6 +202,29 @@ QVariant TodoManager::getItemData(const TodoItem *item, int role) const {
 }
 
 /**
+ * @brief 获取指定TodoItem的模型索引
+ * @param todoItem 待获取索引的TodoItem指针
+ * @return 对应的模型索引
+ */
+QModelIndex TodoManager::indexFromItem(TodoItem *todoItem) const {
+    if (!todoItem) {
+        return QModelIndex();
+    }
+
+    // 使用std::find_if查找TodoItem在m_todos中的位置
+    auto it = std::find_if(m_todos.begin(), m_todos.end(),
+                           [todoItem](const std::unique_ptr<TodoItem> &todo) { return todo.get() == todoItem; });
+
+    if (it == m_todos.end()) {
+        return QModelIndex(); // 未找到对应的TodoItem
+    }
+
+    // 计算索引
+    int index = static_cast<int>(std::distance(m_todos.begin(), it));
+    return createIndex(index, 0);
+}
+
+/**
  * @brief 获取角色名称映射，用于QML访问
  * @return 角色ID到角色名称的映射
  */
@@ -799,16 +822,36 @@ bool TodoManager::updateAllTodosUserUuid() {
  * @param index 待办事项的索引
  * @return 操作是否成功
  */
-bool TodoManager::markAsDone(int index) {
+bool TodoManager::markAsDoneOrTodo(int index) {
     // 检查索引是否有效
     if (index < 0 || static_cast<size_t>(index) >= m_todos.size()) {
-        qWarning() << "尝试标记无效索引的待办事项为已完成:" << index;
+        qWarning() << "尝试永久删除无效的索引:" << index;
         return false;
     }
 
     try {
-        QModelIndex modelIndex = createIndex(index, 0);
-        bool success = setData(modelIndex, true, IsCompletedRole);
+        // 获取过滤后的索引，因为QML传入的是过滤后的索引
+        updateFilterCache();
+        if (index >= static_cast<int>(m_filteredTodos.size())) {
+            qWarning() << "过滤后的索引超出范围:" << index;
+            return false;
+        }
+
+        // 通过过滤后的索引获取实际的任务项
+        auto todoItem = m_filteredTodos[index];
+        QModelIndex index = indexFromItem(todoItem);
+
+        beginResetModel();
+        // qInfo() << "modelIndex.row(): " << index.row() << "标题: " << todoItem->title()
+        //         << (todoItem->isCompleted()? "已完成" : "未完成");
+        bool success = false;
+        if (todoItem->isCompleted()) {
+            success = setData(index, false, IsCompletedRole);
+        } else {
+            success = setData(index, true, IsCompletedRole);
+        }
+        // qInfo() << "modelIndex.row(): " << index.row() << "标题: " << todoItem->title()
+        //         << (todoItem->isCompleted()? "已完成" : "未完成");
 
         if (success) {
             if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
@@ -818,6 +861,8 @@ bool TodoManager::markAsDone(int index) {
         } else {
             qWarning() << "无法将索引" << index << "处的待办事项标记为已完成";
         }
+
+        endResetModel();
 
         return success;
     } catch (const std::exception &e) {
