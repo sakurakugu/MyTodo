@@ -126,6 +126,8 @@ void TodoSyncServer::syncWithServer(SyncDirection direction) {
     }
 
     if (!canPerformSync()) {
+        // 发出同步完成信号，通知UI重置状态
+        emit syncCompleted(AuthError, "无法同步：未登录");
         return;
     }
 

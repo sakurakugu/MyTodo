@@ -8,6 +8,11 @@
  * @version 2025-08-23 21:09:00(UTC+8) 周六
  */
 #include "todo_manager.h"
+#include "category_manager.h"
+#include "foundation/network_request.h"
+#include "todo_filter.h"
+#include "todo_sorter.h"
+#include "user_auth.h"
 
 #include <QDateTime>
 #include <QDir>
@@ -19,14 +24,6 @@
 #include <QNetworkProxy>
 #include <QProcess>
 #include <QUuid>
-#include <algorithm>
-#include <map>
-
-#include "category_manager.h"
-#include "foundation/network_request.h"
-#include "todo_filter.h"
-#include "todo_sorter.h"
-#include "user_auth.h"
 
 TodoManager::TodoManager(QObject *parent)
     : QAbstractListModel(parent),                      //
@@ -916,7 +913,7 @@ void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
     if (!m_dataManager->saveToLocalStorage(m_todos)) {
         qWarning() << "无法在服务器更新后保存本地存储";
     }
-    
+
     // 更新同步管理器的数据
     updateSyncManagerData();
 }

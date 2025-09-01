@@ -7,7 +7,15 @@ Page {
 
     property var root
     property var stackView
-    property var selectedTodo: null  // 当前选中的待办事项
+    property bool refreshing: false       // 是否正在刷新
+    property var selectedTodo: null       // 当前选中的待办事项
+    property bool multiSelectMode: false  // 多选模式
+    property var selectedItems: []        // 选中的项目索引列表
+
+    // 组件完成时设置默认过滤器为"all"
+    Component.onCompleted: {
+        todoFilter.currentFilter = "all";
+    }
 
     // 主布局
     RowLayout {
@@ -178,7 +186,7 @@ Page {
 
                     // 添加旋转动画
                     RotationAnimation {
-                        id: rotationAnimation
+                        id: refreshButtonAnimation
                         target: refreshButton
                         from: 0
                         to: 360
@@ -187,8 +195,11 @@ Page {
                     }
 
                     onClicked: {
-                        rotationAnimation.start();  // 开始旋转动画
-                        todoManager.syncWithServer();
+                        if (!refreshing) {
+                            refreshing = true;
+                            refreshButtonAnimation.start();  // 开始旋转动画
+                            todoManager.syncWithServer();
+                        }
                     }
 
                     textColor: theme.textColor
@@ -308,136 +319,378 @@ Page {
                     model: todoManager
 
                     // 下拉刷新相关属性与逻辑
-                    property bool refreshing: false
-                    property int pullThreshold: 60
+                    property int pullThreshold: 20
                     property real pullDistance: 0
 
                     onContentYChanged: {
                         pullDistance = contentY < 0 ? -contentY : 0;
                     }
+
                     onMovementEnded: {
+                        // 如果下拉距离超过阈值且在顶部，触发刷新
                         if (contentY < -pullThreshold && atYBeginning && !refreshing) {
                             refreshing = true;
                             todoManager.syncWithServer();
-                        }
+                        } else
+                        {}
                     }
 
                     header: Item {
                         width: todoListView.width
-                        height: todoListView.refreshing ? 50 : Math.min(50, todoListView.pullDistance)
-                        visible: height > 0 || todoListView.refreshing
-                        Column {
+                        height: homePage.refreshing ? 50 : Math.min(50, todoListView.pullDistance)
+                        visible: height > 0 || homePage.refreshing
+                        RowLayout {
                             anchors.centerIn: parent
                             spacing: 6
-                            BusyIndicator {
-                                running: todoListView.refreshing
-                                visible: todoListView.refreshing || todoListView.pullDistance > 0
+                            // 刷新
+                            IconButton {
+                                id: refreshIndicatorIcon
+                                text: "\ue8e2"              // 刷新图标
+                                visible: homePage.refreshing || todoListView.pullDistance > 0
                                 width: 20
                                 height: 20
+                                textColor: theme.textColor
+                                fontSize: 16
+                                isDarkMode: globalState.isDarkMode
+                                Layout.alignment: Qt.AlignVCenter
+
+                                // 旋转动画
+                                RotationAnimation {
+                                    target: refreshIndicatorIcon
+                                    from: 0
+                                    to: 360
+                                    duration: 1000
+                                    loops: Animation.Infinite
+                                    running: homePage.refreshing
+                                }
                             }
                             Label {
-                                text: todoListView.refreshing ? qsTr("正在同步...") : (todoListView.pullDistance >= todoListView.pullThreshold ? qsTr("释放刷新") : qsTr("下拉刷新"))
+                                text: homePage.refreshing ? qsTr("正在同步...") : (todoListView.pullDistance >= todoListView.pullThreshold ? qsTr("释放刷新") : qsTr("下拉刷新"))
                                 color: theme.textColor
                                 font.pixelSize: 12
+                                Layout.alignment: Qt.AlignVCenter
                             }
                         }
+                    }
+
+                    // 下拉距离重置动画
+                    NumberAnimation {
+                        id: pullDistanceAnimation
+                        target: todoListView
+                        property: "pullDistance"
+                        to: 0
+                        duration: 300
+                        easing.type: Easing.OutCubic
                     }
 
                     Connections {
                         target: todoManager
                         function onSyncStarted() {
-                            if (!todoListView.refreshing && todoListView.atYBeginning) {
-                                todoListView.refreshing = true;
+                            if (!homePage.refreshing && todoListView.atYBeginning) {
+                                homePage.refreshing = true;
                             }
                         }
-                        function onSyncCompleted(success, errorMessage) {
-                            todoListView.refreshing = false;
-                            todoListView.contentY = 0;
+                        function onSyncCompleted(result, message) {
+                            homePage.refreshing = false;
+                            refreshButtonAnimation.stop();  // 停止刷新按钮的旋转动画
+                            // 使用动画平滑重置下拉距离
+                            pullDistanceAnimation.start();
+                            // 强制刷新ListView以确保显示最新数据
+                            todoListView.model = null;
+                            todoListView.model = todoManager;
                         }
                     }
 
-                    delegate: Rectangle {
+                    delegate: Item {
                         id: delegateItem
                         width: parent ? parent.width : 0
                         height: 50
-                        color: index % 2 === 0 ? theme.secondaryBackgroundColor : theme.backgroundColor
 
-                        property alias itemMouseArea: itemMouseArea
+                        property bool isSelected: selectedItems.indexOf(index) !== -1
+                        property real swipeOffset: 0
+                        property bool swipeActive: false
 
-                        // 点击项目查看/编辑详情
-                        MouseArea {
-                            id: itemMouseArea
+                        // 主内容区域
+                        Rectangle {
+                            id: mainContent
                             anchors.fill: parent
-                            z: 0  // 确保这个MouseArea在底层
-                            onClicked: {
-                                // 显示详情
-                                selectedTodo = {
-                                    title: model.title,
-                                    description: model.description,
-                                    category: model.category,
-                                    important: model.important
-                                };
-                                todoListView.currentIndex = index;
+                            x: delegateItem.swipeOffset
+                            color: delegateItem.isSelected ? theme.selectedColor || "lightblue" : (index % 2 === 0 ? theme.secondaryBackgroundColor : theme.backgroundColor)
+
+                            // 长按和点击处理
+                            MouseArea {
+                                id: itemMouseArea
+                                anchors.fill: parent
+
+                                onClicked: {
+                                    if (multiSelectMode) {
+                                        // 多选模式下切换选中状态
+                                        var newSelectedItems = selectedItems.slice();
+                                        var itemIndex = newSelectedItems.indexOf(index);
+                                        if (itemIndex !== -1) {
+                                            newSelectedItems.splice(itemIndex, 1);
+                                        } else {
+                                            newSelectedItems.push(index);
+                                        }
+                                        selectedItems = newSelectedItems;
+
+                                        // 如果没有选中项，退出多选模式
+                                        if (selectedItems.length === 0) {
+                                            multiSelectMode = false;
+                                        }
+                                    } else {
+                                        // 普通模式下显示详情
+                                        selectedTodo = {
+                                            title: model.title,
+                                            description: model.description,
+                                            category: model.category,
+                                            important: model.important
+                                        };
+                                        todoListView.currentIndex = index;
+                                    }
+                                }
+
+                                onPressAndHold: {
+                                    // 长按进入多选模式
+                                    if (!multiSelectMode) {
+                                        multiSelectMode = true;
+                                        selectedItems = [index];
+                                    }
+                                }
+                            }
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.margins: 8
+                                spacing: 8
+
+                                // 待办状态指示器
+                                Rectangle {
+                                    width: 16
+                                    height: 16
+                                    radius: 8
+                                    color: model.isCompleted ? theme.completedColor : model.important ? theme.highImportantColor : theme.lowImportantColor
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        onClicked: {
+                                            if (!multiSelectMode) {
+                                                todoManager.markAsDone(index);
+                                            }
+                                            mouse.accepted = true;
+                                        }
+                                    }
+                                }
+
+                                // 待办标题
+                                Label {
+                                    text: model.title
+                                    font.strikeout: model.isCompleted
+                                    color: theme.textColor
+                                    Layout.fillWidth: true
+                                }
+
+                                // 多选复选框（仅在多选模式下显示）
+                                CheckBox {
+                                    visible: multiSelectMode
+                                    checked: delegateItem.isSelected
+                                    Layout.preferredWidth: visible ? implicitWidth : 0
+                                    Layout.preferredHeight: visible ? implicitHeight : 0
+                                    onClicked: {
+                                        var newSelectedItems = selectedItems.slice();
+                                        var itemIndex = newSelectedItems.indexOf(index);
+                                        if (checked && itemIndex === -1) {
+                                            newSelectedItems.push(index);
+                                        } else if (!checked && itemIndex !== -1) {
+                                            newSelectedItems.splice(itemIndex, 1);
+                                        }
+                                        selectedItems = newSelectedItems;
+
+                                        // 如果没有选中项，退出多选模式
+                                        if (selectedItems.length === 0) {
+                                            multiSelectMode = false;
+                                        }
+                                    }
+                                }
                             }
                         }
+
+                        // 左滑删除背景
+                        Rectangle {
+                            id: deleteBackground
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            width: Math.abs(delegateItem.swipeOffset)
+                            color: "red"
+                            visible: delegateItem.swipeOffset < 0
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "删除"
+                                color: "white"
+                                font.pixelSize: 14
+                            }
+
+                            MouseArea {
+                                id: deleteMouseArea
+                                anchors.fill: parent
+                                onClicked: {
+                                    // 禁用当前项目的MouseArea
+                                    delegateItem.itemMouseArea.enabled = false;
+                                    // 设置当前项索引
+                                    todoListView.currentIndex = index;
+                                    // 删除待办
+                                    todoManager.removeTodo(index);
+                                    // 延迟重新启用项目的MouseArea
+                                    // 这是为了防止事件传播到下面的MouseArea
+                                    timer.start();
+                                }
+                            }
+                        }
+
+                        // 左滑手势处理
+                        MouseArea {
+                            id: swipeArea
+                            anchors.fill: parent
+                            enabled: !multiSelectMode
+                            pressAndHoldInterval: 500  // 长按时间为500毫秒
+
+                            property real startX: 0
+                            property bool isDragging: false
+                            property bool isLongPressed: false  // 跟踪长按状态
+
+                            // 按下时记录初始位置
+                            onPressed: function (mouse) {
+                                startX = mouse.x;
+                                isDragging = false;
+                                isLongPressed = false;  // 重置长按状态
+                            }
+
+                            // 拖动时处理
+                            onPositionChanged: function (mouse) {
+                                if (pressed) {
+                                    var deltaX = mouse.x - startX;
+                                    if (Math.abs(deltaX) > 20) {
+                                        // 增加拖拽阈值到20像素
+                                        isDragging = true;
+                                    }
+
+                                    if (isDragging && deltaX < 0) {
+                                        delegateItem.swipeOffset = Math.max(deltaX, -80);
+                                        delegateItem.swipeActive = true;
+                                    } else if (isDragging && deltaX > 0 && delegateItem.swipeOffset < 0) {
+                                        // 允许向右滑动回弹
+                                        delegateItem.swipeOffset = Math.min(0, delegateItem.swipeOffset + deltaX);
+                                    }
+                                }
+                            }
+
+                            // 释放时处理
+                            onReleased: function (mouse) {
+                                if (isDragging) {
+                                    // 如果滑动距离不够，回弹
+                                    if (delegateItem.swipeOffset > -40) {
+                                        swipeResetAnimation.start();
+                                    }
+                                } else if (!delegateItem.swipeActive && !isLongPressed) {
+                                    // 如果不是滑动且未触发长按，执行点击逻辑
+                                    if (multiSelectMode) {
+                                        // 多选模式下切换选中状态
+                                        var newSelectedItems = selectedItems.slice();
+                                        var itemIndex = newSelectedItems.indexOf(index);
+                                        if (itemIndex !== -1) {
+                                            newSelectedItems.splice(itemIndex, 1);
+                                        } else {
+                                            newSelectedItems.push(index);
+                                        }
+                                        selectedItems = newSelectedItems;
+
+                                        // 如果没有选中项，退出多选模式
+                                        if (selectedItems.length === 0) {
+                                            multiSelectMode = false;
+                                        }
+                                    } else {
+                                        // 普通模式下显示详情
+                                        selectedTodo = {
+                                            title: model.title,
+                                            description: model.description,
+                                            category: model.category,
+                                            important: model.important
+                                        };
+                                        todoListView.currentIndex = index;
+                                    }
+                                }
+                                isDragging = false;
+                                delegateItem.swipeActive = false;
+                            }
+
+                            // 长按处理
+                            onPressAndHold: function (mouse) {
+                                if (!isDragging) {
+                                    isLongPressed = true;  // 标记已触发长按
+                                    // 长按进入多选模式
+                                    if (!multiSelectMode) {
+                                        multiSelectMode = true;
+                                        selectedItems = [index];
+                                    }
+                                }
+                            }
+                        }
+
+                        // 滑动回弹动画
+                        NumberAnimation {
+                            id: swipeResetAnimation
+                            target: delegateItem
+                            property: "swipeOffset"
+                            to: 0
+                            duration: 200
+                            easing.type: Easing.OutQuad
+                        }
+                    }
+
+                    // 多选模式下的操作栏
+                    Rectangle {
+                        visible: multiSelectMode
+                        anchors.bottom: parent.bottom
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        height: 50
+                        color: theme.backgroundColor || "white"
+                        border.width: 1
+                        border.color: theme.borderColor || "lightgray"
 
                         RowLayout {
                             anchors.fill: parent
                             anchors.margins: 8
-                            spacing: 8
-                            z: 1  // 确保RowLayout在MouseArea之上
 
-                            // 待办状态指示器
-                            Rectangle {
-                                width: 16
-                                height: 16
-                                radius: 8
-                                color: model.isCompleted ? theme.completedColor : model.important ? theme.highImportantColor : theme.lowImportantColor
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: {
-                                        todoManager.markAsDone(index);
-                                        mouse.accepted = true;  // 阻止事件传播
-                                    }
-                                }
-                            }
-
-                            // 待办标题
                             Label {
-                                text: model.title
-                                font.strikeout: model.isCompleted
+                                text: qsTr("已选择 %1 项").arg(selectedItems.length)
                                 color: theme.textColor
                                 Layout.fillWidth: true
                             }
 
-                            // 删除按钮 - 使用独立的Rectangle和MouseArea
-                            Rectangle {
-                                width: 30
-                                height: 30
-                                color: "transparent"
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "×"
-                                    font.pixelSize: 16
-                                    color: deleteMouseArea.pressed ? "darkgray" : "gray"
+                            Button {
+                                text: qsTr("取消")
+                                onClicked: {
+                                    multiSelectMode = false;
+                                    selectedItems = [];
                                 }
+                            }
 
-                                MouseArea {
-                                    id: deleteMouseArea
-                                    anchors.fill: parent
-                                    onClicked: {
-                                        // 禁用当前项目的MouseArea
-                                        delegateItem.itemMouseArea.enabled = false;
-                                        // 设置当前项索引
-                                        todoListView.currentIndex = index;
-                                        // 删除待办
-                                        todoManager.removeTodo(index);
-                                        // 延迟重新启用项目的MouseArea
-                                        // 这是为了防止事件传播到下面的MouseArea
-                                        timer.start();
+                            Button {
+                                text: qsTr("删除")
+                                enabled: selectedItems.length > 0
+                                onClicked: {
+                                    // 从后往前删除，避免索引变化问题
+                                    var sortedIndices = selectedItems.slice().sort(function (a, b) {
+                                        return b - a;
+                                    });
+                                    for (var i = 0; i < sortedIndices.length; i++) {
+                                        todoManager.removeTodo(sortedIndices[i]);
                                     }
+                                    multiSelectMode = false;
+                                    selectedItems = [];
                                 }
                             }
                         }
