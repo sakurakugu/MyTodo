@@ -331,8 +331,7 @@ Page {
                         if (contentY < -pullThreshold && atYBeginning && !refreshing) {
                             refreshing = true;
                             todoManager.syncWithServer();
-                        } else
-                        {}
+                        } else {}
                     }
 
                     header: Item {
@@ -473,7 +472,7 @@ Page {
 
                                     MouseArea {
                                         anchors.fill: parent
-                                        onClicked: {
+                                        onClicked: function (mouse) {
                                             if (!multiSelectMode) {
                                                 todoManager.markAsDone(index);
                                             }
@@ -535,16 +534,29 @@ Page {
                             MouseArea {
                                 id: deleteMouseArea
                                 anchors.fill: parent
+                                z: 10  // 确保在最上层
+                                hoverEnabled: true
                                 onClicked: {
-                                    // 禁用当前项目的MouseArea
-                                    delegateItem.itemMouseArea.enabled = false;
+                                    itemMouseArea.enabled = false; // 先禁用以防多次点
                                     // 设置当前项索引
                                     todoListView.currentIndex = index;
-                                    // 删除待办
-                                    todoManager.removeTodo(index);
+
+                                    // 检查是否在回收站中
+                                    if (todoFilter.currentFilter === "recycle") {
+                                        // 在回收站中，弹出确认弹窗进行硬删除
+                                        confirmDeleteDialog.selectedIndices = [index];
+                                        confirmDeleteDialog.open();
+                                    } else {
+                                        // 不在回收站中，执行软删除
+                                        todoManager.removeTodo(index);
+                                    }
+
                                     // 延迟重新启用项目的MouseArea
-                                    // 这是为了防止事件传播到下面的MouseArea
-                                    timer.start();
+                                    Qt.callLater(function () {
+                                        if (itemMouseArea) {
+                                            itemMouseArea.enabled = true;
+                                        }
+                                    });
                                 }
                             }
                         }
@@ -555,6 +567,7 @@ Page {
                             anchors.fill: parent
                             enabled: !multiSelectMode
                             pressAndHoldInterval: 500  // 长按时间为500毫秒
+                            propagateComposedEvents: true  // 允许事件传递到子组件
 
                             property real startX: 0
                             property bool isDragging: false
@@ -562,6 +575,11 @@ Page {
 
                             // 按下时记录初始位置
                             onPressed: function (mouse) {
+                                // 如果点击在删除区域，不处理
+                                if (delegateItem.swipeOffset < 0 && mouse.x > parent.width + delegateItem.swipeOffset) {
+                                    mouse.accepted = false;
+                                    return;
+                                }
                                 startX = mouse.x;
                                 isDragging = false;
                                 isLongPressed = false;  // 重置长按状态
@@ -570,6 +588,12 @@ Page {
                             // 拖动时处理
                             onPositionChanged: function (mouse) {
                                 if (pressed) {
+                                    // 如果点击在删除区域，不处理拖动
+                                    if (delegateItem.swipeOffset < 0 && mouse.x > parent.width + delegateItem.swipeOffset) {
+                                        mouse.accepted = false;
+                                        return;
+                                    }
+
                                     var deltaX = mouse.x - startX;
                                     if (Math.abs(deltaX) > 20) {
                                         // 增加拖拽阈值到20像素
@@ -588,6 +612,14 @@ Page {
 
                             // 释放时处理
                             onReleased: function (mouse) {
+                                // 如果点击在删除区域，直接传递事件
+                                if (delegateItem.swipeOffset < 0 && mouse.x > parent.width + delegateItem.swipeOffset) {
+                                    mouse.accepted = false;
+                                    isDragging = false;
+                                    delegateItem.swipeActive = false;
+                                    return;
+                                }
+
                                 if (isDragging) {
                                     // 如果滑动距离不够，回弹
                                     if (delegateItem.swipeOffset > -40) {
@@ -620,6 +652,7 @@ Page {
                                         };
                                         todoListView.currentIndex = index;
                                     }
+                                    mouse.accepted = false;  // 不是拖拽，让下层处理点击
                                 }
                                 isDragging = false;
                                 delegateItem.swipeActive = false;
@@ -682,28 +715,23 @@ Page {
                                 text: qsTr("删除")
                                 enabled: selectedItems.length > 0
                                 onClicked: {
-                                    // 从后往前删除，避免索引变化问题
-                                    var sortedIndices = selectedItems.slice().sort(function (a, b) {
-                                        return b - a;
-                                    });
-                                    for (var i = 0; i < sortedIndices.length; i++) {
-                                        todoManager.removeTodo(sortedIndices[i]);
+                                    // 检查是否在回收站中
+                                    if (todoFilter.currentFilter === "recycle") {
+                                        // 在回收站中，弹出确认弹窗进行硬删除
+                                        confirmDeleteDialog.selectedIndices = selectedItems.slice();
+                                        confirmDeleteDialog.open();
+                                    } else {
+                                        // 不在回收站中，执行软删除
+                                        var sortedIndices = selectedItems.slice().sort(function (a, b) {
+                                            return b - a;
+                                        });
+                                        for (var i = 0; i < sortedIndices.length; i++) {
+                                            todoManager.removeTodo(sortedIndices[i]);
+                                        }
+                                        multiSelectMode = false;
+                                        selectedItems = [];
                                     }
-                                    multiSelectMode = false;
-                                    selectedItems = [];
                                 }
-                            }
-                        }
-                    }
-
-                    // 用于延迟重新启用itemMouseArea的定时器
-                    Timer {
-                        id: timer
-                        interval: 10
-                        onTriggered: {
-                            // 重新启用当前项的MouseArea
-                            if (todoListView.currentItem && todoListView.currentItem.itemMouseArea) {
-                                todoListView.currentItem.itemMouseArea.enabled = true;
                             }
                         }
                     }
@@ -1137,5 +1165,38 @@ Page {
     // 登录相关对话框组件
     LoginStatusDialogs {
         id: loginStatusDialogs
+    }
+
+    // 确认删除弹窗
+    BaseDialog {
+        id: confirmDeleteDialog
+        property var selectedIndices: []
+
+        dialogTitle: qsTr("确认删除")
+        dialogWidth: 350
+        dialogHeight: 150
+
+        Text {
+            text: qsTr("确定要永久删除选中的 %1 个待办事项吗？\n此操作无法撤销。").arg(confirmDeleteDialog.selectedIndices.length)
+            color: theme.textColor
+            wrapMode: Text.WordWrap
+            horizontalAlignment: Text.AlignHCenter
+            Layout.fillWidth: true
+        }
+
+        // 执行硬删除
+        onAccepted: {
+            var sortedIndices = confirmDeleteDialog.selectedIndices.slice().sort(function (a, b) {
+                return b - a;
+            });
+            for (var i = 0; i < sortedIndices.length; i++) {
+                todoManager.permanentlyDeleteTodo(sortedIndices[i]);
+            }
+            multiSelectMode = false;
+            selectedItems = [];
+        }
+
+        // 取消删除，不做任何操作
+        onRejected: {}
     }
 }

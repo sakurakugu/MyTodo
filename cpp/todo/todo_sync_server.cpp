@@ -702,7 +702,7 @@ void TodoSyncServer::pushSingleItem(TodoItem *item) {
     m_networkRequest.sendRequest(NetworkRequest::RequestType::PushTodos, config);
 }
 
-void TodoSyncServer::handleSingleItemPushSuccess(const QJsonObject &response) {
+void TodoSyncServer::handleSingleItemPushSuccess() {
     qDebug() << "单个项目推送成功";
 
     // 标记当前项目为已同步
@@ -710,7 +710,6 @@ void TodoSyncServer::handleSingleItemPushSuccess(const QJsonObject &response) {
         TodoItem *item = m_pendingUnsyncedItems[m_currentPushIndex];
         if (item) {
             // TODO: 标记项目为已同步的逻辑
-            // item->setIsSynced(true);
             item->setSynced(true);
         }
     }

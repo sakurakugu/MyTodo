@@ -532,18 +532,27 @@ bool TodoManager::removeTodo(int index) {
     }
 
     try {
+        // 获取过滤后的索引，因为QML传入的是过滤后的索引
+        updateFilterCache();
+        if (index >= static_cast<int>(m_filteredTodos.size())) {
+            qWarning() << "过滤后的索引超出范围:" << index;
+            return false;
+        }
+
+        // 通知视图即将删除行
+        beginRemoveRows(QModelIndex(), index, index);
+
         // 软删除
-        auto &todoItem = m_todos[index];
+        auto todoItem = m_filteredTodos[index];
         todoItem->setIsDeleted(true);
         todoItem->setDeletedAt(QDateTime::currentDateTime());
         todoItem->setSynced(false); // 标记为未同步，确保删除操作会推送到服务器
 
-        // 通知视图数据已更改
-        QModelIndex modelIndex = createIndex(index, 0);
-        emit dataChanged(modelIndex, modelIndex);
-
         // 使筛选缓存失效，以便重新筛选
         invalidateFilterCache();
+
+        // 通知视图删除完成
+        endRemoveRows();
 
         if (!m_dataManager->saveToLocalStorage(m_todos)) {
             qWarning() << "软删除待办事项后无法保存到本地存储";
@@ -624,7 +633,15 @@ bool TodoManager::permanentlyDeleteTodo(int index) {
     }
 
     try {
-        auto &todoItem = m_todos[index];
+        // 获取过滤后的索引，因为QML传入的是过滤后的索引
+        updateFilterCache();
+        if (index >= static_cast<int>(m_filteredTodos.size())) {
+            qWarning() << "过滤后的索引超出范围:" << index;
+            return false;
+        }
+
+        // 通过过滤后的索引获取实际的任务项
+        auto todoItem = m_filteredTodos[index];
 
         // 检查任务是否已删除
         if (!todoItem->isDeleted()) {
@@ -632,9 +649,18 @@ bool TodoManager::permanentlyDeleteTodo(int index) {
             return false;
         }
 
+        // 找到该任务在原始数组中的索引
+        auto it = std::find_if(m_todos.begin(), m_todos.end(),
+                               [todoItem](const std::unique_ptr<TodoItem> &item) { return item.get() == todoItem; });
+
+        if (it == m_todos.end()) {
+            qWarning() << "无法在原始数组中找到要删除的任务";
+            return false;
+        }
+
         // 永久删除：从列表中物理移除
         beginRemoveRows(QModelIndex(), index, index);
-        m_todos.erase(m_todos.begin() + index);
+        m_todos.erase(it);
         invalidateFilterCache();
         endRemoveRows();
 
@@ -881,7 +907,6 @@ void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
             existingItem->setDeletedAt(QDateTime::fromString(todoObj["deleted_at"].toString(), Qt::ISODate));
             existingItem->setUpdatedAt(QDateTime::fromString(todoObj["updated_at"].toString(), Qt::ISODate));
             existingItem->setLastModifiedAt(QDateTime::fromString(todoObj["last_modified_at"].toString(), Qt::ISODate));
-            // Note: setStatus method does not exist in TodoItem class
             existingItem->setSynced(true);
         } else {
             // 创建新项目
@@ -906,7 +931,6 @@ void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
             newItem->setCreatedAt(QDateTime::fromString(todoObj["created_at"].toString(), Qt::ISODate));
             newItem->setUpdatedAt(QDateTime::fromString(todoObj["updated_at"].toString(), Qt::ISODate));
             newItem->setLastModifiedAt(QDateTime::fromString(todoObj["last_modified_at"].toString(), Qt::ISODate));
-            // newItem->setStatus(todoObj["status"].toString());
             newItem->setSynced(true);
 
             m_todos.push_back(std::move(newItem));

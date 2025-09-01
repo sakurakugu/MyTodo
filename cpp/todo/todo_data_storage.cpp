@@ -109,11 +109,11 @@ bool TodoDataStorage::saveToLocalStorage(const std::vector<std::unique_ptr<TodoI
         if (todos.empty()) {
             // 获取当前存储的待办事项数量
             int currentSize = m_setting.get(QStringLiteral("todos/size"), 0).toInt();
-            
+
             // 删除所有现有的待办事项条目
             for (int i = 0; i < currentSize; ++i) {
                 QString prefix = QString("todos/%1").arg(i);
-                
+
                 // 删除该待办事项的所有属性
                 m_setting.remove(prefix + "/id");
                 m_setting.remove(prefix + "/uuid");
@@ -134,12 +134,12 @@ bool TodoDataStorage::saveToLocalStorage(const std::vector<std::unique_ptr<TodoI
                 m_setting.remove(prefix + "/isDeleted");
                 m_setting.remove(prefix + "/deletedAt");
                 m_setting.remove(prefix + "/lastModifiedAt");
-                
+
                 // 删除整个待办事项条目
                 m_setting.remove(prefix);
             }
         }
-        
+
         // 保存待办事项数量
         m_setting.save(QStringLiteral("todos/size"), static_cast<int>(todos.size()));
 
@@ -181,7 +181,6 @@ bool TodoDataStorage::saveToLocalStorage(const std::vector<std::unique_ptr<TodoI
         success = false;
         emit dataOperationCompleted(false, "保存失败: 未知异常");
     }
-
     return success;
 }
 

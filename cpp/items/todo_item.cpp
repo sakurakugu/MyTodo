@@ -84,7 +84,7 @@ TodoItem::TodoItem(int id,                           ///< 待办事项唯一标�
       m_createdAt(createdAt),                        ///< 初始化待办事项创建时间
       m_updatedAt(updatedAt),                        ///< 初始化待办事项更新时间
       m_lastModifiedAt(lastModifiedAt),              ///< 初始化最后修改时间
-      m_synced(synced)                               // 初始化待办事项同步状态
+      m_synced(synced)                               ///< 初始化待办事项同步状态
 {
 }
 

@@ -149,17 +149,17 @@ class TodoSyncServer : public QObject {
 
   private:
     // 同步操作实现
-    void performSync(SyncDirection direction);                     // 执行同步操作
-    void fetchTodosFromServer();                                   // 从服务器获取待办事项
-    void pushLocalChangesToServer();                               // 推送本地更改到服务器
-    void pushSingleItem(TodoItem *item);                           // 推送单个待办事项
-    void pushNextItem();                                           // 推送下一个待办事项
-    void handleSingleItemPushSuccess(const QJsonObject &response); // 处理单个项目推送成功
-    void handleSyncSuccess(const QJsonObject &response);           // 处理同步成功
-    void handleFetchTodosSuccess(const QJsonObject &response);     // 处理获取待办事项成功
-    void handlePushChangesSuccess(const QJsonObject &response);    // 处理推送更改成功
-    void pushBatchToServer(const QList<TodoItem *> &batch);        // 推送批次到服务器
-    void pushNextBatch();                                          // 推送下一个批次
+    void performSync(SyncDirection direction);                  // 执行同步操作
+    void fetchTodosFromServer();                                // 从服务器获取待办事项
+    void pushLocalChangesToServer();                            // 推送本地更改到服务器
+    void pushSingleItem(TodoItem *item);                        // 推送单个待办事项
+    void pushNextItem();                                        // 推送下一个待办事项
+    void handleSingleItemPushSuccess();                         // 处理单个项目推送成功
+    void handleSyncSuccess(const QJsonObject &response);        // 处理同步成功
+    void handleFetchTodosSuccess(const QJsonObject &response);  // 处理获取待办事项成功
+    void handlePushChangesSuccess(const QJsonObject &response); // 处理推送更改成功
+    void pushBatchToServer(const QList<TodoItem *> &batch);     // 推送批次到服务器
+    void pushNextBatch();                                       // 推送下一个批次
 
     // 辅助方法
     void initializeServerConfig(); // 初始化服务器配置

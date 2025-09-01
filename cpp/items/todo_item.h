@@ -11,10 +11,10 @@
 
 #pragma once
 
+#include <QDate>
+#include <QDateTime>
 #include <QObject>
 #include <QString>
-#include <QDateTime>
-#include <QDate>
 #include <QUuid>
 
 /**

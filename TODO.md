@@ -42,6 +42,7 @@ cpp能使用标准库而不是qt库就改成标准库
 希望手向右拖动待办详情时，可以关闭详情显示区域。向左拖动分类也是同理
 用户未登录前，未同步的数据是否要上传或同步还没做
 updateServerConfig三个该函数同步一下,还有initializeServerConfig
+按思维导图或者markdown语法显示
 
 # 以后再说的
 
