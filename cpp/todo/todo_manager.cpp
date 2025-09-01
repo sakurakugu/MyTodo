@@ -225,6 +225,53 @@ QModelIndex TodoManager::indexFromItem(TodoItem *todoItem) const {
 }
 
 /**
+ * @brief 从名称获取角色
+ * @param name 角色名称
+ * @return 对应的角色ID
+ */
+TodoManager::TodoRoles TodoManager::roleFromName(const QString &name) const {
+    if (name == "id")
+        return IdRole;
+    if (name == "uuid")
+        return UuidRole;
+    if (name == "userUuid")
+        return UserUuidRole;
+    if (name == "title")
+        return TitleRole;
+    if (name == "description")
+        return DescriptionRole;
+    if (name == "category")
+        return CategoryRole;
+    if (name == "important")
+        return ImportantRole;
+    if (name == "deadline")
+        return DeadlineRole;
+    if (name == "recurrenceInterval")
+        return RecurrenceIntervalRole;
+    if (name == "recurrenceCount")
+        return RecurrenceCountRole;
+    if (name == "recurrenceStartDate")
+        return RecurrenceStartDateRole;
+    if (name == "isCompleted")
+        return IsCompletedRole;
+    if (name == "completedAt")
+        return CompletedAtRole;
+    if (name == "isDeleted")
+        return IsDeletedRole;
+    if (name == "deletedAt")
+        return DeletedAtRole;
+    if (name == "createdAt")
+        return CreatedAtRole;
+    if (name == "updatedAt")
+        return UpdatedAtRole;
+    if (name == "lastModifiedAt")
+        return LastModifiedAtRole;
+    if (name == "synced")
+        return SyncedRole;
+    return static_cast<TodoRoles>(-1); // 返回一个无效的角色值
+}
+
+/**
  * @brief 获取角色名称映射，用于QML访问
  * @return 角色ID到角色名称的映射
  */
@@ -416,12 +463,24 @@ bool TodoManager::updateTodo(int index, const QVariantMap &todoData) {
         return false;
     }
 
-    QModelIndex modelIndex = createIndex(index, 0);
+    // 获取过滤后的索引，因为QML传入的是过滤后的索引
+    updateFilterCache();
+    if (index >= static_cast<int>(m_filteredTodos.size())) {
+        qWarning() << "过滤后的索引超出范围:" << index;
+        return false;
+    }
+
+    // 通过过滤后的索引获取实际的任务项
+    auto todoItem = m_filteredTodos[index];
+    QModelIndex modelIndex = indexFromItem(todoItem);
+
     bool anyUpdated = false;
-    TodoItem *item = m_todos[index].get();
+    TodoItem *item = m_todos[modelIndex.row()].get();
     QVector<int> changedRoles;
 
     try {
+        beginResetModel();
+        // qInfo() << "modelIndex.row(): " << modelIndex.row() << "标题: " << todoItem->title();
         // 直接更新TodoItem对象，避免多次触发dataChanged信号
         if (todoData.contains("title")) {
             QString newTitle = todoData["title"].toString();
@@ -506,6 +565,8 @@ bool TodoManager::updateTodo(int index, const QVariantMap &todoData) {
                 anyUpdated = true;
             }
         }
+        // qInfo() << "modelIndex.row(): " << modelIndex.row() << "标题: " << todoItem->title();
+        endResetModel();
 
         // 如果有任何更新，则触发一次dataChanged信号并保存
         if (anyUpdated) {
@@ -540,6 +601,18 @@ bool TodoManager::updateTodo(int index, const QVariantMap &todoData) {
         qCritical() << "更新待办事项时发生未知异常";
         return false;
     }
+}
+
+/**
+ * @brief 更新现有待办事项
+ * @param index 待更新事项的索引
+ * @param todoData 包含要更新字段的映射
+ * @return 更新是否成功
+ */
+bool TodoManager::updateTodo(int index, const QString &roleName, const QVariant &value) {
+    QVariantMap todoData;
+    todoData[roleName] = value;
+    return updateTodo(index, todoData);
 }
 
 /**
@@ -839,16 +912,16 @@ bool TodoManager::markAsDoneOrTodo(int index) {
 
         // 通过过滤后的索引获取实际的任务项
         auto todoItem = m_filteredTodos[index];
-        QModelIndex index = indexFromItem(todoItem);
+        QModelIndex modelIndex = indexFromItem(todoItem);
 
         beginResetModel();
         // qInfo() << "modelIndex.row(): " << index.row() << "标题: " << todoItem->title()
         //         << (todoItem->isCompleted()? "已完成" : "未完成");
         bool success = false;
         if (todoItem->isCompleted()) {
-            success = setData(index, false, IsCompletedRole);
+            success = setData(modelIndex, false, IsCompletedRole);
         } else {
-            success = setData(index, true, IsCompletedRole);
+            success = setData(modelIndex, true, IsCompletedRole);
         }
         // qInfo() << "modelIndex.row(): " << index.row() << "标题: " << todoItem->title()
         //         << (todoItem->isCompleted()? "已完成" : "未完成");

@@ -105,9 +105,6 @@ void CategoryManager::addDefaultCategories() {
     m_categoryItems.clear();
     m_categories.clear();
 
-    // 添加默认的"全部"选项
-    m_categories << "全部";
-
     // 添加默认的"未分类"选项
     auto defaultCategory =
         std::make_unique<CategorieItem>(1, "未分类", m_userAuth.getUuid(), QDateTime::currentDateTime(), false);
@@ -361,9 +358,6 @@ void CategoryManager::updateCategoriesFromJson(const QJsonArray &categoriesArray
     // 清空现有的类别项目（保留默认类别）
     m_categoryItems.clear();
     m_categories.clear();
-
-    // 添加默认的"全部"选项
-    m_categories << "全部";
 
     // 添加从服务器获取的类别
     for (const QJsonValue &value : categoriesArray) {

@@ -75,8 +75,8 @@ class TodoItem : public QObject {
              bool isDeleted,                   ///< 是否已删除
              const QDateTime &deletedAt,       ///< 删除时间
              const QDateTime &createdAt,       ///< 创建时间
-             const QDateTime &updatedAt,       ///< 最后更新时间
-             const QDateTime &lastModifiedAt,  ///< 最后修改时间
+             const QDateTime &updatedAt,       ///< 最后更新时间（整个对象最后更新时间，用于同步）
+             const QDateTime &lastModifiedAt,  ///< 最后修改时间（标题、描述、分类等）
              bool synced,                      ///< 是否已与服务器同步
              QObject *parent = nullptr);
 

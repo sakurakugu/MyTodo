@@ -106,9 +106,10 @@ class TodoManager : public QAbstractListModel {
 
     // CRUD操作
     Q_INVOKABLE void addTodo(const QString &title, const QString &description = QString(),
-                             const QString &category = "default", bool important = false,
-                             const QString &deadline = QString());       // 添加新的待办事项
-    Q_INVOKABLE bool updateTodo(int index, const QVariantMap &todoData); // 更新现有待办事项
+                             const QString &category = "未分类", bool important = false,
+                             const QString &deadline = QString());                           // 添加新的待办事项
+    Q_INVOKABLE bool updateTodo(int index, const QVariantMap &todoData);                     // 更新现有待办事项
+    Q_INVOKABLE bool updateTodo(int index, const QString &roleName, const QVariant &value); // 更新现有待办事项
     Q_INVOKABLE bool removeTodo(int index);
     Q_INVOKABLE bool restoreTodo(int index);
     Q_INVOKABLE bool permanentlyDeleteTodo(int index); // 删除待办事项
@@ -137,6 +138,7 @@ class TodoManager : public QAbstractListModel {
     void updateSyncManagerData();                             // 更新同步管理器的待办事项数据
     QVariant getItemData(const TodoItem *item, int role) const;
     QModelIndex indexFromItem(TodoItem *todoItem) const; // 获取指定TodoItem的模型索引
+    TodoRoles roleFromName(const QString &name) const;   // 从名称获取角色
 
     // 性能优化相关方法
     void updateFilterCache();                   // 更新过滤缓存

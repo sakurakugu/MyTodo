@@ -234,7 +234,7 @@ bool TodoFilter::hasActiveFilters() const {
  * @return 如果匹配返回true，否则返回false
  */
 bool TodoFilter::checkCategoryMatch(const TodoItem *item) const {
-    if (m_currentCategory.isEmpty()) {
+    if (m_currentCategory.isEmpty() || m_currentCategory == "全部" ||  m_currentCategory == "all") {
         return true; // 没有分类筛选，显示全部
     }
 
