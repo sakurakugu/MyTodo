@@ -323,6 +323,7 @@ void TodoSyncServer::performSync(SyncDirection direction) {
     case Bidirectional:
         // 双向同步：先获取服务器数据，然后推送本地更改
         fetchTodosFromServer();
+        pushLocalChangesToServer();
         break;
     case UploadOnly:
         // 仅上传：只推送本地更改
@@ -710,6 +711,7 @@ void TodoSyncServer::handleSingleItemPushSuccess(const QJsonObject &response) {
         if (item) {
             // TODO: 标记项目为已同步的逻辑
             // item->setIsSynced(true);
+            item->setSynced(true);
         }
     }
 

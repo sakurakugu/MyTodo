@@ -536,6 +536,7 @@ bool TodoManager::removeTodo(int index) {
         auto &todoItem = m_todos[index];
         todoItem->setIsDeleted(true);
         todoItem->setDeletedAt(QDateTime::currentDateTime());
+        todoItem->setSynced(false); // 标记为未同步，确保删除操作会推送到服务器
 
         // 通知视图数据已更改
         QModelIndex modelIndex = createIndex(index, 0);
@@ -564,7 +565,7 @@ bool TodoManager::removeTodo(int index) {
 }
 
 /**
- * @brief 将待办事项标记为已完成
+ * @brief 从回收站恢复待办事项
  * @param index 待办事项的索引
  * @return 操作是否成功
  */
@@ -587,6 +588,7 @@ bool TodoManager::restoreTodo(int index) {
         // 恢复任务：设置isDeleted为false，清除deletedAt时间戳
         todoItem->setIsDeleted(false);
         todoItem->setDeletedAt(QDateTime());
+        todoItem->setSynced(false);
 
         // 通知视图数据已更改
         QModelIndex modelIndex = createIndex(index, 0);
@@ -766,6 +768,11 @@ bool TodoManager::updateAllTodosUserUuid() {
     }
 }
 
+/**
+ * @brief 将待办事项标记为已完成
+ * @param index 待办事项的索引
+ * @return 操作是否成功
+ */
 bool TodoManager::markAsDone(int index) {
     // 检查索引是否有效
     if (index < 0 || static_cast<size_t>(index) >= m_todos.size()) {
