@@ -1,0 +1,25 @@
+// ClickBlocker.qml
+// 鼠标拦截器，用于防止点击穿透到下层
+import QtQuick
+
+Item {
+    id: blocker
+    anchors.fill: parent
+    z: 9999    // 保证在最上层
+
+    // 是否启用拦截
+    property bool enabled: true
+
+    Rectangle {
+        anchors.fill: parent
+        color: "transparent"  // 默认透明
+        visible: blocker.enabled
+
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.AllButtons
+            enabled: blocker.enabled // 只有当 enabled 为 true 时才拦截
+            hoverEnabled: true // 鼠标悬停时也拦截
+        }
+    }
+}

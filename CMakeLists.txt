@@ -154,6 +154,7 @@ set(QML_COMPONENT_FILES
     qml/components/IconButton.qml                   # 图标按钮
     qml/components/BaseDialog.qml                   # 基础对话框
     qml/components/WindowDragHandler.qml            # 窗口拖拽处理
+    qml/components/ClickBlocker.qml                 # 点击拦截器
 
 )
 

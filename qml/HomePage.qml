@@ -1185,6 +1185,11 @@ Page {
                 // 抽屉显示/隐藏动画
                 x: detailArea.drawerVisible ? detailArea.width - width : detailArea.width
 
+                // 鼠标拦截器
+                ClickBlocker {
+                    enabled: detailArea.drawerVisible
+                }
+
                 Behavior on x {
                     NumberAnimation {
                         duration: 300
