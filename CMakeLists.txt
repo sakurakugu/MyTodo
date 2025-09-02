@@ -75,8 +75,30 @@ set(PRIVATE_LIBRARIES
     toml11::toml11
 )
 
-# 项目源文件配置
+# QML 文件配置
+# 按功能模块组织 QML 文件
+set(QML_MAIN_FILES
+    # 主要界面文件
+    qml/Main.qml                    # 入口文件
+    qml/HomePage.qml                # 主窗口
+    qml/SettingPage.qml               # 登录窗口
+    qml/WidgetMode.qml              # 小窗口模式
+)
 
+set(QML_COMPONENT_FILES
+    # 可重用组件文件
+    qml/components/ThemeManager.qml                 # 主题管理器
+    qml/components/LoginStatusDialogs.qml           # 登录状态相关对话框
+    qml/components/IconButton.qml                   # 图标按钮
+    qml/components/BaseDialog.qml                   # 基础对话框
+    qml/components/WindowDragHandler.qml            # 窗口拖拽处理
+    qml/components/ClickBlocker.qml                 # 点击拦截器
+    qml/components/DateTimePicker.qml               # 日期时间选择器
+    qml/components/InputDialog.qml                  # 输入对话框
+
+)
+
+# 项目源文件配置
 set(ITEM_SOURCES
     # 数据库条目模块
     cpp/items/todo_item.cpp
@@ -135,28 +157,6 @@ set(PROJECT_SOURCES
     ${NETWORK_SOURCES}
     ${UI_SOURCES}
     ${UTILITY_SOURCES}
-)
-
-# QML 文件配置
-# 按功能模块组织 QML 文件
-set(QML_MAIN_FILES
-    # 主要界面文件
-    qml/Main.qml                    # 入口文件
-    qml/HomePage.qml                # 主窗口
-    qml/SettingPage.qml               # 登录窗口
-    qml/WidgetMode.qml              # 小窗口模式
-)
-
-set(QML_COMPONENT_FILES
-    # 可重用组件文件
-    qml/components/ThemeManager.qml                 # 主题管理器
-    qml/components/LoginStatusDialogs.qml           # 登录状态相关对话框
-    qml/components/IconButton.qml                   # 图标按钮
-    qml/components/BaseDialog.qml                   # 基础对话框
-    qml/components/WindowDragHandler.qml            # 窗口拖拽处理
-    qml/components/ClickBlocker.qml                 # 点击拦截器
-    qml/components/DateTimePicker.qml               # 日期时间选择器
-
 )
 
 # 合并所有 QML 文件

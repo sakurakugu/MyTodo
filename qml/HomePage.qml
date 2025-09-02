@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "components"
 
 Page {
     id: homePage
@@ -1716,7 +1717,7 @@ Page {
         }
     }
 
-    // 分类选择菜单（用于修改待办事项分类）
+    // 种类选择菜单（用于修改待办事项分类）
     Menu {
         id: categorySelectMenu
         width: 150
@@ -1741,6 +1742,26 @@ Page {
                     color: theme.textColor
                     font.pixelSize: 12
                 }
+            }
+        }
+
+        MenuSeparator {
+            contentItem: Rectangle {
+                implicitHeight: 1
+                color: theme.borderColor
+            }
+        }
+
+        MenuItem {
+            text: qsTr("新增种类")
+            onTriggered: {
+                addCategoryDialog.open()
+            }
+            contentItem: Text {
+                text: parent.text
+                color: theme.accentColor
+                font.pixelSize: 12
+                font.bold: true
             }
         }
     }
@@ -1793,6 +1814,58 @@ Page {
                     font.pixelSize: 12
                 }
             }
+        }
+
+        MenuSeparator {
+            contentItem: Rectangle {
+                implicitHeight: 1
+                color: theme.borderColor
+            }
+        }
+
+        MenuItem {
+            text: qsTr("新增种类")
+            onTriggered: {
+                addCategoryDialog.open()
+            }
+            contentItem: Text {
+                text: parent.text
+                color: theme.accentColor
+                font.pixelSize: 12
+                font.bold: true
+            }
+        }
+    }
+
+    // 新增种类对话框
+    InputDialog {
+        id: addCategoryDialog
+        dialogTitle: qsTr("新增种类")
+        inputLabel: qsTr("种类名称:")
+        placeholderText: qsTr("请输入种类名称")
+        maxLength: 20
+
+        // 自定义验证函数
+        customValidation: function(text) {
+            if (text === "") {
+                return {valid: false, message: qsTr("请输入种类名称")}
+            }
+            if (text.length > 20) {
+                return {valid: false, message: qsTr("种类名称不能超过20个字符")}
+            }
+            if (categoryManager.categoryExists(text)) {
+                return {valid: false, message: qsTr("该种类已存在")}
+            }
+            return {valid: true, message: ""}
+        }
+
+        onInputAccepted: function(text) {
+            categoryManager.createCategory(text)
+            addCategoryDialog.clearInput()
+        }
+
+        onInputRejected: {
+            addCategoryDialog.clearInput()
         }
     }
 
