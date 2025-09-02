@@ -118,6 +118,7 @@ class UserAuth : public QObject {
 
   private slots:
     void onTokenExpiryCheck(); // 定时检查令牌过期
+    void onBaseUrlChanged(const QString &newBaseUrl); // 服务器基础URL变化槽
 
   private:
     /**

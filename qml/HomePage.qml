@@ -1759,7 +1759,7 @@ Page {
             }
             contentItem: Text {
                 text: parent.text
-                color: theme.accentColor
+                color: theme.textColor
                 font.pixelSize: 12
                 font.bold: true
             }
@@ -1830,7 +1830,7 @@ Page {
             }
             contentItem: Text {
                 text: parent.text
-                color: theme.accentColor
+                color: theme.textColor
                 font.pixelSize: 12
                 font.bold: true
             }
@@ -1862,10 +1862,12 @@ Page {
         onInputAccepted: function(text) {
             categoryManager.createCategory(text)
             addCategoryDialog.clearInput()
+            categoryFilterMenu.close()
         }
 
         onInputRejected: {
             addCategoryDialog.clearInput()
+            categoryFilterMenu.close()
         }
     }
 

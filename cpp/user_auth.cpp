@@ -31,6 +31,9 @@ UserAuth::UserAuth(QObject *parent)
     connect(&m_networkRequest, &NetworkRequest::requestFailed, this, &UserAuth::onNetworkRequestFailed);
     connect(&m_networkRequest, &NetworkRequest::authTokenExpired, this, &UserAuth::onAuthTokenExpired);
     connect(&m_networkRequest, &NetworkRequest::networkStatusChanged, this, &UserAuth::onNetworkStatusChanged);
+    
+    // 监听服务器配置变化
+    connect(&m_setting, &Setting::baseUrlChanged, this, &UserAuth::onBaseUrlChanged);
 
     // 连接令牌过期检查定时器
     connect(m_tokenExpiryTimer, &QTimer::timeout, this, &UserAuth::onTokenExpiryCheck);
@@ -538,4 +541,11 @@ void UserAuth::initializeServerConfig() {
                             .toString();
 
     qDebug() << "服务器配置 - 基础URL:" << m_serverBaseUrl << ", 认证端点:" << m_authApiEndpoint;
+}
+
+void UserAuth::onBaseUrlChanged(const QString &newBaseUrl) {
+    qDebug() << "UserAuth: 服务器基础URL已更新:" << m_serverBaseUrl << "->" << newBaseUrl;
+    m_serverBaseUrl = newBaseUrl;
+    m_networkRequest.setServerConfig(newBaseUrl);
+    logout();
 }
