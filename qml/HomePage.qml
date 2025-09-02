@@ -1861,7 +1861,7 @@ Page {
     }
 
     // 截止日期选择器
-    DatePicker {
+    DateTimePicker {
         id: deadlineDatePicker
 
         onAccepted: {
@@ -1873,8 +1873,9 @@ Page {
     }
 
     // 开始日期选择器
-    DatePicker {
+    DateTimePicker {
         id: startDatePicker
+        enableTimeMode: false
 
         onAccepted: {
             if (selectedTodo) {

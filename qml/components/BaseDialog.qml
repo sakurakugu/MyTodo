@@ -1,5 +1,5 @@
 /**
- * @file BaseDialog.qml
+ * @file root.qml
  * @brief 统一的弹窗基础组件
  *
  * 提供所有弹窗的基础样式、属性和行为，确保整个应用程序中
@@ -22,7 +22,7 @@ import QtQuick.Effects
  * 所有自定义弹窗都应该继承此组件以保持一致性。
  */
 Dialog {
-    id: baseDialog
+    id: root
 
     // 公共属性
     property string dialogTitle: ""                    ///< 对话框标题
@@ -59,11 +59,18 @@ Dialog {
     header: Rectangle {
         color: theme.backgroundColor
         border.color: theme.borderColor
-        border.width: 1
-        height: baseDialog.dialogTitle !== "" ? 40 : 0
-        visible: baseDialog.dialogTitle !== ""
+        height: root.dialogTitle !== "" ? 40 : 0
+        visible: root.dialogTitle !== ""
         topLeftRadius: 10                                     ///< 左上角圆角
         topRightRadius: 10                                    ///< 右上角圆角
+
+        Text {
+            text: root.dialogTitle
+            color: theme.textColor
+            font.pixelSize: 16
+            font.bold: true
+            anchors.centerIn: parent
+        }
 
         // 底部分割线
         Rectangle {
@@ -73,14 +80,6 @@ Dialog {
             height: 1
             color: theme.borderColor
         }
-
-        Text {
-            text: baseDialog.dialogTitle
-            color: theme.textColor
-            font.pixelSize: 16
-            font.bold: true
-            anchors.centerIn: parent
-        }
     }
 
     // 统一的背景样式
@@ -88,7 +87,7 @@ Dialog {
         color: theme.backgroundColor
         border.color: theme.borderColor
         border.width: 1
-        radius: 10
+        radius: 8
 
         // 添加阴影效果
         layer.enabled: true
@@ -104,8 +103,8 @@ Dialog {
     // 统一的内容区域
     contentItem: ColumnLayout {
         id: contentColumn
-        spacing: baseDialog.contentSpacing
-        anchors.margins: baseDialog.contentMargins
+        spacing: root.contentSpacing
+        anchors.margins: root.contentMargins
 
         // 支持自动尺寸调整
         Layout.fillWidth: true
@@ -118,21 +117,21 @@ Dialog {
 
     // 统一的进入动画
     enter: Transition {
-        enabled: baseDialog.enableAnimation
+        enabled: root.enableAnimation
 
         ParallelAnimation {
             NumberAnimation {
                 property: "opacity"
                 from: 0.0
                 to: 1.0
-                duration: baseDialog.animationDuration
+                duration: root.animationDuration
                 easing.type: Easing.OutQuad
             }
             NumberAnimation {
                 property: "scale"
                 from: 0.8
                 to: 1.0
-                duration: baseDialog.animationDuration
+                duration: root.animationDuration
                 easing.type: Easing.OutBack
                 easing.overshoot: 1.2
             }
@@ -141,21 +140,21 @@ Dialog {
 
     // 统一的退出动画
     exit: Transition {
-        enabled: baseDialog.enableAnimation
+        enabled: root.enableAnimation
 
         ParallelAnimation {
             NumberAnimation {
                 property: "opacity"
                 from: 1.0
                 to: 0.0
-                duration: baseDialog.animationDuration * 0.75
+                duration: root.animationDuration * 0.75
                 easing.type: Easing.InQuad
             }
             NumberAnimation {
                 property: "scale"
                 from: 1.0
                 to: 0.9
-                duration: baseDialog.animationDuration * 0.75
+                duration: root.animationDuration * 0.75
                 easing.type: Easing.InQuad
             }
         }

@@ -45,6 +45,7 @@ cpp 能使用标准库而不是 qt 库就改成标准库
 updateServerConfig 三个该函数同步一下,还有 initializeServerConfig
 按思维导图或者 markdown 语法显示
 是保存到一个配置文件中呢，还是分开呢
+对于各种组件，之后尝试将其与主题管理器等分离，要分离？还是不分离
 
 onClicked: {
 todoManager.addTodo("新的待办事项");
