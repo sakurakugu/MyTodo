@@ -713,9 +713,9 @@ std::unique_ptr<TodoItem> TodoDataStorage::createTodoFromJson(const QJsonObject 
         jsonObject["category"].toString(),                                              // category
         jsonObject["important"].toBool(),                                               // important
         QDateTime::fromString(jsonObject["deadline"].toString(), Qt::ISODate),          // deadline
-        jsonObject["recurrence_interval"].toInt(0),                                     // recurrenceInterval
-        jsonObject["recurrence_count"].toInt(-1),                                       // recurrenceCount
-        QDate::fromString(jsonObject["recurrence_start_date"].toString(), Qt::ISODate), // recurrenceStartDate
+        jsonObject["recurrenceInterval"].toInt(0),                                     // recurrenceInterval
+        jsonObject["recurrenceCount"].toInt(-1),                                       // recurrenceCount
+        QDate::fromString(jsonObject["recurrenceStartDate"].toString(), Qt::ISODate), // recurrenceStartDate
         jsonObject["isCompleted"].toBool(false),                                        // isCompleted
         QDateTime::fromString(jsonObject["completedAt"].toString(), Qt::ISODate),       // completedAt
         jsonObject["isDeleted"].toBool(false),                                          // isDeleted
@@ -745,9 +745,9 @@ QJsonObject TodoDataStorage::todoToJson(const TodoItem *todo) {
     todoObj["updatedAt"] = todo->updatedAt().toString(Qt::ISODate);
     todoObj["synced"] = todo->synced();
     todoObj["deadline"] = todo->deadline().toString(Qt::ISODate);
-    todoObj["recurrence_interval"] = todo->recurrenceInterval();
-    todoObj["recurrence_count"] = todo->recurrenceCount();
-    todoObj["recurrence_start_date"] = todo->recurrenceStartDate().toString(Qt::ISODate);
+    todoObj["recurrenceInterval"] = todo->recurrenceInterval();
+    todoObj["recurrenceCount"] = todo->recurrenceCount();
+    todoObj["recurrenceStartDate"] = todo->recurrenceStartDate().toString(Qt::ISODate);
     todoObj["isCompleted"] = todo->isCompleted();
     todoObj["completedAt"] = todo->completedAt().toString(Qt::ISODate);
     todoObj["isDeleted"] = todo->isDeleted();

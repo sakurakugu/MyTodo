@@ -980,7 +980,6 @@ Page {
                             onClicked: {
                                 // 切换抽屉显示状态
                                 detailArea.drawerVisible = !detailArea.drawerVisible;
-                                console.log("抽屉显示状态:", detailArea.drawerVisible);
                             }
                             textColor: theme.textColor
                             fontSize: 16
@@ -1133,12 +1132,44 @@ Page {
                             spacing: 12
 
                             // 描述
-                            Text {
-                                text: selectedTodo ? (selectedTodo.description || "空") : ""
+                            TextField {
+                                id: descriptionField
+                                text: selectedTodo ? (selectedTodo.description || "") : ""
+                                placeholderText: "添加描述..."
                                 font.pixelSize: 14
                                 color: theme.textColor
                                 Layout.fillWidth: true
-                                wrapMode: Text.WordWrap
+                                wrapMode: TextEdit.Wrap
+                                selectByMouse: true // 点击后可以选中文本
+                                enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done" // 只有选中待办事项且不在回收站或已完成模式时才能编辑
+                                Layout.minimumHeight: 60
+                                Layout.preferredHeight: Math.max(60, contentHeight + 20)
+
+                                // 保存描述的函数
+                                function saveDescriptionIfChanged() {
+                                    if (selectedTodo && text !== selectedTodo.description) {
+                                        // 通过TodoManager的updateTodo方法保存更改
+                                        todoManager.updateTodo(selectedTodo.index, "description", text);
+                                        // 更新本地selectedTodo对象以保持UI同步
+                                        selectedTodo.description = text;
+                                    }
+                                }
+
+                                // 按Ctrl+Enter保存并移动焦点
+                                Keys.onPressed: function(event) {
+                                    if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && event.modifiers & Qt.ControlModifier) {
+                                        saveDescriptionIfChanged();
+                                        focus = false;
+                                        event.accepted = true;
+                                    }
+                                }
+
+                                // 失去焦点时保存
+                                onActiveFocusChanged: {
+                                    if (!activeFocus) {
+                                        saveDescriptionIfChanged();
+                                    }
+                                }
                             }
                         }
                     }
@@ -1185,10 +1216,10 @@ Page {
                 // 抽屉显示/隐藏动画
                 x: detailArea.drawerVisible ? detailArea.width - width : detailArea.width
 
-                // 鼠标拦截器
-                ClickBlocker {
-                    enabled: detailArea.drawerVisible
-                }
+                // // 鼠标拦截器
+                // ClickBlocker {
+                //     enabled: detailArea.drawerVisible
+                // }
 
                 Behavior on x {
                     NumberAnimation {
@@ -1241,7 +1272,9 @@ Page {
                         clip: true
 
                         ColumnLayout {
-                            width: parent.width
+                            width: parent.width - 20
+                            anchors.left: parent.left
+                            anchors.leftMargin: 10
                             spacing: 12
 
                             // 分类显示和选择
@@ -1306,27 +1339,38 @@ Page {
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
-                                TextField {
+                                Button {
                                     id: drawerDeadlineField
-                                    text: selectedTodo && selectedTodo.deadline ? Qt.formatDateTime(selectedTodo.deadline, "yyyy-MM-dd hh:mm") : ""
-                                    placeholderText: "yyyy-MM-dd hh:mm"
+                                    text: selectedTodo && selectedTodo.deadline ? Qt.formatDateTime(selectedTodo.deadline, "yyyy-MM-dd hh:mm") : "点击选择日期"
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     font.pixelSize: 12
                                     Layout.fillWidth: true
+                                    Layout.preferredHeight: 30
 
-                                    onEditingFinished: {
-                                        if (selectedTodo && text !== "") {
-                                            var deadline = new Date(text);
-                                            if (!isNaN(deadline.getTime())) {
-                                                todoManager.updateTodo(selectedTodo.index, deadline, "deadline");
-                                                selectedTodo.deadline = deadline;
-                                            }
-                                        }
+                                    background: Rectangle {
+                                        color: parent.pressed ? (globalState.isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (globalState.isDarkMode ? "#3c5a78" : "#e0e0e0") : (globalState.isDarkMode ? "#2c3e50" : "#f0f0f0")
+                                        border.color: theme.borderColor
+                                        border.width: 1
+                                        radius: 4
+                                    }
+
+                                    contentItem: Text {
+                                        text: parent.text
+                                        color: theme.textColor
+                                        horizontalAlignment: Text.AlignLeft
+                                        verticalAlignment: Text.AlignVCenter
+                                        font.pixelSize: parent.font.pixelSize
+                                        leftPadding: 8
+                                    }
+
+                                    onClicked: {
+                                        deadlineDatePicker.selectedDate = selectedTodo && selectedTodo.deadline ? selectedTodo.deadline : new Date();
+                                        deadlineDatePicker.open();
                                     }
                                 }
                             }
 
-                            // 重复设置
+                            // 重复天数
                             RowLayout {
                                 Layout.fillWidth: true
                                 spacing: 8
@@ -1351,10 +1395,11 @@ Page {
                                     value: selectedTodo ? selectedTodo.recurrenceInterval : 0
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     Layout.preferredWidth: 80
+                                    Layout.preferredHeight: 30
 
                                     onValueChanged: {
                                         if (selectedTodo && value !== selectedTodo.recurrenceInterval) {
-                                            todoManager.updateTodo(selectedTodo.index, value, "recurrenceInterval");
+                                            todoManager.updateTodo(selectedTodo.index, "recurrenceInterval", value);
                                             selectedTodo.recurrenceInterval = value;
                                         }
                                     }
@@ -1368,6 +1413,7 @@ Page {
                                 }
                             }
 
+                            // 重复次数
                             RowLayout {
                                 Layout.fillWidth: true
                                 spacing: 8
@@ -1392,10 +1438,11 @@ Page {
                                     value: selectedTodo ? selectedTodo.recurrenceCount : 0
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     Layout.preferredWidth: 80
+                                    Layout.preferredHeight: 30
 
                                     onValueChanged: {
                                         if (selectedTodo && value !== selectedTodo.recurrenceCount) {
-                                            todoManager.updateTodo(selectedTodo.index, value, "recurrenceCount");
+                                            todoManager.updateTodo(selectedTodo.index, "recurrenceCount", value);
                                             selectedTodo.recurrenceCount = value;
                                         }
                                     }
@@ -1427,22 +1474,33 @@ Page {
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
-                                TextField {
+                                Button {
                                     id: drawerStartDateField
-                                    text: selectedTodo && selectedTodo.recurrenceStartDate ? Qt.formatDate(selectedTodo.recurrenceStartDate, "yyyy-MM-dd") : ""
-                                    placeholderText: "yyyy-MM-dd"
+                                    text: selectedTodo && selectedTodo.recurrenceStartDate ? Qt.formatDate(selectedTodo.recurrenceStartDate, "yyyy-MM-dd") : "点击选择日期"
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     font.pixelSize: 12
                                     Layout.fillWidth: true
+                                    Layout.preferredHeight: 30
 
-                                    onEditingFinished: {
-                                        if (selectedTodo && text !== "") {
-                                            var startDate = new Date(text);
-                                            if (!isNaN(startDate.getTime())) {
-                                                todoManager.updateTodo(selectedTodo.index, startDate, "recurrenceStartDate");
-                                                selectedTodo.recurrenceStartDate = startDate;
-                                            }
-                                        }
+                                    background: Rectangle {
+                                        color: parent.pressed ? (globalState.isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (globalState.isDarkMode ? "#3c5a78" : "#e0e0e0") : (globalState.isDarkMode ? "#2c3e50" : "#f0f0f0")
+                                        border.color: theme.borderColor
+                                        border.width: 1
+                                        radius: 4
+                                    }
+
+                                    contentItem: Text {
+                                        text: parent.text
+                                        color: theme.textColor
+                                        horizontalAlignment: Text.AlignLeft
+                                        verticalAlignment: Text.AlignVCenter
+                                        font.pixelSize: parent.font.pixelSize
+                                        leftPadding: 8
+                                    }
+
+                                    onClicked: {
+                                        startDatePicker.selectedDate = selectedTodo && selectedTodo.recurrenceStartDate ? selectedTodo.recurrenceStartDate : new Date();
+                                        startDatePicker.open();
                                     }
                                 }
                             }
@@ -1467,7 +1525,7 @@ Page {
 
                                     onCheckedChanged: {
                                         if (selectedTodo && checked !== selectedTodo.completed) {
-                                            todoManager.updateTodo(selectedTodo.index, checked, "completed");
+                                            todoManager.updateTodo(selectedTodo.index, "isCompleted", checked);
                                             selectedTodo.completed = checked;
                                         }
                                     }
@@ -1494,14 +1552,37 @@ Page {
 
                                     onCheckedChanged: {
                                         if (selectedTodo && checked !== selectedTodo.important) {
-                                            todoManager.updateTodo(selectedTodo.index, checked, "important");
+                                            todoManager.updateTodo(selectedTodo.index, "important", checked);
                                             selectedTodo.important = checked;
                                         }
                                     }
                                 }
                             }
 
-                            // TODO: 删除按钮
+                            // 删除按钮
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+
+                                Text {
+                                    text: "❌"
+                                    font.pixelSize: 14
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+
+                                Button {
+                                    id: drawerDeleteButton
+                                    text: "删除"
+                                    enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                                    font.pixelSize: 12
+
+                                    onClicked: {
+                                        if (selectedTodo) {
+                                            todoManager.removeTodo(selectedTodo.index);
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -1777,5 +1858,29 @@ Page {
 
         // 取消删除，不做任何操作
         onRejected: {}
+    }
+
+    // 截止日期选择器
+    DatePicker {
+        id: deadlineDatePicker
+
+        onAccepted: {
+            if (selectedTodo) {
+                todoManager.updateTodo(selectedTodo.index, "deadline", selectedDate);
+                selectedTodo.deadline = selectedDate;
+            }
+        }
+    }
+
+    // 开始日期选择器
+    DatePicker {
+        id: startDatePicker
+
+        onAccepted: {
+            if (selectedTodo) {
+                todoManager.updateTodo(selectedTodo.index, "recurrenceStartDate", selectedDate);
+                selectedTodo.recurrenceStartDate = selectedDate;
+            }
+        }
     }
 }

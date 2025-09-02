@@ -428,9 +428,9 @@ void TodoSyncServer::pushBatchToServer(const QList<TodoItem *> &batch) {
             obj["category"] = item->category();
             obj["important"] = item->important();
             obj["deadline"] = item->deadline().toString(Qt::ISODate);
-            obj["recurrence_interval"] = item->recurrenceInterval();
-            obj["recurrence_count"] = item->recurrenceCount();
-            obj["recurrence_start_date"] = item->recurrenceStartDate().toString(Qt::ISODate);
+            obj["recurrenceInterval"] = item->recurrenceInterval();
+            obj["recurrenceCount"] = item->recurrenceCount();
+            obj["recurrenceStartDate"] = item->recurrenceStartDate().toString(Qt::ISODate);
             obj["is_completed"] = item->isCompleted();
             obj["completed_at"] = item->completedAt().toString(Qt::ISODate);
             obj["is_deleted"] = item->isDeleted();
@@ -681,10 +681,10 @@ void TodoSyncServer::pushSingleItem(TodoItem *item) {
         itemData["deadline"] = item->deadline().toString(Qt::ISODate);
     }
     if (item->recurrenceInterval() > 0) {
-        itemData["recurrence_interval"] = item->recurrenceInterval();
-        itemData["recurrence_count"] = item->recurrenceCount();
+        itemData["recurrenceInterval"] = item->recurrenceInterval();
+        itemData["recurrenceCount"] = item->recurrenceCount();
         if (item->recurrenceStartDate().isValid()) {
-            itemData["recurrence_start_date"] = item->recurrenceStartDate().toString(Qt::ISODate);
+            itemData["recurrenceStartDate"] = item->recurrenceStartDate().toString(Qt::ISODate);
         }
     }
 

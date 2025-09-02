@@ -231,43 +231,44 @@ QModelIndex TodoManager::indexFromItem(TodoItem *todoItem) const {
  */
 TodoManager::TodoRoles TodoManager::roleFromName(const QString &name) const {
     if (name == "id")
-        return IdRole;
+        return IdRole; // 任务ID
     if (name == "uuid")
-        return UuidRole;
+        return UuidRole; // 任务UUID
     if (name == "userUuid")
-        return UserUuidRole;
+        return UserUuidRole; // 用户UUID
     if (name == "title")
-        return TitleRole;
+        return TitleRole; // 任务标题
     if (name == "description")
-        return DescriptionRole;
+        return DescriptionRole; // 任务描述
     if (name == "category")
-        return CategoryRole;
+        return CategoryRole; // 任务分类
     if (name == "important")
-        return ImportantRole;
+        return ImportantRole; // 任务重要程度
     if (name == "deadline")
-        return DeadlineRole;
+        return DeadlineRole; // 任务截止时间
     if (name == "recurrenceInterval")
-        return RecurrenceIntervalRole;
+        return RecurrenceIntervalRole; // 循环间隔
     if (name == "recurrenceCount")
-        return RecurrenceCountRole;
+        return RecurrenceCountRole; // 循环次数
     if (name == "recurrenceStartDate")
-        return RecurrenceStartDateRole;
+        return RecurrenceStartDateRole; // 循环开始日期
     if (name == "isCompleted")
-        return IsCompletedRole;
+        return IsCompletedRole; // 任务是否已完成
     if (name == "completedAt")
-        return CompletedAtRole;
+        return CompletedAtRole; // 任务完成时间
     if (name == "isDeleted")
-        return IsDeletedRole;
+        return IsDeletedRole; // 任务是否已删除
     if (name == "deletedAt")
-        return DeletedAtRole;
+        return DeletedAtRole; // 任务删除时间
     if (name == "createdAt")
-        return CreatedAtRole;
+        return CreatedAtRole; // 任务创建时间
     if (name == "updatedAt")
-        return UpdatedAtRole;
+        return UpdatedAtRole; // 任务更新时间
     if (name == "lastModifiedAt")
-        return LastModifiedAtRole;
+        return LastModifiedAtRole; // 任务最后修改时间
     if (name == "synced")
-        return SyncedRole;
+        return SyncedRole; // 任务是否已同步
+
     return static_cast<TodoRoles>(-1); // 返回一个无效的角色值
 }
 
@@ -521,6 +522,7 @@ bool TodoManager::updateTodo(int index, const QVariantMap &todoData) {
         if (todoData.contains("deadline")) {
             QString newDeadlineStr = todoData["deadline"].toString();
             QDateTime newDeadline = QDateTime::fromString(newDeadlineStr, Qt::ISODate);
+            qDebug() << "新的截止日期: " << newDeadline;
             if (item->deadline() != newDeadline) {
                 item->setDeadline(newDeadline);
                 changedRoles << DeadlineRole;
@@ -528,34 +530,34 @@ bool TodoManager::updateTodo(int index, const QVariantMap &todoData) {
             }
         }
 
-        if (todoData.contains("recurrence_interval")) {
-            int newRecurrenceInterval = todoData["recurrence_interval"].toInt();
+        if (todoData.contains("recurrenceInterval")) {
+            int newRecurrenceInterval = todoData["recurrenceInterval"].toInt();
             if (item->recurrenceInterval() != newRecurrenceInterval) {
                 item->setRecurrenceInterval(newRecurrenceInterval);
                 anyUpdated = true;
             }
         }
 
-        if (todoData.contains("recurrence_count")) {
-            int newRecurrenceCount = todoData["recurrence_count"].toInt();
+        if (todoData.contains("recurrenceCount")) {
+            int newRecurrenceCount = todoData["recurrenceCount"].toInt();
             if (item->recurrenceCount() != newRecurrenceCount) {
                 item->setRecurrenceCount(newRecurrenceCount);
                 anyUpdated = true;
             }
         }
 
-        if (todoData.contains("recurrence_start_date")) {
-            QString newRecurrenceStartDateStr = todoData["recurrence_start_date"].toString();
+        if (todoData.contains("recurrenceStartDate")) {
+            QString newRecurrenceStartDateStr = todoData["recurrenceStartDate"].toString();
             QDate newRecurrenceStartDate = QDate::fromString(newRecurrenceStartDateStr, Qt::ISODate);
+            qDebug() << "新的循环开始日期: " << newRecurrenceStartDate;
             if (item->recurrenceStartDate() != newRecurrenceStartDate) {
                 item->setRecurrenceStartDate(newRecurrenceStartDate);
                 anyUpdated = true;
             }
         }
 
-        if (todoData.contains("status")) {
-            QString newStatus = todoData["status"].toString();
-            bool newCompleted = (newStatus == "done");
+        if (todoData.contains("isCompleted")) {
+            bool newCompleted = todoData["isCompleted"].toBool();
             if (item->isCompleted() != newCompleted) {
                 item->setIsCompleted(newCompleted);
                 if (newCompleted) {
@@ -1015,10 +1017,10 @@ void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
             existingItem->setCategory(todoObj["category"].toString());
             existingItem->setImportant(todoObj["important"].toBool());
             existingItem->setDeadline(QDateTime::fromString(todoObj["deadline"].toString(), Qt::ISODate));
-            existingItem->setRecurrenceInterval(todoObj["recurrence_interval"].toInt());
-            existingItem->setRecurrenceCount(todoObj["recurrence_count"].toInt());
+            existingItem->setRecurrenceInterval(todoObj["recurrenceInterval"].toInt());
+            existingItem->setRecurrenceCount(todoObj["recurrenceCount"].toInt());
             existingItem->setRecurrenceStartDate(
-                QDate::fromString(todoObj["recurrence_start_date"].toString(), Qt::ISODate));
+                QDate::fromString(todoObj["recurrenceStartDate"].toString(), Qt::ISODate));
             existingItem->setIsCompleted(todoObj["is_completed"].toBool());
             existingItem->setCompletedAt(QDateTime::fromString(todoObj["completed_at"].toString(), Qt::ISODate));
             existingItem->setIsDeleted(todoObj["is_deleted"].toBool());
@@ -1038,10 +1040,10 @@ void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
             newItem->setCategory(todoObj["category"].toString());
             newItem->setImportant(todoObj["important"].toBool());
             newItem->setDeadline(QDateTime::fromString(todoObj["deadline"].toString(), Qt::ISODate));
-            newItem->setRecurrenceInterval(todoObj["recurrence_interval"].toInt());
-            newItem->setRecurrenceCount(todoObj["recurrence_count"].toInt());
+            newItem->setRecurrenceInterval(todoObj["recurrenceInterval"].toInt());
+            newItem->setRecurrenceCount(todoObj["recurrenceCount"].toInt());
             newItem->setRecurrenceStartDate(
-                QDate::fromString(todoObj["recurrence_start_date"].toString(), Qt::ISODate));
+                QDate::fromString(todoObj["recurrenceStartDate"].toString(), Qt::ISODate));
             newItem->setIsCompleted(todoObj["is_completed"].toBool());
             newItem->setCompletedAt(QDateTime::fromString(todoObj["completed_at"].toString(), Qt::ISODate));
             newItem->setIsDeleted(todoObj["is_deleted"].toBool());

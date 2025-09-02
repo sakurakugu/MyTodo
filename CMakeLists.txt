@@ -155,6 +155,7 @@ set(QML_COMPONENT_FILES
     qml/components/BaseDialog.qml                   # 基础对话框
     qml/components/WindowDragHandler.qml            # 窗口拖拽处理
     qml/components/ClickBlocker.qml                 # 点击拦截器
+    qml/components/DatePicker.qml                   # 日期选择器
 
 )
 
