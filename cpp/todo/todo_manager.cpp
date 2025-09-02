@@ -67,12 +67,9 @@ TodoManager::TodoManager(QObject *parent)
     // 连接用户认证信号，登录成功后触发同步
     connect(&UserAuth::GetInstance(), &UserAuth::loginSuccessful, this, [this](const QString &username) {
         Q_UNUSED(username)
-        if (m_isAutoSync) {
-            // 登录成功后立即同步
-            syncWithServer();
-            // 获取类别列表
-            m_categoryManager->fetchCategories();
-        }
+        // 登录成功后立即获取类别列表
+        m_categoryManager->fetchCategories();
+        syncWithServer();
     });
 
     // 创建待办事项类别管理器
@@ -91,7 +88,7 @@ TodoManager::TodoManager(QObject *parent)
     updateSyncManagerData();
 
     // 如果已登录，获取类别列表
-    if (m_isAutoSync && UserAuth::GetInstance().isLoggedIn()) {
+    if (UserAuth::GetInstance().isLoggedIn()) {
         m_categoryManager->fetchCategories();
     }
 }

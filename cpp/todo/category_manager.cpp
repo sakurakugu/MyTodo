@@ -141,7 +141,7 @@ void CategoryManager::fetchCategories() {
 
     NetworkRequest::RequestConfig config;
     config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
-    config.method = "GET";  // 获取分类使用GET方法
+    config.method = "GET"; // 获取分类使用GET方法
     config.data = requestData;
     config.requiresAuth = true;
     // 移除重复的Authorization头设置，由addAuthHeader方法统一处理
@@ -150,12 +150,16 @@ void CategoryManager::fetchCategories() {
 }
 
 void CategoryManager::createCategory(const QString &name) {
+    qDebug() << "=== 开始创建类别 ===" << name;
+
     // TODO: 用户未登录时，可以创建，之后还要处理如何与服务端同步的问题
     if (!m_userAuth.isLoggedIn()) {
         qWarning() << "用户未登录，无法创建类别";
         emit createCategoryCompleted(false, "用户未登录");
         return;
     }
+
+    qDebug() << "用户已登录，访问令牌长度:" << m_userAuth.getAccessToken().length();
 
     if (!isValidCategoryName(name)) {
         emit createCategoryCompleted(false, "类别名称不能为空或过长");
@@ -175,15 +179,19 @@ void CategoryManager::createCategory(const QString &name) {
     }
 
     QJsonObject requestData;
-    requestData["action"] = "create";
     requestData["name"] = name;
+
+    qDebug() << "请求数据:" << requestData;
 
     NetworkRequest::RequestConfig config;
     config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
-    config.method = "POST";  // 创建分类使用POST方法
+    config.method = "POST"; // 创建分类使用POST方法
     config.data = requestData;
     config.requiresAuth = true;
     // 移除重复的Authorization头设置，由addAuthHeader方法统一处理
+
+    qDebug() << "请求URL:" << config.url;
+    qDebug() << "发送网络请求...";
 
     m_networkRequest.sendRequest(NetworkRequest::CreateCategory, config);
 }
@@ -220,7 +228,7 @@ void CategoryManager::updateCategory(int id, const QString &name) {
 
     NetworkRequest::RequestConfig config;
     config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
-    config.method = "PUT";   // 更新分类使用PUT方法
+    config.method = "PUT"; // 更新分类使用PUT方法
     config.data = requestData;
     config.requiresAuth = true;
     // 移除重复的Authorization头设置，由addAuthHeader方法统一处理
@@ -321,16 +329,45 @@ void CategoryManager::onNetworkRequestFailed(NetworkRequest::RequestType type, N
  * @param response 服务器响应数据
  */
 void CategoryManager::handleFetchCategoriesSuccess(const QJsonObject &response) {
-    if (response["success"].toBool()) {
-        QJsonArray categoriesArray = response["categories"].toArray();
-        updateCategoriesFromJson(categoriesArray);
+    // 添加调试信息，输出完整的服务器响应
+    qDebug() << "服务器响应内容:" << QJsonDocument(response).toJson(QJsonDocument::Compact);
 
-        qDebug() << "成功获取待办类别列表:" << m_categories;
-        emit fetchCategoriesCompleted(true, "获取待办类别列表成功");
+    QJsonArray categoriesArray;
+
+    // 检查是否是标准响应格式
+    if (response.contains("success")) {
+        // 标准响应格式
+        if (response["success"].toBool()) {
+            // 修复：从data字段中获取categories数组
+            QJsonObject dataObj = response["data"].toObject();
+            categoriesArray = dataObj["categories"].toArray();
+
+            qDebug() << "成功获取待办类别列表（标准格式）:" << categoriesArray.size() << "个类别";
+            updateCategoriesFromJson(categoriesArray);
+            emit fetchCategoriesCompleted(true, "获取待办类别列表成功");
+        } else {
+            // 修复：错误响应中消息字段是"error"，不是"message"
+            QString errorMessage =
+                response.contains("error") ? response["error"].toString() : response["message"].toString();
+            if (errorMessage.isEmpty()) {
+                errorMessage = "获取待办类别列表失败";
+            }
+            qWarning() << "获取待办类别列表失败:" << errorMessage;
+            qWarning() << "响应包含的字段:" << response.keys();
+            emit fetchCategoriesCompleted(false, errorMessage);
+        }
     } else {
-        QString errorMessage = response["message"].toString();
-        qWarning() << "获取待办类别列表失败:" << errorMessage;
-        emit fetchCategoriesCompleted(false, errorMessage);
+        // 非标准响应格式，直接处理categories数组
+        if (response.contains("categories")) {
+            categoriesArray = response["categories"].toArray();
+            updateCategoriesFromJson(categoriesArray);
+            qDebug() << "成功获取待办类别列表（非标准格式）:" << categoriesArray.size() << "个类别";
+            emit fetchCategoriesCompleted(true, "获取待办类别列表成功");
+        } else {
+            qWarning() << "响应中没有找到categories字段";
+            qWarning() << "响应包含的字段:" << response.keys();
+            emit fetchCategoriesCompleted(false, "响应格式错误：缺少categories字段");
+        }
     }
 }
 
@@ -340,11 +377,20 @@ void CategoryManager::handleFetchCategoriesSuccess(const QJsonObject &response) 
  */
 void CategoryManager::handleCategoryOperationSuccess(const QJsonObject &response) {
     bool success = response["success"].toBool();
-    QString message = response["message"].toString();
+    // 修复：根据响应类型获取正确的消息字段
+    QString message =
+        success ? response["message"].toString()
+                : (response.contains("error") ? response["error"].toString() : response["message"].toString());
+
+    qDebug() << "类别操作结果:" << success << "消息:" << message;
 
     if (success) {
         // 操作成功后重新获取类别列表
+        qDebug() << "类别操作成功，重新获取类别列表...";
         fetchCategories();
+
+        // 立即发射信号通知UI更新
+        emit categoriesChanged();
     }
 
     emit categoryOperationCompleted(success, message);
@@ -384,6 +430,8 @@ void CategoryManager::updateCategoriesFromJson(const QJsonArray &categoriesArray
         m_categories << "未分类";
     }
 
+    qDebug() << "更新类别列表完成，当前类别:" << m_categories;
+    qDebug() << "发射categoriesChanged信号...";
     emit categoriesChanged();
 }
 

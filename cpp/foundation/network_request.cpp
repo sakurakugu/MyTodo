@@ -207,24 +207,50 @@ void NetworkRequest::onReplyFinished() {
 
             QJsonObject fullResponse = doc.object();
 
-            bool serverSuccess = fullResponse["success"].toBool();
-            if (serverSuccess) {
-                // 成功响应，提取data字段作为响应数据
-                responseData = fullResponse.contains("data") ? fullResponse["data"].toObject() : fullResponse;
-                success = true;
-                qDebug() << "请求成功:" << request.type;
+            // 检查是否是标准响应格式（包含success字段）
+            if (fullResponse.contains("success")) {
+                bool serverSuccess = fullResponse["success"].toBool();
+                if (serverSuccess) {
+                    // 成功响应，提取data字段作为响应数据
+                    responseData = fullResponse.contains("data") ? fullResponse["data"].toObject() : fullResponse;
+                    success = true;
+                    qDebug() << "请求成功:" << request.type;
+                } else {
+                    // 服务器返回错误
+                    QString serverMessage = fullResponse.contains("error") ? 
+                                          fullResponse["error"].toString() : 
+                                          fullResponse["message"].toString();
+                    throw QString("服务器错误: %1").arg(serverMessage);
+                }
             } else {
-                // 服务器返回错误
-                QString serverMessage = fullResponse["message"].toString();
-                throw QString("服务器错误: %1").arg(serverMessage);
+                // 非标准响应格式，直接作为成功响应处理
+                responseData = fullResponse;
+                success = true;
+                qWarning() << "请求成功（非标准格式）:" << request.type;
             }
 
         } else {
             // 处理网络错误
+            int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
             NetworkError networkError = mapQNetworkError(reply->error());
             errorMessage = getErrorMessage(networkError, reply->errorString());
 
-            qWarning() << "网络请求失败:" << request.type << "-" << errorMessage;
+            qWarning() << "网络请求失败:" << request.type << "- HTTP状态码:" << httpStatus << "-" << errorMessage;
+            
+            // 如果是401错误，可能是认证问题
+            if (httpStatus == 401) {
+                qWarning() << "认证失败，可能需要重新登录";
+                emit authTokenExpired();
+            }
+            // 如果是400错误，检查是否是认证相关
+            else if (httpStatus == 400) {
+                QByteArray responseBody = reply->readAll();
+                QString responseText = QString::fromUtf8(responseBody);
+                if (responseText.contains("认证") || responseText.contains("令牌") || responseText.contains("token")) {
+                    qWarning() << "400错误可能与认证相关:" << responseText;
+                    emit authTokenExpired();
+                }
+            }
 
             // 检查是否需要重试
             if (shouldRetry(networkError) && request.currentRetry < request.config.maxRetries) {
@@ -464,7 +490,11 @@ void NetworkRequest::setupDefaultHeaders(QNetworkRequest &request) const {
 
 void NetworkRequest::addAuthHeader(QNetworkRequest &request) const {
     if (!m_authToken.isEmpty()) {
-        request.setRawHeader("Authorization", QString("Bearer %1").arg(m_authToken).toUtf8());
+        QString authHeader = QString("Bearer %1").arg(m_authToken);
+        request.setRawHeader("Authorization", authHeader.toUtf8());
+        qDebug() << "添加认证头部:" << authHeader.left(20) + "..."; // 只显示前20个字符
+    } else {
+        qWarning() << "认证令牌为空，无法添加认证头部";
     }
 }
 
