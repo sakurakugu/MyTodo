@@ -89,6 +89,17 @@ CategorieItem *CategoryManager::findCategoryById(int id) const {
 }
 
 /**
+ * @brief 根据UUID查找类别项目
+ * @param uuid 类别UUID
+ * @return 找到的类别项目指针，如果未找到则返回nullptr
+ */
+CategorieItem *CategoryManager::findCategoryByUuid(const QUuid &uuid) const {
+    auto it = std::find_if(m_categoryItems.begin(), m_categoryItems.end(),
+                           [uuid](const std::unique_ptr<CategorieItem> &item) { return item->uuid() == uuid; });
+    return (it != m_categoryItems.end()) ? it->get() : nullptr;
+}
+
+/**
  * @brief 检查类别名称是否已存在
  * @param name 类别名称
  * @return 如果存在返回true，否则返回false
@@ -106,8 +117,8 @@ void CategoryManager::addDefaultCategories() {
     m_categories.clear();
 
     // 添加默认的"未分类"选项
-    auto defaultCategory =
-        std::make_unique<CategorieItem>(1, "未分类", m_userAuth.getUuid(), QDateTime::currentDateTime(), false);
+    auto defaultCategory = std::make_unique<CategorieItem>(1, QUuid::createUuid(), "未分类", m_userAuth.getUuid(),
+                                                           QDateTime::currentDateTime(), false);
     m_categoryItems.push_back(std::move(defaultCategory));
     m_categories << "未分类";
 
@@ -208,6 +219,11 @@ void CategoryManager::updateCategory(const QString &name, const QString &newName
         return;
     }
 
+    if (name == "未分类") {
+        emit updateCategoryCompleted(false, "不能更新系统默认类别 \"未分类\"");
+        return;
+    }
+
     // 检查原类别是否存在
     CategorieItem *existingCategory = findCategoryByName(name);
     if (!existingCategory) {
@@ -215,7 +231,7 @@ void CategoryManager::updateCategory(const QString &name, const QString &newName
         emit updateCategoryCompleted(false, "要更新的类别不存在");
         return;
     }
-    
+
     // 检查新名称是否与其他类别重复（排除自身）
     CategorieItem *duplicateCategory = findCategoryByName(newName);
     if (duplicateCategory && duplicateCategory->id() != existingCategory->id()) {
@@ -232,10 +248,10 @@ void CategoryManager::updateCategory(const QString &name, const QString &newName
 
     QJsonObject requestData;
     requestData["action"] = "update";
-    requestData["id"] = existingCategory->id();
+    requestData["uuid"] = existingCategory->uuid().toString(QUuid::WithoutBraces);
     requestData["name"] = newName;
-    
-    qDebug() << "发送更新类别请求 - ID:" << existingCategory->id() << "原名称:" << name << "新名称:" << newName;
+
+    qDebug() << "发送更新类别请求 - UUID:" << existingCategory->uuid().toString(QUuid::WithoutBraces) << "原名称:" << name << "新名称:" << newName;
 
     NetworkRequest::RequestConfig config;
     config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
@@ -267,9 +283,9 @@ void CategoryManager::deleteCategory(const QString &name) {
         return;
     }
 
-    // DELETE 请求通过 URL 参数传递 ID，不使用请求体
+    // DELETE 请求通过 URL 参数传递 UUID，不使用请求体
     NetworkRequest::RequestConfig config;
-    config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint) + "?id=" + QString::number(category->id());
+    config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint) + "?uuid=" + category->uuid().toString(QUuid::WithoutBraces);
     config.method = "DELETE"; // 删除分类使用DELETE方法
     config.requiresAuth = true;
     // 移除重复的Authorization头设置，由addAuthHeader方法统一处理
@@ -417,13 +433,15 @@ void CategoryManager::updateCategoriesFromJson(const QJsonArray &categoriesArray
         QJsonObject categoryObj = value.toObject();
 
         int id = categoryObj["id"].toInt();
+        QString uuidStr = categoryObj["uuid"].toString();
         QString name = categoryObj["name"].toString();
         QString userUuid = categoryObj["user_uuid"].toString();
         QString createdAtStr = categoryObj["created_at"].toString();
         QDateTime createdAt = QDateTime::fromString(createdAtStr, Qt::ISODate);
 
-        if (!name.isEmpty()) {
-            auto categoryItem = std::make_unique<CategorieItem>(id, name, QUuid::fromString(userUuid), createdAt, true);
+        if (!name.isEmpty() && !uuidStr.isEmpty()) {
+            auto categoryItem = std::make_unique<CategorieItem>(id,QUuid::fromString(uuidStr), name,
+                                                                QUuid::fromString(userUuid), createdAt, true);
             m_categoryItems.push_back(std::move(categoryItem));
             m_categories << name;
         }
@@ -432,7 +450,7 @@ void CategoryManager::updateCategoriesFromJson(const QJsonArray &categoriesArray
     // 添加默认的"未分类"选项（如果不存在）
     if (!m_categories.contains("未分类")) {
         auto defaultCategory =
-            std::make_unique<CategorieItem>(1, "未分类", QUuid(), QDateTime::currentDateTime(), true);
+            std::make_unique<CategorieItem>(1,QUuid::createUuid(), "未分类", QUuid(), QDateTime::currentDateTime(), true);
         m_categoryItems.push_back(std::move(defaultCategory));
         m_categories << "未分类";
     }

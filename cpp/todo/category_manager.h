@@ -80,6 +80,7 @@ class CategoryManager : public QObject {
     const std::vector<std::unique_ptr<CategorieItem>> &getCategoryItems() const; ///< 获取类别项目列表
     Q_INVOKABLE CategorieItem *findCategoryByName(const QString &name) const;    ///< 根据名称查找类别项目
     CategorieItem *findCategoryById(int id) const;                               ///< 根据ID查找类别项目
+    CategorieItem *findCategoryByUuid(const QUuid &uuid) const;                 ///< 根据UUID查找类别项目
     Q_INVOKABLE bool categoryExists(const QString &name) const;                  ///< 检查类别名称是否已存在
     void addDefaultCategories();                                                 ///< 添加默认类别
     void clearCategories();                                                      ///< 清空所有类别

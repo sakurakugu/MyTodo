@@ -24,6 +24,7 @@
 CategorieItem::CategorieItem(QObject *parent)
     : QObject(parent),                           // 初始化父对象
       m_id(0),                                   // 初始化分类ID为0
+      m_uuid(QUuid()),                           // 初始化分类UUID为空UUID
       m_name(""),                                // 初始化分类名称为空字符串
       m_userUuid(QUuid()),                       // 初始化用户UUID为空UUID
       m_createdAt(QDateTime::currentDateTime()), // 初始化创建时间为当前时间
@@ -38,6 +39,7 @@ CategorieItem::CategorieItem(QObject *parent)
  * 从数据库或网络加载已存在的分类数据。
  */
 CategorieItem::CategorieItem(int id,                     ///< 分类唯一标识符
+                             const QUuid &uuid,          ///< 分类唯一标识符（UUID)
                              const QString &name,        ///< 分类名称
                              const QUuid &userUuid,      ///< 用户UUID
                              const QDateTime &createdAt, ///< 创建时间
@@ -45,6 +47,7 @@ CategorieItem::CategorieItem(int id,                     ///< 分类唯一标识
                              QObject *parent)            ///< 父对象指针
     : QObject(parent),                                   ///< 初始化父对象
       m_id(id),                                          ///< 初始化分类ID
+      m_uuid(uuid),                                      ///< 初始化分类UUID
       m_name(name),                                      ///< 初始化分类名称
       m_userUuid(userUuid),                              ///< 初始化用户UUID
       m_createdAt(createdAt),                            ///< 初始化创建时间
@@ -58,6 +61,14 @@ CategorieItem::CategorieItem(int id,                     ///< 分类唯一标识
  */
 void CategorieItem::setId(int id) {
     setProperty(m_id, id, &CategorieItem::idChanged);
+}
+
+/**
+ * @brief 设置分类的唯一标识符
+ * @param uuid 新的分类UUID
+ */
+void CategorieItem::setUuid(const QUuid &uuid) {
+    setProperty(m_uuid, uuid, &CategorieItem::uuidChanged);
 }
 
 /**

@@ -34,6 +34,7 @@
 class CategorieItem : public QObject {
     Q_OBJECT
     Q_PROPERTY(int id READ id WRITE setId NOTIFY idChanged)
+    Q_PROPERTY(QUuid uuid READ uuid WRITE setUuid NOTIFY uuidChanged)
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
     Q_PROPERTY(QUuid userUuid READ userUuid WRITE setUserUuid NOTIFY userUuidChanged)
     Q_PROPERTY(QDateTime createdAt READ createdAt WRITE setCreatedAt NOTIFY createdAtChanged)
@@ -44,6 +45,7 @@ class CategorieItem : public QObject {
     CategorieItem &operator=(const CategorieItem &) = delete;
     explicit CategorieItem(QObject *parent = nullptr);
     CategorieItem(int id,                     ///< 分类唯一标识符
+                  const QUuid &uuid,          ///< 分类唯一标识符（UUID）
                   const QString &name,        ///< 分类名称
                   const QUuid &userUuid,      ///< 用户UUID
                   const QDateTime &createdAt, ///< 创建时间
@@ -52,6 +54,9 @@ class CategorieItem : public QObject {
 
     int id() const noexcept { return m_id; } // 获取ID
     void setId(int id);                      // 设置ID
+
+    QUuid uuid() const { return m_uuid; }       // 获取UUID
+    void setUuid(const QUuid &uuid);         // 设置UUID
 
     QString name() const noexcept { return m_name; } // 获取分类名称
     void setName(const QString &name);               // 设置分类名称
@@ -77,6 +82,7 @@ class CategorieItem : public QObject {
 
   signals:
     void idChanged();        ///< ID改变信号
+    void uuidChanged();      ///< UUID改变信号
     void nameChanged();      ///< 分类名称改变信号
     void userUuidChanged();  ///< 用户UUID改变信号
     void createdAtChanged(); ///< 创建时间改变信号
@@ -100,6 +106,7 @@ class CategorieItem : public QObject {
 
     // 成员变量
     int m_id;                // 分类ID
+    QUuid m_uuid;            // 分类UUID
     QString m_name;          // 分类名称
     QUuid m_userUuid;        // 用户UUID
     QDateTime m_createdAt;   // 分类创建时间

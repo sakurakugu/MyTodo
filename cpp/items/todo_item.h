@@ -59,8 +59,8 @@ class TodoItem : public QObject {
     TodoItem(const TodoItem &) = delete;
     TodoItem &operator=(const TodoItem &) = delete;
     explicit TodoItem(QObject *parent = nullptr);
-    TodoItem(int id,                           ///< 待办事项唯一标识符
-             const QUuid &uuid,                ///< 唯一标识符
+    TodoItem(int id,                           ///< 唯一标识符
+             const QUuid &uuid,                ///< 唯一标识符（UUID）
              const QUuid &userUuid,            ///< 用户UUID
              const QString &title,             ///< 待办事项标题
              const QString &description,       ///< 待办事项详细描述
