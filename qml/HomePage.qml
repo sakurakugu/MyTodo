@@ -932,7 +932,7 @@ Page {
                         }
 
                         // 标题栏输入框
-                        TextField {
+                        TextInput {
                             id: titleField
                             text: selectedTodo ? (selectedTodo.title || "无标题") : "选择一个待办事项"
                             font.pixelSize: 18
@@ -1115,71 +1115,135 @@ Page {
                 }
 
                 // 详情内容
-                ScrollView {
+                Rectangle {
+                    id: container
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    clip: true
+                    Layout.margins: 16
+                    color: theme.backgroundColor
+                    radius: 6
+                    border.color: theme.borderColor
+                    border.width: 1
 
-                    ColumnLayout {
-                        width: parent.width
-                        anchors.margins: 16
-                        spacing: 16
+                    property var selectedTodo
 
-                        // 当有选中项目时显示详情
-                        ColumnLayout {
-                            visible: selectedTodo !== null
-                            Layout.fillWidth: true
-                            spacing: 12
+                    ScrollView {
+                        visible: selectedTodo !== null
+                        id: scrollArea
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        clip: true
 
-                            // 描述
-                            TextField {
-                                id: descriptionField
-                                text: selectedTodo ? (selectedTodo.description || "") : ""
-                                placeholderText: "添加描述..."
-                                font.pixelSize: 14
-                                color: theme.textColor
-                                Layout.fillWidth: true
-                                wrapMode: TextEdit.Wrap
-                                selectByMouse: true // 点击后可以选中文本
-                                enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done" // 只有选中待办事项且不在回收站或已完成模式时才能编辑
-                                Layout.minimumHeight: 60
-                                Layout.preferredHeight: Math.max(60, contentHeight + 20)
+                        TextEdit {
+                            id: descriptionField
+                            width: parent.width
+                            height: Math.max(contentHeight + topPadding + bottomPadding, 100)
+                            leftPadding: 8
+                            rightPadding: 8
+                            topPadding: 8
+                            bottomPadding: 8
+                            text: selectedTodo ? (selectedTodo.description || "") : ""
+                            font.pixelSize: 14
+                            color: theme.textColor
+                            wrapMode: TextEdit.WrapAnywhere
+                            selectByMouse: true
+                            selectByKeyboard: true
+                            enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
 
-                                // 保存描述的函数
-                                function saveDescriptionIfChanged() {
-                                    if (selectedTodo && text !== selectedTodo.description) {
-                                        // 通过TodoManager的updateTodo方法保存更改
-                                        todoManager.updateTodo(selectedTodo.index, "description", text);
-                                        // 更新本地selectedTodo对象以保持UI同步
-                                        selectedTodo.description = text;
-                                    }
+                            function saveDescriptionIfChanged() {
+                                if (selectedTodo && text !== selectedTodo.description) {
+                                    todoManager.updateTodo(selectedTodo.index, "description", text);
+                                    selectedTodo.description = text;
+                                    dirty = false;
                                 }
+                            }
 
-                                // 按Ctrl+Enter保存并移动焦点
-                                Keys.onPressed: function (event) {
-                                    if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && event.modifiers & Qt.ControlModifier) {
+                            // 防抖保存机制
+                            property bool dirty: false
+                            Timer {
+                                id: saveTimer
+                                interval: 1000
+                                running: false
+                                repeat: false
+                                onTriggered: {
+                                    if (descriptionField.dirty)
+                                        descriptionField.saveDescriptionIfChanged();
+                                }
+                            }
+
+                            onTextChanged: {
+                                dirty = true;
+                                saveTimer.restart();
+                            }  
+
+                            // Ctrl+Enter 保存并失焦
+                            Keys.onPressed: function (event) {
+                                if (event.modifiers & Qt.ControlModifier) {
+                                    switch (event.key) {
+                                    case Qt.Key_Return:
+                                    case Qt.Key_Enter:
                                         saveDescriptionIfChanged();
                                         focus = false;
                                         event.accepted = true;
+                                        break;
+                                    case Qt.Key_Z:
+                                        undo();
+                                        event.accepted = true;
+                                        break;
+                                    case Qt.Key_Y:
+                                        redo();
+                                        event.accepted = true;
+                                        break;
                                     }
                                 }
+                            }
 
-                                // 失去焦点时保存
-                                onActiveFocusChanged: {
-                                    if (!activeFocus) {
-                                        saveDescriptionIfChanged();
-                                    }
+                            // 失焦保存
+                            onActiveFocusChanged: {
+                                if (!activeFocus && dirty) {
+                                    saveDescriptionIfChanged();
+                                }
+                            }
+
+                            // 根据只读状态更新样式
+                            Component.onCompleted: updateStyle()
+                            onEnabledChanged: updateStyle()
+                            function updateStyle() {
+                                if (enabled) {
+                                    color = theme.textColor;
+                                } else {
+                                    color = theme.disabledTextColor || theme.textColor;
                                 }
                             }
                         }
                     }
                 }
 
-                // TODO: 到时候添加一个工具栏？
-                // TODO: 还有显示字数的功能
+                // 工具栏
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 30
+                    color: "transparent"
+                    visible: selectedTodo !== null
+
+                    Row {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 10
+
+                        // 字数显示
+                        Text {
+                            text: descriptionField.text.length + " 字符"
+                            font.pixelSize: 12
+                            color: theme.textColor
+                            opacity: 0.7
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+                }
             }
 
-            // 遮罩层
+            // 抽屉组件遮罩层
             Rectangle {
                 id: overlay
                 anchors.fill: parent
