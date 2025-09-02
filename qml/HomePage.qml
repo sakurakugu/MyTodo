@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "components"
+import "todo"
 
 Page {
     id: homePage
@@ -12,6 +13,7 @@ Page {
     property var selectedTodo: null       // 当前选中的待办事项
     property bool multiSelectMode: false  // 多选模式
     property var selectedItems: []        // 选中的项目索引列表
+
 
     // 组件完成时设置默认过滤器为"all"
     Component.onCompleted: {
@@ -168,7 +170,7 @@ Page {
                     onClicked: {
                         // 计算菜单位置，固定在筛选按钮右侧
                         var pos = mapToItem(null, width, height);
-                        categoryFilterMenu.popup(pos.x, pos.y);
+                        todoCategoryManager.popup(pos.x, pos.y, true);
                     }
                     textColor: theme.textColor
                     fontSize: 16
@@ -1090,7 +1092,7 @@ Page {
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     onClicked: {
                                         var pos = mapToItem(null, 0, height);
-                                        categorySelectMenu.popup(pos.x, pos.y);
+                                        todoCategoryManager.popup(pos.x, pos.y, false);
                                     }
 
                                     background: Rectangle {
@@ -1361,7 +1363,7 @@ Page {
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     onClicked: {
                                         var pos = mapToItem(null, 0, height);
-                                        categorySelectMenu.popup(pos.x, pos.y);
+                                        todoCategoryManager.popup(pos.x, pos.y, false);
                                     }
 
                                     background: Rectangle {
@@ -1717,158 +1719,8 @@ Page {
         }
     }
 
-    // 种类选择菜单（用于修改待办事项分类）
-    Menu {
-        id: categorySelectMenu
-        width: 150
-        height: implicitHeight
-        z: 10000  // 确保菜单显示在最上层
-
-        background: Rectangle {
-            color: theme.backgroundColor
-            border.color: theme.borderColor
-            border.width: 1
-            radius: 4
-        }
-
-        // 动态分类菜单项将通过Repeater添加
-        Repeater {
-            model: categoryManager.categories
-            MenuItem {
-                text: modelData
-                onTriggered: todoManager.updateTodo(selectedTodo.index, "category", modelData)
-                contentItem: Text {
-                    text: parent.text
-                    color: theme.textColor
-                    font.pixelSize: 12
-                }
-            }
-        }
-
-        MenuSeparator {
-            contentItem: Rectangle {
-                implicitHeight: 1
-                color: theme.borderColor
-            }
-        }
-
-        MenuItem {
-            text: qsTr("新增种类")
-            onTriggered: {
-                addCategoryDialog.open()
-            }
-            contentItem: Text {
-                text: parent.text
-                color: theme.textColor
-                font.pixelSize: 12
-                font.bold: true
-            }
-        }
-    }
-
-    // 种类筛选菜单（从筛选按钮点击弹出）
-    Menu {
-        id: categoryFilterMenu
-        width: 200
-        height: implicitHeight
-        z: 10000  // 确保菜单显示在最上层
-
-        background: Rectangle {
-            color: theme.backgroundColor
-            border.color: theme.borderColor
-            border.width: 1
-            radius: 4
-        }
-
-        // 分类筛选
-        MenuItem {
-            text: qsTr("分类筛选")
-            enabled: false
-            contentItem: Text {
-                text: parent.text
-                color: theme.textColor
-                font.bold: true
-                font.pixelSize: 14
-            }
-        }
-
-        MenuItem {
-            text: "全部"
-            onTriggered: todoFilter.currentCategory = ""
-            contentItem: Text {
-                text: parent.text
-                color: theme.textColor
-                font.pixelSize: 12
-            }
-        }
-
-        // 动态分类菜单项将通过Repeater添加
-        Repeater {
-            model: categoryManager.categories
-            MenuItem {
-                text: modelData
-                onTriggered: todoFilter.currentCategory = modelData
-                contentItem: Text {
-                    text: parent.text
-                    color: theme.textColor
-                    font.pixelSize: 12
-                }
-            }
-        }
-
-        MenuSeparator {
-            contentItem: Rectangle {
-                implicitHeight: 1
-                color: theme.borderColor
-            }
-        }
-
-        MenuItem {
-            text: qsTr("新增种类")
-            onTriggered: {
-                addCategoryDialog.open()
-            }
-            contentItem: Text {
-                text: parent.text
-                color: theme.textColor
-                font.pixelSize: 12
-                font.bold: true
-            }
-        }
-    }
-
-    // 新增种类对话框
-    InputDialog {
-        id: addCategoryDialog
-        dialogTitle: qsTr("新增种类")
-        inputLabel: qsTr("种类名称:")
-        placeholderText: qsTr("请输入种类名称")
-        maxLength: 20
-
-        // 自定义验证函数
-        customValidation: function(text) {
-            if (text === "") {
-                return {valid: false, message: qsTr("请输入种类名称")}
-            }
-            if (text.length > 20) {
-                return {valid: false, message: qsTr("种类名称不能超过20个字符")}
-            }
-            if (categoryManager.categoryExists(text)) {
-                return {valid: false, message: qsTr("该种类已存在")}
-            }
-            return {valid: true, message: ""}
-        }
-
-        onInputAccepted: function(text) {
-            categoryManager.createCategory(text)
-            addCategoryDialog.clearInput()
-            categoryFilterMenu.close()
-        }
-
-        onInputRejected: {
-            addCategoryDialog.clearInput()
-            categoryFilterMenu.close()
-        }
+    TodoCategoryManager {
+        id: todoCategoryManager
     }
 
     // 顶部用户菜单（从头像处点击弹出）

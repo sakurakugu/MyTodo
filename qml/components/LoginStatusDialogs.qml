@@ -21,7 +21,7 @@ import QtQuick.Layouts
  * 统一管理登录流程中的各种提示和确认对话框。
  */
 Item {
-    id: loginStatusDialogs
+    id: root
 
     // 信号定义
     signal loginSuccessMessage(string message)  ///< 登录成功消息信号
@@ -485,7 +485,7 @@ Item {
                 text: qsTr("确定")
                 onClicked: {
                     logoutConfirmDialog.close();
-                    loginStatusDialogs.logoutConfirmed();
+                    root.logoutConfirmed();
                     userAuth.logout();
                     todoManager.deleteAllTodos(deleteAllTodosCheckBox.checked);
                 }

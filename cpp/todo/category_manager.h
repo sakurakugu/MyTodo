@@ -71,14 +71,14 @@ class CategoryManager : public QObject {
     ~CategoryManager();
 
     // 类别管理相关方法
-    Q_INVOKABLE QStringList getCategories() const;                ///< 获取类别列表
-    Q_INVOKABLE void fetchCategories();                           ///< 从服务器获取类别列表
-    Q_INVOKABLE void createCategory(const QString &name);         ///< 创建新类别
-    Q_INVOKABLE void updateCategory(int id, const QString &name); ///< 更新类别名称
-    Q_INVOKABLE void deleteCategory(int id);                      ///< 删除类别
+    Q_INVOKABLE QStringList getCategories() const;                                ///< 获取类别列表
+    Q_INVOKABLE void fetchCategories();                                           ///< 从服务器获取类别列表
+    Q_INVOKABLE void createCategory(const QString &name);                         ///< 创建新类别
+    Q_INVOKABLE void updateCategory(const QString &name, const QString &newName); ///< 更新类别名称
+    Q_INVOKABLE void deleteCategory(const QString &name);                         ///< 删除类别
 
     const std::vector<std::unique_ptr<CategorieItem>> &getCategoryItems() const; ///< 获取类别项目列表
-    CategorieItem *findCategoryByName(const QString &name) const;                ///< 根据名称查找类别项目
+    Q_INVOKABLE CategorieItem *findCategoryByName(const QString &name) const;    ///< 根据名称查找类别项目
     CategorieItem *findCategoryById(int id) const;                               ///< 根据ID查找类别项目
     Q_INVOKABLE bool categoryExists(const QString &name) const;                  ///< 检查类别名称是否已存在
     void addDefaultCategories();                                                 ///< 添加默认类别

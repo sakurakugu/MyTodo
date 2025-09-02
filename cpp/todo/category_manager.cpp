@@ -196,7 +196,7 @@ void CategoryManager::createCategory(const QString &name) {
     m_networkRequest.sendRequest(NetworkRequest::CreateCategory, config);
 }
 
-void CategoryManager::updateCategory(int id, const QString &name) {
+void CategoryManager::updateCategory(const QString &name, const QString &newName) {
     if (!m_userAuth.isLoggedIn()) {
         qWarning() << "用户未登录，无法更新类别";
         emit updateCategoryCompleted(false, "用户未登录");
@@ -208,9 +208,18 @@ void CategoryManager::updateCategory(int id, const QString &name) {
         return;
     }
 
-    // 检查是否尝试更新为已存在的名称（排除自身）
+    // 检查原类别是否存在
     CategorieItem *existingCategory = findCategoryByName(name);
-    if (existingCategory && existingCategory->id() != id) {
+    if (!existingCategory) {
+        qWarning() << "要更新的类别不存在:" << name;
+        emit updateCategoryCompleted(false, "要更新的类别不存在");
+        return;
+    }
+    
+    // 检查新名称是否与其他类别重复（排除自身）
+    CategorieItem *duplicateCategory = findCategoryByName(newName);
+    if (duplicateCategory && duplicateCategory->id() != existingCategory->id()) {
+        qWarning() << "新类别名称已存在:" << newName;
         emit updateCategoryCompleted(false, "类别名称已存在");
         return;
     }
@@ -223,8 +232,10 @@ void CategoryManager::updateCategory(int id, const QString &name) {
 
     QJsonObject requestData;
     requestData["action"] = "update";
-    requestData["id"] = id;
-    requestData["name"] = name;
+    requestData["id"] = existingCategory->id();
+    requestData["name"] = newName;
+    
+    qDebug() << "发送更新类别请求 - ID:" << existingCategory->id() << "原名称:" << name << "新名称:" << newName;
 
     NetworkRequest::RequestConfig config;
     config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
@@ -236,7 +247,7 @@ void CategoryManager::updateCategory(int id, const QString &name) {
     m_networkRequest.sendRequest(NetworkRequest::UpdateCategory, config);
 }
 
-void CategoryManager::deleteCategory(int id) {
+void CategoryManager::deleteCategory(const QString &name) {
     if (!m_userAuth.isLoggedIn()) {
         qWarning() << "用户未登录，无法删除类别";
         emit deleteCategoryCompleted(false, "用户未登录");
@@ -244,7 +255,7 @@ void CategoryManager::deleteCategory(int id) {
     }
 
     // 检查是否为默认类别
-    CategorieItem *category = findCategoryById(id);
+    CategorieItem *category = findCategoryByName(name);
     if (category && !category->canBeDeleted()) {
         emit deleteCategoryCompleted(false, "不能删除系统默认类别");
         return;
@@ -256,14 +267,10 @@ void CategoryManager::deleteCategory(int id) {
         return;
     }
 
-    QJsonObject requestData;
-    requestData["action"] = "delete";
-    requestData["id"] = id;
-
+    // DELETE 请求通过 URL 参数传递 ID，不使用请求体
     NetworkRequest::RequestConfig config;
-    config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
+    config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint) + "?id=" + QString::number(category->id());
     config.method = "DELETE"; // 删除分类使用DELETE方法
-    config.data = requestData;
     config.requiresAuth = true;
     // 移除重复的Authorization头设置，由addAuthHeader方法统一处理
 
@@ -361,7 +368,7 @@ void CategoryManager::handleFetchCategoriesSuccess(const QJsonObject &response) 
         if (response.contains("categories")) {
             categoriesArray = response["categories"].toArray();
             updateCategoriesFromJson(categoriesArray);
-            qDebug() << "成功获取待办类别列表（非标准格式）:" << categoriesArray.size() << "个类别";
+            qWarning() << "成功获取待办类别列表（非标准格式）:" << categoriesArray.size() << "个类别";
             emit fetchCategoriesCompleted(true, "获取待办类别列表成功");
         } else {
             qWarning() << "响应中没有找到categories字段";

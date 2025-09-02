@@ -95,7 +95,7 @@ set(QML_COMPONENT_FILES
     qml/components/ClickBlocker.qml                 # 点击拦截器
     qml/components/DateTimePicker.qml               # 日期时间选择器
     qml/components/InputDialog.qml                  # 输入对话框
-
+    qml/todo/TodoCategoryManager.qml                # 待办事项分类管理器
 )
 
 # 项目源文件配置
