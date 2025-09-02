@@ -21,13 +21,13 @@ import QtQuick.Effects
 Dialog {
     id: root
 
-    property date selectedDate: new Date()
-    property bool enableTimeMode: true // 是否开启时间模式
-    property bool isTimeMode: false  // false: 日期模式, true: 时间模式
-    property int selectedHour: selectedDate.getHours()
-    property int selectedMinute: selectedDate.getMinutes()
-    property int selectedSecond: selectedDate.getSeconds()
-    property real animationDuration: 200               ///< 动画持续时间
+    property date selectedDate: new Date()                  // 选中的日期
+    property int selectedHour: selectedDate.getHours()      // 选中的小时
+    property int selectedMinute: selectedDate.getMinutes()  // 选中的分钟
+    property int selectedSecond: selectedDate.getSeconds()  // 选中的秒
+    property bool enableTimeMode: true                      // 是否开启时间模式
+    property bool isTimeMode: false                         // false: 日期模式, true: 时间模式
+    property real animationDuration: 200                    // 动画持续时间
 
     // title: isTimeMode ? "选择时间" : "选择日期"
     modal: true
@@ -74,6 +74,7 @@ Dialog {
                     anchors.fill: parent
                     onClicked: {
                         root.isTimeMode = false;
+                        contentLayout.enableYearMonthMode = false;
                     }
                 }
             }
@@ -98,6 +99,7 @@ Dialog {
                     anchors.fill: parent
                     onClicked: {
                         root.isTimeMode = true;
+                        contentLayout.enableYearMonthMode = false;
                     }
                 }
             }
@@ -131,8 +133,11 @@ Dialog {
     }
 
     contentItem: ColumnLayout {
+        id: contentLayout
         anchors.margins: 16
         spacing: 16
+
+        property bool enableYearMonthMode: false
 
         // 日期选择区域 (Calendar)
         Rectangle {
@@ -142,7 +147,7 @@ Dialog {
             border.color: theme.borderColor
             border.width: 1
             radius: 4
-            visible: !root.isTimeMode
+            visible: !root.isTimeMode && !contentLayout.enableYearMonthMode
 
             GridLayout {
                 id: calendarGrid
@@ -151,17 +156,17 @@ Dialog {
                 columns: 7
                 rows: 7
 
-                property date currentDate: root.selectedDate
-                property int currentYear: currentDate.getFullYear()
-                property int currentMonth: currentDate.getMonth()
-                property date firstDayOfMonth: new Date(currentYear, currentMonth, 1)
-                property int firstDayWeekday: firstDayOfMonth.getDay()
-                property int daysInMonth: new Date(currentYear, currentMonth + 1, 0).getDate()
+                property date currentDate: root.selectedDate                                   // 当前日期
+                property int currentYear: currentDate.getFullYear()                            // 当前年份
+                property int currentMonth: currentDate.getMonth()                              // 当前月份
+                property date firstDayOfMonth: new Date(currentYear, currentMonth, 1)          // 本月第一天
+                property int firstDayWeekday: firstDayOfMonth.getDay()                         // 本月第一天是周几
+                property int daysInMonth: new Date(currentYear, currentMonth + 1, 0).getDate() // 本月有多少天
 
                 // 月份导航
                 RowLayout {
-                    Layout.columnSpan: 7
-                    Layout.fillWidth: true
+                    Layout.columnSpan: 7    // 占满7列
+                    Layout.fillWidth: true  // 占满宽度
 
                     Button {
                         text: "<"
@@ -184,13 +189,26 @@ Dialog {
                         }
                     }
 
-                    Text {
-                        text: Qt.formatDate(calendarGrid.currentDate, "yyyy年MM月")
-                        color: theme.textColor
-                        font.pixelSize: 14
-                        font.bold: true
+                    Rectangle {
                         Layout.fillWidth: true
-                        horizontalAlignment: Text.AlignHCenter
+                        height: 30
+                        color: "transparent"
+
+                        Text {
+                            id: yearMonthText
+                            text: Qt.formatDate(calendarGrid.currentDate, "yyyy年MM月")
+                            color: theme.textColor
+                            font.pixelSize: 14
+                            font.bold: true
+                            anchors.centerIn: parent
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                contentLayout.enableYearMonthMode = true;
+                            }
+                        }
                     }
 
                     Button {
@@ -459,12 +477,152 @@ Dialog {
             }
         }
 
-        // 当前选择显示
-        Text {
-            text: root.isTimeMode ? "选择的时间: " + Qt.formatTime(root.selectedDate, "hh:mm:ss") : "选择的日期: " + Qt.formatDate(root.selectedDate, "yyyy-MM-dd")
-            color: theme.textColor
-            font.pixelSize: 14
-            Layout.alignment: Qt.AlignHCenter
+        // 年月选择器
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            color: theme.backgroundColor
+            border.color: theme.borderColor
+            border.width: 1
+            radius: 4
+            visible: !root.isTimeMode && contentLayout.enableYearMonthMode
+
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 16
+                spacing: 12
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 20
+                    color: "transparent"
+
+                    Text {
+                        text: "选择年月"
+                        color: theme.textColor
+                        font.pixelSize: 16
+                        font.bold: true
+                        anchors.centerIn: parent
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            contentLayout.enableYearMonthMode = false;
+                        }
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: 18
+
+                    // 年份选择
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Text {
+                            text: "年份"
+                            color: theme.textColor
+                            font.pixelSize: 14
+                            Layout.alignment: Qt.AlignHCenter
+                        }
+
+                        Tumbler {
+                            id: yearTumbler
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 100
+                            model: {
+                                var years = [];
+                                var currentYear = new Date().getFullYear();
+                                for (var i = currentYear - 50; i <= currentYear + 50; i++) {
+                                    years.push(i);
+                                }
+                                return years;
+                            }
+                            currentIndex: {
+                                var currentYear = calendarGrid.currentYear;
+                                var startYear = new Date().getFullYear() - 50;
+                                return currentYear - startYear;
+                            }
+                        }
+                    }
+
+                    // 月份选择
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Text {
+                            text: "月份"
+                            color: theme.textColor
+                            font.pixelSize: 14
+                            Layout.alignment: Qt.AlignHCenter
+                        }
+
+                        Tumbler {
+                            id: monthTumbler
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 100
+                            model: ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"]
+                            currentIndex: calendarGrid.currentMonth
+                        }
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
+
+                    Button {
+                        text: "取消"
+                        Layout.fillWidth: true
+                        onClicked: {
+                            contentLayout.enableYearMonthMode = false;
+                        }
+
+                        background: Rectangle {
+                            color: parent.pressed ? theme.borderColor : "transparent"
+                            border.color: theme.borderColor
+                            border.width: 1
+                            radius: 4
+                        }
+
+                        contentItem: Text {
+                            text: parent.text
+                            color: theme.textColor
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                    }
+
+                    Button {
+                        text: "确定"
+                        Layout.fillWidth: true
+                        onClicked: {
+                            var selectedYear = yearTumbler.model[yearTumbler.currentIndex];
+                            var selectedMonth = monthTumbler.currentIndex;
+                            calendarGrid.currentDate = new Date(selectedYear, selectedMonth, 1);
+                            calendarGrid.updateCalendar();
+                            contentLayout.enableYearMonthMode = false;
+                        }
+
+                        background: Rectangle {
+                            color: parent.pressed ? "#005A9E" : parent.hovered ? "#0078D4" : "#007ACC"
+                            radius: 4
+                        }
+
+                        contentItem: Text {
+                            text: parent.text
+                            color: "white"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                    }
+                }
+            }
         }
 
         // 按钮区域

@@ -1156,7 +1156,7 @@ Page {
                                 }
 
                                 // 按Ctrl+Enter保存并移动焦点
-                                Keys.onPressed: function(event) {
+                                Keys.onPressed: function (event) {
                                     if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && event.modifiers & Qt.ControlModifier) {
                                         saveDescriptionIfChanged();
                                         focus = false;
@@ -1215,11 +1215,6 @@ Page {
 
                 // 抽屉显示/隐藏动画
                 x: detailArea.drawerVisible ? detailArea.width - width : detailArea.width
-
-                // // 鼠标拦截器
-                // ClickBlocker {
-                //     enabled: detailArea.drawerVisible
-                // }
 
                 Behavior on x {
                     NumberAnimation {
