@@ -23,8 +23,6 @@ import QtQuick.Controls
  * 支持最大化状态下的智能拖拽恢复和小组件模式的拖拽控制。
  */
 MouseArea {
-    id: dragHandler
-
     // 必需属性 - 需要外部传入
     property Window targetWindow: null              ///< 目标窗口对象
 

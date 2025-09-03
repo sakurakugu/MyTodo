@@ -24,11 +24,8 @@ import QtQuick
 Item {
     id: iconButton
 
-    // 主题支持
-    property bool isDarkMode: globalState.isDarkMode              ///< 深色模式开关
-
     // 自定义外观属性
-    property color textColor: isDarkMode ? "#ecf0f1" : "black"  ///< 文本颜色，支持主题
+    property color textColor: ThemeManager.textColor  ///< 文本颜色，支持主题
     property color backgroundColor: "transparent" ///< 背景颜色
     property int fontSize: 14                     ///< 字体大小
     property bool isFlat: true                    ///< 是否为扁平化样式
@@ -41,8 +38,6 @@ Item {
 
     // 信号
     signal clicked                              ///< 点击信号
-    // signal pressed(var mouse)                   ///< 按下信号
-    // signal released(var mouse)                  ///< 释放信号
 
     implicitWidth: 30                           ///< 默认宽度
     implicitHeight: 30                          ///< 默认高度
@@ -68,43 +63,23 @@ Item {
         }
     }
 
-    /**
-     * @brief 字体加载器
-     *
-     * 加载图标字体文件，用于显示图标。
-     */
-    FontLoader {
-        id: iconFont
-        source: "qrc:/qt/qml/MyTodo/image/font_icon/iconfont.ttf"
-    }
-
-    /**
-     * @brief 按钮文本内容
-     *
-     * 自定义文本显示，支持居中对齐和焦点状态的粗体效果。
-     */
+    // 按钮文本内容
     Text {
         anchors.centerIn: parent
         text: iconButton.text                       ///< 显示按钮文本
         color: iconButton.textColor                 ///< 文本颜色
         font.pixelSize: iconButton.fontSize         ///< 字体大小
-        font.family: iconFont.name                  ///< 使用图标字体
+        font.family: "iconfont"                     ///< 使用图标字体
         horizontalAlignment: Text.AlignHCenter      ///< 水平居中
         verticalAlignment: Text.AlignVCenter        ///< 垂直居中
         font.bold: iconButton.isFocused             ///< 焦点时加粗
     }
 
-    /**
-     * @brief 鼠标交互区域
-     *
-     * 处理鼠标点击、悬停等交互事件。
-     */
+    // 鼠标交互区域
     MouseArea {
         id: mouseArea
         anchors.fill: parent
         hoverEnabled: true
         onClicked: iconButton.clicked()
-        // onPressed: iconButton.pressed(mouse)
-        // onReleased: iconButton.released(mouse)
     }
 }

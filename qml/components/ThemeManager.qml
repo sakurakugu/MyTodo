@@ -85,35 +85,4 @@ QtObject {
     function setTheme(darkMode) {
         isDarkMode = darkMode;
     }
-
-    // 方法：获取优先级颜色
-    function getPriorityColor(priority) {
-        switch (priority) {
-        case "高":
-            return errorColor;
-        case "中":
-            return warningColor;
-        case "低":
-            return successColor;
-        default:
-            return textColor;
-        }
-    }
-
-    // 方法：获取状态颜色
-    function getStatusColor(status) {
-        switch (status) {
-        case "completed":
-        case "已完成":
-            return successColor;
-        case "in_progress":
-        case "进行中":
-            return infoColor;
-        case "todo":
-        case "待办":
-            return warningColor;
-        default:
-            return textColor;
-        }
-    }
 }
