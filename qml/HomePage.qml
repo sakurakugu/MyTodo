@@ -102,7 +102,6 @@ Page {
                             onClicked: todoFilter.currentFilter = "all"
                             textColor: theme.textColor
                             fontSize: 16
-                            isDarkMode: globalState.isDarkMode
                             width: parent.width
                         }
 
@@ -111,7 +110,6 @@ Page {
                             onClicked: todoFilter.currentFilter = "todo"
                             textColor: theme.textColor
                             fontSize: 16
-                            isDarkMode: globalState.isDarkMode
                             width: parent.width
                         }
 
@@ -120,7 +118,6 @@ Page {
                             onClicked: todoFilter.currentFilter = "done"
                             textColor: theme.textColor
                             fontSize: 16
-                            isDarkMode: globalState.isDarkMode
                             width: parent.width
                         }
 
@@ -129,7 +126,6 @@ Page {
                             onClicked: todoFilter.currentFilter = "recycle"
                             textColor: theme.textColor
                             fontSize: 16
-                            isDarkMode: globalState.isDarkMode
                             width: parent.width
                         }
                     }
@@ -145,7 +141,6 @@ Page {
                     }
                     textColor: theme.textColor
                     fontSize: 16
-                    isDarkMode: globalState.isDarkMode
                     width: parent.width
                 }
 
@@ -161,7 +156,6 @@ Page {
                     }
                     textColor: theme.textColor
                     fontSize: 16
-                    isDarkMode: globalState.isDarkMode
                 }
 
                 //  种类筛选
@@ -176,7 +170,6 @@ Page {
                     }
                     textColor: theme.textColor
                     fontSize: 16
-                    isDarkMode: globalState.isDarkMode
                 }
 
                 // 标题栏剩余空间填充
@@ -210,7 +203,6 @@ Page {
 
                     textColor: theme.textColor
                     fontSize: 16
-                    isDarkMode: globalState.isDarkMode
                 }
 
                 // 深色模式
@@ -222,7 +214,6 @@ Page {
                     }
                     textColor: theme.textColor
                     fontSize: 16
-                    isDarkMode: globalState.isDarkMode
                 }
 
                 // 设置
@@ -239,7 +230,6 @@ Page {
                     }
                     textColor: theme.textColor
                     fontSize: 16
-                    isDarkMode: globalState.isDarkMode
                 }
                 ModalDialog {
                     id: confirmationDialog
@@ -319,7 +309,6 @@ Page {
                             text: "\ue8e1"
                             textColor: theme.textColor
                             fontSize: 16
-                            isDarkMode: globalState.isDarkMode
                             onClicked: {
                                 todoManager.addTodo("新的待办事项");
                             }
@@ -369,7 +358,6 @@ Page {
                                 height: 20
                                 textColor: theme.textColor
                                 fontSize: 16
-                                isDarkMode: globalState.isDarkMode
                                 Layout.alignment: Qt.AlignVCenter
 
                                 // 旋转动画
@@ -887,7 +875,6 @@ Page {
                             }
                             textColor: theme.textColor
                             fontSize: 18
-                            isDarkMode: globalState.isDarkMode
                         }
 
                         // 最小化按钮
@@ -896,7 +883,6 @@ Page {
                             onClicked: root.showMinimized()
                             textColor: theme.textColor
                             fontSize: 16
-                            isDarkMode: globalState.isDarkMode
                         }
 
                         // 最大化/恢复按钮
@@ -911,7 +897,6 @@ Page {
                             }
                             textColor: theme.textColor
                             fontSize: 16
-                            isDarkMode: globalState.isDarkMode
                         }
 
                         // 关闭按钮
@@ -920,7 +905,6 @@ Page {
                             onClicked: root.close()
                             fontSize: 16
                             textColor: theme.textColor
-                            isDarkMode: globalState.isDarkMode
                         }
                     }
                 }
@@ -996,7 +980,6 @@ Page {
                             }
                             textColor: theme.textColor
                             fontSize: 16
-                            isDarkMode: globalState.isDarkMode
                         }
                     }
 
@@ -1326,7 +1309,6 @@ Page {
                             }
                             textColor: theme.textColor
                             fontSize: 14
-                            isDarkMode: globalState.isDarkMode
                         }
                     }
 

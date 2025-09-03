@@ -25,7 +25,7 @@ Item {
     id: iconButton
 
     // 主题支持
-    property bool isDarkMode: false             ///< 深色模式开关
+    property bool isDarkMode: globalState.isDarkMode              ///< 深色模式开关
 
     // 自定义外观属性
     property color textColor: isDarkMode ? "#ecf0f1" : "black"  ///< 文本颜色，支持主题

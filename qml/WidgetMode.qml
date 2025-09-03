@@ -40,7 +40,6 @@ Item {
                 onClicked: globalState.toggleSettingsVisible()
                 textColor: theme.textColor
                 fontSize: 16
-                isDarkMode: globalState.isDarkMode
             }
 
             /// 待办状态指示器
@@ -81,7 +80,6 @@ Item {
                 onClicked: globalState.toggleTodosVisible()     ///< 切换任务列表显示
                 textColor: theme.textColor
                 fontSize: 16
-                isDarkMode: globalState.isDarkMode
             }
 
             /// 添加任务按钮
@@ -90,7 +88,6 @@ Item {
                 onClicked: globalState.toggleAddTaskVisible()   ///< 切换添加任务界面显示
                 textColor: theme.textColor
                 fontSize: 16
-                isDarkMode: globalState.isDarkMode
             }
 
             /// 普通模式和小组件模式切换按钮
@@ -102,7 +99,6 @@ Item {
                 }
                 textColor: theme.textColor
                 fontSize: 18
-                isDarkMode: globalState.isDarkMode
             }
         }
     }

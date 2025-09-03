@@ -60,7 +60,6 @@ Page {
                 textColor: theme.textColor
                 fontSize: 16
                 onClicked: stackView.pop()
-                isDarkMode: globalState.isDarkMode
             }
 
             Text {
@@ -84,7 +83,6 @@ Page {
                 onClicked: homePage.showMinimized()
                 textColor: theme.textColor
                 fontSize: 16
-                isDarkMode: globalState.isDarkMode
             }
 
             // 最大化/恢复按钮
@@ -99,7 +97,6 @@ Page {
                 }
                 textColor: theme.textColor
                 fontSize: 16
-                isDarkMode: globalState.isDarkMode
             }
 
             // 关闭按钮
@@ -108,7 +105,6 @@ Page {
                 onClicked: root.close()
                 fontSize: 16
                 textColor: theme.textColor
-                isDarkMode: globalState.isDarkMode
             }
         }
     }

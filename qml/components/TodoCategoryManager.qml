@@ -61,7 +61,6 @@ Item {
                     text: root.isFilterMode ? "\ue8db" : "\ue90f"
                     textColor: ThemeManager.textColor
                     fontSize: 16
-                    isDarkMode: globalState.isDarkMode
                 }
             }
         }
@@ -218,7 +217,6 @@ Item {
                     text: "\ue8e9"
                     textColor: ThemeManager.textColor
                     fontSize: 16
-                    isDarkMode: globalState.isDarkMode
                 }
             }
         }
@@ -259,7 +257,6 @@ Item {
                     text: "\ue903"
                     textColor: ThemeManager.textColor
                     fontSize: 16
-                    isDarkMode: globalState.isDarkMode
                 }
             }
         }
@@ -291,7 +288,6 @@ Item {
                     text: "\ue922"
                     textColor: ThemeManager.textColor
                     fontSize: 16
-                    isDarkMode: globalState.isDarkMode
                 }
             }
         }
@@ -316,7 +312,6 @@ Item {
                     text: "\ue8f5"
                     textColor: ThemeManager.textColor
                     fontSize: 16
-                    isDarkMode: globalState.isDarkMode
                 }
             }
         }
@@ -363,9 +358,8 @@ Item {
         // 计算菜单高度，避免绑定循环
         property int calculatedHeight: {
             var baseHeight = 0;
-            // 分类筛选标题
-            if (isFilterMode)
-                baseHeight += 30;
+            // 分类标题
+            baseHeight += 30;
             // "全部"选项
             if (isFilterMode)
                 baseHeight += 30;

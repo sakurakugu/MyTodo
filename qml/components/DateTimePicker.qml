@@ -18,7 +18,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Effects
 
-Dialog {
+BaseDialog {
     id: root
 
     property date selectedDate: new Date()                  // 选中的日期
@@ -27,22 +27,15 @@ Dialog {
     property int selectedSecond: selectedDate.getSeconds()  // 选中的秒
     property bool enableTimeMode: true                      // 是否开启时间模式
     property bool isTimeMode: false                         // false: 日期模式, true: 时间模式
-    property real animationDuration: 200                    // 动画持续时间
 
-    // title: isTimeMode ? "选择时间" : "选择日期"
     modal: true
+    autoSize: false
     width: 400
     height: isTimeMode ? 350 : 450
 
-    // 居中显示
-    anchors.centerIn: parent
-
-    // 主题管理器
-    readonly property var theme: ThemeManager          ///< 主题
-
     header: Rectangle {
-        color: theme.backgroundColor
-        border.color: theme.borderColor
+        color: root.theme.backgroundColor
+        border.color: root.theme.borderColor
         height: 56
         topLeftRadius: 10                                     ///< 左上角圆角
         topRightRadius: 10                                    ///< 右上角圆角
@@ -56,13 +49,13 @@ Dialog {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 40
-                color: root.enableTimeMode ? (!root.isTimeMode ? theme.selectedColor : theme.backgroundColor) : theme.backgroundColor
+                color: root.enableTimeMode ? (!root.isTimeMode ? root.theme.selectedColor : root.theme.backgroundColor) : root.theme.backgroundColor
                 radius: 8
 
                 Text {
                     id: dateText
-                    text: root.enableTimeMode ? "日期" : "选择日期"
-                    color: theme.textColor
+                    text: root.enableTimeMode ? qsTr("日期") : qsTr("选择日期")
+                    color: root.theme.textColor
                     font.pixelSize: 16
                     font.bold: !root.isTimeMode
                     anchors.centerIn: parent
@@ -81,13 +74,13 @@ Dialog {
                 visible: root.enableTimeMode
                 Layout.fillWidth: true
                 Layout.preferredHeight: 40
-                color: root.isTimeMode ? theme.selectedColor : theme.backgroundColor
+                color: root.isTimeMode ? root.theme.selectedColor : root.theme.backgroundColor
                 radius: 8
 
                 Text {
                     id: timeText
-                    text: "时间"
-                    color: theme.textColor
+                    text: qsTr("时间")
+                    color: root.theme.textColor
                     font.pixelSize: 16
                     font.bold: root.isTimeMode
                     anchors.centerIn: parent
@@ -109,24 +102,7 @@ Dialog {
             anchors.right: parent.right
             anchors.bottom: parent.bottom
             height: 1
-            color: theme.borderColor
-        }
-    }
-
-    background: Rectangle {
-        color: theme.backgroundColor
-        border.color: theme.borderColor
-        border.width: 1
-        radius: 8
-
-        // 添加阴影效果
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowHorizontalOffset: 0
-            shadowVerticalOffset: 2
-            shadowBlur: 0.8
-            shadowColor: theme.shadowColor
+            color: root.theme.borderColor
         }
     }
 
@@ -141,8 +117,8 @@ Dialog {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: theme.backgroundColor
-            border.color: theme.borderColor
+            color: root.theme.backgroundColor
+            border.color: root.theme.borderColor
             border.width: 1
             radius: 4
             visible: !root.isTimeMode && !contentLayout.enableYearMonthMode
@@ -166,25 +142,14 @@ Dialog {
                     Layout.columnSpan: 7    // 占满7列
                     Layout.fillWidth: true  // 占满宽度
 
-                    Button {
-                        text: "<"
+                    IconButton {
+                        text: "\ue906"
                         onClicked: {
                             var newDate = new Date(calendarGrid.currentYear, calendarGrid.currentMonth - 1, 1);
                             calendarGrid.currentDate = newDate;
                             calendarGrid.updateCalendar();
                         }
-
-                        background: Rectangle {
-                            color: parent.pressed ? theme.borderColor : "transparent"
-                            radius: 4
-                        }
-
-                        contentItem: Text {
-                            text: parent.text
-                            color: theme.textColor
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
+                        fontSize: 16
                     }
 
                     Rectangle {
@@ -194,8 +159,8 @@ Dialog {
 
                         Text {
                             id: yearMonthText
-                            text: Qt.formatDate(calendarGrid.currentDate, "yyyy年MM月")
-                            color: theme.textColor
+                            text: Qt.formatDate(calendarGrid.currentDate, qsTr("yyyy年MM月"))
+                            color: root.theme.textColor
                             font.pixelSize: 14
                             font.bold: true
                             anchors.centerIn: parent
@@ -209,35 +174,24 @@ Dialog {
                         }
                     }
 
-                    Button {
-                        text: ">"
+                    IconButton {
+                        text: "\ue907"
                         onClicked: {
                             var newDate = new Date(calendarGrid.currentYear, calendarGrid.currentMonth + 1, 1);
                             calendarGrid.currentDate = newDate;
                             calendarGrid.updateCalendar();
                         }
-
-                        background: Rectangle {
-                            color: parent.pressed ? theme.borderColor : "transparent"
-                            radius: 4
-                        }
-
-                        contentItem: Text {
-                            text: parent.text
-                            color: theme.textColor
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
+                        fontSize: 16
                     }
                 }
 
                 // 星期标题
                 Repeater {
-                    model: ["日", "一", "二", "三", "四", "五", "六"]
+                    model: [qsTr("日"), qsTr("一"), qsTr("二"), qsTr("三"), qsTr("四"), qsTr("五"), qsTr("六")]
 
                     Text {
                         text: modelData
-                        color: theme.textColor
+                        color: ThemeManager.textColor
                         font.pixelSize: 12
                         font.bold: true
                         horizontalAlignment: Text.AlignHCenter
@@ -280,12 +234,12 @@ Dialog {
 
                         color: {
                             if (isSelected)
-                                return "#007ACC";
+                                return ThemeManager.buttonColor;
                             if (isToday)
-                                return theme.borderColor;
+                                return ThemeManager.borderColor;
                             return "transparent";
                         }
-                        border.color: isToday ? "#007ACC" : "transparent"
+                        border.color: isToday ? ThemeManager.buttonColor : "transparent"
                         border.width: isToday ? 1 : 0
                         radius: 4
 
@@ -297,7 +251,7 @@ Dialog {
                                     return "white";
                                 if (!parent.isValidDay)
                                     return "transparent";
-                                return theme.textColor;
+                                return ThemeManager.textColor;
                             }
                             font.pixelSize: 12
                             font.bold: parent.isSelected || parent.isToday
@@ -330,8 +284,8 @@ Dialog {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: theme.backgroundColor
-            border.color: theme.borderColor
+            color: root.theme.backgroundColor
+            border.color: root.theme.borderColor
             border.width: 1
             radius: 4
             visible: root.isTimeMode
@@ -342,10 +296,10 @@ Dialog {
                 spacing: 16
 
                 Text {
-                    text: "设置时间"
+                    text: qsTr("设置时间")
                     font.pixelSize: 16
                     font.bold: true
-                    color: theme.textColor
+                    color: root.theme.textColor
                     Layout.alignment: Qt.AlignHCenter
                 }
 
@@ -362,8 +316,8 @@ Dialog {
                         spacing: 8
 
                         Text {
-                            text: "小时"
-                            color: theme.textColor
+                            text: qsTr("小时")
+                            color: root.theme.textColor
                             font.pixelSize: 14
                             font.bold: true
                             Layout.alignment: Qt.AlignHCenter
@@ -380,7 +334,7 @@ Dialog {
 
                             delegate: Text {
                                 text: String(modelData).padStart(2, '0')
-                                color: theme.textColor
+                                color: root.theme.textColor
                                 font.pixelSize: 16
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
@@ -389,7 +343,7 @@ Dialog {
 
                             onCurrentIndexChanged: {
                                 root.selectedHour = currentIndex;
-                                updateSelectedDateTime();
+                                root.updateSelectedDateTime();
                             }
                         }
                     }
@@ -401,8 +355,8 @@ Dialog {
                         spacing: 8
 
                         Text {
-                            text: "分钟"
-                            color: theme.textColor
+                            text: qsTr("分钟")
+                            color: root.theme.textColor
                             font.pixelSize: 14
                             font.bold: true
                             Layout.alignment: Qt.AlignHCenter
@@ -419,7 +373,7 @@ Dialog {
 
                             delegate: Text {
                                 text: String(modelData).padStart(2, '0')
-                                color: theme.textColor
+                                color: ThemeManager.textColor
                                 font.pixelSize: 16
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
@@ -428,7 +382,7 @@ Dialog {
 
                             onCurrentIndexChanged: {
                                 root.selectedMinute = currentIndex;
-                                updateSelectedDateTime();
+                                root.updateSelectedDateTime();
                             }
                         }
                     }
@@ -440,8 +394,8 @@ Dialog {
                         spacing: 8
 
                         Text {
-                            text: "秒"
-                            color: theme.textColor
+                            text: qsTr("秒")
+                            color: root.theme.textColor
                             font.pixelSize: 14
                             font.bold: true
                             Layout.alignment: Qt.AlignHCenter
@@ -458,7 +412,7 @@ Dialog {
 
                             delegate: Text {
                                 text: String(modelData).padStart(2, '0')
-                                color: theme.textColor
+                                color: ThemeManager.textColor
                                 font.pixelSize: 16
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
@@ -467,7 +421,7 @@ Dialog {
 
                             onCurrentIndexChanged: {
                                 root.selectedSecond = currentIndex;
-                                updateSelectedDateTime();
+                                root.updateSelectedDateTime();
                             }
                         }
                     }
@@ -479,8 +433,8 @@ Dialog {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: theme.backgroundColor
-            border.color: theme.borderColor
+            color: root.theme.backgroundColor
+            border.color: root.theme.borderColor
             border.width: 1
             radius: 4
             visible: !root.isTimeMode && contentLayout.enableYearMonthMode
@@ -496,8 +450,8 @@ Dialog {
                     color: "transparent"
 
                     Text {
-                        text: "选择年月"
-                        color: theme.textColor
+                        text: qsTr("选择年月")
+                        color: root.theme.textColor
                         font.pixelSize: 16
                         font.bold: true
                         anchors.centerIn: parent
@@ -522,8 +476,8 @@ Dialog {
                         spacing: 8
 
                         Text {
-                            text: "年份"
-                            color: theme.textColor
+                            text: qsTr("年份")
+                            color: root.theme.textColor
                             font.pixelSize: 14
                             Layout.alignment: Qt.AlignHCenter
                         }
@@ -555,7 +509,7 @@ Dialog {
 
                         Text {
                             text: "月份"
-                            color: theme.textColor
+                            color: root.theme.textColor
                             font.pixelSize: 14
                             Layout.alignment: Qt.AlignHCenter
                         }
@@ -564,7 +518,7 @@ Dialog {
                             id: monthTumbler
                             Layout.fillWidth: true
                             Layout.preferredHeight: 100
-                            model: ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"]
+                            model: [qsTr("1月"), qsTr("2月"), qsTr("3月"), qsTr("4月"), qsTr("5月"), qsTr("6月"), qsTr("7月"), qsTr("8月"), qsTr("9月"), qsTr("10月"), qsTr("11月"), qsTr("12月")]
                             currentIndex: calendarGrid.currentMonth
                         }
                     }
@@ -575,29 +529,30 @@ Dialog {
                     spacing: 12
 
                     Button {
-                        text: "取消"
+                        text: qsTr("取消")
                         Layout.fillWidth: true
                         onClicked: {
                             contentLayout.enableYearMonthMode = false;
                         }
 
                         background: Rectangle {
-                            color: parent.pressed ? theme.borderColor : "transparent"
-                            border.color: theme.borderColor
+                            color: parent.enabled ? (parent.pressed ? root.theme.button2PressedColor : parent.hovered ? root.theme.button2HoverColor : root.theme.button2Color) : root.theme.button2DisabledColor
+                            border.color: root.theme.borderColor
                             border.width: 1
-                            radius: 4
+                            radius: 8
                         }
 
                         contentItem: Text {
                             text: parent.text
-                            color: theme.textColor
+                            color: parent.enabled ? root.theme.button2TextColor : root.theme.button2DisabledTextColor
+                            font.pixelSize: 14
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
                     }
 
                     Button {
-                        text: "确定"
+                        text: qsTr("确定")
                         Layout.fillWidth: true
                         onClicked: {
                             var selectedYear = yearTumbler.model[yearTumbler.currentIndex];
@@ -608,13 +563,16 @@ Dialog {
                         }
 
                         background: Rectangle {
-                            color: parent.pressed ? "#005A9E" : parent.hovered ? "#0078D4" : "#007ACC"
-                            radius: 4
+                            color: parent.enabled ? (parent.pressed ? root.theme.buttonPressedColor : parent.hovered ? root.theme.buttonHoverColor : root.theme.buttonColor) : root.theme.buttonDisabledColor
+                            border.color: root.theme.borderColor
+                            border.width: 1
+                            radius: 8
                         }
 
                         contentItem: Text {
                             text: parent.text
-                            color: "white"
+                            color: parent.enabled ? root.theme.buttonTextColor : root.theme.buttonDisabledTextColor
+                            font.pixelSize: 14
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -622,60 +580,16 @@ Dialog {
                 }
             }
         }
+    }
 
-        // 按钮区域
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 8
+    onCancelled: {
+        root.accepted();
+        root.close();
+    }
 
-            Item {
-                Layout.fillWidth: true
-            }
-
-            Button {
-                text: "取消"
-                onClicked: {
-                    root.rejected();
-                    root.close();
-                }
-
-                background: Rectangle {
-                    color: parent.pressed ? (globalState.isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (globalState.isDarkMode ? "#3c5a78" : "#e0e0e0") : (globalState.isDarkMode ? "#2c3e50" : "#f0f0f0")
-                    border.color: theme.borderColor
-                    border.width: 1
-                    radius: 8
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    color: theme.textColor
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-            }
-
-            Button {
-                text: "确定"
-                onClicked: {
-                    root.accepted();
-                    root.close();
-                }
-
-                background: Rectangle {
-                    color: parent.pressed ? "#005A9E" : parent.hovered ? "#0078D4" : "#007ACC"
-                    border.color: "#007ACC"
-                    border.width: 1
-                    radius: 8
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    color: "white"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-            }
-        }
+    onConfirmed: {
+        root.accepted();
+        root.close();
     }
 
     // 更新选择的日期时间
