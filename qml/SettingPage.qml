@@ -12,9 +12,7 @@ Page {
     property bool preventDragging: setting.get("setting/preventDragging", false) // 是否允许拖动
 
     // 主题管理器
-    ThemeManager {
-        id: theme
-    }
+    property var theme: ThemeManager
 
     // 应用代理设置函数
     function applyProxySettings() {
@@ -721,7 +719,6 @@ Page {
             dialogTitle: qsTr("导出成功")
             dialogWidth: 300
             dialogHeight: 150
-            showStandardButtons: true
 
             Label {
                 text: qsTr("待办事项已成功导出！")
@@ -738,7 +735,6 @@ Page {
             dialogTitle: qsTr("导出失败")
             dialogWidth: 400
             dialogHeight: 180
-            showStandardButtons: true
 
             Label {
                 text: qsTr("导出待办事项时发生错误，请检查文件路径和权限。")
@@ -756,7 +752,6 @@ Page {
             dialogTitle: qsTr("导入成功")
             dialogWidth: 300
             dialogHeight: 150
-            showStandardButtons: true
 
             Label {
                 text: qsTr("待办事项已成功导入！")
@@ -773,7 +768,6 @@ Page {
             dialogTitle: qsTr("导入失败")
             dialogWidth: 400
             dialogHeight: 180
-            showStandardButtons: true
 
             Label {
                 text: qsTr("导入待办事项时发生错误，请检查文件格式和内容。")
@@ -791,7 +785,6 @@ Page {
             dialogTitle: qsTr("检测到冲突")
             dialogWidth: Math.min(800, parent.width * 0.9)
             dialogHeight: Math.min(600, parent.height * 0.8)
-            showStandardButtons: false
 
             property var conflicts: []
             property string selectedFilePath: ""
@@ -1210,7 +1203,6 @@ Page {
             dialogTitle: qsTr("清空所有配置")
             dialogWidth: 350
             dialogHeight: 200
-            showStandardButtons: true
             standardButtons: Dialog.Yes | Dialog.No
 
             Label {
@@ -1234,7 +1226,6 @@ Page {
             dialogTitle: qsTr("操作成功")
             dialogWidth: 300
             dialogHeight: 150
-            showStandardButtons: true
 
             Label {
                 text: qsTr("存储类型已成功更改！")
@@ -1250,7 +1241,6 @@ Page {
             dialogTitle: qsTr("操作失败")
             dialogWidth: 300
             dialogHeight: 150
-            showStandardButtons: true
 
             Label {
                 text: qsTr("更改存储类型时发生错误，请重试。")
@@ -1266,7 +1256,6 @@ Page {
             dialogTitle: qsTr("操作成功")
             dialogWidth: 300
             dialogHeight: 150
-            showStandardButtons: true
 
             Label {
                 text: qsTr("配置文件路径已成功更改！")
@@ -1282,7 +1271,6 @@ Page {
             dialogTitle: qsTr("操作失败")
             dialogWidth: 350
             dialogHeight: 150
-            showStandardButtons: true
 
             Label {
                 text: qsTr("更改配置文件路径时发生错误，请检查路径是否有效。")
@@ -1298,7 +1286,6 @@ Page {
             dialogTitle: qsTr("操作成功")
             dialogWidth: 350
             dialogHeight: 150
-            showStandardButtons: true
 
             Label {
                 text: qsTr("配置文件路径已重置为选定的默认位置！")
@@ -1314,7 +1301,6 @@ Page {
             dialogTitle: qsTr("操作失败")
             dialogWidth: 300
             dialogHeight: 150
-            showStandardButtons: true
 
             Label {
                 text: qsTr("重置配置文件路径时发生错误。")
@@ -1330,7 +1316,6 @@ Page {
             dialogTitle: qsTr("操作成功")
             dialogWidth: 300
             dialogHeight: 150
-            showStandardButtons: true
 
             Label {
                 text: qsTr("所有配置已清空！")
@@ -1346,7 +1331,6 @@ Page {
             dialogTitle: qsTr("操作失败")
             dialogWidth: 350
             dialogHeight: 150
-            showStandardButtons: true
 
             Label {
                 text: qsTr("无法打开配置文件目录。")

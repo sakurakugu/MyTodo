@@ -31,7 +31,7 @@ UserAuth::UserAuth(QObject *parent)
     connect(&m_networkRequest, &NetworkRequest::requestFailed, this, &UserAuth::onNetworkRequestFailed);
     connect(&m_networkRequest, &NetworkRequest::authTokenExpired, this, &UserAuth::onAuthTokenExpired);
     connect(&m_networkRequest, &NetworkRequest::networkStatusChanged, this, &UserAuth::onNetworkStatusChanged);
-    
+
     // 监听服务器配置变化
     connect(&m_setting, &Setting::baseUrlChanged, this, &UserAuth::onBaseUrlChanged);
 
@@ -316,7 +316,7 @@ void UserAuth::onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkR
 
 void UserAuth::onAuthTokenExpired() {
     qWarning() << "认证令牌已过期或无效";
-    
+
     // 尝试使用refresh token自动刷新
     if (!m_refreshToken.isEmpty() && !m_isRefreshing) {
         qDebug() << "尝试使用refresh token自动刷新访问令牌";
@@ -433,7 +433,7 @@ void UserAuth::validateStoredToken() {
     }
 
     qDebug() << "验证存储的访问令牌有效性...";
-    
+
     // 简单检查令牌格式（JWT应该有3个点分隔的部分）
     QStringList parts = m_accessToken.split('.');
     if (parts.size() != 3) {
@@ -442,16 +442,16 @@ void UserAuth::validateStoredToken() {
         logout();
         return;
     }
-    
+
     // 检查每个部分是否为空
     for (int i = 0; i < parts.size(); ++i) {
         if (parts[i].isEmpty()) {
-            qWarning() << "访问令牌第" << (i+1) << "部分为空";
+            qWarning() << "访问令牌第" << (i + 1) << "部分为空";
             logout();
             return;
         }
     }
-    
+
     qDebug() << "令牌格式检查通过，发送验证请求到服务器...";
 
     // 发送一个简单的验证请求到服务器
@@ -491,12 +491,15 @@ void UserAuth::clearCredentials() {
     m_isRefreshing = false;
 
     // 清除设置中的凭据
-    m_setting.remove(QStringLiteral("user/accessToken"));
-    m_setting.remove(QStringLiteral("user/refreshToken"));
-    m_setting.remove(QStringLiteral("user/username"));
-    m_setting.remove(QStringLiteral("user/email"));
-    m_setting.remove(QStringLiteral("user/uuid"));
-    m_setting.remove(QStringLiteral("user/tokenExpiryTime"));
+    if (m_setting.contains(QStringLiteral("user"))) {
+        m_setting.remove(QStringLiteral("user"));
+        m_setting.remove(QStringLiteral("user/accessToken"));
+        m_setting.remove(QStringLiteral("user/refreshToken"));
+        m_setting.remove(QStringLiteral("user/username"));
+        m_setting.remove(QStringLiteral("user/email"));
+        m_setting.remove(QStringLiteral("user/uuid"));
+        m_setting.remove(QStringLiteral("user/tokenExpiryTime"));
+    }
 
     // 清除网络管理器的认证令牌
     m_networkRequest.setAuthToken("");

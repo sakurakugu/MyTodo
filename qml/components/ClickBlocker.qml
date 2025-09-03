@@ -5,7 +5,7 @@ import QtQuick
 Item {
     id: blocker
     anchors.fill: parent
-    z: 9999    // 保证在最上层
+    // z: 要自己设置
 
     // 是否启用拦截
     property bool enabled: true

@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "components"
-import "todo"
 
 Page {
     id: homePage
@@ -14,6 +13,9 @@ Page {
     property bool multiSelectMode: false  // 多选模式
     property var selectedItems: []        // 选中的项目索引列表
 
+    // 外部导入的组件
+    property var loginStatusDialogs
+    property var todoCategoryManager
 
     // 组件完成时设置默认过滤器为"all"
     Component.onCompleted: {
@@ -226,13 +228,21 @@ Page {
                 // 设置
                 IconButton {
                     text: "\ue913"              ///< 设置图标
-                    onClicked: stackView.push(Qt.resolvedUrl("SettingPage.qml"), {
-                        root: root,
-                        stackView: stackView
-                    })
+                    // onClicked: stackView.push(Qt.resolvedUrl("SettingPage.qml"), {
+                    //     root: root,
+                    //     stackView: stackView
+                    // })
+
+                    // 测试用
+                    onClicked: {
+                        confirmationDialog.open();
+                    }
                     textColor: theme.textColor
                     fontSize: 16
                     isDarkMode: globalState.isDarkMode
+                }
+                ModalDialog {
+                    id: confirmationDialog
                 }
             }
         }
@@ -306,7 +316,7 @@ Page {
                         // 添加待办事项按钮
                         IconButton {
                             // TODO: 改成添加待办事项按钮的图标
-                            text: "+"
+                            text: "\ue8e1"
                             textColor: theme.textColor
                             fontSize: 16
                             isDarkMode: globalState.isDarkMode
@@ -1131,8 +1141,8 @@ Page {
                     property var selectedTodo
 
                     ScrollView {
-                        visible: selectedTodo !== null
                         id: scrollArea
+                        visible: selectedTodo !== null
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         clip: true
@@ -1177,7 +1187,7 @@ Page {
                             onTextChanged: {
                                 dirty = true;
                                 saveTimer.restart();
-                            }  
+                            }
 
                             // Ctrl+Enter 保存并失焦
                             Keys.onPressed: function (event) {
@@ -1719,10 +1729,6 @@ Page {
         }
     }
 
-    TodoCategoryManager {
-        id: todoCategoryManager
-    }
-
     // 顶部用户菜单（从头像处点击弹出）
     Menu {
         id: userMenu
@@ -1806,11 +1812,6 @@ Page {
             // 阻止点击整行触发默认切换
             onTriggered: {}
         }
-    }
-
-    // 登录相关对话框组件
-    LoginStatusDialogs {
-        id: loginStatusDialogs
     }
 
     // 确认删除弹窗

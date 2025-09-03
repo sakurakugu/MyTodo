@@ -48,6 +48,7 @@ Dialog {
     property bool isEnableCancelButton: true             ///< 取消按钮是否可用
 
     // 对话框基本设置
+    parent: Overlay.overlay
     title: dialogTitle
     anchors.centerIn: parent
     modal: true
@@ -59,6 +60,10 @@ Dialog {
     // 自定义两个信号
     signal confirmed    ///< 确定信号
     signal cancelled    ///< 取消信号
+
+    onOpened: {
+        contentColumn.forceActiveFocus();
+    }
 
     // 标题栏
     header: Rectangle {
@@ -122,10 +127,10 @@ Dialog {
         Keys.onPressed: event => {
             if (event.key === Qt.Key_Escape) {
                 root.cancelled();
-                console.info("按下Esc按键")
+                // console.info("按下Esc按键")
             } else if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
                 root.confirmed();
-                console.info("按下Enter按键")
+                // console.info("按下Enter按键")
             }
         }
 
@@ -246,10 +251,10 @@ Dialog {
      * @param enableAutoSize 是否启用自动尺寸调整
      */
     function setSize(w, h, enableAutoSize) {
-        root.dialogWidth = w;
-        root.dialogHeight = h;
+        dialogWidth = w;
+        dialogHeight = h;
         if (enableAutoSize !== undefined) {
-            root.autoSize = enableAutoSize;
+            autoSize = enableAutoSize;
         }
     }
 
@@ -259,8 +264,8 @@ Dialog {
      * @param maxHeight 最大高度
      */
     function setMaxSize(maxWidth, maxHeight) {
-        root.maxDialogWidth = maxWidth;
-        root.maxDialogHeight = maxHeight;
+        maxDialogWidth = maxWidth;
+        maxDialogHeight = maxHeight;
     }
 
     /**
@@ -270,9 +275,9 @@ Dialog {
      */
     function setButtonTexts(confirmText, cancelText) {
         if (confirmText !== undefined)
-            root.confirmText = confirmText;
+            confirmText = confirmText;
         if (cancelText !== undefined)
-            root.cancelText = cancelText;
+            cancelText = cancelText;
     }
 
     /**
@@ -282,8 +287,8 @@ Dialog {
      */
     function setButtonVisible(isShowConfirm, isShowCancel) {
         if (isShowCancel !== undefined)
-            root.isShowCancelButton = isShowCancel;
+            isShowCancelButton = isShowCancel;
         if (isShowConfirm !== undefined)
-            root.isShowConfirmButton = isShowConfirm;
+            isShowConfirmButton = isShowConfirm;
     }
 }

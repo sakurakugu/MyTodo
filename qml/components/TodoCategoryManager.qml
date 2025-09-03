@@ -3,23 +3,16 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import "../components"
 
 Item {
     Menu {
         id: root
-        width: 150
-        z: 10000  // 确保菜单显示在最上层
+        width: 160
+        parent: Overlay.overlay
 
         property bool categoryMultiSelectMode: false  // 分类多选模式
         property var categorySelectedItems: []        // 选中的分类列表
-        property bool categoryFilterMultiSelectMode: false  // 分类筛选多选模式
-        property var categoryFilterSelectedItems: []        // 选中的分类筛选列表
         property bool isFilterMode: false // 是否启用筛选模式
-
-        ThemeManager {
-            id: theme
-        }
 
         // 确保只能打开一个菜单实例
         onAboutToShow: {
@@ -43,8 +36,8 @@ Item {
         }
 
         background: Rectangle {
-            color: theme.backgroundColor
-            border.color: theme.borderColor
+            color: ThemeManager.backgroundColor
+            border.color: ThemeManager.borderColor
             border.width: 1
             radius: 4
         }
@@ -54,11 +47,22 @@ Item {
             text: root.isFilterMode ? qsTr("分类筛选") : qsTr("选择分类")
             enabled: false
             height: visible ? implicitHeight : 0  // 解决不显示时的空白高度问题
-            contentItem: Text {
-                text: parent.text
-                color: theme.textColor
-                font.bold: true
-                font.pixelSize: 14
+            contentItem: RowLayout {
+                spacing: 8
+                Text {
+                    text: parent.parent.text
+                    color: ThemeManager.textColor
+                    font.pixelSize: 14
+                    font.bold: true
+                    Layout.fillWidth: true
+                }
+                // 新增分类图标
+                IconButton {
+                    text: root.isFilterMode ? "\ue8db" : "\ue90f"
+                    textColor: ThemeManager.textColor
+                    fontSize: 16
+                    isDarkMode: globalState.isDarkMode
+                }
             }
         }
 
@@ -74,7 +78,7 @@ Item {
                 implicitHeight: 30
                 color: {
                     if (mouseArea_All.containsMouse)
-                        return theme.hoverColor;
+                        return ThemeManager.hoverColor;
                     return "transparent";
                 }
 
@@ -82,7 +86,7 @@ Item {
                     anchors.fill: parent
                     Text {
                         text: qsTr("全部")
-                        color: theme.textColor
+                        color: ThemeManager.textColor
                         font.pixelSize: 12
                         Layout.fillWidth: true
                         Layout.leftMargin: 18
@@ -121,9 +125,9 @@ Item {
                     implicitHeight: 30
                     color: {
                         if (parent.isSelected)
-                            return theme.selectedColor;
+                            return ThemeManager.selectedColor;
                         if (mouseArea.containsMouse) // 鼠标悬停
-                            return theme.hoverColor;
+                            return ThemeManager.hoverColor;
                         return "transparent";
                     }
 
@@ -132,7 +136,7 @@ Item {
                         Text {
                             id: categoryText
                             text: modelData
-                            color: theme.textColor
+                            color: ThemeManager.textColor
                             font.pixelSize: 12
                             Layout.fillWidth: true
                             Layout.leftMargin: 18
@@ -184,9 +188,11 @@ Item {
         }
 
         MenuSeparator {
+            visible: !root.categoryMultiSelectMode
+            height: visible ? implicitHeight : 0
             contentItem: Rectangle {
                 implicitHeight: 1
-                color: theme.borderColor
+                color: ThemeManager.borderColor
             }
         }
 
@@ -196,27 +202,40 @@ Item {
                 addCategoryDialog.open();
                 root.close();  // 打开对话框后关闭菜单
             }
-            contentItem: Text {
-                text: parent.text
-                color: theme.textColor
-                font.pixelSize: 12
-                font.bold: true
+            height: visible ? implicitHeight : 0
+            visible: !root.categoryMultiSelectMode
+            contentItem: RowLayout {
+                spacing: 8
+                Text {
+                    text: parent.parent.text
+                    color: ThemeManager.textColor
+                    font.pixelSize: 12
+                    font.bold: true
+                    Layout.fillWidth: true
+                }
+                // 新增分类图标
+                IconButton {
+                    text: "\ue8e9"
+                    textColor: ThemeManager.textColor
+                    fontSize: 16
+                    isDarkMode: globalState.isDarkMode
+                }
             }
         }
 
         // 多选模式下的操作栏
         MenuSeparator {
             visible: root.categoryMultiSelectMode
-            height: visible ? implicitHeight : 0  // 解决不显示时的空白高度问题
+            height: visible ? implicitHeight : 0
             contentItem: Rectangle {
                 implicitHeight: 1
-                color: theme.borderColor
+                color: ThemeManager.borderColor
             }
         }
 
         MenuItem {
             visible: root.categoryMultiSelectMode && root.categorySelectedItems.length === 1
-            height: visible ? implicitHeight : 0  // 解决不显示时的空白高度问题
+            height: visible ? implicitHeight : 0
             text: qsTr("修改名称")
             enabled: root.categorySelectedItems.length === 1
             onTriggered: {
@@ -226,11 +245,22 @@ Item {
                     editCategoryDialog.open();
                 }
             }
-            contentItem: Text {
-                text: parent.text
-                color: theme.textColor
-                font.pixelSize: 12
-                font.bold: true
+            contentItem: RowLayout {
+                spacing: 8
+                Text {
+                    text: parent.parent.text
+                    color: ThemeManager.textColor
+                    font.pixelSize: 12
+                    font.bold: true
+                    Layout.fillWidth: true
+                }
+                // 修改名称图标
+                IconButton {
+                    text: "\ue903"
+                    textColor: ThemeManager.textColor
+                    fontSize: 16
+                    isDarkMode: globalState.isDarkMode
+                }
             }
         }
 
@@ -240,18 +270,29 @@ Item {
             text: qsTr("删除选中分类 (") + root.categorySelectedItems.length + ")"
             enabled: root.categorySelectedItems.length > 0
             onTriggered: {
-                // 删除选中的分类
                 for (var i = 0; i < root.categorySelectedItems.length; i++) {
                     categoryManager.deleteCategory(root.categorySelectedItems[i]);
                 }
                 root.resetMultiSelectMode();
                 root.close();
+                deleteSuccessDialog.open();
             }
-            contentItem: Text {
-                text: parent.text
-                color: parent.enabled ? "#ff4444" : theme.secondaryTextColor
-                font.pixelSize: 12
-                font.bold: true
+            contentItem: RowLayout {
+                spacing: 8
+                Text {
+                    text: parent.parent.text
+                    color: parent.parent.enabled ? "#ff4444" : ThemeManager.secondaryTextColor
+                    font.pixelSize: 12
+                    font.bold: true
+                    Layout.fillWidth: true
+                }
+                // 删除选中图标
+                IconButton {
+                    text: "\ue922"
+                    textColor: ThemeManager.textColor
+                    fontSize: 16
+                    isDarkMode: globalState.isDarkMode
+                }
             }
         }
 
@@ -262,10 +303,21 @@ Item {
             onTriggered: {
                 root.resetMultiSelectMode();
             }
-            contentItem: Text {
-                text: parent.text
-                color: theme.textColor
-                font.pixelSize: 12
+            contentItem: RowLayout {
+                spacing: 8
+                Text {
+                    text: parent.parent.text
+                    color: ThemeManager.textColor
+                    font.pixelSize: 12
+                    Layout.fillWidth: true
+                }
+                // 取消选中图标
+                IconButton {
+                    text: "\ue8f5"
+                    textColor: ThemeManager.textColor
+                    fontSize: 16
+                    isDarkMode: globalState.isDarkMode
+                }
             }
         }
 
@@ -292,7 +344,7 @@ Item {
             }
         }
 
-        // 优化：添加键盘支持 - 使用Shortcut替代Keys
+        // 添加键盘支持
         Shortcut {
             sequence: "Escape"
             enabled: root.opened
@@ -313,24 +365,23 @@ Item {
             var baseHeight = 0;
             // 分类筛选标题
             if (isFilterMode)
-                baseHeight += 35;
+                baseHeight += 30;
             // "全部"选项
             if (isFilterMode)
-                baseHeight += 35;
+                baseHeight += 30;
             // 动态分类项
-            baseHeight += categoryManager.categories.length * 35;
-            // 分隔符
-            baseHeight += 5;
-            // "新增种类"按钮
-            baseHeight += 35;
+            baseHeight += categoryManager.categories.length * 30;
             // 多选模式下的额外项
             if (root.categoryMultiSelectMode) {
                 baseHeight += 5; // 分隔符
                 if (root.categorySelectedItems.length === 1) {
-                    baseHeight += 35; // 修改名称按钮
+                    baseHeight += 30; // 修改名称按钮
                 }
-                baseHeight += 35; // 删除按钮
-                baseHeight += 35; // 取消按钮
+                baseHeight += 30; // 删除按钮
+                baseHeight += 30; // 取消按钮
+            } else {
+                baseHeight += 5;  // 分隔符
+                baseHeight += 30; // 新增种类按钮
             }
             return Math.min(baseHeight, 400); // 限制最大高度
         }
@@ -344,7 +395,7 @@ Item {
             }
         }
     }
-    
+
     // 新增种类对话框
     InputDialog {
         id: addCategoryDialog
@@ -381,13 +432,7 @@ Item {
 
         onInputAccepted: function (text) {
             categoryManager.createCategory(text);
-            addCategoryDialog.clearInput();
-            root.close();
-        }
-
-        onInputRejected: {
-            addCategoryDialog.clearInput();
-            root.close();
+            addCategoryDialog.cancelled();
         }
     }
 
@@ -411,13 +456,13 @@ Item {
             if (text === "") {
                 return {
                     valid: false,
-                    message: qsTr("请输入种类名称")
+                    message: qsTr("请输入新的种类名称")
                 };
             }
             if (text.length > 20) {
                 return {
                     valid: false,
-                    message: qsTr("种类名称不能超过20个字符")
+                    message: qsTr("不能超过20个字符")
                 };
             }
             if (text === currentCategoryName) {
@@ -440,14 +485,20 @@ Item {
 
         onInputAccepted: function (text) {
             categoryManager.updateCategory(currentCategoryName, text);
-            editCategoryDialog.clearInput();
+            editCategoryDialog.cancelled();
             root.resetMultiSelectMode();
-            root.close();
         }
+    }
 
-        onInputRejected: {
-            editCategoryDialog.clearInput();
-            root.close();
+    // 删除分类对话框
+    ModalDialog {
+        id: deleteSuccessDialog
+        dialogTitle: qsTr("删除成功")
+        message: qsTr("选中的种类已成功删除")
+        isEnableCancelButton: false
+
+        onConfirmed: {
+            deleteSuccessDialog.close();
         }
     }
 

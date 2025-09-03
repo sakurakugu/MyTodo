@@ -9,7 +9,7 @@ cmake_minimum_required(VERSION 3.16)
 
 # 项目基本信息
 project(MyTodo 
-    VERSION 0.1.0
+    VERSION 0.2.0
     DESCRIPTION "待办事项管理应用"
     HOMEPAGE_URL "https://github.com/sakurakugu/MyTodo"
     LANGUAGES CXX
@@ -87,15 +87,22 @@ set(QML_MAIN_FILES
 
 set(QML_COMPONENT_FILES
     # 可重用组件文件
-    qml/components/ThemeManager.qml                 # 主题管理器
-    qml/components/LoginStatusDialogs.qml           # 登录状态相关对话框
-    qml/components/IconButton.qml                   # 图标按钮
     qml/components/BaseDialog.qml                   # 基础对话框
+    qml/components/ModalDialog.qml                  # 模态对话框
+    qml/components/InputDialog.qml                  # 输入对话框
+    qml/components/LoginStatusDialogs.qml           # 登录状态相关对话框
+    
+    qml/components/ThemeManager.qml                 # 主题管理器
+    qml/components/IconButton.qml                   # 图标按钮
     qml/components/WindowDragHandler.qml            # 窗口拖拽处理
     qml/components/ClickBlocker.qml                 # 点击拦截器
     qml/components/DateTimePicker.qml               # 日期时间选择器
-    qml/components/InputDialog.qml                  # 输入对话框
-    qml/todo/TodoCategoryManager.qml                # 待办事项分类管理器
+    qml/components/TodoCategoryManager.qml          # 待办事项分类管理器
+)
+
+# 单例组件
+set_source_files_properties(
+    qml/components/ThemeManager.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE # 主题管理器
 )
 
 # 项目源文件配置
@@ -205,14 +212,15 @@ set_target_properties(MyTodo PROPERTIES
     DEBUG_POSTFIX "_debug"              # Debug 版本后缀
 )
 
-# 添加 QML 模块
+# 新增 QML 模块
+# TODO: 到时候将qml/components和qml/分开
 qt_add_qml_module(MyTodo
     URI MyTodo                      # QML 模块 URI
     VERSION 1.0                     # 模块版本
     QML_FILES ${QML_FILES}          # QML 文件列表
     SOURCES ${PROJECT_SOURCES}      # C++ 源文件
     RESOURCES ${RESOURCE_FILES}     # 资源文件
-    OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml/MyTodo  # 输出目录  TODO: 到时候这个地址要改，至少MyTodo要没有
+    OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml/MyTodo  # 输出目录  # TODO: 到时候这个地址要改，至少MyTodo要没有
 )
 
 # 国际化翻译配置

@@ -38,9 +38,7 @@ Dialog {
     anchors.centerIn: parent
 
     // 主题管理器
-    ThemeManager {
-        id: theme
-    }
+    readonly property var theme: ThemeManager          ///< 主题
 
     header: Rectangle {
         color: theme.backgroundColor

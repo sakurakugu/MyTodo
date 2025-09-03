@@ -111,11 +111,15 @@ Item {
             if (usernameField.text.length > 0 && passwordField.text.length > 0) {
                 loginDialog.isLoggingIn = true;
                 userAuth.login(usernameField.text, passwordField.text);
-            } else if (usernameField.text.length == 0) {
+            } else if (usernameField.text.length == 0 && passwordField.activeFocus) {
                 usernameField.forceActiveFocus();
-            } else if (passwordField.text.length == 0) {
+            } else if (passwordField.text.length == 0 && usernameField.activeFocus) {
                 passwordField.forceActiveFocus();
             }
+        }
+
+        onOpened: {
+            usernameField.forceActiveFocus();
         }
 
         // 文本测量组件（用于计算错误消息高度）
@@ -128,7 +132,6 @@ Item {
 
         // 错误消息显示区域
         Label {
-            id: errorLabel
             text: loginDialog.errorMessage
             color: ThemeManager.errorColor
             font.pixelSize: 12
@@ -338,7 +341,7 @@ Item {
     }
 
     // 登录消息对话框
-    BaseDialog {
+    ModalDialog {
         id: loginMessageDialog
         dialogTitle: qsTr("登录消息")
         dialogWidth: 280
@@ -346,38 +349,8 @@ Item {
         autoSize: false
         isShowCancelButton: false
 
-        onCancelled: {
-            loginMessageDialog.close();
-        }
-
         onConfirmed: {
             loginMessageDialog.close();
-        }
-
-        property string message: ""
-
-        Item {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-        }
-
-        Label {
-            text: qsTr(loginMessageDialog.message)
-            wrapMode: Text.WordWrap
-            color: ThemeManager.textColor
-            Layout.fillWidth: true
-            Layout.topMargin: 10
-            horizontalAlignment: Text.AlignHCenter
-        }
-
-        Item {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-        }
-
-        function showMessage(message) {
-            loginMessageDialog.message = message;
-            loginMessageDialog.open();
         }
     }
 

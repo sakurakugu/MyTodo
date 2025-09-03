@@ -23,10 +23,18 @@ Window {
         source: "qrc:/qt/qml/MyTodo/image/font_icon/iconfont.ttf"
     }
 
-    // 主题管理器
-    ThemeManager {
-        id: theme
+    // 登录相关对话框组件
+    LoginStatusDialogs {
+        id: loginStatusDialogs
     }
+
+    // 分类管理器
+    TodoCategoryManager {
+        id: todoCategoryManager
+    }
+
+    // 主题管理器
+    readonly property var theme: ThemeManager          ///< 主题
 
     // 主窗口背景容器
     Rectangle {
@@ -59,11 +67,15 @@ Window {
         id: homePage
         root: root
         stackView: stackView
+        loginStatusDialogs: loginStatusDialogs
+        todoCategoryManager: todoCategoryManager
     }
 
     WidgetMode {
         id: widgetMode
         visible: globalState.isDesktopWidget
+        loginStatusDialogs: loginStatusDialogs
+        todoCategoryManager: todoCategoryManager
     }
 
     // 边框调整大小区域
@@ -165,7 +177,7 @@ Window {
         height: root.resizeBorderWidth
         anchors.right: parent.right
         anchors.top: parent.top
-        visible: !globalState.isDesktopWidget   
+        visible: !globalState.isDesktopWidget
         cursorShape: Qt.SizeBDiagCursor
         z: 2000
 

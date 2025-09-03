@@ -9,14 +9,9 @@ Item {
 
     property bool preventDragging: setting.get("setting/preventDragging", false) // 是否允许拖动
 
-    ThemeManager {
-        id: theme
-    }
-
-    // 登录相关对话框组件
-    LoginStatusDialogs {
-        id: loginStatusDialogs
-    }
+    // 外部导入的组件
+    property var loginStatusDialogs
+    property var todoCategoryManager
 
     /// 标题栏
     Rectangle {
