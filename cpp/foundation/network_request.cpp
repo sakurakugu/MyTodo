@@ -363,6 +363,11 @@ void NetworkRequest::executeRequest(PendingRequest &request) {
         request.reply = m_networkRequest->post(networkRequest, requestData);
     } else if (method == "PUT") {
         request.reply = m_networkRequest->put(networkRequest, requestData);
+    } else if (method == "PATCH") {
+        // 使用sendCustomRequest发送PATCH请求
+        qInfo() << "发送PATCH请求到服务器:" << networkRequest.url().toString();
+        qInfo() << "PATCH请求数据:" << QString::fromUtf8(requestData);
+        request.reply = m_networkRequest->sendCustomRequest(networkRequest, "PATCH", requestData);
     } else if (method == "DELETE") {
         request.reply = m_networkRequest->deleteResource(networkRequest);
     } else {
