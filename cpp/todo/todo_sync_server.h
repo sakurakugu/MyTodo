@@ -115,7 +115,6 @@ class TodoSyncServer : public QObject {
     QList<TodoItem *> getUnsyncedItems() const;        // 获取未同步的项目
     void markItemAsSynced(TodoItem *item);             // 标记项目为已同步
     void markItemAsUnsynced(TodoItem *item);           // 标记项目为未同步
-    void forceResyncAllItems();            // 强制重新同步所有项目
 
     // 配置管理
     void updateServerConfig(const QString &baseUrl, const QString &apiEndpoint); // 更新服务器配置

@@ -24,6 +24,7 @@ cpp 能使用标准库而不是 qt 库就改成标准库
 重新分类一下文件夹
 代码里实现了 GET、POST、PUT、PATCH、DELETE，但还少了 HEAD、OPTIONS、TRACE、CONNECT。（network_request.cpp）
 之后添加待办种类本地创建功能
+用户uuid有去除大括号嘛（本地部分没去除）
 
 ```cpp
     // 请求类型枚举
