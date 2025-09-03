@@ -7,9 +7,9 @@
  *
  * @author Sakurakugu
  * @date 2025-08-19 07:39:54(UTC+8) 周二
- * @version 2025-08-23 21:09:00(UTC+8) 周六
+ * @change 2025-09-03 21:09:00(UTC+8) 周六
+ * @version 1.0.0
  */
-
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -23,16 +23,6 @@ import QtQuick.Layouts
 Item {
     id: root
 
-    // 信号定义
-    signal loginSuccessMessage(string message)  ///< 登录成功消息信号
-    signal logoutSuccessMessage(string message) ///< 退出登录成功消息信号
-    signal logoutConfirmed                      ///< 退出登录确认信号
-
-    // 主题管理器
-    ThemeManager {
-        id: theme
-    }
-
     anchors.centerIn: parent
 
     // UserAuth信号连接
@@ -41,8 +31,7 @@ Item {
 
         function onLoginSuccessful(username) {
             loginDialog.close();
-        // 因为会发送两次信号，不知道为什么，所以这里注释掉
-        // loginMessageDialog.showMessage(qsTr("欢迎回来，%1！").arg(username));
+            loginMessageDialog.showMessage(qsTr("欢迎回来，%1！").arg(username));
         }
 
         function onLoginFailed(errorMessage) {
@@ -54,17 +43,23 @@ Item {
         }
     }
 
-    /**
-     * @brief 需要登录提示对话框
-     *
-     * 当用户尝试使用需要登录的功能时显示此对话框。
-     */
+    // 需要登录提示对话框
     BaseDialog {
         id: loginRequiredDialog
         dialogTitle: qsTr("需要登录")
         dialogWidth: 280
         maxDialogHeight: 140
-        showStandardButtons: false
+
+        confirmText: qsTr("去登录")
+
+        onCancelled: {
+            loginRequiredDialog.close();
+        }
+
+        onConfirmed: {
+            loginRequiredDialog.close();
+            loginDialog.open();
+        }
 
         Item {
             Layout.fillWidth: true
@@ -74,7 +69,7 @@ Item {
         Label {
             text: qsTr("开启自动同步功能需要先登录账户。\n请先登录后再开启自动同步。")
             wrapMode: Text.WordWrap
-            color: theme.textColor
+            color: ThemeManager.textColor
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignHCenter
         }
@@ -83,62 +78,9 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
         }
-
-        RowLayout {
-            Layout.alignment: Qt.AlignRight
-            spacing: 10
-
-            Button {
-                text: qsTr("取消")
-                onClicked: loginRequiredDialog.close()
-
-                background: Rectangle {
-                    color: parent.pressed ? theme.buttonPressedColor : parent.hovered ? theme.buttonHoverColor : theme.secondaryBackgroundColor
-                    border.color: theme.borderColor
-                    border.width: 1
-                    radius: 4
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    color: theme.textColor
-                    font.pixelSize: 14
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-            }
-
-            Button {
-                text: qsTr("去登录")
-                onClicked: {
-                    loginRequiredDialog.close();
-                    loginDialog.open();
-                }
-
-                background: Rectangle {
-                    color: parent.pressed ? theme.buttonPressedColor : parent.hovered ? theme.buttonHoverColor : theme.primaryColor
-                    border.color: theme.borderColor
-                    border.width: 1
-                    radius: 4
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    color: "white"
-                    font.pixelSize: 14
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-            }
-        }
     }
 
-    /**
-    * @brief 用户登录对话框
-    *
-    * 提供完整的用户登录界面，包含表单验证、登录状态显示等功能。
-    * 支持主题切换和响应式布局。
-    */
+    // 用户登录对话框
     BaseDialog {
         id: loginDialog
 
@@ -153,8 +95,28 @@ Item {
         dialogWidth: 320
         dialogHeight: 250
         maxDialogHeight: 250
-        showStandardButtons: false
         contentSpacing: 10  // 减少内容区域间距
+
+        confirmText: loginDialog.isLoggingIn ? qsTr("登录中...") : qsTr("登录")
+
+        isEnableCancelButton: !loginDialog.isLoggingIn
+        isEnableConfirmButton: usernameField.text.length > 0 && passwordField.text.length > 0 && !loginDialog.isLoggingIn
+
+        onCancelled: {
+            loginDialog.close();
+            loginDialog.clearForm();
+        }
+
+        onConfirmed: {
+            if (usernameField.text.length > 0 && passwordField.text.length > 0) {
+                loginDialog.isLoggingIn = true;
+                userAuth.login(usernameField.text, passwordField.text);
+            } else if (usernameField.text.length == 0) {
+                usernameField.forceActiveFocus();
+            } else if (passwordField.text.length == 0) {
+                passwordField.forceActiveFocus();
+            }
+        }
 
         // 文本测量组件（用于计算错误消息高度）
         TextMetrics {
@@ -168,7 +130,7 @@ Item {
         Label {
             id: errorLabel
             text: loginDialog.errorMessage
-            color: theme.errorColor
+            color: ThemeManager.errorColor
             font.pixelSize: 12
             Layout.alignment: Qt.AlignHCenter         // 组件居中对齐
             Layout.fillWidth: true
@@ -189,7 +151,7 @@ Item {
 
                 Label {
                     text: qsTr("用户名:")
-                    color: theme.textColor
+                    color: ThemeManager.textColor
                 }
 
                 TextField {
@@ -197,30 +159,14 @@ Item {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 36
                     placeholderText: qsTr("请输入用户名")
-                    color: theme.textColor
+                    color: ThemeManager.textColor
                     enabled: !loginDialog.isLoggingIn // 登录中禁用输入
 
                     // 文本变化时清除错误消息
                     onTextChanged: {
                         if (loginDialog.errorMessage !== "") {
                             loginDialog.errorMessage = "";
-                            setMaxHeight(250);
-                        }
-                    }
-
-                    // 回车键处理（支持主键盘和小键盘回车）
-                    Keys.onReturnPressed: {
-                        if (passwordField.text.length > 0) {
-                            loginButton.clicked();
-                        } else {
-                            passwordField.forceActiveFocus();
-                        }
-                    }
-                    Keys.onEnterPressed: {
-                        if (passwordField.text.length > 0) {
-                            loginButton.clicked();
-                        } else {
-                            passwordField.forceActiveFocus();
+                            loginDialog.maxDialogHeight = 250;
                         }
                     }
                 }
@@ -233,7 +179,7 @@ Item {
 
                 Label {
                     text: qsTr("密码:")
-                    color: theme.textColor
+                    color: ThemeManager.textColor
                 }
 
                 TextField {
@@ -242,88 +188,16 @@ Item {
                     echoMode: TextInput.Password
                     Layout.fillWidth: true
                     Layout.preferredHeight: 36
-                    color: theme.textColor
+                    color: ThemeManager.textColor
                     enabled: !loginDialog.isLoggingIn
 
                     // 文本变化时清除错误消息
                     onTextChanged: {
                         if (loginDialog.errorMessage !== "") {
                             loginDialog.errorMessage = "";
-                            setMaxHeight(250);
+                            loginDialog.maxDialogHeight = 250;
                         }
                     }
-
-                    // 回车键处理（支持主键盘和小键盘回车）
-                    Keys.onReturnPressed: {
-                        if (usernameField.text.length > 0 && passwordField.text.length > 0) {
-                            loginButton.clicked();
-                        } else if (usernameField.text.length == 0) {
-                            usernameField.forceActiveFocus();
-                        }
-                    }
-                    Keys.onEnterPressed: {
-                        if (usernameField.text.length > 0 && passwordField.text.length > 0) {
-                            loginButton.clicked();
-                        } else if (usernameField.text.length == 0) {
-                            usernameField.forceActiveFocus();
-                        }
-                    }
-                }
-            }
-        }
-
-        // 按钮区域
-        RowLayout {
-            Layout.alignment: Qt.AlignRight
-            spacing: 20
-
-            // 取消按钮
-            Button {
-                text: qsTr("取消")
-                enabled: !loginDialog.isLoggingIn
-                onClicked: {
-                    loginDialog.close();
-                    loginDialog.clearForm();
-                }
-
-                background: Rectangle {
-                    color: parent.pressed ? theme.buttonPressedColor : parent.hovered ? theme.buttonHoverColor : theme.secondaryBackgroundColor
-                    border.color: theme.borderColor
-                    border.width: 1
-                    radius: 8
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    color: theme.textColor
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-            }
-
-            // 登录按钮
-            Button {
-                id: loginButton
-                text: loginDialog.isLoggingIn ? qsTr("登录中...") : qsTr("登录")
-                enabled: usernameField.text.length > 0 && passwordField.text.length > 0 && !loginDialog.isLoggingIn
-
-                onClicked: {
-                    loginDialog.isLoggingIn = true;
-                    userAuth.login(usernameField.text, passwordField.text);
-                }
-
-                background: Rectangle {
-                    color: parent.enabled ? (parent.pressed ? theme.buttonPressedColor : parent.hovered ? theme.buttonHoverColor : theme.primaryColor) : theme.borderColor
-                    border.color: theme.borderColor
-                    border.width: 1
-                    radius: 8
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    color: parent.enabled ? "white" : theme.textColor
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
                 }
             }
         }
@@ -376,26 +250,33 @@ Item {
 
                 // 计算总高度，设置最小高度为280，最大高度为400
                 var totalHeight = Math.max(280, Math.min(400, baseHeight + errorAreaHeight));
-                console.log(totalHeight);
-                setMaxHeight(totalHeight);
+                loginDialog.maxDialogHeight = totalHeight;
             } else {
                 // 没有错误消息时使用默认高度
-                setMaxHeight(250);
+                loginDialog.maxDialogHeight = 250;
             }
         }
     }
 
-    /**
-      * @brief 退出登录确认对话框
-      *
-      * 当用户点击退出登录时显示确认对话框。
-      */
+    // 退出登录确认对话框
     BaseDialog {
         id: logoutConfirmDialog
         dialogTitle: qsTr("退出登录")
         dialogWidth: 280
         maxDialogHeight: 140
-        showStandardButtons: false
+        confirmText: qsTr("确认")
+        focus: true
+
+        onCancelled: {
+            logoutConfirmDialog.close();
+        }
+
+        onConfirmed: {
+            logoutConfirmDialog.close();
+            userAuth.logout();
+            todoManager.deleteAllTodos(deleteAllTodosCheckBox.checked);
+        }
+
         contentSpacing: 10 // 缩小整体竖向间距，便于减小复选框到按钮的距离
 
         Item {
@@ -405,8 +286,8 @@ Item {
         }
 
         Label {
-            text: qsTr("确定要退出登录吗？")
-            color: theme.textColor
+            text: qsTr("确认要退出登录吗？")
+            color: ThemeManager.textColor
             Layout.alignment: Qt.AlignHCenter
         }
 
@@ -431,9 +312,9 @@ Item {
                 x: deleteAllTodosCheckBox.leftPadding
                 y: parent.height / 2 - height / 2
                 radius: 2
-                border.color: theme.borderColor
+                border.color: ThemeManager.borderColor
                 border.width: 1
-                color: deleteAllTodosCheckBox.checked ? theme.primaryColor : theme.secondaryBackgroundColor
+                color: deleteAllTodosCheckBox.checked ? ThemeManager.primaryColor : ThemeManager.secondaryBackgroundColor
 
                 Rectangle {
                     width: 8
@@ -449,78 +330,29 @@ Item {
             contentItem: Text {
                 text: deleteAllTodosCheckBox.text
                 font.pixelSize: 12
-                // color: theme.textColor
                 color: "gray" // 灰色
                 verticalAlignment: Text.AlignVCenter
                 leftPadding: deleteAllTodosCheckBox.indicator.width + deleteAllTodosCheckBox.spacing
             }
         }
-
-        RowLayout {
-            Layout.alignment: Qt.AlignRight
-            Layout.topMargin: 0    // 减小与上方复选框之间的间距
-            spacing: 10
-
-            Button {
-                text: qsTr("取消")
-                onClicked: logoutConfirmDialog.close()
-
-                background: Rectangle {
-                    color: parent.pressed ? theme.buttonPressedColor : parent.hovered ? theme.buttonHoverColor : theme.secondaryBackgroundColor
-                    border.color: theme.borderColor
-                    border.width: 1
-                    radius: 4
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    color: theme.textColor
-                    font.pixelSize: 14
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-            }
-
-            Button {
-                text: qsTr("确定")
-                onClicked: {
-                    logoutConfirmDialog.close();
-                    root.logoutConfirmed();
-                    userAuth.logout();
-                    todoManager.deleteAllTodos(deleteAllTodosCheckBox.checked);
-                }
-
-                background: Rectangle {
-                    color: parent.pressed ? theme.buttonPressedColor : parent.hovered ? theme.buttonHoverColor : theme.primaryColor
-                    border.color: theme.borderColor
-                    border.width: 1
-                    radius: 4
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    color: "white"
-                    font.pixelSize: 14
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-            }
-        }
     }
 
-    /**
-     * @brief 登录消息对话框
-     *
-     * 当用户登录成功或失败显示该对话框
-     */
+    // 登录消息对话框
     BaseDialog {
         id: loginMessageDialog
         dialogTitle: qsTr("登录消息")
         dialogWidth: 280
         dialogHeight: 180
-        // maxDialogHeight: 100
         autoSize: false
-        showStandardButtons: false
+        isShowCancelButton: false
+
+        onCancelled: {
+            loginMessageDialog.close();
+        }
+
+        onConfirmed: {
+            loginMessageDialog.close();
+        }
 
         property string message: ""
 
@@ -532,7 +364,7 @@ Item {
         Label {
             text: qsTr(loginMessageDialog.message)
             wrapMode: Text.WordWrap
-            color: theme.textColor
+            color: ThemeManager.textColor
             Layout.fillWidth: true
             Layout.topMargin: 10
             horizontalAlignment: Text.AlignHCenter
@@ -543,63 +375,28 @@ Item {
             Layout.fillHeight: true
         }
 
-        RowLayout {
-            Layout.alignment: Qt.AlignRight
-            spacing: 5
-
-            Button {
-                text: qsTr("确定")
-                onClicked: {
-                    loginMessageDialog.close();
-                }
-
-                background: Rectangle {
-                    color: parent.pressed ? theme.buttonPressedColor : parent.hovered ? theme.buttonHoverColor : theme.primaryColor
-                    border.color: theme.borderColor
-                    border.width: 1
-                    radius: 4
-                }
-
-                contentItem: Text {
-                    text: parent.text
-                    color: "white"
-                    font.pixelSize: 14
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-            }
-        }
-
         function showMessage(message) {
             loginMessageDialog.message = message;
             loginMessageDialog.open();
         }
     }
 
-    /**
-     * @brief 显示登录需要提示对话框
-     */
+    // 显示登录需要提示对话框
     function showLoginRequired() {
         loginRequiredDialog.open();
     }
 
-    /**
-     * @brief 显示登录对话框
-     */
+    // 显示登录对话框
     function showLoginDialog() {
         loginDialog.openLogin();
     }
 
-    /**
-     * @brief 显示退出登录确认对话框
-     */
+    // 显示退出登录确认对话框
     function showLogoutConfirm() {
         logoutConfirmDialog.open();
     }
 
-    /**
-     * @brief 重置登录状态
-     */
+    // 重置登录状态
     function resetLoginState() {
         loginDialog.resetLoginState();
     }
