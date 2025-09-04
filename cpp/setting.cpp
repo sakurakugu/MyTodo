@@ -10,6 +10,7 @@
 #include "setting.h"
 #include "default_value.h"
 #include "foundation/config.h"
+#include "foundation/network_proxy.h"
 
 Setting::Setting(QObject *parent) : QObject(parent), m_logger(Logger::GetInstance()), m_config(Config::GetInstance()) {
     initializeDefaultServerConfig();
@@ -258,4 +259,9 @@ void Setting::updateServerConfig(const QString &baseUrl) {
     
     // 发出信号通知其他组件
     emit baseUrlChanged(baseUrl);
+}
+
+void Setting::setProxyConfig(int type, const QString &host, int port, const QString &username, const QString &password, bool enabled) {
+    setProxyEnabled(enabled);
+    NetworkProxy::GetInstance().setProxyConfig(static_cast<NetworkProxy::ProxyType>(type), host, port, username, password);
 }

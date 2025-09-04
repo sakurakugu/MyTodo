@@ -137,7 +137,6 @@ void TodoSyncServer::syncWithServer(SyncDirection direction) {
 
 void TodoSyncServer::cancelSync() {
     if (m_isSyncing) {
-        // TODO：这里可以添加取消网络请求的逻辑，需要吗？
         m_isSyncing = false;
         emit syncingChanged();
         emit syncCompleted(NetworkError, "同步已取消");

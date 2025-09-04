@@ -5,8 +5,6 @@
  * 该文件定义了一个开关行组件，将文本标签放在左侧，开关控件放在右侧，适合在设置页面中使用。
  */
 import QtQuick
-import QtQuick.Controls
-import QtQuick.Layouts
 
 Item {
     id: root
@@ -14,8 +12,10 @@ Item {
     // 公开属性
     property bool checked: false
     property bool enabled: true
+    property string icon: ""
     property string text: ""
     property int spacing: 10
+    property int leftMargin: 0
 
     // 信号
     signal toggled(bool checked)
@@ -24,11 +24,25 @@ Item {
     implicitWidth: parent ? parent.width : 200
     implicitHeight: Math.max(switchControl.height, textLabel.implicitHeight)
 
+    // 图标标签
+    Text {
+        id: iconLabel
+        text: root.icon
+        anchors.left: parent.left
+        anchors.leftMargin: root.leftMargin
+        anchors.verticalCenter: parent.verticalCenter
+        font.family: "iconFont"
+        color: root.enabled ? ThemeManager.textColor : ThemeManager.secondaryTextColor
+        font.pixelSize: 18
+        visible: root.icon !== ""
+    }
+
     // 文本标签
     Text {
         id: textLabel
         text: root.text
-        anchors.left: parent.left
+        anchors.left: iconLabel.right
+        anchors.leftMargin: iconLabel.visible ? 10 : root.leftMargin
         anchors.right: switchControl.left
         anchors.rightMargin: root.spacing
         anchors.verticalCenter: parent.verticalCenter

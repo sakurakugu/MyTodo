@@ -91,6 +91,9 @@ set(QML_COMPONENT_FILES
     qml/components/ModalDialog.qml                  # 模态对话框
     qml/components/InputDialog.qml                  # 输入对话框
     qml/components/LoginStatusDialogs.qml           # 登录状态相关对话框
+
+    qml/components/MainBackground.qml               # 主背景
+    qml/components/TitleBar.qml                     # 标题栏
     
     qml/components/ThemeManager.qml                 # 主题管理器
     qml/components/IconButton.qml                   # 图标按钮
@@ -102,8 +105,10 @@ set(QML_COMPONENT_FILES
     qml/components/Divider.qml                      # 分割线
     qml/components/CustomSwitch.qml                 # 自定义开关
     qml/components/SwitchRow.qml                    # 自定义开关行
+    qml/components/CustomButton.qml                 # 通用按钮
+    # qml/components/CustomTextInput.qml              # 自定义文本输入框
 
-    qml/TestPage.qml # 测试页面
+    # qml/TestPage.qml # 测试页面
 )
 
 # 单例组件

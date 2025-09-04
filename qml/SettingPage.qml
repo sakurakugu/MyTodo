@@ -3,21 +3,22 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
 import QtQuick.Dialogs
+import "./components"
 
 Page {
     id: settingPage
 
     property var root
     property var stackView
+    property var loginStatusDialogs
+
     property bool preventDragging: setting.get("setting/preventDragging", false) // 是否允许拖动
 
     // 应用代理设置函数
     function applyProxySettings() {
-        // 暂时注释掉，等NetworkRequest类注册到QML后再启用
-        /*
         if (!setting.getProxyEnabled()) {
             // 禁用代理
-            networkRequest.setProxyConfig(0, "", 0, "", ""); // NoProxy 
+            setting.setProxyConfig(0, "", 0, "", "", false); // NoProxy
         } else {
             var proxyType = setting.getProxyType();
             var host = setting.getProxyHost();
@@ -25,102 +26,22 @@ Page {
             var username = setting.getProxyUsername();
             var password = setting.getProxyPassword();
 
-            networkRequest.setProxyConfig(proxyType, host, port, username, password);
+            setting.setProxyConfig(proxyType, host, port, username, password, true);
         }
-        */
-        console.log("代理设置功能暂未实现");
     }
 
-    background: Rectangle {
-        color: ThemeManager.backgroundColor
-        radius: 10  // 添加圆角
-    }
-
-    // 登录相关对话框组件
-    LoginStatusDialogs {
-        id: loginStatusDialogs
-    }
+    background: MainBackground {}
 
     // 标题栏
-    Rectangle {
-        id: titleBar
-        height: 40
-        width: parent.width
-        color: ThemeManager.secondaryBackgroundColor
-        topLeftRadius: 10
-        topRightRadius: 10
-
-        // 窗口拖拽处理区域
-        WindowDragHandler {
-            anchors.fill: parent
-            targetWindow: settingPage.root
-        }
-
-        // 左侧返回按钮和标题
-        RowLayout {
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            height: 30
-            spacing: 8
-
-            IconButton {
-                text: "\ue8fa"
-                textColor: ThemeManager.textColor
-                fontSize: 20
-                onClicked: settingPage.stackView.pop()
-            }
-
-            Text {
-                text: qsTr("设置")
-                font.pixelSize: 20
-                color: ThemeManager.textColor
-            }
-        }
-
-        // 右侧窗口控制按钮
-        RowLayout {
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            height: 30
-            spacing: 0
-
-            // 最小化按钮
-            IconButton {
-                text: "\ue65a"
-                onClicked: settingPage.root.showMinimized()
-                textColor: ThemeManager.textColor
-                fontSize: 16
-            }
-
-            // 最大化/恢复按钮
-            IconButton {
-                text: settingPage.root.visibility === Window.Maximized ? "\ue600" : "\ue65b"
-                onClicked: {
-                    if (settingPage.root.visibility === Window.Maximized) {
-                        settingPage.root.showNormal();
-                    } else {
-                        settingPage.root.showMaximized();
-                    }
-                }
-                textColor: ThemeManager.textColor
-                fontSize: 16
-            }
-
-            // 关闭按钮
-            IconButton {
-                text: "\ue8d1"
-                onClicked: settingPage.root.close()
-                fontSize: 16
-                textColor: ThemeManager.textColor
-            }
-        }
+    header: TitleBar {
+        title: qsTr("设置")
+        showBackButton: true
+        targetWindow: settingPage.root
+        stackView: settingPage.stackView
     }
 
     ScrollView {
-        anchors.top: titleBar.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
+        anchors.fill: parent
         contentWidth: availableWidth
 
         ColumnLayout {
@@ -172,22 +93,21 @@ Page {
 
             Divider {}
 
-                Layout.fillWidth: true
-                
-                Label {
-                    text: qsTr("外观设置")
-                    font.bold: true
-                    font.pixelSize: 16
-                    color: ThemeManager.textColor
-                }
+            Layout.fillWidth: true
 
+            Label {
+                text: qsTr("外观设置")
+                font.bold: true
+                font.pixelSize: 16
+                color: ThemeManager.textColor
+            }
 
             SwitchRow {
                 id: darkModeCheckBox
                 text: qsTr("深色模式")
                 checked: globalState.isDarkMode
                 enabled: !followSystemThemeCheckBox.checked
-                Layout.fillWidth: true
+                leftMargin: 10
 
                 onCheckedChanged: {
                     globalState.isDarkMode = checked;
@@ -200,6 +120,7 @@ Page {
                 id: followSystemThemeCheckBox
                 text: qsTr("跟随系统深色模式")
                 checked: setting.get("setting/followSystemTheme", false)
+                leftMargin: 10
 
                 Component.onCompleted: {
                     if (checked) {
@@ -242,6 +163,7 @@ Page {
                 text: qsTr("防止拖动窗口（小窗口模式）")
                 checked: settingPage.preventDragging
                 enabled: globalState.isDesktopWidget
+                leftMargin: 10
                 onCheckedChanged: {
                     settingPage.preventDragging = checked;
                     setting.save("setting/preventDragging", settingPage.preventDragging);
@@ -252,42 +174,31 @@ Page {
                 id: autoStartSwitch
                 text: qsTr("开机自启动")
                 checked: globalState.isAutoStartEnabled()
+                leftMargin: 10
                 onCheckedChanged: {
                     globalState.setAutoStart(checked);
                 }
             }
 
             SwitchRow {
-                id: autoSyncSwitch
-                text: !todoManager.isLoggedIn ? qsTr("自动同步（未登录）") : qsTr("自动同步")
+                text: todoManager.isLoggedIn ? qsTr("自动同步") : qsTr("自动同步（未登录）")
                 checked: todoSyncServer.isAutoSyncEnabled
+                leftMargin: 10
 
                 onCheckedChanged: {
-                    if (checked && !todoManager.isLoggedIn) {
-                        // 如果要开启自动同步但未登录，显示提示并重置开关
-                        autoSyncSwitch.checked = false;
-                        loginStatusDialogs.showLoginRequired();
-                    } else {
-                        todoSyncServer.setAutoSyncEnabled(checked);
+                    if (checked) {
+                        // 如果未登录，显示提示并重置开关
+                        if (!todoManager.isLoggedIn) {
+                            toggle();
+                            settingPage.loginStatusDialogs.showLoginRequired();
+                        } else {
+                            todoSyncServer.setAutoSyncEnabled(checked);
+                        }
                     }
                 }
             }
 
-            // 在线状态显示（只读）
-            Row {
-                spacing: 10
-                Label {
-                    text: qsTr("连接状态:")
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-                Rectangle {
-                    width: 12
-                    height: 12
-                    radius: 6
-                    color: todoManager.isOnline ? ThemeManager.successColor : ThemeManager.errorColor
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
+            Divider {}
 
             Label {
                 text: qsTr("网络代理设置")
@@ -300,6 +211,7 @@ Page {
                 id: proxyEnabledSwitch
                 text: qsTr("启用代理")
                 checked: setting.getProxyEnabled()
+                leftMargin: 10
 
                 onCheckedChanged: {
                     setting.setProxyEnabled(checked);
@@ -311,6 +223,7 @@ Page {
             ComboBox {
                 id: proxyTypeCombo
                 enabled: proxyEnabledSwitch.checked
+                Layout.leftMargin: 20
                 model: [qsTr("不使用代理"), qsTr("系统代理"), qsTr("HTTP代理"), qsTr("SOCKS5代理")]
                 currentIndex: setting.getProxyType()
 
@@ -423,6 +336,7 @@ Page {
             // 在线状态显示（只读）
             Row {
                 spacing: 10
+                Layout.leftMargin: 20
                 Label {
                     text: qsTr("连接状态:")
                     anchors.verticalCenter: parent.verticalCenter
@@ -441,6 +355,8 @@ Page {
                 }
             }
 
+            Divider {}
+
             Label {
                 text: qsTr("数据管理")
                 font.bold: true
@@ -451,106 +367,84 @@ Page {
 
             RowLayout {
                 spacing: 10
-
-                Button {
+                Layout.leftMargin: 20
+                CustomButton {
                     text: qsTr("导出待办事项")
-                    background: Rectangle {
-                        color: ThemeManager.successColor
-                        radius: 4
-                    }
+
+                    backgroundColor: ThemeManager.successColor
+                    hoverColor: Qt.darker(ThemeManager.successColor, 1.1)
+                    pressedColor: Qt.darker(ThemeManager.successColor, 1.2)
                     onClicked: exportFileDialog.open()
                 }
 
-                Button {
+                CustomButton {
                     text: qsTr("导入待办事项")
-                    background: Rectangle {
-                        color: ThemeManager.infoColor
-                        radius: 4
-                    }
                     onClicked: importFileDialog.open()
                 }
             }
 
-            Label {
-                text: qsTr("关于")
-                font.bold: true
-                font.pixelSize: 16
-                color: ThemeManager.textColor
-                Layout.topMargin: 10
-            }
-
-            Button {
-                text: qsTr("GitHub主页")
-                background: Rectangle {
-                    color: "#0f85d3"
-                    radius: 4
-                }
-                onClicked: Qt.openUrlExternally("https://github.com/sakurakugu/MyTodo")
-            }
+            Divider {}
 
             Label {
                 text: qsTr("配置文件管理")
                 font.bold: true
                 font.pixelSize: 16
                 color: ThemeManager.textColor
-                Layout.topMargin: 10
+                Layout.topMargin: 20
             }
 
             ColumnLayout {
                 spacing: 10
                 Layout.fillWidth: true
+                Layout.leftMargin: 20
 
                 // 配置文件路径显示（仅对文件类型显示）
-                ColumnLayout {
-                    spacing: 5
+
+                Label {
+                    text: qsTr("配置文件路径:")
+                    color: ThemeManager.textColor
+                }
+
+                TextField {
+                    id: configPathField
                     Layout.fillWidth: true
+                    text: setting.getConfigFilePath()
+                    readOnly: true
+                    color: ThemeManager.textColor
+                    background: Rectangle {
+                        color: ThemeManager.secondaryBackgroundColor
+                        border.color: ThemeManager.borderColor
+                        border.width: 1
+                        radius: 4
+                    }
+                }
 
-                    Label {
-                        text: qsTr("配置文件路径:")
-                        color: ThemeManager.textColor
+                RowLayout {
+                    spacing: 10
+
+                    CustomButton {
+                        text: qsTr("打开目录")
+                        backgroundColor: ThemeManager.successColor
+                        hoverColor: Qt.darker(ThemeManager.successColor, 1.1)
+                        pressedColor: Qt.darker(ThemeManager.successColor, 1.2)
+                        onClicked: {
+                            if (!setting.openConfigFilePath()) {
+                                modalDialog.showInfo(qsTr("操作失败"), qsTr("无法打开配置文件目录"));
+                            }
+                        }
                     }
 
-                    TextField {
-                        id: configPathField
-                        Layout.fillWidth: true
-                        text: setting.getConfigFilePath()
-                        readOnly: true
-                        color: ThemeManager.textColor
-                        background: Rectangle {
-                            color: ThemeManager.secondaryBackgroundColor
-                            border.color: ThemeManager.borderColor
-                            border.width: 1
-                            radius: 4
-                        }
-                    }
-
-                    RowLayout {
-                        spacing: 10
-
-                        Button {
-                            text: qsTr("打开目录")
-                            background: Rectangle {
-                                color: "#27ae60"
-                                radius: 4
-                            }
-                            onClicked: {
-                                if (!setting.openConfigFilePath()) {
-                                    openDirErrorDialog.open();
-                                }
-                            }
-                        }
-
-                        Button {
-                            text: qsTr("清空配置")
-                            background: Rectangle {
-                                color: "#e74c3c"
-                                radius: 4
-                            }
-                            onClicked: clearConfigDialog.open()
-                        }
+                    CustomButton {
+                        text: qsTr("清空配置")
+                        backgroundColor: ThemeManager.errorColor
+                        hoverColor: Qt.darker(ThemeManager.errorColor, 1.1)
+                        pressedColor: Qt.darker(ThemeManager.errorColor, 1.2)
+                        onClicked: clearConfigDialog.open()
                     }
                 }
             }
+
+            Divider {}
 
             Label {
                 text: qsTr("服务器配置")
@@ -563,6 +457,7 @@ Page {
             ColumnLayout {
                 spacing: 10
                 Layout.fillWidth: true
+                Layout.leftMargin: 20
 
                 Label {
                     text: qsTr("API服务器地址:")
@@ -572,7 +467,6 @@ Page {
                 TextField {
                     id: apiUrlField
                     Layout.fillWidth: true
-                    // placeholderText: qsTr("请输入API服务器地址")
                     text: setting.get("server/baseUrl", "https://api.example.com")
                     color: ThemeManager.textColor
                     background: Rectangle {
@@ -586,18 +480,16 @@ Page {
                 RowLayout {
                     spacing: 10
 
-                    Button {
+                    CustomButton {
                         text: qsTr("保存配置")
-                        background: Rectangle {
-                            color: "#27ae60"
-                            radius: 4
-                        }
+                        backgroundColor: ThemeManager.successColor
+                        hoverColor: Qt.darker(ThemeManager.successColor, 1.1)
+                        pressedColor: Qt.darker(ThemeManager.successColor, 1.2)
                         enabled: apiUrlField.text.length > 0
                         onClicked: {
                             var url = apiUrlField.text.trim();
                             if (!url.startsWith("http://") && !url.startsWith("https://")) {
-                                apiConfigErrorDialog.message = qsTr("请输入完整的URL地址（包含http://或https://）");
-                                apiConfigErrorDialog.open();
+                                modalDialog.showInfo(qsTr("操作失败"), qsTr("请输入完整的URL地址（包含http://或https://）"));
                                 return;
                             }
 
@@ -608,21 +500,34 @@ Page {
                             }
 
                             setting.updateServerConfig(url);
-                            apiConfigSuccessDialog.open();
+                            modalDialog.showInfo(qsTr("操作成功"), qsTr("API服务器地址已成功保存！"));
                         }
                     }
 
-                    Button {
+                    CustomButton {
                         text: qsTr("重置为默认")
-                        background: Rectangle {
-                            color: "#95a5a6"
-                            radius: 4
-                        }
+                        is2ndColor: true
                         onClicked: {
                             apiUrlField.text = "https://api.example.com";
                         }
                     }
                 }
+            }
+
+            Divider {}
+
+            Label {
+                text: qsTr("关于")
+                font.bold: true
+                font.pixelSize: 16
+                color: ThemeManager.textColor
+                Layout.topMargin: 10
+            }
+
+            CustomButton {
+                text: qsTr("GitHub主页")
+                onClicked: Qt.openUrlExternally("https://github.com/sakurakugu/MyTodo")
+                Layout.leftMargin: 20
             }
 
             Item {
@@ -646,9 +551,9 @@ Page {
             onAccepted: {
                 var filePath = selectedFile.toString().replace("file:///", "");
                 if (todoManager.exportTodos(filePath)) {
-                    exportSuccessDialog.open();
+                    modalDialog.showInfo(qsTr("导出成功"), qsTr("待办事项已成功导出！"));
                 } else {
-                    exportErrorDialog.open();
+                    modalDialog.showError(qsTr("导出失败"), qsTr("导出待办事项时发生错误，请检查文件路径和权限。"));
                 }
             }
         }
@@ -672,74 +577,8 @@ Page {
                     conflictResolutionDialog.open();
                 } else {
                     // 没有冲突，所有项目已自动导入
-                    importSuccessDialog.open();
+                    modalDialog.showInfo(qsTr("导入成功"), qsTr("待办事项已成功导入！"));
                 }
-            }
-        }
-
-        // 导出成功对话框
-        BaseDialog {
-            id: exportSuccessDialog
-            dialogTitle: qsTr("导出成功")
-            dialogWidth: 300
-            dialogHeight: 150
-
-            Label {
-                text: qsTr("待办事项已成功导出！")
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                color: ThemeManager.textColor
-                font.pixelSize: 14
-            }
-        }
-
-        // 导出失败对话框
-        BaseDialog {
-            id: exportErrorDialog
-            dialogTitle: qsTr("导出失败")
-            dialogWidth: 400
-            dialogHeight: 180
-
-            Label {
-                text: qsTr("导出待办事项时发生错误，请检查文件路径和权限。")
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                color: ThemeManager.textColor
-                font.pixelSize: 14
-                wrapMode: Text.WordWrap
-            }
-        }
-
-        // 导入成功对话框
-        BaseDialog {
-            id: importSuccessDialog
-            dialogTitle: qsTr("导入成功")
-            dialogWidth: 300
-            dialogHeight: 150
-
-            Label {
-                text: qsTr("待办事项已成功导入！")
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                color: ThemeManager.textColor
-                font.pixelSize: 14
-            }
-        }
-
-        // 导入失败对话框
-        BaseDialog {
-            id: importErrorDialog
-            dialogTitle: qsTr("导入失败")
-            dialogWidth: 400
-            dialogHeight: 180
-
-            Label {
-                text: qsTr("导入待办事项时发生错误，请检查文件格式和内容。")
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                color: ThemeManager.textColor
-                font.pixelSize: 14
-                wrapMode: Text.WordWrap
             }
         }
 
@@ -1013,15 +852,10 @@ Page {
                     color: ThemeManager.textColor
                 }
 
-                Button {
+                CustomButton {
                     text: qsTr("全部跳过")
                     font.pixelSize: 10
-                    background: Rectangle {
-                        color: parent.pressed ? (ThemeManager.isDarkMode ? "#34495e" : "#bdc3c7") : (parent.hovered ? (ThemeManager.isDarkMode ? "#2c3e50" : "#ecf0f1") : (ThemeManager.isDarkMode ? "#2c3e50" : "white"))
-                        border.color: ThemeManager.isDarkMode ? "#34495e" : "#bdc3c7"
-                        border.width: 1
-                        radius: 4
-                    }
+                    is2ndColor: true
                     onClicked: {
                         for (var i = 0; i < conflictResolutionDialog.conflicts.length; i++) {
                             conflictResolutionDialog.conflictResolutions[conflictResolutionDialog.conflicts[i].id] = "skip";
@@ -1032,15 +866,10 @@ Page {
                     }
                 }
 
-                Button {
+                CustomButton {
                     text: qsTr("全部覆盖")
                     font.pixelSize: 10
-                    background: Rectangle {
-                        color: parent.pressed ? (ThemeManager.isDarkMode ? "#34495e" : "#bdc3c7") : (parent.hovered ? (ThemeManager.isDarkMode ? "#2c3e50" : "#ecf0f1") : (ThemeManager.isDarkMode ? "#2c3e50" : "white"))
-                        border.color: ThemeManager.isDarkMode ? "#34495e" : "#bdc3c7"
-                        border.width: 1
-                        radius: 4
-                    }
+                    is2ndColor: true
                     onClicked: {
                         for (var i = 0; i < conflictResolutionDialog.conflicts.length; i++) {
                             conflictResolutionDialog.conflictResolutions[conflictResolutionDialog.conflicts[i].id] = "overwrite";
@@ -1051,15 +880,10 @@ Page {
                     }
                 }
 
-                Button {
+                CustomButton {
                     text: qsTr("全部智能合并")
                     font.pixelSize: 10
-                    background: Rectangle {
-                        color: parent.pressed ? (ThemeManager.isDarkMode ? "#34495e" : "#bdc3c7") : (parent.hovered ? (ThemeManager.isDarkMode ? "#2c3e50" : "#ecf0f1") : (ThemeManager.isDarkMode ? "#2c3e50" : "white"))
-                        border.color: ThemeManager.isDarkMode ? "#34495e" : "#bdc3c7"
-                        border.width: 1
-                        radius: 4
-                    }
+                    is2ndColor: true
                     onClicked: {
                         for (var i = 0; i < conflictResolutionDialog.conflicts.length; i++) {
                             conflictResolutionDialog.conflictResolutions[conflictResolutionDialog.conflicts[i].id] = "merge";
@@ -1076,233 +900,57 @@ Page {
                 spacing: 10
                 Layout.topMargin: 10
 
-                Button {
+                CustomButton {
                     text: qsTr("取消")
-                    background: Rectangle {
-                        color: parent.pressed ? (ThemeManager.isDarkMode ? "#34495e" : "#bdc3c7") : (parent.hovered ? (ThemeManager.isDarkMode ? "#2c3e50" : "#ecf0f1") : (ThemeManager.isDarkMode ? "#2c3e50" : "white"))
-                        border.color: ThemeManager.isDarkMode ? "#34495e" : "#bdc3c7"
-                        border.width: 1
-                        radius: 4
-                    }
-                    contentItem: Text {
-                        text: parent.text
-                        color: ThemeManager.textColor
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        font.pixelSize: 14
-                    }
+                    is2ndColor: true
                     onClicked: conflictResolutionDialog.reject()
                 }
 
-                Button {
+                CustomButton {
                     text: qsTr("确定")
-                    background: Rectangle {
-                        color: parent.pressed ? "#2980b9" : (parent.hovered ? "#3498db" : "#3498db")
-                        border.color: "#2980b9"
-                        border.width: 1
-                        radius: 4
-                    }
-                    contentItem: Text {
-                        text: parent.text
-                        color: "white"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        font.pixelSize: 14
-                    }
                     onClicked: {
                         if (todoManager.importTodosWithIndividualResolution(conflictResolutionDialog.selectedFilePath, conflictResolutionDialog.conflictResolutions)) {
                             conflictResolutionDialog.accept();
-                            importSuccessDialog.open();
+                            modalDialog.showInfo(qsTr("导入成功"), qsTr("待办事项已成功导入！"));
                         } else {
                             conflictResolutionDialog.reject();
-                            importErrorDialog.open();
+                            modalDialog.showError(qsTr("导入失败"), qsTr("导入待办事项时发生错误，请检查文件格式和内容。"));
                         }
                     }
                 }
             }
         }
 
-        // API配置成功对话框
-        Dialog {
-            id: apiConfigSuccessDialog
-            title: qsTr("配置成功")
-            standardButtons: Dialog.Ok
-            Label {
-                text: qsTr("API服务器地址已成功保存！")
-            }
-        }
-
-        // API配置错误对话框
-        Dialog {
-            id: apiConfigErrorDialog
-            title: qsTr("配置错误")
-            standardButtons: Dialog.Ok
-            property string message: ""
-            Label {
-                text: apiConfigErrorDialog.message
-            }
-        }
-
         // HTTPS警告对话框
-        Dialog {
+        ModalDialog {
             id: httpsWarningDialog
-            title: qsTr("安全警告")
-            standardButtons: Dialog.Yes | Dialog.No
+            dialogTitle: qsTr("安全警告")
+            message: qsTr("您输入的地址使用HTTP协议，这可能不安全。\n建议使用HTTPS协议以保护您的数据安全。\n\n是否仍要保存此配置？")
             property string targetUrl: ""
 
-            Label {
-                text: qsTr("您输入的地址使用HTTP协议，这可能不安全。\n建议使用HTTPS协议以保护您的数据安全。\n\n是否仍要保存此配置？")
-                wrapMode: Text.WordWrap
-            }
-
-            onAccepted: {
+            onConfirmed: {
                 setting.updateServerConfig(targetUrl);
-                apiConfigSuccessDialog.open();
+                modalDialog.showInfo(qsTr("操作成功"), qsTr("API服务器地址已成功保存！"));
             }
         }
 
         // 清空配置确认对话框
-        BaseDialog {
+        ModalDialog {
             id: clearConfigDialog
             dialogTitle: qsTr("清空所有配置")
             dialogWidth: 350
-            dialogHeight: 200
-            standardButtons: Dialog.Yes | Dialog.No
+            message: qsTr("警告：此操作将清空所有配置设置！\n\n确定要继续吗？此操作无法撤销。")
 
-            Label {
-                text: qsTr("警告：此操作将清空所有配置设置！\n\n确定要继续吗？此操作无法撤销。")
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.WordWrap
-                color: "#e74c3c"
-                font.pixelSize: 14
-            }
-
-            onAccepted: {
+            onConfirmed: {
                 setting.clear();
-                clearConfigSuccessDialog.open();
+                modalDialog.showInfo(qsTr("操作成功"), qsTr("所有配置已清空"));
             }
         }
 
-        // 成功/错误提示对话框
-        BaseDialog {
-            id: storageChangeSuccessDialog
-            dialogTitle: qsTr("操作成功")
-            dialogWidth: 300
-            dialogHeight: 150
-
-            Label {
-                text: qsTr("存储类型已成功更改！")
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                color: ThemeManager.textColor
-                font.pixelSize: 14
-            }
-        }
-
-        BaseDialog {
-            id: storageChangeErrorDialog
-            dialogTitle: qsTr("操作失败")
-            dialogWidth: 300
-            dialogHeight: 150
-
-            Label {
-                text: qsTr("更改存储类型时发生错误，请重试。")
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                color: ThemeManager.textColor
-                font.pixelSize: 14
-            }
-        }
-
-        BaseDialog {
-            id: pathChangeSuccessDialog
-            dialogTitle: qsTr("操作成功")
-            dialogWidth: 300
-            dialogHeight: 150
-
-            Label {
-                text: qsTr("配置文件路径已成功更改！")
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                color: ThemeManager.textColor
-                font.pixelSize: 14
-            }
-        }
-
-        BaseDialog {
-            id: pathChangeErrorDialog
-            dialogTitle: qsTr("操作失败")
-            dialogWidth: 350
-            dialogHeight: 150
-
-            Label {
-                text: qsTr("更改配置文件路径时发生错误，请检查路径是否有效。")
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                color: ThemeManager.textColor
-                font.pixelSize: 14
-            }
-        }
-
-        BaseDialog {
-            id: pathResetSuccessDialog
-            dialogTitle: qsTr("操作成功")
-            dialogWidth: 350
-            dialogHeight: 150
-
-            Label {
-                text: qsTr("配置文件路径已重置为选定的默认位置！")
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                color: ThemeManager.textColor
-                font.pixelSize: 14
-            }
-        }
-
-        BaseDialog {
-            id: pathResetErrorDialog
-            dialogTitle: qsTr("操作失败")
-            dialogWidth: 300
-            dialogHeight: 150
-
-            Label {
-                text: qsTr("重置配置文件路径时发生错误。")
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                color: ThemeManager.textColor
-                font.pixelSize: 14
-            }
-        }
-
-        BaseDialog {
-            id: clearConfigSuccessDialog
-            dialogTitle: qsTr("操作成功")
-            dialogWidth: 300
-            dialogHeight: 150
-
-            Label {
-                text: qsTr("所有配置已清空！")
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                color: ThemeManager.textColor
-                font.pixelSize: 14
-            }
-        }
-
-        BaseDialog {
-            id: openDirErrorDialog
-            dialogTitle: qsTr("操作失败")
-            dialogWidth: 350
-            dialogHeight: 150
-
-            Label {
-                text: qsTr("无法打开配置文件目录。")
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                color: ThemeManager.textColor
-                font.pixelSize: 14
-            }
+        // 通用对话框（只有确认）
+        ModalDialog {
+            id: modalDialog
+            isShowCancelButton: false
         }
     }
 }

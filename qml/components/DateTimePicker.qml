@@ -101,8 +101,8 @@ BaseDialog {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            height: 1
             color: ThemeManager.borderColor
+            height: 1
         }
     }
 
@@ -528,53 +528,26 @@ BaseDialog {
                     Layout.fillWidth: true
                     spacing: 12
 
-                    Button {
+                    CustomButton {
                         text: qsTr("取消")
                         Layout.fillWidth: true
+                        implicitHeight: 50
                         onClicked: {
                             contentLayout.enableYearMonthMode = false;
                         }
-
-                        background: Rectangle {
-                            color: parent.enabled ? (parent.pressed ? ThemeManager.button2PressedColor : parent.hovered ? ThemeManager.button2HoverColor : ThemeManager.button2Color) : ThemeManager.button2DisabledColor
-                            border.color: ThemeManager.borderColor
-                            border.width: 1
-                            radius: 8
-                        }
-
-                        contentItem: Text {
-                            text: parent.text
-                            color: parent.enabled ? ThemeManager.button2TextColor : ThemeManager.button2DisabledTextColor
-                            font.pixelSize: 14
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
+                        is2ndColor: true
                     }
 
-                    Button {
+                    CustomButton {
                         text: qsTr("确定")
                         Layout.fillWidth: true
+                        implicitHeight: 50
                         onClicked: {
                             var selectedYear = yearTumbler.model[yearTumbler.currentIndex];
                             var selectedMonth = monthTumbler.currentIndex;
                             calendarGrid.currentDate = new Date(selectedYear, selectedMonth, 1);
                             calendarGrid.updateCalendar();
                             contentLayout.enableYearMonthMode = false;
-                        }
-
-                        background: Rectangle {
-                            color: parent.enabled ? (parent.pressed ? ThemeManager.buttonPressedColor : parent.hovered ? ThemeManager.buttonHoverColor : ThemeManager.buttonColor) : ThemeManager.buttonDisabledColor
-                            border.color: ThemeManager.borderColor
-                            border.width: 1
-                            radius: 8
-                        }
-
-                        contentItem: Text {
-                            text: parent.text
-                            color: parent.enabled ? ThemeManager.buttonTextColor : ThemeManager.buttonDisabledTextColor
-                            font.pixelSize: 14
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
                         }
                     }
                 }

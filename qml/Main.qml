@@ -32,19 +32,10 @@ Window {
     }
 
     // 主窗口背景容器
-    Rectangle {
-        id: mainBackground
-        anchors.fill: parent
-        anchors.margins: 0
+    MainBackground {
         visible: !globalState.isDesktopWidget
-        color: ThemeManager.backgroundColor
-        radius: 10                        ///< 窗口圆角半径
-        border.color: ThemeManager.borderColor
-        border.width: 1
-        z: -10                           ///< 确保背景在所有内容下方
     }
 
-    // 导航栈，进行页面管理
     StackView {
         id: stackView
         anchors.fill: parent
@@ -55,22 +46,65 @@ Window {
         initialItem: homePage
         // initialItem: testPage
         clip: true  ///< 裁剪内容以配合窗口圆角效果
+
+        pushEnter: Transition {
+            PropertyAnimation {
+                property: "opacity"
+                from: 0
+                to: 1
+                duration: 200
+            }
+        }
+        pushExit: Transition {
+            PropertyAnimation {
+                property: "opacity"
+                from: 1
+                to: 0
+                duration: 200
+            }
+        }
+        popEnter: Transition {
+            PropertyAnimation {
+                property: "opacity"
+                from: 0
+                to: 1
+                duration: 200
+            }
+        }
+        popExit: Transition {
+            PropertyAnimation {
+                property: "opacity"
+                from: 1
+                to: 0
+                duration: 200
+            }
+        }
     }
 
     // 各种页面
-    // 测试页面
-    TestPage {
-        id: testPage
-        root: root
-    }
+    // // 测试页面
+    // TestPage {
+    //     id: testPage
+    //     root: root
+    //     stackView: stackView
+    // }
 
     // 主页面
     HomePage {
         id: homePage
         root: root
         stackView: stackView
+        settingPage: settingPage
         loginStatusDialogs: loginStatusDialogs
         todoCategoryManager: todoCategoryManager
+    }
+
+    // 设置页面
+    SettingPage {
+        id: settingPage
+        root: root
+        stackView: stackView
+        loginStatusDialogs: loginStatusDialogs
     }
 
     // 小组件模式

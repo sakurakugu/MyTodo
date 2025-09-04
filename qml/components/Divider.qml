@@ -4,12 +4,15 @@ import QtQuick.Controls
 /**
  * 分割线组件
  * 提供水平和垂直分割线功能，支持自定义样式
+ *
+ * @author Sakurakugu
  */
 Item {
     id: root
 
     // 公开属性
     property int orientation: Qt.Horizontal        ///< 分割线方向：Qt.Horizontal（水平）或 Qt.Vertical（垂直）
+    property bool isTopOrLeft: false                //< 分割线是否在顶部（水平）或左侧（垂直）
     property color color: ThemeManager.borderColor ///< 分割线颜色
     property int thickness: 1                      ///< 分割线厚度
     property int leftMargin: 0                     ///< 左边距
@@ -18,21 +21,20 @@ Item {
     property int bottomMargin: 0                   ///< 下边距
 
     // 根据方向设置默认尺寸
-    implicitWidth: orientation === Qt.Horizontal ? parent.width * 0.9 : thickness
-    implicitHeight: orientation === Qt.Horizontal ? thickness : parent.height * 0.9
+    implicitWidth: orientation === Qt.Horizontal ? parent.width : thickness
+    implicitHeight: orientation === Qt.Horizontal ? thickness : parent.height
 
     // 分割线矩形
     Rectangle {
         id: line
         color: root.color
-        // opacity: root.opacity
 
         // 根据方向设置位置和尺寸
         anchors {
-            left: parent.left
-            right: root.orientation === Qt.Horizontal ? parent.right : undefined
-            top: parent.top
-            bottom: root.orientation === Qt.Vertical ? parent.bottom : undefined
+            left: root.orientation === Qt.Vertical ? (root.isTopOrLeft ? parent.left : undefined) : (parent.left)
+            right: root.orientation === Qt.Horizontal ? (parent.right) : (root.isTopOrLeft ? undefined : parent.right)
+            top: root.orientation === Qt.Vertical ? (parent.top) : (root.isTopOrLeft ? parent.top : undefined)
+            bottom: root.orientation === Qt.Horizontal ? (root.isTopOrLeft ? undefined : parent.bottom) : (parent.bottom)
 
             leftMargin: root.leftMargin
             rightMargin: root.rightMargin

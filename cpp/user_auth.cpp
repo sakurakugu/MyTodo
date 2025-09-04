@@ -190,7 +190,7 @@ bool UserAuth::isOnline() const {
  * @param online 新的在线状态
  */
 void UserAuth::setIsOnline(bool online) {
-    // TODO： 这个函数好像没什么用，以前是自动同步，现在是否在线好像和是否登录冲突了
+    // TODO： 这个函数好像没什么用，以前是自动同步，现在是否在线好像和是否登录冲突了，只有要彻底修改
     // 如果已经是目标状态，则不做任何操作
     if (m_isOnline == online) {
         return;

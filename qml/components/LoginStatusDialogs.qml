@@ -44,11 +44,10 @@ Item {
     }
 
     // 需要登录提示对话框
-    BaseDialog {
+    ModalDialog {
         id: loginRequiredDialog
         dialogTitle: qsTr("需要登录")
-        dialogWidth: 280
-        maxDialogHeight: 140
+        message: qsTr("开启自动同步功能需要先登录账户。\n请先登录后再开启自动同步。")
 
         confirmText: qsTr("去登录")
 
@@ -59,24 +58,6 @@ Item {
         onConfirmed: {
             loginRequiredDialog.close();
             loginDialog.open();
-        }
-
-        Item {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-        }
-
-        Label {
-            text: qsTr("开启自动同步功能需要先登录账户。\n请先登录后再开启自动同步。")
-            wrapMode: Text.WordWrap
-            color: ThemeManager.textColor
-            Layout.fillWidth: true
-            horizontalAlignment: Text.AlignHCenter
-        }
-
-        Item {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
         }
     }
 

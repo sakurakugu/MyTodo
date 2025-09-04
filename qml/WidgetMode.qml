@@ -238,7 +238,7 @@ Item {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignRight
 
-                    Button {
+                    CustomButton {
                         text: "添加"
                         onClicked: {
                             if (addTaskForm.isValid()) {
@@ -515,7 +515,7 @@ Item {
                     color: theme.borderColor
                 }
 
-                Button {
+                CustomButton {
                     text: "查看详情"
                     Layout.fillWidth: true
                     onClicked: {
@@ -524,7 +524,7 @@ Item {
                     }
                 }
 
-                Button {
+                CustomButton {
                     text: "标记完成"
                     Layout.fillWidth: true
                     onClicked: {
@@ -533,7 +533,7 @@ Item {
                     }
                 }
 
-                Button {
+                CustomButton {
                     text: "删除任务"
                     Layout.fillWidth: true
                     onClicked: {

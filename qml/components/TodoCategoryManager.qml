@@ -35,12 +35,7 @@ Item {
             }
         }
 
-        background: Rectangle {
-            color: ThemeManager.backgroundColor
-            border.color: ThemeManager.borderColor
-            border.width: 1
-            radius: 4
-        }
+        background: MainBackground{}
 
         // 分类筛选
         MenuItem {

@@ -14,6 +14,7 @@ Page {
     property var selectedItems: []        // 选中的项目索引列表
 
     // 外部导入的组件
+    property var settingPage
     property var loginStatusDialogs
     property var todoCategoryManager
 
@@ -23,10 +24,7 @@ Page {
         todoFilter.currentFilter = "all";
     }
 
-    background: Rectangle {
-        color: ThemeManager.backgroundColor
-        radius: 10  // 添加圆角
-    }
+    background: MainBackground {}
 
     // 主布局
     RowLayout {
@@ -228,17 +226,7 @@ Page {
                 // 设置
                 IconButton {
                     text: "\ue913"              ///< 设置图标
-                    onClicked: stackView.push(Qt.resolvedUrl("SettingPage.qml"), {
-                        root: root,
-                        stackView: stackView
-                    })
-
-                    // // 测试用
-                    // onClicked: {
-                    //     confirmationDialog.open();
-                    // }
-                    // textColor: ThemeManager.textColor
-                    // fontSize: 16
+                    onClicked: homePage.stackView.push(homePage.settingPage)
                 }
                 // ModalDialog {
                 //     id: confirmationDialog
@@ -251,8 +239,8 @@ Page {
             Layout.preferredWidth: 210
             Layout.fillHeight: true
             color: ThemeManager.backgroundColor
-                    border.width: 1
-                    border.color: ThemeManager.borderColor
+            border.width: 1
+            border.color: ThemeManager.borderColor
 
             ColumnLayout {
                 anchors.fill: parent
@@ -804,17 +792,20 @@ Page {
                                 Layout.fillWidth: true
                             }
 
-                            Button {
+                            CustomButton {
                                 text: qsTr("取消")
+                                is2ndColor: true
                                 onClicked: {
                                     multiSelectMode = false;
                                     selectedItems = [];
                                 }
                             }
 
-                            Button {
+                            CustomButton {
                                 text: qsTr("删除")
                                 enabled: selectedItems.length > 0
+                                hoverColor: Qt.darker(ThemeManager.errorColor, 1.1)
+                                pressedColor: Qt.darker(ThemeManager.errorColor, 1.2)
                                 onClicked: {
                                     // 检查是否在回收站中
                                     if (todoFilter.currentFilter === "recycle") {
@@ -1087,7 +1078,7 @@ Page {
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
-                                Button {
+                                CustomButton {
                                     text: {
                                         if (!selectedTodo)
                                             return "未分类";
@@ -1100,21 +1091,7 @@ Page {
                                         var pos = mapToItem(null, 0, height);
                                         todoCategoryManager.popup(pos.x, pos.y, false);
                                     }
-
-                                    background: Rectangle {
-                                        color: parent.pressed ? (globalState.isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (globalState.isDarkMode ? "#3c5a78" : "#e0e0e0") : (globalState.isDarkMode ? "#2c3e50" : "#f0f0f0")
-                                        border.color: ThemeManager.borderColor
-                                        border.width: 1
-                                        radius: 4
-                                    }
-
-                                    contentItem: Text {
-                                        text: parent.text
-                                        color: ThemeManager.textColor
-                                        horizontalAlignment: Text.AlignHCenter
-                                        verticalAlignment: Text.AlignVCenter
-                                        font.pixelSize: parent.font.pixelSize
-                                    }
+                                    is2ndColor: true
                                 }
                             }
                         }
@@ -1357,7 +1334,7 @@ Page {
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
-                                Button {
+                                CustomButton {
                                     text: {
                                         if (!selectedTodo)
                                             return "未分类";
@@ -1371,20 +1348,7 @@ Page {
                                         todoCategoryManager.popup(pos.x, pos.y, false);
                                     }
 
-                                    background: Rectangle {
-                                        color: parent.pressed ? (globalState.isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (globalState.isDarkMode ? "#3c5a78" : "#e0e0e0") : (globalState.isDarkMode ? "#2c3e50" : "#f0f0f0")
-                                        border.color: ThemeManager.borderColor
-                                        border.width: 1
-                                        radius: 4
-                                    }
-
-                                    contentItem: Text {
-                                        text: parent.text
-                                        color: ThemeManager.textColor
-                                        horizontalAlignment: Text.AlignHCenter
-                                        verticalAlignment: Text.AlignVCenter
-                                        font.pixelSize: parent.font.pixelSize
-                                    }
+                                    is2ndColor: true
                                 }
                             }
 
@@ -1406,29 +1370,14 @@ Page {
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
-                                Button {
+                                CustomButton {
                                     id: drawerDeadlineField
                                     text: selectedTodo && selectedTodo.deadline ? Qt.formatDateTime(selectedTodo.deadline, "yyyy-MM-dd hh:mm") : "点击选择日期"
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     font.pixelSize: 12
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 30
-
-                                    background: Rectangle {
-                                        color: parent.pressed ? (globalState.isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (globalState.isDarkMode ? "#3c5a78" : "#e0e0e0") : (globalState.isDarkMode ? "#2c3e50" : "#f0f0f0")
-                                        border.color: ThemeManager.borderColor
-                                        border.width: 1
-                                        radius: 4
-                                    }
-
-                                    contentItem: Text {
-                                        text: parent.text
-                                        color: ThemeManager.textColor
-                                        horizontalAlignment: Text.AlignLeft
-                                        verticalAlignment: Text.AlignVCenter
-                                        font.pixelSize: parent.font.pixelSize
-                                        leftPadding: 8
-                                    }
+                                    is2ndColor: true
 
                                     onClicked: {
                                         deadlineDatePicker.selectedDate = selectedTodo && selectedTodo.deadline ? selectedTodo.deadline : new Date();
@@ -1541,29 +1490,14 @@ Page {
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
-                                Button {
+                                CustomButton {
                                     id: drawerStartDateField
                                     text: selectedTodo && selectedTodo.recurrenceStartDate ? Qt.formatDate(selectedTodo.recurrenceStartDate, "yyyy-MM-dd") : "点击选择日期"
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     font.pixelSize: 12
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 30
-
-                                    background: Rectangle {
-                                        color: parent.pressed ? (globalState.isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (globalState.isDarkMode ? "#3c5a78" : "#e0e0e0") : (globalState.isDarkMode ? "#2c3e50" : "#f0f0f0")
-                                        border.color: ThemeManager.borderColor
-                                        border.width: 1
-                                        radius: 4
-                                    }
-
-                                    contentItem: Text {
-                                        text: parent.text
-                                        color: ThemeManager.textColor
-                                        horizontalAlignment: Text.AlignLeft
-                                        verticalAlignment: Text.AlignVCenter
-                                        font.pixelSize: parent.font.pixelSize
-                                        leftPadding: 8
-                                    }
+                                    is2ndColor: true
 
                                     onClicked: {
                                         startDatePicker.selectedDate = selectedTodo && selectedTodo.recurrenceStartDate ? selectedTodo.recurrenceStartDate : new Date();
@@ -1637,11 +1571,12 @@ Page {
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
-                                Button {
-                                    id: drawerDeleteButton
+                                CustomButton {
                                     text: "删除"
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
-                                    font.pixelSize: 12
+                                    backgroundColor: ThemeManager.errorColor
+                                    hoverColor: Qt.darker(ThemeManager.errorColor, 1.1)
+                                    pressedColor: Qt.darker(ThemeManager.errorColor, 1.2)
 
                                     onClicked: {
                                         if (selectedTodo) {
@@ -1664,12 +1599,7 @@ Page {
         height: implicitHeight
         z: 10000  // 确保菜单显示在最上层
 
-        background: Rectangle {
-            color: ThemeManager.backgroundColor
-            border.color: ThemeManager.borderColor
-            border.width: 1
-            radius: 4
-        }
+        background: MainBackground {}
 
         // 排序选项
         MenuItem {
@@ -1731,12 +1661,7 @@ Page {
         height: implicitHeight
         z: 10000  // 确保菜单显示在最上层
 
-        background: Rectangle {
-            color: ThemeManager.backgroundColor
-            border.color: ThemeManager.borderColor
-            border.width: 1
-            radius: 4
-        }
+        background: MainBackground {}
 
         MenuItem {
             text: userAuth.isLoggedIn ? qsTr("退出登录") : qsTr("登录")
@@ -1744,7 +1669,7 @@ Page {
                 spacing: 8
                 Text {
                     text: "\ue981"
-                    font.family: iconFont.name
+                    font.family: "iconFont"
                     color: ThemeManager.textColor
                     font.pixelSize: 18
                     anchors.verticalCenter: parent.verticalCenter
@@ -1752,7 +1677,8 @@ Page {
                 Text {
                     text: parent.parent.text
                     color: ThemeManager.textColor
-                    font.pixelSize: 18
+                    font.pixelSize: 14
+                    anchors.leftMargin: 10
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
@@ -1769,35 +1695,22 @@ Page {
             id: onlineToggleItem
             contentItem: RowLayout {
                 spacing: 12
-                Row {
+                SwitchRow {
                     spacing: 8
+                    icon: "\ue8ef"
+                    text: qsTr("自动同步")
                     Layout.alignment: Qt.AlignVCenter // 上下居中
-                    Text {
-                        text: "\ue8ef"
-                        font.family: iconFont.name
-                        color: ThemeManager.textColor
-                        font.pixelSize: 18
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                    Text {
-                        text: qsTr("自动同步")
-                        color: ThemeManager.textColor
-                        font.pixelSize: 18
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                }
-                CustomSwitch {
-                    id: onlineSwitch
                     checked: todoSyncServer.isAutoSyncEnabled
 
                     onCheckedChanged: {
-                        if (checked && !userAuth.isLoggedIn) {
-                            // 如果要开启自动同步但未登录，显示提示并重置开关
-                            onlineSwitch.checked = false;
-                            userMenu.close(); // 关闭菜单
-                            loginStatusDialogs.showLoginRequired();
-                        } else {
-                            todoSyncServer.setAutoSyncEnabled(checked);
+                        if (checked) {
+                            // 如果未登录，显示提示并重置开关
+                            if (!todoManager.isLoggedIn) {
+                                toggle();
+                                homePage.loginStatusDialogs.showLoginRequired();
+                            } else {
+                                todoSyncServer.setAutoSyncEnabled(checked);
+                            }
                         }
                     }
                 }
