@@ -106,9 +106,10 @@ set(QML_COMPONENT_FILES
     qml/components/CustomSwitch.qml                 # 自定义开关
     qml/components/SwitchRow.qml                    # 自定义开关行
     qml/components/CustomButton.qml                 # 通用按钮
-    # qml/components/CustomTextInput.qml              # 自定义文本输入框
+    qml/components/CustomTextInput.qml              # 自定义文本输入框
+    qml/components/CustomComboBox.qml              # 自定义下拉列表框
 
-    # qml/TestPage.qml # 测试页面
+    qml/TestPage.qml # 测试页面
 )
 
 # 单例组件

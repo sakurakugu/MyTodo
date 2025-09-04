@@ -56,17 +56,12 @@ BaseDialog {
     }
 
     // 输入框
-    TextField {
+    CustomTextInput {
         id: inputField
         text: root.inputText
         placeholderText: root.placeholderText
         maximumLength: root.maxLength
-        selectByMouse: true
         Layout.fillWidth: true
-        Layout.preferredHeight: 40
-
-        color: ThemeManager.textColor
-        placeholderTextColor: ThemeManager.placeholderTextColor
 
         onTextChanged: {
             if (!root.isValid && root.errorMessage !== "") {

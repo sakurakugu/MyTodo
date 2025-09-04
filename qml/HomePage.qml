@@ -263,47 +263,24 @@ Page {
                         anchors.margins: 16
                         spacing: 8
 
-                        // 搜索框容器
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 36
-                            color: ThemeManager.backgroundColor
-                            border.color: ThemeManager.borderColor
-                            border.width: 1
-                            radius: 4
-
-                            // 搜索图标
-                            Text {
-                                anchors.left: parent.left
-                                anchors.leftMargin: 10
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "\ue8f2"              ///< 查询图标
-                                color: ThemeManager.textColor
-                                font.pixelSize: 16
-                                font.family: "iconfont"
-                            }
-
-                            // 搜索框
-                            TextField {
-                                id: searchField
-                                anchors.fill: parent
-                                anchors.leftMargin: 35  // 为图标留出空间
-                                anchors.rightMargin: 10
-                                placeholderText: "搜索"
-                                selectByMouse: true
-                                verticalAlignment: TextInput.AlignVCenter
-                                background: Rectangle {
-                                    color: "transparent"
-                                }
-                                onTextChanged: {
-                                    todoFilter.searchText = text;
-                                }
+                        // 搜索框
+                        CustomTextInput {
+                            id: searchField
+                            leftIcon: "\ue8f2"  // 使用内置的左侧图标功能
+                            implicitWidth: parent.width - addButton.width
+                            implicitHeight: 30
+                            placeholderText: "搜索"
+                            selectByMouse: true
+                            verticalAlignment: TextInput.AlignVCenter
+                            onTextChanged: {
+                                todoFilter.searchText = text;
                             }
                         }
 
                         // 添加待办事项按钮
                         IconButton {
-                            // TODO: 改成添加待办事项按钮的图标
+                            id: addButton
+                            Layout.alignment: Qt.AlignRight // 确保按钮在右侧对齐
                             text: "\ue8e1"
                             textColor: ThemeManager.textColor
                             fontSize: 16

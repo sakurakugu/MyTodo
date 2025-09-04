@@ -46,7 +46,7 @@ Page {
 
         ColumnLayout {
             anchors.horizontalCenter: parent.horizontalCenter
-            anchors.top: parent.top
+            anchors.fill: parent
             anchors.topMargin: 20
             anchors.leftMargin: parent.width * 0.2
             anchors.rightMargin: parent.width * 0.2
@@ -249,7 +249,7 @@ Page {
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
-                    TextField {
+                    CustomTextInput {
                         id: proxyHostField
                         placeholderText: qsTr("代理服务器地址")
                         text: setting.getProxyHost()
@@ -295,7 +295,7 @@ Page {
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
-                    TextField {
+                    CustomTextInput {
                         id: proxyUsernameField
                         placeholderText: qsTr("用户名（可选）")
                         text: setting.getProxyUsername()
@@ -318,7 +318,7 @@ Page {
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
-                    TextField {
+                    CustomTextInput {
                         id: proxyPasswordField
                         placeholderText: qsTr("密码（可选）")
                         text: setting.getProxyPassword()
@@ -340,6 +340,7 @@ Page {
                 Label {
                     text: qsTr("连接状态:")
                     anchors.verticalCenter: parent.verticalCenter
+                    color: ThemeManager.textColor
                 }
                 Rectangle {
                     width: 12
@@ -405,18 +406,11 @@ Page {
                     color: ThemeManager.textColor
                 }
 
-                TextField {
+                CustomTextInput {
                     id: configPathField
                     Layout.fillWidth: true
                     text: setting.getConfigFilePath()
                     readOnly: true
-                    color: ThemeManager.textColor
-                    background: Rectangle {
-                        color: ThemeManager.secondaryBackgroundColor
-                        border.color: ThemeManager.borderColor
-                        border.width: 1
-                        radius: 4
-                    }
                 }
 
                 RowLayout {
@@ -464,17 +458,10 @@ Page {
                     color: ThemeManager.textColor
                 }
 
-                TextField {
+                CustomTextInput {
                     id: apiUrlField
                     Layout.fillWidth: true
                     text: setting.get("server/baseUrl", "https://api.example.com")
-                    color: ThemeManager.textColor
-                    background: Rectangle {
-                        color: ThemeManager.secondaryBackgroundColor
-                        border.color: ThemeManager.borderColor
-                        border.width: 1
-                        radius: 4
-                    }
                 }
 
                 RowLayout {

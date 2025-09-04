@@ -138,12 +138,11 @@ Item {
                     color: ThemeManager.textColor
                 }
 
-                TextField {
+                CustomTextInput {
                     id: usernameField
                     Layout.fillWidth: true
                     Layout.preferredHeight: 36
                     placeholderText: qsTr("请输入用户名")
-                    color: ThemeManager.textColor
                     enabled: !loginDialog.isLoggingIn // 登录中禁用输入
 
                     // 文本变化时清除错误消息
@@ -166,13 +165,12 @@ Item {
                     color: ThemeManager.textColor
                 }
 
-                TextField {
+                CustomTextInput {
                     id: passwordField
                     placeholderText: qsTr("请输入密码")
                     echoMode: TextInput.Password
                     Layout.fillWidth: true
                     Layout.preferredHeight: 36
-                    color: ThemeManager.textColor
                     enabled: !loginDialog.isLoggingIn
 
                     // 文本变化时清除错误消息
