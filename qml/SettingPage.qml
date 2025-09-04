@@ -220,7 +220,7 @@ Page {
                 }
             }
 
-            ComboBox {
+            CustomComboBox {
                 id: proxyTypeCombo
                 enabled: proxyEnabledSwitch.checked
                 Layout.leftMargin: 20
@@ -272,10 +272,11 @@ Page {
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
-                    SpinBox {
+                    CustomSpinBox {
                         id: proxyPortSpinBox
                         from: 1
                         to: 65535
+                        editable: true
                         value: setting.getProxyPort()
 
                         onValueChanged: {
