@@ -37,7 +37,6 @@ Dialog {
     property int contentSpacing: 15                       ///< 内容间距
     property bool enableAnimation: true                   ///< 是否启用动画
     property real animationDuration: 200                  ///< 动画持续时间
-    readonly property var theme: ThemeManager             ///< 主题
     property string confirmText: qsTr("确定")             ///< 确定按钮文本
     property string cancelText: qsTr("取消")              ///< 取消按钮文本
 
@@ -67,8 +66,8 @@ Dialog {
 
     // 标题栏
     header: Rectangle {
-        color: root.theme.backgroundColor
-        border.color: root.theme.borderColor
+        color: ThemeManager.backgroundColor
+        border.color: ThemeManager.borderColor
         height: root.dialogTitle !== "" ? 40 : 0
         visible: root.dialogTitle !== ""
         topLeftRadius: 10                                     ///< 左上角圆角
@@ -76,7 +75,7 @@ Dialog {
 
         Text {
             text: root.dialogTitle
-            color: root.theme.textColor
+            color: ThemeManager.textColor
             font.pixelSize: 16
             font.bold: true
             anchors.centerIn: parent
@@ -88,14 +87,14 @@ Dialog {
             anchors.right: parent.right
             anchors.bottom: parent.bottom
             height: 1
-            color: root.theme.borderColor
+            color: ThemeManager.borderColor
         }
     }
 
     // 背景
     background: Rectangle {
-        color: root.theme.backgroundColor
-        border.color: root.theme.borderColor
+        color: ThemeManager.backgroundColor
+        border.color: ThemeManager.borderColor
         border.width: 1
         radius: 10
 
@@ -155,15 +154,15 @@ Dialog {
             Layout.rightMargin: root.isShowConfirmButton ? 15 : 20    // 右边距
 
             background: Rectangle {
-                color: parent.enabled ? (parent.pressed ? root.theme.button2PressedColor : parent.hovered ? root.theme.button2HoverColor : root.theme.button2Color) : root.theme.button2DisabledColor
-                border.color: root.theme.borderColor
+                color: parent.enabled ? (parent.pressed ? ThemeManager.button2PressedColor : parent.hovered ? ThemeManager.button2HoverColor : ThemeManager.button2Color) : ThemeManager.button2DisabledColor
+                border.color: ThemeManager.borderColor
                 border.width: 1
                 radius: 8
             }
 
             contentItem: Text {
                 text: parent.text
-                color: parent.enabled ? root.theme.button2TextColor : root.theme.button2DisabledTextColor
+                color: parent.enabled ? ThemeManager.button2TextColor : ThemeManager.button2DisabledTextColor
                 font.pixelSize: 14
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
@@ -181,15 +180,15 @@ Dialog {
             Layout.rightMargin: 20
 
             background: Rectangle {
-                color: parent.enabled ? (parent.pressed ? root.theme.buttonPressedColor : parent.hovered ? root.theme.buttonHoverColor : root.theme.buttonColor) : root.theme.buttonDisabledColor
-                border.color: root.theme.borderColor
+                color: parent.enabled ? (parent.pressed ? ThemeManager.buttonPressedColor : parent.hovered ? ThemeManager.buttonHoverColor : ThemeManager.buttonColor) : ThemeManager.buttonDisabledColor
+                border.color: ThemeManager.borderColor
                 border.width: 1
                 radius: 8
             }
 
             contentItem: Text {
                 text: parent.text
-                color: parent.enabled ? root.theme.buttonTextColor : root.theme.buttonDisabledTextColor
+                color: parent.enabled ? ThemeManager.buttonTextColor : ThemeManager.buttonDisabledTextColor
                 font.pixelSize: 14
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter

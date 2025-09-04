@@ -23,6 +23,11 @@ Page {
         todoFilter.currentFilter = "all";
     }
 
+    background: Rectangle {
+        color: ThemeManager.backgroundColor
+        radius: 10  // 添加圆角
+    }
+
     // 主布局
     RowLayout {
         anchors.fill: parent
@@ -33,6 +38,8 @@ Page {
             Layout.preferredWidth: 60
             Layout.fillHeight: true
             border.width: 1
+            topLeftRadius: 10
+            bottomLeftRadius: 10
 
             // 窗口拖拽处理区域
             WindowDragHandler {
@@ -69,7 +76,7 @@ Page {
                             width: 30
                             height: 30
                             radius: 15                               ///< 圆形头像
-                            color: theme.secondaryBackgroundColor    ///< 使用主题次要背景色
+                            color: ThemeManager.secondaryBackgroundColor    ///< 使用主题次要背景色
                             Layout.alignment: Qt.AlignVCenter        ///< 垂直居中对齐
 
                             // 头像图标
@@ -88,7 +95,7 @@ Page {
                     Layout.fillWidth: true
                     Layout.preferredHeight: implicitHeight
                     implicitHeight: column.implicitHeight + 20  // Column高度 + 上下边距
-                    color: theme.borderColor
+                    color: ThemeManager.borderColor
                     radius: 50
 
                     Column {
@@ -100,7 +107,7 @@ Page {
                         IconButton {
                             text: "\ue8df"              ///< 全部图标
                             onClicked: todoFilter.currentFilter = "all"
-                            textColor: theme.textColor
+                            textColor: ThemeManager.textColor
                             fontSize: 16
                             width: parent.width
                         }
@@ -108,7 +115,7 @@ Page {
                         IconButton {
                             text: "\ue7fc"              ///< 未完成图标
                             onClicked: todoFilter.currentFilter = "todo"
-                            textColor: theme.textColor
+                            textColor: ThemeManager.textColor
                             fontSize: 16
                             width: parent.width
                         }
@@ -116,7 +123,7 @@ Page {
                         IconButton {
                             text: "\ue7fa"              ///< 已完成图标
                             onClicked: todoFilter.currentFilter = "done"
-                            textColor: theme.textColor
+                            textColor: ThemeManager.textColor
                             fontSize: 16
                             width: parent.width
                         }
@@ -124,7 +131,7 @@ Page {
                         IconButton {
                             text: "\ue922"              ///< 回收站图标
                             onClicked: todoFilter.currentFilter = "recycle"
-                            textColor: theme.textColor
+                            textColor: ThemeManager.textColor
                             fontSize: 16
                             width: parent.width
                         }
@@ -139,7 +146,7 @@ Page {
                         isDescending = !isDescending;
                         todoSorter.setDescending(isDescending);
                     }
-                    textColor: theme.textColor
+                    textColor: ThemeManager.textColor
                     fontSize: 16
                     width: parent.width
                 }
@@ -154,7 +161,7 @@ Page {
                         var pos = mapToItem(null, width, height);
                         filterMenu.popup(pos.x, pos.y);
                     }
-                    textColor: theme.textColor
+                    textColor: ThemeManager.textColor
                     fontSize: 16
                 }
 
@@ -168,7 +175,7 @@ Page {
                         var pos = mapToItem(null, width, height);
                         todoCategoryManager.popup(pos.x, pos.y, true);
                     }
-                    textColor: theme.textColor
+                    textColor: ThemeManager.textColor
                     fontSize: 16
                 }
 
@@ -201,7 +208,7 @@ Page {
                         }
                     }
 
-                    textColor: theme.textColor
+                    textColor: ThemeManager.textColor
                     fontSize: 16
                 }
 
@@ -212,28 +219,28 @@ Page {
                         globalState.isDarkMode = !globalState.isDarkMode;
                         setting.save("setting/isDarkMode", globalState.isDarkMode);
                     }
-                    textColor: theme.textColor
+                    textColor: ThemeManager.textColor
                     fontSize: 16
                 }
 
                 // 设置
                 IconButton {
                     text: "\ue913"              ///< 设置图标
-                    // onClicked: stackView.push(Qt.resolvedUrl("SettingPage.qml"), {
-                    //     root: root,
-                    //     stackView: stackView
-                    // })
+                    onClicked: stackView.push(Qt.resolvedUrl("SettingPage.qml"), {
+                        root: root,
+                        stackView: stackView
+                    })
 
-                    // 测试用
-                    onClicked: {
-                        confirmationDialog.open();
-                    }
-                    textColor: theme.textColor
-                    fontSize: 16
+                    // // 测试用
+                    // onClicked: {
+                    //     confirmationDialog.open();
+                    // }
+                    // textColor: ThemeManager.textColor
+                    // fontSize: 16
                 }
-                ModalDialog {
-                    id: confirmationDialog
-                }
+                // ModalDialog {
+                //     id: confirmationDialog
+                // }
             }
         }
 
@@ -269,8 +276,8 @@ Page {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 36
-                            color: theme.backgroundColor
-                            border.color: theme.borderColor
+                            color: ThemeManager.backgroundColor
+                            border.color: ThemeManager.borderColor
                             border.width: 1
                             radius: 4
 
@@ -280,7 +287,7 @@ Page {
                                 anchors.leftMargin: 10
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "\ue8f2"              ///< 查询图标
-                                color: theme.textColor
+                                color: ThemeManager.textColor
                                 font.pixelSize: 16
                                 font.family: "iconfont"
                             }
@@ -307,7 +314,7 @@ Page {
                         IconButton {
                             // TODO: 改成添加待办事项按钮的图标
                             text: "\ue8e1"
-                            textColor: theme.textColor
+                            textColor: ThemeManager.textColor
                             fontSize: 16
                             onClicked: {
                                 todoManager.addTodo("新的待办事项");
@@ -356,7 +363,7 @@ Page {
                                 visible: homePage.refreshing || todoListView.pullDistance > 0
                                 width: 20
                                 height: 20
-                                textColor: theme.textColor
+                                textColor: ThemeManager.textColor
                                 fontSize: 16
                                 Layout.alignment: Qt.AlignVCenter
 
@@ -372,7 +379,7 @@ Page {
                             }
                             Label {
                                 text: homePage.refreshing ? qsTr("正在同步...") : (todoListView.pullDistance >= todoListView.pullThreshold ? qsTr("释放刷新") : qsTr("下拉刷新"))
-                                color: theme.textColor
+                                color: ThemeManager.textColor
                                 font.pixelSize: 12
                                 Layout.alignment: Qt.AlignVCenter
                             }
@@ -421,7 +428,7 @@ Page {
                             id: mainContent
                             anchors.fill: parent
                             x: delegateItem.swipeOffset
-                            color: delegateItem.isSelected ? theme.selectedColor || "lightblue" : (index % 2 === 0 ? theme.secondaryBackgroundColor : theme.backgroundColor)
+                            color: delegateItem.isSelected ? ThemeManager.selectedColor || "lightblue" : (index % 2 === 0 ? ThemeManager.secondaryBackgroundColor : ThemeManager.backgroundColor)
 
                             // 长按和点击处理
                             MouseArea {
@@ -485,7 +492,7 @@ Page {
                                     width: 16
                                     height: 16
                                     radius: 8
-                                    color: (model.isCompleted || false) ? theme.completedColor : (model.important || false) ? theme.highImportantColor : theme.lowImportantColor
+                                    color: (model.isCompleted || false) ? ThemeManager.completedColor : (model.important || false) ? ThemeManager.highImportantColor : ThemeManager.lowImportantColor
 
                                     MouseArea {
                                         anchors.fill: parent
@@ -502,7 +509,7 @@ Page {
                                 Label {
                                     text: model.title
                                     font.strikeout: model.isCompleted || false
-                                    color: (model.isCompleted || false) ? theme.secondaryTextColor : theme.textColor
+                                    color: (model.isCompleted || false) ? ThemeManager.secondaryTextColor : ThemeManager.textColor
                                     Layout.fillWidth: true
                                 }
 
@@ -780,9 +787,9 @@ Page {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         height: 50
-                        color: theme.backgroundColor || "white"
+                        color: ThemeManager.backgroundColor || "white"
                         border.width: 1
-                        border.color: theme.borderColor || "lightgray"
+                        border.color: ThemeManager.borderColor || "lightgray"
 
                         RowLayout {
                             anchors.fill: parent
@@ -790,7 +797,7 @@ Page {
 
                             Label {
                                 text: qsTr("已选择 %1 项").arg(selectedItems.length)
-                                color: theme.textColor
+                                color: ThemeManager.textColor
                                 Layout.fillWidth: true
                             }
 
@@ -839,6 +846,8 @@ Page {
             Layout.fillWidth: true
             Layout.fillHeight: true
             border.width: 1
+            topRightRadius: 10
+            bottomRightRadius: 10
 
             // 抽屉显示状态
             property bool drawerVisible: false
@@ -852,6 +861,7 @@ Page {
                     id: titleBar
                     Layout.preferredHeight: 30
                     Layout.fillWidth: true
+                    color: "transparent"
 
                     // 窗口拖拽处理区域
                     WindowDragHandler {
@@ -873,7 +883,7 @@ Page {
                             onClicked: {
                                 globalState.toggleWidgetMode();
                             }
-                            textColor: theme.textColor
+                            textColor: ThemeManager.textColor
                             fontSize: 18
                         }
 
@@ -881,7 +891,7 @@ Page {
                         IconButton {
                             text: "\ue65a"
                             onClicked: root.showMinimized()
-                            textColor: theme.textColor
+                            textColor: ThemeManager.textColor
                             fontSize: 16
                         }
 
@@ -895,7 +905,7 @@ Page {
                                     root.showMaximized();
                                 }
                             }
-                            textColor: theme.textColor
+                            textColor: ThemeManager.textColor
                             fontSize: 16
                         }
 
@@ -904,7 +914,7 @@ Page {
                             text: "\ue8d1"
                             onClicked: root.close()
                             fontSize: 16
-                            textColor: theme.textColor
+                            textColor: ThemeManager.textColor
                         }
                     }
                 }
@@ -934,7 +944,7 @@ Page {
                             text: selectedTodo ? (selectedTodo.title || "无标题") : "选择一个待办事项"
                             font.pixelSize: 18
                             font.bold: true
-                            color: theme.textColor
+                            color: ThemeManager.textColor
                             Layout.fillWidth: true
                             selectByMouse: true // 点击后可以选中文本
                             enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done" // 只有选中待办事项且不在回收站或已完成模式时才能编辑
@@ -978,7 +988,7 @@ Page {
                                 // 切换抽屉显示状态
                                 detailArea.drawerVisible = !detailArea.drawerVisible;
                             }
-                            textColor: theme.textColor
+                            textColor: ThemeManager.textColor
                             fontSize: 16
                         }
                     }
@@ -989,7 +999,7 @@ Page {
                         anchors.right: parent.right
                         anchors.bottom: parent.bottom
                         height: 1
-                        color: theme.borderColor
+                        color: ThemeManager.borderColor
                     }
                 }
 
@@ -1003,9 +1013,9 @@ Page {
                         return 64;
                     }
                     visible: selectedTodo !== null
-                    color: theme.backgroundColor
+                    color: ThemeManager.backgroundColor
                     border.width: 1
-                    border.color: theme.borderColor
+                    border.color: ThemeManager.borderColor
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -1039,7 +1049,7 @@ Page {
                                 }
                                 text: isCreatedText ? createdText : timeText
                                 font.pixelSize: 12
-                                color: theme.textColor
+                                color: ThemeManager.textColor
                                 Layout.fillWidth: true
                                 verticalAlignment: Text.AlignVCenter
 
@@ -1070,7 +1080,7 @@ Page {
                                 Text {
                                     text: "分类:"
                                     font.pixelSize: 12
-                                    color: theme.textColor
+                                    color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
@@ -1090,14 +1100,14 @@ Page {
 
                                     background: Rectangle {
                                         color: parent.pressed ? (globalState.isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (globalState.isDarkMode ? "#3c5a78" : "#e0e0e0") : (globalState.isDarkMode ? "#2c3e50" : "#f0f0f0")
-                                        border.color: theme.borderColor
+                                        border.color: ThemeManager.borderColor
                                         border.width: 1
                                         radius: 4
                                     }
 
                                     contentItem: Text {
                                         text: parent.text
-                                        color: theme.textColor
+                                        color: ThemeManager.textColor
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
                                         font.pixelSize: parent.font.pixelSize
@@ -1116,9 +1126,9 @@ Page {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     Layout.margins: 16
-                    color: theme.backgroundColor
+                    color: ThemeManager.backgroundColor
                     radius: 6
-                    border.color: theme.borderColor
+                    border.color: ThemeManager.borderColor
                     border.width: 1
 
                     property var selectedTodo
@@ -1140,7 +1150,7 @@ Page {
                             bottomPadding: 8
                             text: selectedTodo ? (selectedTodo.description || "") : ""
                             font.pixelSize: 14
-                            color: theme.textColor
+                            color: ThemeManager.textColor
                             wrapMode: TextEdit.WrapAnywhere
                             selectByMouse: true
                             selectByKeyboard: true
@@ -1206,9 +1216,9 @@ Page {
                             onEnabledChanged: updateStyle()
                             function updateStyle() {
                                 if (enabled) {
-                                    color = theme.textColor;
+                                    color = ThemeManager.textColor;
                                 } else {
-                                    color = theme.disabledTextColor || theme.textColor;
+                                    color = ThemeManager.disabledTextColor || ThemeManager.textColor;
                                 }
                             }
                         }
@@ -1231,7 +1241,7 @@ Page {
                         Text {
                             text: descriptionField.text.length + " 字符"
                             font.pixelSize: 12
-                            color: theme.textColor
+                            color: ThemeManager.textColor
                             opacity: 0.7
                             anchors.verticalCenter: parent.verticalCenter
                         }
@@ -1268,9 +1278,9 @@ Page {
                 anchors.topMargin: titleBar.height + detailTitleBar.height
                 anchors.bottom: parent.bottom
                 width: 300
-                color: theme.backgroundColor
+                color: ThemeManager.backgroundColor
                 border.width: 1
-                border.color: theme.borderColor
+                border.color: ThemeManager.borderColor
                 z: 100  // 确保在最上层
 
                 // 抽屉显示/隐藏动画
@@ -1297,7 +1307,7 @@ Page {
                             text: "详细设置"
                             font.pixelSize: 16
                             font.bold: true
-                            color: theme.textColor
+                            color: ThemeManager.textColor
                             Layout.fillWidth: true
                         }
 
@@ -1307,7 +1317,7 @@ Page {
                             onClicked: {
                                 detailArea.drawerVisible = false;
                             }
-                            textColor: theme.textColor
+                            textColor: ThemeManager.textColor
                             fontSize: 14
                         }
                     }
@@ -1316,7 +1326,7 @@ Page {
                     Rectangle {
                         Layout.fillWidth: true
                         height: 1
-                        color: theme.borderColor
+                        color: ThemeManager.borderColor
                     }
 
                     // 待办事项属性编辑区域
@@ -1340,7 +1350,7 @@ Page {
                                 Text {
                                     text: "分类:"
                                     font.pixelSize: 12
-                                    color: theme.textColor
+                                    color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
@@ -1360,14 +1370,14 @@ Page {
 
                                     background: Rectangle {
                                         color: parent.pressed ? (globalState.isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (globalState.isDarkMode ? "#3c5a78" : "#e0e0e0") : (globalState.isDarkMode ? "#2c3e50" : "#f0f0f0")
-                                        border.color: theme.borderColor
+                                        border.color: ThemeManager.borderColor
                                         border.width: 1
                                         radius: 4
                                     }
 
                                     contentItem: Text {
                                         text: parent.text
-                                        color: theme.textColor
+                                        color: ThemeManager.textColor
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
                                         font.pixelSize: parent.font.pixelSize
@@ -1389,7 +1399,7 @@ Page {
                                 Text {
                                     text: "截止日期:"
                                     font.pixelSize: 12
-                                    color: theme.textColor
+                                    color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
@@ -1403,14 +1413,14 @@ Page {
 
                                     background: Rectangle {
                                         color: parent.pressed ? (globalState.isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (globalState.isDarkMode ? "#3c5a78" : "#e0e0e0") : (globalState.isDarkMode ? "#2c3e50" : "#f0f0f0")
-                                        border.color: theme.borderColor
+                                        border.color: ThemeManager.borderColor
                                         border.width: 1
                                         radius: 4
                                     }
 
                                     contentItem: Text {
                                         text: parent.text
-                                        color: theme.textColor
+                                        color: ThemeManager.textColor
                                         horizontalAlignment: Text.AlignLeft
                                         verticalAlignment: Text.AlignVCenter
                                         font.pixelSize: parent.font.pixelSize
@@ -1438,7 +1448,7 @@ Page {
                                 Text {
                                     text: "每"
                                     font.pixelSize: 12
-                                    color: theme.textColor
+                                    color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
@@ -1462,7 +1472,7 @@ Page {
                                 Text {
                                     text: "天重复"
                                     font.pixelSize: 12
-                                    color: theme.textColor
+                                    color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
                                 }
                             }
@@ -1481,7 +1491,7 @@ Page {
                                 Text {
                                     text: "共"
                                     font.pixelSize: 12
-                                    color: theme.textColor
+                                    color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
@@ -1505,7 +1515,7 @@ Page {
                                 Text {
                                     text: "次"
                                     font.pixelSize: 12
-                                    color: theme.textColor
+                                    color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
                                 }
                             }
@@ -1524,7 +1534,7 @@ Page {
                                 Text {
                                     text: "开始日期:"
                                     font.pixelSize: 12
-                                    color: theme.textColor
+                                    color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
@@ -1538,14 +1548,14 @@ Page {
 
                                     background: Rectangle {
                                         color: parent.pressed ? (globalState.isDarkMode ? "#34495e" : "#d0d0d0") : parent.hovered ? (globalState.isDarkMode ? "#3c5a78" : "#e0e0e0") : (globalState.isDarkMode ? "#2c3e50" : "#f0f0f0")
-                                        border.color: theme.borderColor
+                                        border.color: ThemeManager.borderColor
                                         border.width: 1
                                         radius: 4
                                     }
 
                                     contentItem: Text {
                                         text: parent.text
-                                        color: theme.textColor
+                                        color: ThemeManager.textColor
                                         horizontalAlignment: Text.AlignLeft
                                         verticalAlignment: Text.AlignVCenter
                                         font.pixelSize: parent.font.pixelSize
@@ -1652,8 +1662,8 @@ Page {
         z: 10000  // 确保菜单显示在最上层
 
         background: Rectangle {
-            color: theme.backgroundColor
-            border.color: theme.borderColor
+            color: ThemeManager.backgroundColor
+            border.color: ThemeManager.borderColor
             border.width: 1
             radius: 4
         }
@@ -1664,7 +1674,7 @@ Page {
             enabled: false
             contentItem: Text {
                 text: parent.text
-                color: theme.textColor
+                color: ThemeManager.textColor
                 font.bold: true
                 font.pixelSize: 14
             }
@@ -1675,7 +1685,7 @@ Page {
             onTriggered: todoSorter.setSortType(0)
             contentItem: Text {
                 text: parent.text
-                color: theme.textColor
+                color: ThemeManager.textColor
                 font.pixelSize: 12
             }
         }
@@ -1685,7 +1695,7 @@ Page {
             onTriggered: todoSorter.setSortType(1)
             contentItem: Text {
                 text: parent.text
-                color: theme.textColor
+                color: ThemeManager.textColor
                 font.pixelSize: 12
             }
         }
@@ -1695,7 +1705,7 @@ Page {
             onTriggered: todoSorter.setSortType(2)
             contentItem: Text {
                 text: parent.text
-                color: theme.textColor
+                color: ThemeManager.textColor
                 font.pixelSize: 12
             }
         }
@@ -1705,7 +1715,7 @@ Page {
             onTriggered: todoSorter.setSortType(3)
             contentItem: Text {
                 text: parent.text
-                color: theme.textColor
+                color: ThemeManager.textColor
                 font.pixelSize: 12
             }
         }
@@ -1719,8 +1729,8 @@ Page {
         z: 10000  // 确保菜单显示在最上层
 
         background: Rectangle {
-            color: theme.backgroundColor
-            border.color: theme.borderColor
+            color: ThemeManager.backgroundColor
+            border.color: ThemeManager.borderColor
             border.width: 1
             radius: 4
         }
@@ -1732,14 +1742,13 @@ Page {
                 Text {
                     text: "\ue981"
                     font.family: iconFont.name
-                    color: theme.textColor
+                    color: ThemeManager.textColor
                     font.pixelSize: 18
                     anchors.verticalCenter: parent.verticalCenter
                 }
                 Text {
                     text: parent.parent.text
-                    color: theme.textColor
-                    // font: parent.parent.font
+                    color: ThemeManager.textColor
                     font.pixelSize: 18
                     anchors.verticalCenter: parent.verticalCenter
                 }
@@ -1762,13 +1771,13 @@ Page {
                     Text {
                         text: "\ue8ef"
                         font.family: iconFont.name
-                        color: theme.textColor
+                        color: ThemeManager.textColor
                         font.pixelSize: 18
                         anchors.verticalCenter: parent.verticalCenter
                     }
                     Text {
                         text: qsTr("自动同步")
-                        color: theme.textColor
+                        color: ThemeManager.textColor
                         font.pixelSize: 18
                         anchors.verticalCenter: parent.verticalCenter
                     }
@@ -1797,24 +1806,16 @@ Page {
     }
 
     // 确认删除弹窗
-    BaseDialog {
+    ModalDialog {
         id: confirmDeleteDialog
         property var selectedIndices: []
 
         dialogTitle: qsTr("确认删除")
         dialogWidth: 350
-        dialogHeight: 150
-
-        Text {
-            text: qsTr("确定要永久删除选中的 %1 个待办事项吗？\n此操作无法撤销。").arg(confirmDeleteDialog.selectedIndices.length)
-            color: theme.textColor
-            wrapMode: Text.WordWrap
-            horizontalAlignment: Text.AlignHCenter
-            Layout.fillWidth: true
-        }
+        message: qsTr("确定要永久删除选中的 %1 个待办事项吗？\n此操作无法撤销。").arg(confirmDeleteDialog.selectedIndices.length)
 
         // 执行硬删除
-        onAccepted: {
+        onConfirmed: {
             var sortedIndices = confirmDeleteDialog.selectedIndices.slice().sort(function (a, b) {
                 return b - a;
             });
@@ -1823,17 +1824,15 @@ Page {
             }
             multiSelectMode = false;
             selectedItems = [];
+            confirmDeleteDialog.close();
         }
-
-        // 取消删除，不做任何操作
-        onRejected: {}
     }
 
     // 截止日期选择器
     DateTimePicker {
         id: deadlineDatePicker
 
-        onAccepted: {
+        onConfirmed: {
             if (selectedTodo) {
                 todoManager.updateTodo(selectedTodo.index, "deadline", selectedDate);
                 selectedTodo.deadline = selectedDate;
@@ -1846,7 +1845,7 @@ Page {
         id: startDatePicker
         enableTimeMode: false
 
-        onAccepted: {
+        onConfirmed: {
             if (selectedTodo) {
                 todoManager.updateTodo(selectedTodo.index, "recurrenceStartDate", selectedDate);
                 selectedTodo.recurrenceStartDate = selectedDate;

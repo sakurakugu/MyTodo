@@ -11,14 +11,11 @@ Page {
     property var stackView
     property bool preventDragging: setting.get("setting/preventDragging", false) // 是否允许拖动
 
-    // 主题管理器
-    property var theme: ThemeManager
-
     // 应用代理设置函数
     function applyProxySettings() {
         if (!setting.getProxyEnabled()) {
             // 禁用代理
-            networkRequest.setProxyConfig(0, "", 0, "", ""); // NoProxy
+            networkRequest.setProxyConfig(0, "", 0, "", ""); // NoProxy // TODO: 还没注册，到时候再看
         } else {
             var proxyType = setting.getProxyType();
             var host = setting.getProxyHost();
@@ -38,14 +35,16 @@ Page {
     // 标题栏
     Rectangle {
         id: titleBar
-        height: 30
+        height: 40
         width: parent.width
-        color: theme.backgroundColor
+        color: ThemeManager.backgroundColor
+        topLeftRadius: 10
+        topRightRadius: 10
 
         // 窗口拖拽处理区域
         WindowDragHandler {
             anchors.fill: parent
-            targetWindow: root
+            targetWindow: settingPage.root
         }
 
         // 左侧返回按钮和标题
@@ -57,16 +56,15 @@ Page {
 
             IconButton {
                 text: "\ue8fa"
-                textColor: theme.textColor
-                fontSize: 16
-                onClicked: stackView.pop()
+                textColor: ThemeManager.textColor
+                fontSize: 20
+                onClicked: settingPage.stackView.pop()
             }
 
             Text {
                 text: qsTr("设置")
-                font.bold: true
-                font.pixelSize: 16
-                color: theme.textColor
+                font.pixelSize: 20
+                color: ThemeManager.textColor
             }
         }
 
@@ -80,31 +78,31 @@ Page {
             // 最小化按钮
             IconButton {
                 text: "\ue65a"
-                onClicked: homePage.showMinimized()
-                textColor: theme.textColor
+                onClicked: settingPage.root.showMinimized()
+                textColor: ThemeManager.textColor
                 fontSize: 16
             }
 
             // 最大化/恢复按钮
             IconButton {
-                text: root.visibility === Window.Maximized ? "\ue600" : "\ue65b"
+                text: settingPage.root.visibility === Window.Maximized ? "\ue600" : "\ue65b"
                 onClicked: {
-                    if (root.visibility === Window.Maximized) {
-                        root.showNormal();
+                    if (settingPage.root.visibility === Window.Maximized) {
+                        settingPage.root.showNormal();
                     } else {
-                        root.showMaximized();
+                        settingPage.root.showMaximized();
                     }
                 }
-                textColor: theme.textColor
+                textColor: ThemeManager.textColor
                 fontSize: 16
             }
 
             // 关闭按钮
             IconButton {
                 text: "\ue8d1"
-                onClicked: root.close()
+                onClicked: settingPage.root.close()
                 fontSize: 16
-                textColor: theme.textColor
+                textColor: ThemeManager.textColor
             }
         }
     }
@@ -117,14 +115,14 @@ Page {
         contentWidth: availableWidth
 
         ColumnLayout {
-            width: parent.width - 40  // 减去左右边距
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
             anchors.topMargin: 20
-            anchors.leftMargin: 20
-            anchors.rightMargin: 20
+            anchors.leftMargin: parent.width * 0.2
+            anchors.rightMargin: parent.width * 0.2
             spacing: 15
 
+            // 个人信息
             RowLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -135,24 +133,27 @@ Page {
 
                     // 显示用户头像
                     Rectangle {
-                        width: 30
-                        height: 30
-                        radius: 15                               ///< 圆形头像
-                        color: theme.secondaryBackgroundColor    ///< 使用主题次要背景色
-                        Layout.alignment: Qt.AlignVCenter        ///< 垂直居中对齐
+                        Layout.preferredWidth: 40
+                        Layout.preferredHeight: 40
+                        radius: Math.min(width, height) / 2            ///< 圆形头像
+                        color: ThemeManager.secondaryBackgroundColor   ///< 使用主题次要背景色
+                        Layout.alignment: Qt.AlignVCenter              ///< 垂直居中对齐
+                        border.width: 1
+                        border.color: ThemeManager.borderColor
 
                         /// 头像图标
                         Text {
                             anchors.centerIn: parent
-                            text: "👤"                      ///< 默认用户图标
+                            text: "👤"                                ///< 默认用户图标
                             font.pixelSize: 18
+                            color: ThemeManager.textColor
                         }
                     }
 
                     // 显示用户名
                     Text {
                         text: userAuth.username !== "" ? userAuth.username : qsTr("未登录")
-                        color: theme.textColor      ///< 使用主题文本颜色
+                        color: ThemeManager.textColor      ///< 使用主题文本颜色
                         font.bold: true                     ///< 粗体字
                         font.pixelSize: 16                  ///< 字体大小
                         Layout.alignment: Qt.AlignVCenter   ///< 垂直居中对齐
@@ -161,11 +162,13 @@ Page {
                 }
             }
 
+            Divider {}
+
             Label {
                 text: qsTr("外观设置")
                 font.bold: true
                 font.pixelSize: 16
-                color: theme.textColor
+                color: ThemeManager.textColor
             }
 
             Switch {
@@ -307,7 +310,7 @@ Page {
                 text: qsTr("网络代理设置")
                 font.bold: true
                 font.pixelSize: 16
-                color: theme.textColor
+                color: ThemeManager.textColor
             }
 
             Switch {
@@ -477,7 +480,7 @@ Page {
                 text: qsTr("数据管理")
                 font.bold: true
                 font.pixelSize: 16
-                color: theme.textColor
+                color: ThemeManager.textColor
                 Layout.topMargin: 10
             }
 
@@ -507,7 +510,7 @@ Page {
                 text: qsTr("关于")
                 font.bold: true
                 font.pixelSize: 16
-                color: theme.textColor
+                color: ThemeManager.textColor
                 Layout.topMargin: 10
             }
 
@@ -524,7 +527,7 @@ Page {
                 text: qsTr("配置文件管理")
                 font.bold: true
                 font.pixelSize: 16
-                color: theme.textColor
+                color: ThemeManager.textColor
                 Layout.topMargin: 10
             }
 
@@ -539,7 +542,7 @@ Page {
 
                     Label {
                         text: qsTr("配置文件路径:")
-                        color: theme.textColor
+                        color: ThemeManager.textColor
                     }
 
                     TextField {
@@ -547,10 +550,10 @@ Page {
                         Layout.fillWidth: true
                         text: setting.getConfigFilePath()
                         readOnly: true
-                        color: theme.textColor
+                        color: ThemeManager.textColor
                         background: Rectangle {
-                            color: theme.secondaryBackgroundColor
-                            border.color: theme.borderColor
+                            color: ThemeManager.secondaryBackgroundColor
+                            border.color: ThemeManager.borderColor
                             border.width: 1
                             radius: 4
                         }
@@ -588,7 +591,7 @@ Page {
                 text: qsTr("服务器配置")
                 font.bold: true
                 font.pixelSize: 16
-                color: theme.textColor
+                color: ThemeManager.textColor
                 Layout.topMargin: 10
             }
 
@@ -598,7 +601,7 @@ Page {
 
                 Label {
                     text: qsTr("API服务器地址:")
-                    color: theme.textColor
+                    color: ThemeManager.textColor
                 }
 
                 TextField {
@@ -606,10 +609,10 @@ Page {
                     Layout.fillWidth: true
                     // placeholderText: qsTr("请输入API服务器地址")
                     text: setting.get("server/baseUrl", "https://api.example.com")
-                    color: theme.textColor
+                    color: ThemeManager.textColor
                     background: Rectangle {
-                        color: theme.secondaryBackgroundColor
-                        border.color: theme.borderColor
+                        color: ThemeManager.secondaryBackgroundColor
+                        border.color: ThemeManager.borderColor
                         border.width: 1
                         radius: 4
                     }
@@ -720,7 +723,7 @@ Page {
                 text: qsTr("待办事项已成功导出！")
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
-                color: theme.textColor
+                color: ThemeManager.textColor
                 font.pixelSize: 14
             }
         }
@@ -736,7 +739,7 @@ Page {
                 text: qsTr("导出待办事项时发生错误，请检查文件路径和权限。")
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
-                color: theme.textColor
+                color: ThemeManager.textColor
                 font.pixelSize: 14
                 wrapMode: Text.WordWrap
             }
@@ -753,7 +756,7 @@ Page {
                 text: qsTr("待办事项已成功导入！")
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
-                color: theme.textColor
+                color: ThemeManager.textColor
                 font.pixelSize: 14
             }
         }
@@ -769,7 +772,7 @@ Page {
                 text: qsTr("导入待办事项时发生错误，请检查文件格式和内容。")
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
-                color: theme.textColor
+                color: ThemeManager.textColor
                 font.pixelSize: 14
                 wrapMode: Text.WordWrap
             }
@@ -799,7 +802,7 @@ Page {
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
                 font.bold: true
-                color: theme.textColor
+                color: ThemeManager.textColor
                 font.pixelSize: 14
             }
 
@@ -1042,15 +1045,15 @@ Page {
                 Label {
                     text: qsTr("批量操作:")
                     font.bold: true
-                    color: theme.textColor
+                    color: ThemeManager.textColor
                 }
 
                 Button {
                     text: qsTr("全部跳过")
                     font.pixelSize: 10
                     background: Rectangle {
-                        color: parent.pressed ? (theme.isDarkMode ? "#34495e" : "#bdc3c7") : (parent.hovered ? (theme.isDarkMode ? "#2c3e50" : "#ecf0f1") : (theme.isDarkMode ? "#2c3e50" : "white"))
-                        border.color: theme.isDarkMode ? "#34495e" : "#bdc3c7"
+                        color: parent.pressed ? (ThemeManager.isDarkMode ? "#34495e" : "#bdc3c7") : (parent.hovered ? (ThemeManager.isDarkMode ? "#2c3e50" : "#ecf0f1") : (ThemeManager.isDarkMode ? "#2c3e50" : "white"))
+                        border.color: ThemeManager.isDarkMode ? "#34495e" : "#bdc3c7"
                         border.width: 1
                         radius: 4
                     }
@@ -1068,8 +1071,8 @@ Page {
                     text: qsTr("全部覆盖")
                     font.pixelSize: 10
                     background: Rectangle {
-                        color: parent.pressed ? (theme.isDarkMode ? "#34495e" : "#bdc3c7") : (parent.hovered ? (theme.isDarkMode ? "#2c3e50" : "#ecf0f1") : (theme.isDarkMode ? "#2c3e50" : "white"))
-                        border.color: theme.isDarkMode ? "#34495e" : "#bdc3c7"
+                        color: parent.pressed ? (ThemeManager.isDarkMode ? "#34495e" : "#bdc3c7") : (parent.hovered ? (ThemeManager.isDarkMode ? "#2c3e50" : "#ecf0f1") : (ThemeManager.isDarkMode ? "#2c3e50" : "white"))
+                        border.color: ThemeManager.isDarkMode ? "#34495e" : "#bdc3c7"
                         border.width: 1
                         radius: 4
                     }
@@ -1087,8 +1090,8 @@ Page {
                     text: qsTr("全部智能合并")
                     font.pixelSize: 10
                     background: Rectangle {
-                        color: parent.pressed ? (theme.isDarkMode ? "#34495e" : "#bdc3c7") : (parent.hovered ? (theme.isDarkMode ? "#2c3e50" : "#ecf0f1") : (theme.isDarkMode ? "#2c3e50" : "white"))
-                        border.color: theme.isDarkMode ? "#34495e" : "#bdc3c7"
+                        color: parent.pressed ? (ThemeManager.isDarkMode ? "#34495e" : "#bdc3c7") : (parent.hovered ? (ThemeManager.isDarkMode ? "#2c3e50" : "#ecf0f1") : (ThemeManager.isDarkMode ? "#2c3e50" : "white"))
+                        border.color: ThemeManager.isDarkMode ? "#34495e" : "#bdc3c7"
                         border.width: 1
                         radius: 4
                     }
@@ -1111,14 +1114,14 @@ Page {
                 Button {
                     text: qsTr("取消")
                     background: Rectangle {
-                        color: parent.pressed ? (theme.isDarkMode ? "#34495e" : "#bdc3c7") : (parent.hovered ? (theme.isDarkMode ? "#2c3e50" : "#ecf0f1") : (theme.isDarkMode ? "#2c3e50" : "white"))
-                        border.color: theme.isDarkMode ? "#34495e" : "#bdc3c7"
+                        color: parent.pressed ? (ThemeManager.isDarkMode ? "#34495e" : "#bdc3c7") : (parent.hovered ? (ThemeManager.isDarkMode ? "#2c3e50" : "#ecf0f1") : (ThemeManager.isDarkMode ? "#2c3e50" : "white"))
+                        border.color: ThemeManager.isDarkMode ? "#34495e" : "#bdc3c7"
                         border.width: 1
                         radius: 4
                     }
                     contentItem: Text {
                         text: parent.text
-                        color: theme.textColor
+                        color: ThemeManager.textColor
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                         font.pixelSize: 14
@@ -1227,7 +1230,7 @@ Page {
                 text: qsTr("存储类型已成功更改！")
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
-                color: theme.textColor
+                color: ThemeManager.textColor
                 font.pixelSize: 14
             }
         }
@@ -1242,7 +1245,7 @@ Page {
                 text: qsTr("更改存储类型时发生错误，请重试。")
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
-                color: theme.textColor
+                color: ThemeManager.textColor
                 font.pixelSize: 14
             }
         }
@@ -1257,7 +1260,7 @@ Page {
                 text: qsTr("配置文件路径已成功更改！")
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
-                color: theme.textColor
+                color: ThemeManager.textColor
                 font.pixelSize: 14
             }
         }
@@ -1272,7 +1275,7 @@ Page {
                 text: qsTr("更改配置文件路径时发生错误，请检查路径是否有效。")
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
-                color: theme.textColor
+                color: ThemeManager.textColor
                 font.pixelSize: 14
             }
         }
@@ -1287,7 +1290,7 @@ Page {
                 text: qsTr("配置文件路径已重置为选定的默认位置！")
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
-                color: theme.textColor
+                color: ThemeManager.textColor
                 font.pixelSize: 14
             }
         }
@@ -1302,7 +1305,7 @@ Page {
                 text: qsTr("重置配置文件路径时发生错误。")
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
-                color: theme.textColor
+                color: ThemeManager.textColor
                 font.pixelSize: 14
             }
         }
@@ -1317,7 +1320,7 @@ Page {
                 text: qsTr("所有配置已清空！")
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
-                color: theme.textColor
+                color: ThemeManager.textColor
                 font.pixelSize: 14
             }
         }
@@ -1332,7 +1335,7 @@ Page {
                 text: qsTr("无法打开配置文件目录。")
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
-                color: theme.textColor
+                color: ThemeManager.textColor
                 font.pixelSize: 14
             }
         }

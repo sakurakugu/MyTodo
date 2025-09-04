@@ -98,6 +98,8 @@ set(QML_COMPONENT_FILES
     qml/components/ClickBlocker.qml                 # 点击拦截器
     qml/components/DateTimePicker.qml               # 日期时间选择器
     qml/components/TodoCategoryManager.qml          # 待办事项分类管理器
+    qml/components/WindowResizeHandler.qml          # 待办事项项管理器
+    qml/components/Divider.qml                      # 分割线
 )
 
 # 单例组件

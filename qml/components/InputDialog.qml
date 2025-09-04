@@ -37,7 +37,7 @@ BaseDialog {
     // 错误消息显示区域
     Label {
         text: root.errorMessage
-        color: root.theme.errorColor
+        color: ThemeManager.errorColor
         font.pixelSize: 12
         Layout.alignment: Qt.AlignHCenter         // 组件居中对齐
         Layout.fillWidth: true
@@ -49,7 +49,7 @@ BaseDialog {
     // 输入标签
     Label {
         text: root.inputLabel
-        color: root.theme.textColor
+        color: ThemeManager.textColor
         font.pixelSize: 14
         visible: root.inputLabel !== ""
         Layout.fillWidth: true
@@ -65,8 +65,8 @@ BaseDialog {
         Layout.fillWidth: true
         Layout.preferredHeight: 40
 
-        color: root.theme.textColor
-        placeholderTextColor: root.theme.placeholderTextColor
+        color: ThemeManager.textColor
+        placeholderTextColor: ThemeManager.placeholderTextColor
 
         onTextChanged: {
             if (!root.isValid && root.errorMessage !== "") {

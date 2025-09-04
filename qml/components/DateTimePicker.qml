@@ -34,8 +34,8 @@ BaseDialog {
     height: isTimeMode ? 350 : 450
 
     header: Rectangle {
-        color: root.theme.backgroundColor
-        border.color: root.theme.borderColor
+        color: ThemeManager.backgroundColor
+        border.color: ThemeManager.borderColor
         height: 56
         topLeftRadius: 10                                     ///< 左上角圆角
         topRightRadius: 10                                    ///< 右上角圆角
@@ -49,13 +49,13 @@ BaseDialog {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 40
-                color: root.enableTimeMode ? (!root.isTimeMode ? root.theme.selectedColor : root.theme.backgroundColor) : root.theme.backgroundColor
+                color: root.enableTimeMode ? (!root.isTimeMode ? ThemeManager.selectedColor : ThemeManager.backgroundColor) : ThemeManager.backgroundColor
                 radius: 8
 
                 Text {
                     id: dateText
                     text: root.enableTimeMode ? qsTr("日期") : qsTr("选择日期")
-                    color: root.theme.textColor
+                    color: ThemeManager.textColor
                     font.pixelSize: 16
                     font.bold: !root.isTimeMode
                     anchors.centerIn: parent
@@ -74,13 +74,13 @@ BaseDialog {
                 visible: root.enableTimeMode
                 Layout.fillWidth: true
                 Layout.preferredHeight: 40
-                color: root.isTimeMode ? root.theme.selectedColor : root.theme.backgroundColor
+                color: root.isTimeMode ? ThemeManager.selectedColor : ThemeManager.backgroundColor
                 radius: 8
 
                 Text {
                     id: timeText
                     text: qsTr("时间")
-                    color: root.theme.textColor
+                    color: ThemeManager.textColor
                     font.pixelSize: 16
                     font.bold: root.isTimeMode
                     anchors.centerIn: parent
@@ -102,7 +102,7 @@ BaseDialog {
             anchors.right: parent.right
             anchors.bottom: parent.bottom
             height: 1
-            color: root.theme.borderColor
+            color: ThemeManager.borderColor
         }
     }
 
@@ -117,8 +117,8 @@ BaseDialog {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: root.theme.backgroundColor
-            border.color: root.theme.borderColor
+            color: ThemeManager.backgroundColor
+            border.color: ThemeManager.borderColor
             border.width: 1
             radius: 4
             visible: !root.isTimeMode && !contentLayout.enableYearMonthMode
@@ -160,7 +160,7 @@ BaseDialog {
                         Text {
                             id: yearMonthText
                             text: Qt.formatDate(calendarGrid.currentDate, qsTr("yyyy年MM月"))
-                            color: root.theme.textColor
+                            color: ThemeManager.textColor
                             font.pixelSize: 14
                             font.bold: true
                             anchors.centerIn: parent
@@ -284,8 +284,8 @@ BaseDialog {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: root.theme.backgroundColor
-            border.color: root.theme.borderColor
+            color: ThemeManager.backgroundColor
+            border.color: ThemeManager.borderColor
             border.width: 1
             radius: 4
             visible: root.isTimeMode
@@ -299,7 +299,7 @@ BaseDialog {
                     text: qsTr("设置时间")
                     font.pixelSize: 16
                     font.bold: true
-                    color: root.theme.textColor
+                    color: ThemeManager.textColor
                     Layout.alignment: Qt.AlignHCenter
                 }
 
@@ -317,7 +317,7 @@ BaseDialog {
 
                         Text {
                             text: qsTr("小时")
-                            color: root.theme.textColor
+                            color: ThemeManager.textColor
                             font.pixelSize: 14
                             font.bold: true
                             Layout.alignment: Qt.AlignHCenter
@@ -334,7 +334,7 @@ BaseDialog {
 
                             delegate: Text {
                                 text: String(modelData).padStart(2, '0')
-                                color: root.theme.textColor
+                                color: ThemeManager.textColor
                                 font.pixelSize: 16
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
@@ -356,7 +356,7 @@ BaseDialog {
 
                         Text {
                             text: qsTr("分钟")
-                            color: root.theme.textColor
+                            color: ThemeManager.textColor
                             font.pixelSize: 14
                             font.bold: true
                             Layout.alignment: Qt.AlignHCenter
@@ -395,7 +395,7 @@ BaseDialog {
 
                         Text {
                             text: qsTr("秒")
-                            color: root.theme.textColor
+                            color: ThemeManager.textColor
                             font.pixelSize: 14
                             font.bold: true
                             Layout.alignment: Qt.AlignHCenter
@@ -433,8 +433,8 @@ BaseDialog {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: root.theme.backgroundColor
-            border.color: root.theme.borderColor
+            color: ThemeManager.backgroundColor
+            border.color: ThemeManager.borderColor
             border.width: 1
             radius: 4
             visible: !root.isTimeMode && contentLayout.enableYearMonthMode
@@ -451,7 +451,7 @@ BaseDialog {
 
                     Text {
                         text: qsTr("选择年月")
-                        color: root.theme.textColor
+                        color: ThemeManager.textColor
                         font.pixelSize: 16
                         font.bold: true
                         anchors.centerIn: parent
@@ -477,7 +477,7 @@ BaseDialog {
 
                         Text {
                             text: qsTr("年份")
-                            color: root.theme.textColor
+                            color: ThemeManager.textColor
                             font.pixelSize: 14
                             Layout.alignment: Qt.AlignHCenter
                         }
@@ -509,7 +509,7 @@ BaseDialog {
 
                         Text {
                             text: "月份"
-                            color: root.theme.textColor
+                            color: ThemeManager.textColor
                             font.pixelSize: 14
                             Layout.alignment: Qt.AlignHCenter
                         }
@@ -536,15 +536,15 @@ BaseDialog {
                         }
 
                         background: Rectangle {
-                            color: parent.enabled ? (parent.pressed ? root.theme.button2PressedColor : parent.hovered ? root.theme.button2HoverColor : root.theme.button2Color) : root.theme.button2DisabledColor
-                            border.color: root.theme.borderColor
+                            color: parent.enabled ? (parent.pressed ? ThemeManager.button2PressedColor : parent.hovered ? ThemeManager.button2HoverColor : ThemeManager.button2Color) : ThemeManager.button2DisabledColor
+                            border.color: ThemeManager.borderColor
                             border.width: 1
                             radius: 8
                         }
 
                         contentItem: Text {
                             text: parent.text
-                            color: parent.enabled ? root.theme.button2TextColor : root.theme.button2DisabledTextColor
+                            color: parent.enabled ? ThemeManager.button2TextColor : ThemeManager.button2DisabledTextColor
                             font.pixelSize: 14
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -563,15 +563,15 @@ BaseDialog {
                         }
 
                         background: Rectangle {
-                            color: parent.enabled ? (parent.pressed ? root.theme.buttonPressedColor : parent.hovered ? root.theme.buttonHoverColor : root.theme.buttonColor) : root.theme.buttonDisabledColor
-                            border.color: root.theme.borderColor
+                            color: parent.enabled ? (parent.pressed ? ThemeManager.buttonPressedColor : parent.hovered ? ThemeManager.buttonHoverColor : ThemeManager.buttonColor) : ThemeManager.buttonDisabledColor
+                            border.color: ThemeManager.borderColor
                             border.width: 1
                             radius: 8
                         }
 
                         contentItem: Text {
                             text: parent.text
-                            color: parent.enabled ? root.theme.buttonTextColor : root.theme.buttonDisabledTextColor
+                            color: parent.enabled ? ThemeManager.buttonTextColor : ThemeManager.buttonDisabledTextColor
                             font.pixelSize: 14
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
