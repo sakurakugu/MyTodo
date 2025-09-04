@@ -12,7 +12,7 @@ Window {
 
     // 背景透明度设置 - 必须保持透明，否则在Windows下的小窗口模式下会出现黑色背景问题
     color: "transparent"
-    // 窗口标志设置 - FramelessWindowHint必须始终存在，否则Windows下会出现背景变黑且无法恢复的问题
+    // 窗口标志设置 - 必须保持透明，否则在Windows下的小窗口模式下会出现黑色背景问题
     flags: Qt.FramelessWindowHint | (globalState.isDesktopWidget ? Qt.Tool : Qt.Window) | Qt.WindowStaysOnTopHint
 
     // 字体加载器
@@ -53,10 +53,17 @@ Window {
         focus: true
         visible: !globalState.isDesktopWidget && depth > 0 // 小窗口模式时隐藏主页面
         initialItem: homePage
+        // initialItem: testPage
         clip: true  ///< 裁剪内容以配合窗口圆角效果
     }
 
     // 各种页面
+    // 测试页面
+    TestPage {
+        id: testPage
+        root: root
+    }
+
     // 主页面
     HomePage {
         id: homePage

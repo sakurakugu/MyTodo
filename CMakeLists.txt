@@ -100,6 +100,10 @@ set(QML_COMPONENT_FILES
     qml/components/TodoCategoryManager.qml          # 待办事项分类管理器
     qml/components/WindowResizeHandler.qml          # 待办事项项管理器
     qml/components/Divider.qml                      # 分割线
+    qml/components/CustomSwitch.qml                 # 自定义开关
+    qml/components/SwitchRow.qml                    # 自定义开关行
+
+    qml/TestPage.qml # 测试页面
 )
 
 # 单例组件

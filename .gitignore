@@ -103,3 +103,4 @@ CMakeLists.txt.user*
 # 其他
 replacements.txt
 my-test/
+TestPage.qml

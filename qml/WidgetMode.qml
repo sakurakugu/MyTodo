@@ -135,7 +135,7 @@ Item {
                 }
 
                 // 设置内容
-                Switch {
+                CustomSwitch {
                     id: darkModeCheckBox
                     text: "深色模式"
                     checked: globalState.isDarkMode
@@ -157,7 +157,7 @@ Item {
                     }
                 }
 
-                Switch {
+                CustomSwitch {
                     id: preventDraggingCheckBox
                     text: "防止拖动窗口（小窗口模式）"
                     checked: widgetMode.preventDragging
@@ -170,7 +170,7 @@ Item {
                     }
                 }
 
-                Switch {
+                CustomSwitch {
                     id: autoSyncSwitch
                     text: "自动同步"
                     checked: todoSyncServer.isAutoSyncEnabled

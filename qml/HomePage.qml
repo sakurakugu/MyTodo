@@ -76,8 +76,10 @@ Page {
                             width: 30
                             height: 30
                             radius: 15                               ///< 圆形头像
-                            color: ThemeManager.secondaryBackgroundColor    ///< 使用主题次要背景色
+                            color: "white"                           ///< 不改变颜色
                             Layout.alignment: Qt.AlignVCenter        ///< 垂直居中对齐
+                            border.width: 1
+                            border.color: ThemeManager.borderColor
 
                             // 头像图标
                             // TODO：从用户信息中获取头像图标
@@ -248,8 +250,9 @@ Page {
         Rectangle {
             Layout.preferredWidth: 210
             Layout.fillHeight: true
-            color: "white"
-            border.width: 1
+            color: ThemeManager.backgroundColor
+                    border.width: 1
+                    border.color: ThemeManager.borderColor
 
             ColumnLayout {
                 anchors.fill: parent
@@ -545,13 +548,13 @@ Page {
                             anchors.top: parent.top
                             anchors.bottom: parent.bottom
                             width: Math.abs(delegateItem.swipeOffset)
-                            color: (model.isCompleted || false) ? "orange" : "green"
+                            color: (model.isCompleted || false) ? ThemeManager.warningColor : ThemeManager.successColor
                             visible: delegateItem.swipeOffset > 0
 
                             Text {
                                 anchors.centerIn: parent
                                 text: (model.isCompleted || false) ? "未完成" : "已完成"
-                                color: "white"
+                                color: ThemeManager.backgroundColor
                                 font.pixelSize: 14
                             }
 
@@ -583,7 +586,7 @@ Page {
                             anchors.top: parent.top
                             anchors.bottom: parent.bottom
                             width: Math.abs(delegateItem.swipeOffset)
-                            color: "red"
+                            color: ThemeManager.errorColor
                             visible: delegateItem.swipeOffset < 0
 
                             Text {
@@ -1768,6 +1771,7 @@ Page {
                 spacing: 12
                 Row {
                     spacing: 8
+                    Layout.alignment: Qt.AlignVCenter // 上下居中
                     Text {
                         text: "\ue8ef"
                         font.family: iconFont.name
@@ -1782,11 +1786,9 @@ Page {
                         anchors.verticalCenter: parent.verticalCenter
                     }
                 }
-                Switch {
+                CustomSwitch {
                     id: onlineSwitch
-                    leftPadding: 0
                     checked: todoSyncServer.isAutoSyncEnabled
-                    scale: 0.7
 
                     onCheckedChanged: {
                         if (checked && !userAuth.isLoggedIn) {

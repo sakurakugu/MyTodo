@@ -13,9 +13,11 @@ Page {
 
     // 应用代理设置函数
     function applyProxySettings() {
+        // 暂时注释掉，等NetworkRequest类注册到QML后再启用
+        /*
         if (!setting.getProxyEnabled()) {
             // 禁用代理
-            networkRequest.setProxyConfig(0, "", 0, "", ""); // NoProxy // TODO: 还没注册，到时候再看
+            networkRequest.setProxyConfig(0, "", 0, "", ""); // NoProxy 
         } else {
             var proxyType = setting.getProxyType();
             var host = setting.getProxyHost();
@@ -25,6 +27,13 @@ Page {
 
             networkRequest.setProxyConfig(proxyType, host, port, username, password);
         }
+        */
+        console.log("代理设置功能暂未实现");
+    }
+
+    background: Rectangle {
+        color: ThemeManager.backgroundColor
+        radius: 10  // 添加圆角
     }
 
     // 登录相关对话框组件
@@ -37,7 +46,7 @@ Page {
         id: titleBar
         height: 40
         width: parent.width
-        color: ThemeManager.backgroundColor
+        color: ThemeManager.secondaryBackgroundColor
         topLeftRadius: 10
         topRightRadius: 10
 
@@ -135,9 +144,9 @@ Page {
                     Rectangle {
                         Layout.preferredWidth: 40
                         Layout.preferredHeight: 40
-                        radius: Math.min(width, height) / 2            ///< 圆形头像
-                        color: ThemeManager.secondaryBackgroundColor   ///< 使用主题次要背景色
-                        Layout.alignment: Qt.AlignVCenter              ///< 垂直居中对齐
+                        radius: Math.min(width, height) / 2       ///< 圆形头像
+                        color: "white"                            ///< 不改变颜色
+                        Layout.alignment: Qt.AlignVCenter         ///< 垂直居中对齐
                         border.width: 1
                         border.color: ThemeManager.borderColor
 
@@ -146,7 +155,6 @@ Page {
                             anchors.centerIn: parent
                             text: "👤"                                ///< 默认用户图标
                             font.pixelSize: 18
-                            color: ThemeManager.textColor
                         }
                     }
 
@@ -164,67 +172,53 @@ Page {
 
             Divider {}
 
-            Label {
-                text: qsTr("外观设置")
-                font.bold: true
-                font.pixelSize: 16
-                color: ThemeManager.textColor
-            }
+                Layout.fillWidth: true
+                
+                Label {
+                    text: qsTr("外观设置")
+                    font.bold: true
+                    font.pixelSize: 16
+                    color: ThemeManager.textColor
+                }
 
-            Switch {
+
+            SwitchRow {
                 id: darkModeCheckBox
                 text: qsTr("深色模式")
                 checked: globalState.isDarkMode
                 enabled: !followSystemThemeCheckBox.checked
-
-                property bool isInitialized: false
-
-                Component.onCompleted: {
-                    isInitialized = true;
-                }
+                Layout.fillWidth: true
 
                 onCheckedChanged: {
-                    if (!isInitialized) {
-                        return; // 避免初始化时触发
-                    }
                     globalState.isDarkMode = checked;
                     // 保存设置到配置文件
                     setting.save("setting/isDarkMode", checked);
                 }
             }
 
-            Switch {
+            SwitchRow {
                 id: followSystemThemeCheckBox
                 text: qsTr("跟随系统深色模式")
                 checked: setting.get("setting/followSystemTheme", false)
 
-                property bool isInitialized: false
-
                 Component.onCompleted: {
-                    isInitialized = true;
                     if (checked) {
                         // 如果启用跟随系统，立即同步系统主题
                         var systemDarkMode = globalState.isSystemDarkMode;
                         if (globalState.isDarkMode !== systemDarkMode) {
-                            globalState.isDarkMode = systemDarkMode;
-                            setting.save("setting/isDarkMode", systemDarkMode);
+                            darkModeCheckBox.checked = systemDarkMode;
                         }
                     }
                 }
 
                 onCheckedChanged: {
-                    if (!isInitialized) {
-                        return; // 避免初始化时触发
-                    }
-
                     setting.save("setting/followSystemTheme", checked);
 
                     if (checked) {
                         // 启用跟随系统时，立即同步系统主题
                         var systemDarkMode = globalState.isSystemDarkMode;
                         if (globalState.isDarkMode !== systemDarkMode) {
-                            globalState.isDarkMode = systemDarkMode;
-                            setting.save("setting/isDarkMode", systemDarkMode);
+                            darkModeCheckBox.checked = systemDarkMode;
                         }
                     }
                 }
@@ -236,15 +230,14 @@ Page {
                         if (followSystemThemeCheckBox.checked) {
                             var systemDarkMode = globalState.isSystemDarkMode;
                             if (globalState.isDarkMode !== systemDarkMode) {
-                                globalState.isDarkMode = systemDarkMode;
-                                setting.save("setting/isDarkMode", systemDarkMode);
+                                darkModeCheckBox.checked = systemDarkMode;
                             }
                         }
                     }
                 }
             }
 
-            Switch {
+            SwitchRow {
                 id: preventDraggingCheckBox
                 text: qsTr("防止拖动窗口（小窗口模式）")
                 checked: settingPage.preventDragging
@@ -255,7 +248,7 @@ Page {
                 }
             }
 
-            Switch {
+            SwitchRow {
                 id: autoStartSwitch
                 text: qsTr("开机自启动")
                 checked: globalState.isAutoStartEnabled()
@@ -264,22 +257,12 @@ Page {
                 }
             }
 
-            Switch {
+            SwitchRow {
                 id: autoSyncSwitch
                 text: !todoManager.isLoggedIn ? qsTr("自动同步（未登录）") : qsTr("自动同步")
                 checked: todoSyncServer.isAutoSyncEnabled
 
-                property bool isInitialized: false
-
-                Component.onCompleted: {
-                    isInitialized = true;
-                }
-
                 onCheckedChanged: {
-                    if (!isInitialized) {
-                        return; // 避免初始化时触发
-                    }
-
                     if (checked && !todoManager.isLoggedIn) {
                         // 如果要开启自动同步但未登录，显示提示并重置开关
                         autoSyncSwitch.checked = false;
@@ -301,7 +284,7 @@ Page {
                     width: 12
                     height: 12
                     radius: 6
-                    color: todoManager.isOnline ? "#4CAF50" : "#F44336"
+                    color: todoManager.isOnline ? ThemeManager.successColor : ThemeManager.errorColor
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
@@ -313,21 +296,12 @@ Page {
                 color: ThemeManager.textColor
             }
 
-            Switch {
+            SwitchRow {
                 id: proxyEnabledSwitch
                 text: qsTr("启用代理")
                 checked: setting.getProxyEnabled()
 
-                property bool isInitialized: false
-
-                Component.onCompleted: {
-                    isInitialized = true;
-                }
-
                 onCheckedChanged: {
-                    if (!isInitialized) {
-                        return;
-                    }
                     setting.setProxyEnabled(checked);
                     // 应用代理设置
                     applyProxySettings();
@@ -340,16 +314,7 @@ Page {
                 model: [qsTr("不使用代理"), qsTr("系统代理"), qsTr("HTTP代理"), qsTr("SOCKS5代理")]
                 currentIndex: setting.getProxyType()
 
-                property bool isInitialized: false
-
-                Component.onCompleted: {
-                    isInitialized = true;
-                }
-
                 onCurrentIndexChanged: {
-                    if (!isInitialized) {
-                        return;
-                    }
                     setting.setProxyType(currentIndex);
                     applyProxySettings();
                 }
@@ -490,7 +455,7 @@ Page {
                 Button {
                     text: qsTr("导出待办事项")
                     background: Rectangle {
-                        color: "#27ae60"
+                        color: ThemeManager.successColor
                         radius: 4
                     }
                     onClicked: exportFileDialog.open()
@@ -499,7 +464,7 @@ Page {
                 Button {
                     text: qsTr("导入待办事项")
                     background: Rectangle {
-                        color: "#3498db"
+                        color: ThemeManager.infoColor
                         radius: 4
                     }
                     onClicked: importFileDialog.open()
@@ -675,7 +640,7 @@ Page {
             defaultSuffix: "json"
             selectedFile: {
                 var now = new Date();
-                var dateStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0') + "_" + String(now.getHours()).padStart(2, '0') + "-" + String(now.getMinutes()).padStart(2, '0');
+                var dateStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0') + "_" + String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
                 return "file:///" + "MyTodo_导出_" + dateStr + ".json";
             }
             onAccepted: {
