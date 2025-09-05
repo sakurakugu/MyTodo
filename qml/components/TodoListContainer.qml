@@ -67,7 +67,7 @@ ColumnLayout {
     // 搜索栏和工具栏
     Rectangle {
         Layout.fillWidth: true
-        Layout.preferredHeight: 67
+        Layout.preferredHeight: 68
         color: ThemeManager.backgroundColor
 
         // 窗口拖拽处理区域

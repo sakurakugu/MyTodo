@@ -246,6 +246,7 @@ Page {
             Layout.fillHeight: true
             border.width: 1
             border.color: ThemeManager.borderColor
+            color: ThemeManager.backgroundColor
             topRightRadius: 10
             bottomRightRadius: 10
 
@@ -317,6 +318,16 @@ Page {
                     id: detailTitleBar
                     Layout.fillWidth: true
                     Layout.preferredHeight: 40
+                    color: ThemeManager.backgroundColor
+
+                    // 左边框
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        width: 1
+                        color: ThemeManager.borderColor
+                    }
 
                     // 窗口拖拽处理区域
                     WindowDragHandler {
@@ -326,22 +337,20 @@ Page {
 
                     RowLayout {
                         anchors.fill: parent
-
-                        Item {
-                            Layout.preferredWidth: 8
-                        }
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
 
                         // 标题栏输入框
-                        TextInput {
+                        CustomTextInput {
                             id: titleField
                             text: selectedTodo ? (selectedTodo.title || "无标题") : "选择一个待办事项"
                             font.pixelSize: 18
-                            font.bold: true
-                            color: ThemeManager.textColor
-                            Layout.fillWidth: true
-                            selectByMouse: true // 点击后可以选中文本
-                            enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done" // 只有选中待办事项且不在回收站或已完成模式时才能编辑
                             Layout.fillHeight: true
+                            Layout.fillWidth: true
+                            font.bold: true
+                            enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done" // 只有选中待办事项且不在回收站或已完成模式时才能编辑
+                            borderWidth: 0
+                            backgroundColor: "transparent"
 
                             // 保存标题的函数
                             function saveTitleIfChanged() {
@@ -353,24 +362,11 @@ Page {
                                 }
                             }
 
-                            // 按回车键保存并移动焦点
-                            Keys.onReturnPressed: {
+                            // 编辑完成后保存并移动焦点
+                            onEditingFinished: {
                                 saveTitleIfChanged();
-                                // TODO: 将焦点移动到详情区域
-                                focus = false;
-                            }
-
-                            Keys.onEnterPressed: {
-                                saveTitleIfChanged();
-                                // TODO: 将焦点移动到详情区域
-                                focus = false;
-                            }
-
-                            // 失去焦点时保存
-                            onActiveFocusChanged: {
-                                if (!activeFocus) {
-                                    saveTitleIfChanged();
-                                }
+                                // 将焦点移动到详情TextEdit
+                                descriptionField.forceActiveFocus();
                             }
                         }
 
@@ -382,6 +378,15 @@ Page {
                                 detailArea.drawerVisible = !detailArea.drawerVisible;
                             }
                         }
+                    }
+
+                    // 右边框
+                    Rectangle {
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        width: 1
+                        color: ThemeManager.borderColor
                     }
 
                     // 底部边框
@@ -400,218 +405,161 @@ Page {
                     Layout.preferredHeight: {
                         if (!selectedTodo)
                             return 0;
-                        // 基础高度 + 重复信息行高度
-                        return 64;
+                        return 32;
                     }
                     visible: selectedTodo !== null
                     color: ThemeManager.backgroundColor
-                    border.width: 1
-                    border.color: ThemeManager.borderColor
 
-                    ColumnLayout {
+                    // 左边框
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        width: 1
+                        color: ThemeManager.borderColor
+                    }
+
+                    // 时间和分类行
+                    RowLayout {
                         anchors.fill: parent
-                        anchors.margins: 8
-                        spacing: 4
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 16
 
-                        // 时间和分类行
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Layout.alignment: Qt.AlignVCenter
-                            spacing: 16
+                        // 时间显示
+                        Text {
+                            text: isCreatedText ? createdText : timeText
+                            font.pixelSize: 12
+                            color: ThemeManager.textColor
+                            verticalAlignment: Text.AlignVCenter
+                            Layout.alignment: Qt.AlignLeft
+                            Layout.leftMargin: 8
 
-                            // 时间显示
-                            Text {
-                                property bool isCreatedText: false
-                                property string timeText: {
-                                    if (!selectedTodo)
-                                        return "";
-                                    if (todoFilter.currentFilter === "recycle") {
-                                        return selectedTodo.deletedAt ? "删除时间: " + Qt.formatDateTime(selectedTodo.deletedAt, "yyyy-MM-dd hh:mm") : "";
-                                    } else if (todoFilter.currentFilter === "done") {
-                                        return selectedTodo.completedAt ? "完成时间: " + Qt.formatDateTime(selectedTodo.completedAt, "yyyy-MM-dd hh:mm") : "";
-                                    } else {
-                                        return selectedTodo.lastModifiedAt ? "修改时间: " + Qt.formatDateTime(selectedTodo.lastModifiedAt, "yyyy-MM-dd hh:mm") : "";
-                                    }
-                                }
-                                property string createdText: {
-                                    if (!selectedTodo)
-                                        return "";
-                                    return selectedTodo.createdAt ? "创建时间: " + Qt.formatDateTime(selectedTodo.createdAt, "yyyy-MM-dd hh:mm") : "";
-                                }
-                                text: isCreatedText ? createdText : timeText
-                                font.pixelSize: 12
-                                color: ThemeManager.textColor
-                                Layout.fillWidth: true
-                                verticalAlignment: Text.AlignVCenter
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    // 点击时切换时间显示
-                                    onClicked: {
-                                        parent.isCreatedText = !parent.isCreatedText;
-                                    }
-                                    // 悬浮时切换时间显示
-                                    onEntered: {
-                                        parent.isCreatedText = true;
-                                    }
-                                    // 离开时切换时间显示
-                                    onExited: {
-                                        parent.isCreatedText = false;
-                                    }
+                            property bool isCreatedText: false
+                            property string timeText: {
+                                if (!selectedTodo)
+                                    return "";
+                                if (todoFilter.currentFilter === "recycle") {
+                                    return selectedTodo.deletedAt ? "删除时间: " + Qt.formatDateTime(selectedTodo.deletedAt, "yyyy-MM-dd hh:mm") : "";
+                                } else if (todoFilter.currentFilter === "done") {
+                                    return selectedTodo.completedAt ? "完成时间: " + Qt.formatDateTime(selectedTodo.completedAt, "yyyy-MM-dd hh:mm") : "";
+                                } else {
+                                    return selectedTodo.lastModifiedAt ? "修改时间: " + Qt.formatDateTime(selectedTodo.lastModifiedAt, "yyyy-MM-dd hh:mm") : "";
                                 }
                             }
+                            property string createdText: {
+                                if (!selectedTodo)
+                                    return "";
+                                return selectedTodo.createdAt ? "创建时间: " + Qt.formatDateTime(selectedTodo.createdAt, "yyyy-MM-dd hh:mm") : "";
+                            }
 
-                            // 分类显示和选择
-                            RowLayout {
-                                spacing: 8
-                                Layout.alignment: Qt.AlignVCenter
-
-                                // TODO: 改成图标
-                                Text {
-                                    text: "分类:"
-                                    font.pixelSize: 12
-                                    color: ThemeManager.textColor
-                                    verticalAlignment: Text.AlignVCenter
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                // 点击时切换时间显示
+                                onClicked: {
+                                    parent.isCreatedText = !parent.isCreatedText;
                                 }
-
-                                CustomButton {
-                                    text: {
-                                        if (!selectedTodo)
-                                            return "未分类";
-                                        return selectedTodo.category || "未分类";
-                                    }
-                                    font.pixelSize: 12
-                                    Layout.preferredHeight: 30
-                                    enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
-                                    onClicked: {
-                                        var pos = mapToItem(null, 0, height);
-                                        todoCategoryManager.popup(pos.x, pos.y, false);
-                                    }
-                                    is2ndColor: true
+                                // 悬浮时切换时间显示
+                                onEntered: {
+                                    parent.isCreatedText = true;
+                                }
+                                // 离开时切换时间显示
+                                onExited: {
+                                    parent.isCreatedText = false;
                                 }
                             }
                         }
 
-                        // 待办事项属性编辑区域（移除，改为抽屉显示）
+                        Item {
+                            Layout.fillWidth: true
+                        }
+
+                        // 分类显示和选择
+                        RowLayout {
+                            Layout.rightMargin: 8
+                            spacing: 8
+
+                            // TODO: 改成图标
+                            Text {
+                                text: "分类:"
+                                font.pixelSize: 12
+                                color: ThemeManager.textColor
+                                verticalAlignment: Text.AlignVCenter
+                            }
+
+                            CustomButton {
+                                text: {
+                                    if (!selectedTodo)
+                                        return "未分类";
+                                    return selectedTodo.category || "未分类";
+                                }
+                                font.pixelSize: 12
+                                implicitHeight: 30
+                                implicitWidth: 70
+                                enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                                onClicked: {
+                                    var pos = mapToItem(null, 0, height);
+                                    todoCategoryManager.popup(pos.x, pos.y, false);
+                                }
+                                is2ndColor: true
+                            }
+                        }
+                    }
+
+                    // 右边框
+                    Rectangle {
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        width: 1
+                        color: ThemeManager.borderColor
+                    }
+
+                    // 底部边框
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        height: 1
+                        color: ThemeManager.borderColor
                     }
                 }
 
                 // 详情内容
-                Rectangle {
-                    id: container
+                CustomTextEdit {
+                    id: descriptionField
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    Layout.margins: 16
-                    color: ThemeManager.backgroundColor
-                    radius: 6
-                    border.color: ThemeManager.borderColor
-                    border.width: 1
+                    Layout.margins: 8
+                    placeholderText: qsTr("输入详情")
+                    text: selectedTodo ? (selectedTodo.description || "") : ""
+                    wrapMode: TextEdit.WrapAnywhere
+                    enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
 
-                    property var selectedTodo
+                    onEditingFinished: {
+                        saveDescriptionIfChanged();
+                    }
 
-                    ScrollView {
-                        id: scrollArea
-                        visible: selectedTodo !== null
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        clip: true
-
-                        TextEdit {
-                            id: descriptionField
-                            width: parent.width
-                            height: Math.max(contentHeight + topPadding + bottomPadding, 100)
-                            leftPadding: 8
-                            rightPadding: 8
-                            topPadding: 8
-                            bottomPadding: 8
-                            text: selectedTodo ? (selectedTodo.description || "") : ""
-                            font.pixelSize: 14
-                            color: ThemeManager.textColor
-                            wrapMode: TextEdit.WrapAnywhere
-                            selectByMouse: true
-                            selectByKeyboard: true
-                            enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
-
-                            function saveDescriptionIfChanged() {
-                                if (selectedTodo && text !== selectedTodo.description) {
-                                    todoManager.updateTodo(selectedTodo.index, "description", text);
-                                    selectedTodo.description = text;
-                                    dirty = false;
-                                }
-                            }
-
-                            // 防抖保存机制
-                            property bool dirty: false
-                            Timer {
-                                id: saveTimer
-                                interval: 1000
-                                running: false
-                                repeat: false
-                                onTriggered: {
-                                    if (descriptionField.dirty)
-                                        descriptionField.saveDescriptionIfChanged();
-                                }
-                            }
-
-                            onTextChanged: {
-                                dirty = true;
-                                saveTimer.restart();
-                            }
-
-                            // Ctrl+Enter 保存并失焦
-                            Keys.onPressed: function (event) {
-                                if (event.modifiers & Qt.ControlModifier) {
-                                    switch (event.key) {
-                                    case Qt.Key_Return:
-                                    case Qt.Key_Enter:
-                                        saveDescriptionIfChanged();
-                                        focus = false;
-                                        event.accepted = true;
-                                        break;
-                                    case Qt.Key_Z:
-                                        undo();
-                                        event.accepted = true;
-                                        break;
-                                    case Qt.Key_Y:
-                                        redo();
-                                        event.accepted = true;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            // 失焦保存
-                            onActiveFocusChanged: {
-                                if (!activeFocus && dirty) {
-                                    saveDescriptionIfChanged();
-                                }
-                            }
-
-                            // 根据只读状态更新样式
-                            Component.onCompleted: updateStyle()
-                            onEnabledChanged: updateStyle()
-                            function updateStyle() {
-                                if (enabled) {
-                                    color = ThemeManager.textColor;
-                                } else {
-                                    color = ThemeManager.disabledTextColor || ThemeManager.textColor;
-                                }
-                            }
+                    function saveDescriptionIfChanged() {
+                        if (selectedTodo && text !== selectedTodo.description) {
+                            todoManager.updateTodo(selectedTodo.index, "description", text);
+                            selectedTodo.description = text;
                         }
                     }
                 }
 
                 // 工具栏
+                // TODO: 还有好多没实现
                 Rectangle {
                     Layout.fillWidth: true
-                    height: 30
+                    height: 20
                     color: "transparent"
                     visible: selectedTodo !== null
 
                     Row {
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
+                        anchors.rightMargin: 8
                         spacing: 10
 
                         // 字数显示
@@ -652,7 +600,7 @@ Page {
             Rectangle {
                 id: drawer
                 anchors.top: parent.top
-                anchors.topMargin: titleBar.height + detailTitleBar.height
+                anchors.topMargin: titleBar.height + detailTitleBar.height - 1
                 anchors.bottom: parent.bottom
                 width: 300
                 color: ThemeManager.backgroundColor

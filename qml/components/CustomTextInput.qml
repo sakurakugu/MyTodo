@@ -31,7 +31,7 @@ Item {
     property alias verticalAlignment: textInput.verticalAlignment ///< 垂直对齐方式
     property alias selectByMouse: textInput.selectByMouse       ///< 是否可以通过鼠标选择文本
     property alias activeFocusOnPress: textInput.activeFocusOnPress ///< 点击时是否获得焦点
-    
+
     property string errorMessage: ""                            ///< 错误信息
     property bool isValid: true                                 ///< 输入是否有效
     property int radius: 4                                      ///< 圆角半径
@@ -44,7 +44,7 @@ Item {
     property int rightPadding: 10                               ///< 右内边距
     property int topPadding: 5                                  ///< 上内边距
     property int bottomPadding: 5                               ///< 下内边距
-    
+
     // 图标相关属性
     property string leftIcon: ""                               ///< 左侧图标（iconfont编码）
     property string rightIcon: ""                                ///< 右侧图标（iconfont编码）
@@ -52,15 +52,14 @@ Item {
     property int iconSize: 16                                   ///< 图标大小
     property string iconFont: "iconfont"                        ///< 图标字体
     property int iconMargin: 10                                 ///< 图标边距
-    
+
     // 图标信号
-    signal leftIconClicked()                                    ///< 左侧图标点击信号
-    signal rightIconClicked()                                   ///< 右侧图标点击信号
+    signal leftIconClicked                                    ///< 左侧图标点击信号
+    signal rightIconClicked                                   ///< 右侧图标点击信号
 
     // 信号
-    signal accepted()                                           ///< 输入确认信号（回车键）
-    signal editingFinished()                                    ///< 编辑完成信号（失去焦点）
-    signal textEdited()                                         ///< 文本编辑信号
+    signal editingFinished                                    ///< 编辑完成信号（失去焦点）
+    signal textEdited                                         ///< 文本编辑信号
 
     // 尺寸设置
     implicitWidth: 200
@@ -104,12 +103,7 @@ Item {
         selectByMouse: true
         verticalAlignment: TextInput.AlignVCenter
 
-        // 处理回车键
-        Keys.onReturnPressed: {
-            root.accepted();
-        }
-
-        // 处理编辑完成
+        // 处理编辑完成（包含2个回车键）
         onEditingFinished: {
             root.editingFinished();
         }
@@ -135,7 +129,7 @@ Item {
         visible: !textInput.text && !textInput.activeFocus
         elide: Text.ElideRight
     }
-    
+
     // 左侧图标
     Text {
         id: leftIconItem
@@ -147,14 +141,14 @@ Item {
         anchors.left: parent.left
         anchors.leftMargin: root.leftPadding
         anchors.verticalCenter: parent.verticalCenter
-        
+
         MouseArea {
             anchors.fill: parent
             anchors.margins: -5  // 扩大点击区域
             onClicked: root.leftIconClicked()
         }
     }
-    
+
     // 右侧图标
     Text {
         id: rightIconItem
@@ -166,7 +160,7 @@ Item {
         anchors.right: parent.right
         anchors.rightMargin: root.rightPadding
         anchors.verticalCenter: parent.verticalCenter
-        
+
         MouseArea {
             anchors.fill: parent
             anchors.margins: -5  // 扩大点击区域
@@ -209,7 +203,7 @@ Item {
             root.errorMessage = qsTr("请输入内容");
             return false;
         }
-        
+
         root.isValid = true;
         root.errorMessage = "";
         return true;
