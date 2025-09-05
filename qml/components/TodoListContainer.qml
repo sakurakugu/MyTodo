@@ -28,11 +28,11 @@ ColumnLayout {
         if (daysDiff === 0) {
             // 小于1分钟
             if (minutesDiff < 1) {
-                return "刚刚";
+                return qsTr("刚刚");
             } else
             // 小于1小时
             if (hoursDiff < 1) {
-                return minutesDiff + "分钟前";
+                return minutesDiff + qsTr("分钟前");
             } else
             // 显示具体时间
             {
@@ -43,11 +43,11 @@ ColumnLayout {
         } else
         // 昨天
         if (daysDiff === 1) {
-            return "昨天";
+            return qsTr("昨天");
         } else
         // 前天
         if (daysDiff === 2) {
-            return "前天";
+            return qsTr("前天");
         } else
         // 今年内
         if (date.getFullYear() === now.getFullYear()) {
@@ -88,7 +88,7 @@ ColumnLayout {
                 leftIcon: "\ue8f2"  // 使用内置的左侧图标功能
                 implicitWidth: parent.width - addButton.width - parent.spacing
                 implicitHeight: 30
-                placeholderText: "搜索"
+                placeholderText: qsTr("搜索")
                 selectByMouse: true
                 verticalAlignment: TextInput.AlignVCenter
                 onTextChanged: {
@@ -100,7 +100,7 @@ ColumnLayout {
             IconButton {
                 id: addButton
                 text: "\ue8e1"
-                onClicked: todoManager.addTodo("新的待办事项")
+                onClicked: todoManager.addTodo(qsTr("新的待办事项"))
 
                 backgroundItem.radius: 4
                 backgroundItem.border.width: 1
@@ -412,7 +412,7 @@ ColumnLayout {
 
                 Text {
                     anchors.centerIn: parent
-                    text: (model.isCompleted || false) ? "未完成" : "已完成"
+                    text: (model.isCompleted || false) ? qsTr("未完成") : qsTr("已完成")
                     color: ThemeManager.backgroundColor
                     font.pixelSize: 14
                 }
@@ -450,7 +450,7 @@ ColumnLayout {
 
                 Text {
                     anchors.centerIn: parent
-                    text: "删除"
+                    text: qsTr("删除")
                     color: "white"
                     font.pixelSize: 14
                 }

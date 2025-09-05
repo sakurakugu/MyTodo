@@ -343,7 +343,7 @@ Page {
                         // 标题栏输入框
                         CustomTextInput {
                             id: titleField
-                            text: selectedTodo ? (selectedTodo.title || "无标题") : "选择一个待办事项"
+                            text: selectedTodo ? (selectedTodo.title || qsTr("无标题")) : qsTr("选择一个待办事项")
                             font.pixelSize: 18
                             Layout.fillHeight: true
                             Layout.fillWidth: true
@@ -439,17 +439,17 @@ Page {
                                 if (!selectedTodo)
                                     return "";
                                 if (todoFilter.currentFilter === "recycle") {
-                                    return selectedTodo.deletedAt ? "删除时间: " + Qt.formatDateTime(selectedTodo.deletedAt, "yyyy-MM-dd hh:mm") : "";
+                                    return selectedTodo.deletedAt ? qsTr("删除时间: ") + Qt.formatDateTime(selectedTodo.deletedAt, "yyyy-MM-dd hh:mm") : "";
                                 } else if (todoFilter.currentFilter === "done") {
-                                    return selectedTodo.completedAt ? "完成时间: " + Qt.formatDateTime(selectedTodo.completedAt, "yyyy-MM-dd hh:mm") : "";
+                                    return selectedTodo.completedAt ? qsTr("完成时间: ") + Qt.formatDateTime(selectedTodo.completedAt, "yyyy-MM-dd hh:mm") : "";
                                 } else {
-                                    return selectedTodo.lastModifiedAt ? "修改时间: " + Qt.formatDateTime(selectedTodo.lastModifiedAt, "yyyy-MM-dd hh:mm") : "";
+                                    return selectedTodo.lastModifiedAt ? qsTr("修改时间: ") + Qt.formatDateTime(selectedTodo.lastModifiedAt, "yyyy-MM-dd hh:mm") : "";
                                 }
                             }
                             property string createdText: {
                                 if (!selectedTodo)
                                     return "";
-                                return selectedTodo.createdAt ? "创建时间: " + Qt.formatDateTime(selectedTodo.createdAt, "yyyy-MM-dd hh:mm") : "";
+                                return selectedTodo.createdAt ? qsTr("创建时间: ") + Qt.formatDateTime(selectedTodo.createdAt, "yyyy-MM-dd hh:mm") : "";
                             }
 
                             MouseArea {
@@ -481,7 +481,7 @@ Page {
 
                             // TODO: 改成图标
                             Text {
-                                text: "分类:"
+                                text: qsTr("分类:")
                                 font.pixelSize: 12
                                 color: ThemeManager.textColor
                                 verticalAlignment: Text.AlignVCenter
@@ -490,8 +490,8 @@ Page {
                             CustomButton {
                                 text: {
                                     if (!selectedTodo)
-                                        return "未分类";
-                                    return selectedTodo.category || "未分类";
+                                        return qsTr("未分类");
+                                    return selectedTodo.category || qsTr("未分类");
                                 }
                                 font.pixelSize: 12
                                 implicitHeight: 30
@@ -564,7 +564,7 @@ Page {
 
                         // 字数显示
                         Text {
-                            text: descriptionField.text.length + " 字符"
+                            text: descriptionField.text.length + " " + qsTr("字符")
                             font.pixelSize: 12
                             color: ThemeManager.textColor
                             opacity: 0.7
@@ -629,7 +629,7 @@ Page {
                         Layout.fillWidth: true
 
                         Text {
-                            text: "详细设置"
+                            text: qsTr("详细设置")
                             font.pixelSize: 16
                             font.bold: true
                             color: ThemeManager.textColor
@@ -670,7 +670,7 @@ Page {
                                     fontSize: 18
                                 }
                                 Text {
-                                    text: "分类:"
+                                    text: qsTr("分类:")
                                     font.pixelSize: 16
                                     color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
@@ -679,8 +679,8 @@ Page {
                                 CustomButton {
                                     text: {
                                         if (!selectedTodo)
-                                            return "未分类";
-                                        return selectedTodo.category || "未分类";
+                                            return qsTr("未分类");
+                                        return selectedTodo.category || qsTr("未分类");
                                     }
                                     font.pixelSize: 12
                                     implicitHeight: 40
@@ -704,7 +704,7 @@ Page {
                                 }
 
                                 Text {
-                                    text: "截止日期:"
+                                    text: qsTr("截止日期:")
                                     font.pixelSize: 16
                                     color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
@@ -713,9 +713,9 @@ Page {
                                 CustomButton {
                                     id: drawerDeadlineField
                                     text: {
-                                        if (selectedTodo.deadline && !isNaN(selectedTodo.deadline.getTime()))
+                                        if (selectedTodo && selectedTodo.deadline && !isNaN(selectedTodo.deadline.getTime()))
                                             return Qt.formatDateTime(selectedTodo.deadline, "yyyy-MM-dd hh:mm");
-                                        return "点击选择日期";
+                                        return qsTr("点击选择日期");
                                     }
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     font.pixelSize: 12
@@ -741,7 +741,7 @@ Page {
                                 }
 
                                 Text {
-                                    text: "重复:"
+                                    text: qsTr("重复:")
                                     font.pixelSize: 16
                                     color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
@@ -772,7 +772,7 @@ Page {
                                 }
 
                                 Text {
-                                    text: "共"
+                                    text: qsTr("共")
                                     font.pixelSize: 16
                                     color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
@@ -796,7 +796,7 @@ Page {
                                 }
 
                                 Text {
-                                    text: "次"
+                                    text: qsTr("次")
                                     font.pixelSize: 16
                                     color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
@@ -813,7 +813,7 @@ Page {
                                 }
 
                                 Text {
-                                    text: "开始日期:"
+                                    text: qsTr("开始日期:")
                                     font.pixelSize: 16
                                     color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
@@ -822,9 +822,9 @@ Page {
                                 CustomButton {
                                     id: drawerStartDateField
                                     text: {
-                                        if (selectedTodo.recurrenceStartDate && !isNaN(selectedTodo.recurrenceStartDate.getTime()))
+                                        if (selectedTodo && selectedTodo.recurrenceStartDate && !isNaN(selectedTodo.recurrenceStartDate.getTime()))
                                             return Qt.formatDate(selectedTodo.recurrenceStartDate, "yyyy-MM-dd");
-                                        return "点击选择日期";
+                                        return qsTr("点击选择日期");
                                     }
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     font.pixelSize: 12
@@ -851,7 +851,7 @@ Page {
 
                                 CustomCheckBox {
                                     id: drawerCompletedCheckBox
-                                    text: "已完成:"
+                                    text: qsTr("已完成:")
                                     checked: selectedTodo && selectedTodo.completed !== undefined ? selectedTodo.completed : false
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle"
                                     fontSize: 16
@@ -879,7 +879,7 @@ Page {
 
                                 CustomCheckBox {
                                     id: drawerImportantCheckBox
-                                    text: "重要:"
+                                    text: qsTr("重要:")
                                     checked: selectedTodo && selectedTodo.important !== undefined ? selectedTodo.important : false
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     fontSize: 16
@@ -906,14 +906,14 @@ Page {
                                 }
 
                                 Text {
-                                    text: "删除:"
+                                    text: qsTr("删除:")
                                     font.pixelSize: 16
                                     color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
                                 CustomButton {
-                                    text: "删除"
+                                    text: qsTr("删除")
                                     font.pixelSize: 16
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     backgroundColor: ThemeManager.errorColor

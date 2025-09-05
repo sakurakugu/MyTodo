@@ -28,7 +28,7 @@ Item {
     property bool enabled: true
     property string icon: ""
     property string text: ""
-    property string buttonText: "按钮"
+    property string buttonText: qsTr("按钮")
     property var comboBoxModel: []
     property int currentIndex: 0
     property int spinBoxValue: 0
@@ -41,7 +41,7 @@ Item {
     // 信号
     signal toggled(bool checked)
     signal clicked()
-    signal currentIndexChanged(int index)
+    signal indexChanged(int index)
     signal valueChanged(int value)
     signal customControlSignal(var data)
 
@@ -162,7 +162,7 @@ Item {
             enabled: root.enabled
             onCurrentIndexChanged: {
                 root.currentIndex = currentIndex
-                root.currentIndexChanged(currentIndex)
+                root.indexChanged(currentIndex)
             }
         }
     }

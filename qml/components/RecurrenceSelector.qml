@@ -31,10 +31,12 @@ RowLayout {
 
     // 预设选项数据
     property var presetOptions: [
-        { text: "∞", value: -999, description: "永不重复" },
-        { text: "每年", value: -365, description: "每年重复" },
-        { text: "每月", value: -30, description: "每月重复" },
-        { text: "每天", value: -1, description: "每天重复" }
+        { text: qsTr("不重复"), value: 0, description: qsTr("永不重复") },
+        { text: qsTr("每天"), value: -1, description: qsTr("每天重复") },
+        { text: qsTr("每周"), value: -7, description: qsTr("每周重复") },
+        { text: qsTr("每月"), value: -30, description: qsTr("每月重复") },
+        { text: qsTr("每年"), value: -365, description: qsTr("每年重复") },
+        { text: qsTr("永远"), value: -999, description: qsTr("一直重复") },
     ]
 
     // 内部状态
@@ -68,15 +70,15 @@ RowLayout {
             }
         }
         if (value > 0) {
-            return "每" + value + "天重复";
+            return qsTr("每") + value + qsTr("天重复");
         }
-        return "不重复";
+        return qsTr("不重复");
     }
 
     // 下拉选择框
     CustomComboBox {
         id: comboBox
-        Layout.preferredWidth: 80
+        Layout.preferredWidth: 90
         Layout.preferredHeight: 25
         enabled: root.enabled
 
@@ -88,7 +90,7 @@ RowLayout {
                 items.push(presetOptions[i].text);
             }
             // 添加自定义选项
-            items.push("自定义");
+            items.push(qsTr("自定义"));
             return items;
         }
 
@@ -100,25 +102,31 @@ RowLayout {
                 }
             }
             // 如果是自定义值（大于0），选择"自定义"选项
-            if (root.value > 0) {
+            if (root.value >= 0) {
                 return presetOptions.length; // "自定义"选项的索引
             }
             return 0; // 默认选择第一个选项
         }
 
         onCurrentIndexChanged: {
-            if (currentIndex < presetOptions.length) {
+            // 防止绑定循环：只有当用户主动选择时才更新值
+            if (currentIndex >= 0 && currentIndex < presetOptions.length) {
                 // 选择了预设选项
                 let newValue = presetOptions[currentIndex].value;
                 if (newValue !== root.value) {
-                    root.value = newValue;
-                    root.intervalChanged(newValue);
+                    // 临时断开绑定以避免循环
+                    Qt.callLater(function () {
+                        root.value = newValue;
+                        root.intervalChanged(newValue);
+                    });
                 }
-            } else {
+            } else if (currentIndex === presetOptions.length) {
                 // 选择了"自定义"选项
                 if (root.value <= 0) {
-                    root.value = 1;
-                    root.intervalChanged(1);
+                    Qt.callLater(function () {
+                        root.value = 1;
+                        root.intervalChanged(1);
+                    });
                 }
             }
         }
@@ -131,9 +139,9 @@ RowLayout {
         Layout.preferredHeight: 25
         visible: root.isCustomMode
         enabled: root.enabled && root.isCustomMode
-        from: 1
+        from: 0
         to: 365
-        value: root.value > 0 ? root.value : 1
+        value: root.value >= 0 ? root.value : 0
         stepSize: 1
 
         onValueChanged: {
@@ -146,7 +154,7 @@ RowLayout {
 
     // 描述文本
     Text {
-        text: root.isCustomMode ? "天重复" : getCurrentDescription()
+        text: root.isCustomMode ? qsTr("天重复") : getCurrentDescription()
         font.pixelSize: 16
         color: root.textColor
         verticalAlignment: Text.AlignVCenter
@@ -163,7 +171,7 @@ RowLayout {
                 break;
             }
         }
-        
+
         if (foundIndex >= 0) {
             if (comboBox.currentIndex !== foundIndex) {
                 comboBox.currentIndex = foundIndex;

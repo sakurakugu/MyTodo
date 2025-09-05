@@ -82,7 +82,7 @@ Window {
     }
 
     // 各种页面
-    // // 测试页面
+    // 测试页面
     // TestPage {
     //     id: testPage
     //     root: root

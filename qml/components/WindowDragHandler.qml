@@ -47,7 +47,7 @@ MouseArea {
      */
     onPressed: function (mouse) {
         if (!targetWindow) {
-            console.warn("未设置目标窗口，无法处理拖拽事件");
+            console.warn(qsTr("未设置目标窗口，无法处理拖拽事件"));
             return;
         }
 
