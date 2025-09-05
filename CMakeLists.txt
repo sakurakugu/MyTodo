@@ -9,7 +9,7 @@ cmake_minimum_required(VERSION 3.16)
 
 # 项目基本信息
 project(MyTodo 
-    VERSION 0.2.0
+    VERSION 0.3.0
     DESCRIPTION "待办事项管理应用"
     HOMEPAGE_URL "https://github.com/sakurakugu/MyTodo"
     LANGUAGES CXX
@@ -113,7 +113,6 @@ set(QML_COMPONENT_FILES
     qml/components/CustomSpinBox.qml               # 自定义数字输入框
     qml/components/CustomTextEdit.qml              # 自定义文本编辑框
     qml/components/CustomCheckBox.qml              # 自定义复选框
-    qml/components/SwitchRow.qml                    # 自定义开关行
     qml/components/ControlRow.qml                   # 自定义控件行
 
 

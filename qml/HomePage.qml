@@ -1039,12 +1039,13 @@ Page {
             id: onlineToggleItem
             contentItem: RowLayout {
                 spacing: 12
-                SwitchRow {
+                ControlRow {
                     spacing: 8
                     icon: "\ue8ef"
                     text: qsTr("自动同步")
                     Layout.alignment: Qt.AlignVCenter // 上下居中
                     checked: todoSyncServer.isAutoSyncEnabled
+                    controlType: ControlRow.ControlType.Switch
 
                     onCheckedChanged: {
                         if (checked) {

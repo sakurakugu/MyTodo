@@ -102,12 +102,13 @@ Page {
                 color: ThemeManager.textColor
             }
 
-            SwitchRow {
+            ControlRow {
                 id: darkModeCheckBox
                 text: qsTr("深色模式")
                 checked: globalState.isDarkMode
                 enabled: !followSystemThemeCheckBox.checked
                 leftMargin: 10
+                controlType: ControlRow.ControlType.Switch
 
                 onCheckedChanged: {
                     globalState.isDarkMode = checked;
@@ -116,11 +117,12 @@ Page {
                 }
             }
 
-            SwitchRow {
+            ControlRow {
                 id: followSystemThemeCheckBox
                 text: qsTr("跟随系统深色模式")
                 checked: setting.get("setting/followSystemTheme", false)
                 leftMargin: 10
+                controlType: ControlRow.ControlType.Switch
 
                 Component.onCompleted: {
                     if (checked) {
@@ -158,32 +160,35 @@ Page {
                 }
             }
 
-            SwitchRow {
+            ControlRow {
                 id: preventDraggingCheckBox
                 text: qsTr("防止拖动窗口（小窗口模式）")
                 checked: settingPage.preventDragging
                 enabled: globalState.isDesktopWidget
                 leftMargin: 10
+                controlType: ControlRow.ControlType.Switch
                 onCheckedChanged: {
                     settingPage.preventDragging = checked;
                     setting.save("setting/preventDragging", settingPage.preventDragging);
                 }
             }
 
-            SwitchRow {
+            ControlRow {
                 id: autoStartSwitch
                 text: qsTr("开机自启动")
                 checked: globalState.isAutoStartEnabled()
                 leftMargin: 10
+                controlType: ControlRow.ControlType.Switch
                 onCheckedChanged: {
                     globalState.setAutoStart(checked);
                 }
             }
 
-            SwitchRow {
+            ControlRow {
                 text: todoManager.isLoggedIn ? qsTr("自动同步") : qsTr("自动同步（未登录）")
                 checked: todoSyncServer.isAutoSyncEnabled
                 leftMargin: 10
+                controlType: ControlRow.ControlType.Switch
 
                 onCheckedChanged: {
                     if (checked) {
@@ -207,11 +212,12 @@ Page {
                 color: ThemeManager.textColor
             }
 
-            SwitchRow {
+            ControlRow {
                 id: proxyEnabledSwitch
                 text: qsTr("启用代理")
                 checked: setting.getProxyEnabled()
                 leftMargin: 10
+                controlType: ControlRow.ControlType.Switch
 
                 onCheckedChanged: {
                     setting.setProxyEnabled(checked);

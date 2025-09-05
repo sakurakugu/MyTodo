@@ -19,7 +19,7 @@ Item {
         anchors.top: parent.top
         width: 400
         height: 35
-        color: theme.primaryColor
+        color: ThemeManager.primaryColor
         border.width: 0                               ///< 边框宽度
         radius: 5                                     ///< 圆角
         visible: globalState.isDesktopWidget
@@ -44,7 +44,7 @@ Item {
             Text {
                 id: todoStatusIndicator
                 Layout.alignment: Qt.AlignVCenter
-                color: theme.textColor
+                color: ThemeManager.textColor
                 font.pixelSize: 14
                 font.bold: true
 
@@ -110,8 +110,8 @@ Item {
         visible: globalState.isDesktopWidget && globalState.isShowSetting
 
         contentItem: Rectangle {
-            color: theme.secondaryBackgroundColor
-            border.color: theme.borderColor
+            color: ThemeManager.secondaryBackgroundColor
+            border.color: ThemeManager.borderColor
             border.width: 1
             radius: 5
 
@@ -124,67 +124,53 @@ Item {
                     text: "设置"
                     font.bold: true
                     font.pixelSize: 16
-                    color: theme.textColor
+                    color: ThemeManager.textColor
                 }
 
                 // 设置内容
-                CustomSwitch {
+                ControlRow {
                     id: darkModeCheckBox
-                    text: "深色模式"
+                    text: qsTr("深色模式")
                     checked: globalState.isDarkMode
-
-                    property bool isInitialized: false
-
-                    Component.onCompleted: {
-                        isInitialized = true;
-                    }
+                    enabled: !followSystemThemeManagerCheckBox.checked
+                    leftMargin: 10
+                    controlType: ControlRow.ControlType.Switch
 
                     onCheckedChanged: {
-                        if (!isInitialized) {
-                            return; // 避免初始化时触发
-                        }
+                        globalState.isDarkMode = checked;
                         // 保存设置到配置文件
                         setting.save("setting/isDarkMode", checked);
-                        // 发出信号通知父组件
-                        globalState.isDarkMode = checked;
                     }
                 }
 
-                CustomSwitch {
+                ControlRow {
                     id: preventDraggingCheckBox
-                    text: "防止拖动窗口（小窗口模式）"
-                    checked: widgetMode.preventDragging
+                    text: qsTr("防止拖动窗口（小窗口模式）")
+                    checked: settingPage.preventDragging
                     enabled: globalState.isDesktopWidget
+                    leftMargin: 10
+                    controlType: ControlRow.ControlType.Switch
                     onCheckedChanged: {
-                        // 保存设置到配置文件
-                        setting.save("setting/preventDragging", checked);
-                        // 发出信号通知父组件
-                        widgetMode.preventDragging = checked;
+                        settingPage.preventDragging = checked;
+                        setting.save("setting/preventDragging", settingPage.preventDragging);
                     }
                 }
 
-                CustomSwitch {
-                    id: autoSyncSwitch
-                    text: "自动同步"
+                ControlRow {
+                    text: todoManager.isLoggedIn ? qsTr("自动同步") : qsTr("自动同步（未登录）")
                     checked: todoSyncServer.isAutoSyncEnabled
-
-                    property bool isInitialized: false
-
-                    Component.onCompleted: {
-                        isInitialized = true;
-                    }
+                    leftMargin: 10
+                    controlType: ControlRow.ControlType.Switch
 
                     onCheckedChanged: {
-                        if (!isInitialized) {
-                            return; // 避免初始化时触发
-                        }
-
-                        if (checked && !todoManager.isLoggedIn) {
-                            // 如果要开启自动同步但未登录，显示提示并重置开关
-                            autoSyncSwitch.checked = false;
-                            loginStatusDialogs.showLoginRequired();
-                        } else {
-                            todoSyncServer.setAutoSyncEnabled(checked);
+                        if (checked) {
+                            // 如果未登录，显示提示并重置开关
+                            if (!todoManager.isLoggedIn) {
+                                toggle();
+                                settingPage.loginStatusDialogs.showLoginRequired();
+                            } else {
+                                todoSyncServer.setAutoSyncEnabled(checked);
+                            }
                         }
                     }
                 }
@@ -203,9 +189,10 @@ Item {
         closePolicy: Popup.NoAutoClose
         visible: globalState.isDesktopWidget && globalState.isShowAddTask
 
+        // TODO: 这里可以天空标题输入框，还有一些详细设置
         contentItem: Rectangle {
-            color: theme.secondaryBackgroundColor
-            border.color: theme.borderColor
+            color: ThemeManager.secondaryBackgroundColor
+            border.color: ThemeManager.borderColor
             border.width: 1
             radius: 5
 
@@ -218,7 +205,7 @@ Item {
                     text: "添加任务"
                     font.bold: true
                     font.pixelSize: 16
-                    color: theme.textColor
+                    color: ThemeManager.textColor
                 }
 
                 ScrollView {
@@ -233,14 +220,7 @@ Item {
 
                     CustomButton {
                         text: "添加"
-                        onClicked: {
-                            if (addTaskForm.isValid()) {
-                                var todoData = addTaskForm.getTodoData();
-                                todoManager.addTodo(todoData.title, todoData.description, todoData.category, todoData.important);
-                                addTaskForm.clear();
-                                globalState.isShowAddTask = false;
-                            }
-                        }
+                        onClicked: todoManager.addTodo(qsTr("新的待办事项"))
                     }
                 }
             }
@@ -273,8 +253,8 @@ Item {
         visible: globalState.isDesktopWidget && globalState.isShowTodos // 在小组件模式下且需要显示所有任务时显示
 
         contentItem: Rectangle {
-            color: theme.secondaryBackgroundColor
-            border.color: theme.borderColor
+            color: ThemeManager.secondaryBackgroundColor
+            border.color: ThemeManager.borderColor
             border.width: 1
             radius: 5
 
@@ -287,7 +267,7 @@ Item {
                     text: "待办任务"
                     font.bold: true
                     font.pixelSize: 16
-                    color: theme.textColor
+                    color: ThemeManager.textColor
                 }
 
                 // 待办列表
@@ -328,7 +308,7 @@ Item {
                             }
                             Label {
                                 text: todoListPopupView.refreshing ? qsTr("正在同步...") : (todoListPopupView.pullDistance >= todoListPopupView.pullThreshold ? qsTr("释放刷新") : qsTr("下拉刷新"))
-                                color: theme.textColor
+                                color: ThemeManager.textColor
                                 font.pixelSize: 11
                             }
                         }
@@ -350,7 +330,7 @@ Item {
                     delegate: Rectangle {
                         width: todoListPopupView.width
                         height: 40
-                        color: index % 2 === 0 ? theme.secondaryBackgroundColor : theme.backgroundColor
+                        color: index % 2 === 0 ? ThemeManager.secondaryBackgroundColor : ThemeManager.backgroundColor
 
                         // 点击项目显示下拉窗口
                         MouseArea {
@@ -378,7 +358,7 @@ Item {
                                 width: 16
                                 height: 16
                                 radius: 8
-                                color: model.isCompleted ? theme.completedColor : theme.lowImportantColor
+                                color: model.isCompleted ? ThemeManager.completedColor : ThemeManager.lowImportantColor
 
                                 MouseArea {
                                     anchors.fill: parent
@@ -392,7 +372,7 @@ Item {
                             // 待办标题
                             Label {
                                 text: model.title
-                                color: theme.textColor
+                                color: ThemeManager.textColor
                                 Layout.fillWidth: true
                             }
 
@@ -446,8 +426,8 @@ Item {
         property var currentTodoData: null
 
         contentItem: Rectangle {
-            color: theme.secondaryBackgroundColor
-            border.color: theme.borderColor
+            color: ThemeManager.secondaryBackgroundColor
+            border.color: ThemeManager.borderColor
             border.width: 1
             radius: 5
 
@@ -465,7 +445,7 @@ Item {
                         text: todoItemDropdown.currentTodoData ? todoItemDropdown.currentTodoData.title : ""
                         font.bold: true
                         font.pixelSize: 14
-                        color: theme.textColor
+                        color: ThemeManager.textColor
                         Layout.fillWidth: true
                         elide: Text.ElideRight
                     }
@@ -481,7 +461,7 @@ Item {
                         Text {
                             anchors.centerIn: parent
                             text: "^"
-                            color: theme.textColor
+                            color: ThemeManager.textColor
                             font.pixelSize: 16
                             font.bold: true
                         }
@@ -493,7 +473,7 @@ Item {
                                 globalState.toggleDropdownVisible();
                             }
                             onEntered: {
-                                parent.color = theme.borderColor;
+                                parent.color = ThemeManager.borderColor;
                             }
                             onExited: {
                                 parent.color = "transparent";
@@ -505,7 +485,7 @@ Item {
                 Rectangle {
                     Layout.fillWidth: true
                     height: 1
-                    color: theme.borderColor
+                    color: ThemeManager.borderColor
                 }
 
                 CustomButton {
