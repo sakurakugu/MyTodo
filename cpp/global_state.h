@@ -22,6 +22,7 @@ class GlobalState : public QObject {
     Q_PROPERTY(bool isShowDropdown READ isShowDropdown WRITE setIsShowDropdown NOTIFY isShowDropdownChanged)
     Q_PROPERTY(bool isSystemDarkMode READ isSystemDarkMode NOTIFY systemDarkModeChanged)
     Q_PROPERTY(bool preventDragging READ preventDragging WRITE setPreventDragging NOTIFY preventDraggingChanged)
+    Q_PROPERTY(bool refreshing READ refreshing WRITE setRefreshing NOTIFY refreshingChanged)
 
   public:
     explicit GlobalState(QObject *parent = nullptr);
@@ -48,6 +49,9 @@ class GlobalState : public QObject {
     bool preventDragging() const;
     void setPreventDragging(bool value);
 
+    bool refreshing() const;
+    void setRefreshing(bool value);
+
     bool isSystemDarkMode() const;
 
   public slots:
@@ -73,6 +77,7 @@ class GlobalState : public QObject {
     void isShowSettingChanged();
     void isShowDropdownChanged();
     void preventDraggingChanged();
+    void refreshingChanged();
     void systemDarkModeChanged();
     void widthChanged(int width);
     void heightChanged(int height);
@@ -85,4 +90,5 @@ class GlobalState : public QObject {
     bool m_isShowSetting;
     bool m_isShowDropdown;
     bool m_preventDragging;
+    bool m_refreshing;
 };

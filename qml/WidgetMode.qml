@@ -38,8 +38,6 @@ Item {
             IconButton {
                 text: "\ue90f"              ///< 菜单图标
                 onClicked: globalState.toggleSettingsVisible()
-                textColor: theme.textColor
-                fontSize: 16
             }
 
             /// 待办状态指示器
@@ -78,16 +76,12 @@ Item {
             IconButton {
                 text: globalState.isShowTodos ? "\ue667" : "\ue669"     ///< 根据状态显示箭头
                 onClicked: globalState.toggleTodosVisible()     ///< 切换任务列表显示
-                textColor: theme.textColor
-                fontSize: 16
             }
 
             /// 添加任务按钮
             IconButton {
                 text: "\ue903"                                 ///< 加号图标
                 onClicked: globalState.toggleAddTaskVisible()   ///< 切换添加任务界面显示
-                textColor: theme.textColor
-                fontSize: 16
             }
 
             /// 普通模式和小组件模式切换按钮
@@ -97,7 +91,6 @@ Item {
                 onClicked: {
                     globalState.toggleWidgetMode();
                 }
-                textColor: theme.textColor
                 fontSize: 18
             }
         }

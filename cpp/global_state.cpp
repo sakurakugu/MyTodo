@@ -105,6 +105,17 @@ void GlobalState::setPreventDragging(bool value) {
     }
 }
 
+bool GlobalState::refreshing() const {
+    return m_refreshing;
+}
+
+void GlobalState::setRefreshing(bool value) {
+    if (m_refreshing != value) {
+        m_refreshing = value;
+        emit refreshingChanged();
+    }
+}
+
 bool GlobalState::isSystemDarkMode() const {
 
 #if defined(Q_OS_WIN) // Windows 平台

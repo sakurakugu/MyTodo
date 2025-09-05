@@ -2,11 +2,20 @@ import QtQuick
 import QtQuick.Controls
 
 /**
- * 分割线组件
+ * 分割线组件，适合用在Layout中，用在Rectangle中老是飘到顶部，还不如直接用如下注释掉的Rectangle
  * 提供水平和垂直分割线功能，支持自定义样式
  *
  * @author Sakurakugu
  */
+
+//  Rectangle {
+//     anchors.left: parent.left
+//     anchors.right: parent.right
+//     anchors.bottom: parent.bottom
+//     color: ThemeManager.borderColor
+//     height: 1
+// }
+
 Item {
     id: root
 

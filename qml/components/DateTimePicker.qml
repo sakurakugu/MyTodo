@@ -149,7 +149,6 @@ BaseDialog {
                             calendarGrid.currentDate = newDate;
                             calendarGrid.updateCalendar();
                         }
-                        fontSize: 16
                     }
 
                     Rectangle {
@@ -181,7 +180,6 @@ BaseDialog {
                             calendarGrid.currentDate = newDate;
                             calendarGrid.updateCalendar();
                         }
-                        fontSize: 16
                     }
                 }
 

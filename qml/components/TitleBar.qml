@@ -14,7 +14,7 @@ Rectangle {
     property var targetWindow
     property var stackView
     property string title: ""
-    
+
     property bool showBackButton: false
     property bool showMinimizeButton: true
     property bool showMaximizeButton: true
@@ -35,8 +35,6 @@ Rectangle {
         IconButton {
             visible: titleBar.showBackButton
             text: "\ue8fa"
-            textColor: ThemeManager.textColor
-            fontSize: 16
             onClicked: {
                 if (titleBar.targetWindow) {
                     titleBar.stackView.pop();
@@ -52,7 +50,7 @@ Rectangle {
             font.bold: true
             Layout.fillWidth: true
             Layout.leftMargin: 10  // 左边空出 10 像素
-            
+
         }
     }
 
@@ -67,8 +65,6 @@ Rectangle {
             visible: titleBar.showMinimizeButton
             text: "\ue65a"
             onClicked: titleBar.targetWindow.showMinimized()
-            textColor: ThemeManager.textColor
-            fontSize: 16
         }
 
         // 最大化/恢复按钮
@@ -82,8 +78,6 @@ Rectangle {
                     titleBar.targetWindow.showMaximized();
                 }
             }
-            textColor: ThemeManager.textColor
-            fontSize: 16
         }
 
         // 关闭按钮
@@ -91,8 +85,6 @@ Rectangle {
             visible: titleBar.showCloseButton
             text: "\ue8d1"
             onClicked: titleBar.targetWindow.close()
-            textColor: ThemeManager.textColor
-            fontSize: 16
         }
     }
 }

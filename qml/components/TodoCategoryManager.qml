@@ -54,8 +54,6 @@ Item {
                 // 新增分类图标
                 IconButton {
                     text: root.isFilterMode ? "\ue8db" : "\ue90f"
-                    textColor: ThemeManager.textColor
-                    fontSize: 16
                 }
             }
         }
@@ -210,8 +208,6 @@ Item {
                 // 新增分类图标
                 IconButton {
                     text: "\ue8e9"
-                    textColor: ThemeManager.textColor
-                    fontSize: 16
                 }
             }
         }
@@ -250,8 +246,6 @@ Item {
                 // 修改名称图标
                 IconButton {
                     text: "\ue903"
-                    textColor: ThemeManager.textColor
-                    fontSize: 16
                 }
             }
         }
@@ -281,8 +275,6 @@ Item {
                 // 删除选中图标
                 IconButton {
                     text: "\ue922"
-                    textColor: ThemeManager.textColor
-                    fontSize: 16
                 }
             }
         }
@@ -305,8 +297,6 @@ Item {
                 // 取消选中图标
                 IconButton {
                     text: "\ue8f5"
-                    textColor: ThemeManager.textColor
-                    fontSize: 16
                 }
             }
         }

@@ -25,16 +25,20 @@ Item {
     id: iconButton
 
     // 自定义外观属性
-    property color textColor: ThemeManager.textColor  ///< 文本颜色，支持主题
-    property color backgroundColor: "transparent" ///< 背景颜色
-    property int fontSize: 14                     ///< 字体大小
-    property bool isFlat: true                    ///< 是否为扁平化样式
-    property string text: ""                      ///< 按钮文本
+    property color textColor: ThemeManager.textColor      ///< 文本颜色，支持主题
+    property color borderColor: ThemeManager.borderColor  ///< 边框颜色，支持主题
+    property color backgroundColor: "transparent"         ///< 背景颜色
+    property int fontSize: 16                             ///< 字体大小
+    property bool isFlat: true                            ///< 是否为扁平化样式
+    property string text: ""                              ///< 按钮文本
 
     // 状态属性
     property bool isHovered: mouseArea.containsMouse   ///< 悬停状态
     property bool isPressed: mouseArea.pressed         ///< 按下状态
     property bool isFocused: false                     ///< 焦点状态
+
+    // 暴露可重写的属性
+    property alias backgroundItem: backgroundRect
 
     // 信号
     signal clicked                              ///< 点击信号
@@ -48,11 +52,12 @@ Item {
      * 自定义背景矩形，支持悬停和按下状态的视觉反馈。
      */
     Rectangle {
+        id: backgroundRect
         anchors.fill: parent
         color: iconButton.backgroundColor           ///< 背景色
         radius: 3                                   ///< 圆角半径
         border.width: iconButton.isHovered ? 1 : 0  ///< 悬停时显示边框
-        border.color: iconButton.textColor          ///< 边框颜色与文本颜色一致
+        border.color: iconButton.borderColor          ///< 边框颜色与文本颜色一致
         opacity: iconButton.isPressed ? 0.7 : (iconButton.isHovered ? 0.9 : 1.0) ///< 状态透明度
 
         /// 透明度变化动画
