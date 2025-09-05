@@ -13,6 +13,12 @@ ListView {
     // 使用 C++ 的 todoManager
     model: todoManager
 
+    // 外部导入的组件
+    property var selectedTodo
+
+    property bool multiSelectMode: false  // 多选模式
+    property var selectedItems: []        // 选中的项目索引列表
+
     // 下拉刷新相关属性与逻辑
     property int pullThreshold: 20 // 下拉刷新触发阈值
     property real pullDistance: 0  // 当前下拉距离
@@ -78,6 +84,7 @@ ListView {
     onMovementEnded: {
         // 如果下拉距离超过阈值且在顶部，触发刷新
         if (contentY < -pullThreshold && atYBeginning && !globalState.refreshing) {
+            console.info("下拉刷新触发");
             globalState.refreshing = true;
             todoManager.syncWithServer();
         } else {}
@@ -102,6 +109,7 @@ ListView {
                 // 根据下拉比例旋转
                 rotation: {
                     if (globalState.refreshing) {
+                        console.info("刷新时保持旋转动画");
                         // 刷新时保持旋转动画
                         return 0; // 由下面的RotationAnimation控制
                     } else {
@@ -143,11 +151,13 @@ ListView {
     Connections {
         target: todoManager
         function onSyncStarted() {
+            console.info("开始同步");
             if (!globalState.refreshing && root.atYBeginning) {
                 globalState.refreshing = true;
             }
         }
         function onSyncCompleted(result, message) {
+            console.info("同步完成", result, message);
             globalState.refreshing = false;
             // 使用动画平滑重置下拉距离
             pullDistanceAnimation.start();
@@ -653,4 +663,27 @@ ListView {
 
     // 将垂直滚动条附加到ListView本身
     ScrollBar.vertical: ScrollBar {}
+
+    // 确认删除弹窗
+    ModalDialog {
+        id: confirmDeleteDialog
+        property var selectedIndices: []
+
+        dialogTitle: qsTr("确认删除")
+        dialogWidth: 350
+        message: qsTr("确定要永久删除选中的 %1 个待办事项吗？\n此操作无法撤销。").arg(confirmDeleteDialog.selectedIndices.length)
+
+        // 执行硬删除
+        onConfirmed: {
+            var sortedIndices = confirmDeleteDialog.selectedIndices.slice().sort(function (a, b) {
+                return b - a;
+            });
+            for (var i = 0; i < sortedIndices.length; i++) {
+                todoManager.permanentlyDeleteTodo(sortedIndices[i]);
+            }
+            multiSelectMode = false;
+            selectedItems = [];
+            confirmDeleteDialog.close();
+        }
+    }
 }

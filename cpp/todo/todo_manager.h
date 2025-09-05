@@ -30,6 +30,8 @@
 #include "todo_sorter.h"       // 排序管理器
 #include "todo_sync_server.h"  // 服务器同步管理器
 
+class GlobalState; // 前向声明
+
 /**
  * @class TodoManager
  * @brief 待办事项列表模型，负责管理所有待办事项的核心类

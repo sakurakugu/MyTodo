@@ -16,13 +16,16 @@
 #include <QStandardPaths>
 
 GlobalState::GlobalState(QObject *parent)
-    : QObject(parent),          // 初始化父对象
-      m_isDarkMode(false),      // 初始化是否为深色模式为false
-      m_isDesktopWidget(false), // 初始化是否为桌面窗口为false
-      m_isShowAddTask(false),   // 初始化是否显示添加任务为false
-      m_isShowTodos(true),      // 初始化是否显示待办事项为true
-      m_isShowSetting(false),   // 初始化是否显示设置为false
-      m_isShowDropdown(false) { // 初始化是否显示下拉菜单为false
+    : QObject(parent),                 // 初始化父对象
+      m_isDarkMode(false),             // 初始化是否为深色模式为false
+      m_isFollowSystemDarkMode(false), // 初始化是否跟随系统深色模式为false
+      m_isDesktopWidget(false),        // 初始化是否为桌面窗口为false
+      m_isShowAddTask(false),          // 初始化是否显示添加任务为false
+      m_isShowTodos(true),             // 初始化是否显示待办事项为true
+      m_isShowSetting(false),          // 初始化是否显示设置为false
+      m_isShowDropdown(false),         // 初始化是否显示下拉菜单为false
+      m_preventDragging(false),        // 初始化是否防止窗口拖动为false
+      m_refreshing(false) {            // 初始化是否刷新中为false
 
     // 监听系统主题变化
     connect(QGuiApplication::instance(), SIGNAL(paletteChanged(QPalette)), this, SIGNAL(systemInDarkModeChanged()));

@@ -329,9 +329,8 @@ void TodoSyncServer::performSync(SyncDirection direction) {
     // 根据同步方向执行不同的操作
     switch (direction) {
     case Bidirectional:
-        // 双向同步：先获取服务器数据，然后推送本地更改
+        // 双向同步：先获取服务器数据，然后在handleFetchTodosSuccess中推送本地更改
         fetchTodosFromServer();
-        pushLocalChangesToServer();
         break;
     case UploadOnly:
         // 仅上传：只推送本地更改
@@ -348,6 +347,7 @@ void TodoSyncServer::fetchTodosFromServer() {
     if (!canPerformSync()) {
         m_isSyncing = false;
         emit syncingChanged();
+        emit syncCompleted(AuthError, "无法同步：未登录");
         return;
     }
 
@@ -383,6 +383,7 @@ void TodoSyncServer::pushLocalChangesToServer() {
         qInfo() << "无法执行同步操作 - 检查网络连接、用户认证和服务器配置";
         m_isSyncing = false;
         emit syncingChanged();
+        emit syncCompleted(AuthError, "无法同步：未登录");
         return;
     }
 

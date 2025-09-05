@@ -11,14 +11,14 @@ Item {
     property var todoCategoryManager
     property var root
 
-    
+    property var selectedTodo: null       // 当前选中的待办事项
     property int spacing: 10 // 弹窗之间的间距
-    
+
     // 动态计算总宽度和高度
     property int totalWidth: 400  // 固定宽度
     property int totalHeight: {
         var height = titleBar.height;  // 标题栏高度
-        
+
         if (settingsPopup.visible) {
             height += spacing + settingsPopup.height;
         }
@@ -31,23 +31,23 @@ Item {
         if (todoItemDropdown.visible) {
             height += spacing + todoItemDropdown.height;
         }
-        
+
         return height;
     }
-    
+
     // 当尺寸变化时通知父窗口
     onTotalWidthChanged: {
         if (root && globalState.isDesktopWidget) {
             root.width = totalWidth;
         }
     }
-    
+
     onTotalHeightChanged: {
         if (root && globalState.isDesktopWidget) {
             root.height = totalHeight;
         }
     }
-    
+
     // 监听小组件模式状态变化
     Connections {
         target: globalState
@@ -59,7 +59,7 @@ Item {
             }
         }
     }
-    
+
     // 组件完成时初始化尺寸
     Component.onCompleted: {
         if (globalState.isDesktopWidget && root) {
@@ -335,135 +335,8 @@ Item {
                 }
 
                 // 待办列表
-                ListView {
-                    id: todoListPopupView
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
-                    model: todoManager
-
-                    // 下拉刷新相关属性与逻辑（在小组件模式的弹窗中）
-                    property bool refreshing: false
-                    property int pullThreshold: 50
-                    property real pullDistance: 0
-
-                    onContentYChanged: {
-                        pullDistance = contentY < 0 ? -contentY : 0;
-                    }
-                    onMovementEnded: {
-                        if (contentY < -pullThreshold && atYBeginning && !refreshing) {
-                            refreshing = true;
-                            todoManager.syncWithServer();
-                        }
-                    }
-
-                    header: Item {
-                        width: todoListPopupView.width
-                        height: todoListPopupView.refreshing ? 45 : Math.min(45, todoListPopupView.pullDistance)
-                        visible: height > 0 || todoListPopupView.refreshing
-                        Column {
-                            anchors.centerIn: parent
-                            spacing: 4
-                            BusyIndicator {
-                                running: todoListPopupView.refreshing
-                                visible: todoListPopupView.refreshing || todoListPopupView.pullDistance > 0
-                                width: 18
-                                height: 18
-                            }
-                            Label {
-                                text: todoListPopupView.refreshing ? qsTr("正在同步...") : (todoListPopupView.pullDistance >= todoListPopupView.pullThreshold ? qsTr("释放刷新") : qsTr("下拉刷新"))
-                                color: ThemeManager.textColor
-                                font.pixelSize: 11
-                            }
-                        }
-                    }
-
-                    Connections {
-                        target: todoManager
-                        function onSyncStarted() {
-                            if (!todoListPopupView.refreshing && todoListPopupView.atYBeginning) {
-                                todoListPopupView.refreshing = true;
-                            }
-                        }
-                        function onSyncCompleted(success, errorMessage) {
-                            todoListPopupView.refreshing = false;
-                            todoListPopupView.contentY = 0;
-                        }
-                    }
-
-                    delegate: Rectangle {
-                        width: todoListPopupView.width
-                        height: 40
-                        color: index % 2 === 0 ? ThemeManager.secondaryBackgroundColor : ThemeManager.backgroundColor
-
-                        // 点击项目显示下拉窗口
-                        MouseArea {
-                            anchors.fill: parent
-                            z: 0
-                            onClicked: {
-                                todoItemDropdown.currentTodoIndex = index;
-                                todoItemDropdown.currentTodoData = {
-                                    title: model.title,
-                                    description: model.description,
-                                    category: model.category,
-                                    important: model.important
-                                };
-                                globalState.toggleDropdownVisible();
-                            }
-                        }
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 5
-                            spacing: 5
-
-                            // 待办状态指示器
-                            Rectangle {
-                                width: 16
-                                height: 16
-                                radius: 8
-                                color: model.isCompleted ? ThemeManager.completedColor : ThemeManager.lowImportantColor
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: {
-                                        todoManager.markAsDone(index);
-                                        mouse.accepted = true;  // 阻止事件传播
-                                    }
-                                }
-                            }
-
-                            // 待办标题
-                            Label {
-                                text: model.title
-                                color: ThemeManager.textColor
-                                Layout.fillWidth: true
-                            }
-
-                            // 删除按钮
-                            Rectangle {
-                                width: 30
-                                height: 30
-                                color: "transparent"
-                                border.width: 0
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "🗑"
-                                    color: "gray"
-                                    font.pixelSize: 14
-                                }
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: {
-                                        todoManager.removeTodo(index);
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // 为弹出列表添加滚动条
-                    ScrollBar.vertical: ScrollBar {}
+                TodoListContainer {
+                    selectedTodo: toolMode.selectedTodo
                 }
             }
         }
@@ -473,7 +346,7 @@ Item {
     Popup {
         id: todoItemDropdown
 
-       property int calculatedY: {
+        property int calculatedY: {
             var baseY = titleBar.height + toolMode.spacing;
             if (settingsPopup.visible) {
                 baseY += settingsPopup.height + toolMode.spacing;

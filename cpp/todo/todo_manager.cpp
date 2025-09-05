@@ -13,6 +13,7 @@
 #include "todo_filter.h"
 #include "todo_sorter.h"
 #include "user_auth.h"
+#include "global_state.h"
 
 #include <QDateTime>
 #include <QDir>

@@ -942,6 +942,10 @@ Page {
         ModalDialog {
             id: modalDialog
             isShowCancelButton: false
+
+            onConfirmed: {
+                settingPage.close();
+            }
         }
     }
 }

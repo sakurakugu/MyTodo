@@ -9,8 +9,6 @@ Page {
     property var root
     property var stackView
     property var selectedTodo: null       // 当前选中的待办事项
-    property bool multiSelectMode: false  // 多选模式
-    property var selectedItems: []        // 选中的项目索引列表
 
     // 外部导入的组件
     property var settingPage
@@ -25,11 +23,11 @@ Page {
     background: MainBackground {}
 
     // 测试页面
-    TestPage {
-        id: testPage
-        root: homePage.root
-        stackView: homePage.stackView
-    }
+    // TestPage {
+    //     id: testPage
+    //     root: homePage.root
+    //     stackView: homePage.stackView
+    // }
 
     // 主布局
     RowLayout {
@@ -179,10 +177,10 @@ Page {
                 }
 
                 // 测试
-                IconButton {
-                    text: "\ue991"
-                    onClicked: homePage.stackView.push(testPage)
-                }
+                // IconButton {
+                //     text: "\ue991"
+                //     onClicked: homePage.stackView.push(testPage)
+                // }
 
                 // 深色模式
                 IconButton {
@@ -266,7 +264,9 @@ Page {
 
                 Divider {}
 
-                TodoListContainer {}
+                TodoListContainer {
+                    selectedTodo: homePage.selectedTodo
+                }
             }
 
             // 下边框
@@ -1102,29 +1102,6 @@ Page {
             }
             // 阻止点击整行触发默认切换
             onTriggered: {}
-        }
-    }
-
-    // 确认删除弹窗
-    ModalDialog {
-        id: confirmDeleteDialog
-        property var selectedIndices: []
-
-        dialogTitle: qsTr("确认删除")
-        dialogWidth: 350
-        message: qsTr("确定要永久删除选中的 %1 个待办事项吗？\n此操作无法撤销。").arg(confirmDeleteDialog.selectedIndices.length)
-
-        // 执行硬删除
-        onConfirmed: {
-            var sortedIndices = confirmDeleteDialog.selectedIndices.slice().sort(function (a, b) {
-                return b - a;
-            });
-            for (var i = 0; i < sortedIndices.length; i++) {
-                todoManager.permanentlyDeleteTodo(sortedIndices[i]);
-            }
-            multiSelectMode = false;
-            selectedItems = [];
-            confirmDeleteDialog.close();
         }
     }
 
