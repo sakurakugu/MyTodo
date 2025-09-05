@@ -155,7 +155,7 @@ Item {
     // 设置窗口
     Popup {
         id: settingsPopup
-        y: titleBar.height + toolMode.spacing
+        y: toolMode.calculateStackedY(settingsPopup)
         width: 400
         height: 250
         padding: 0 // 消除Popup和contentItem之间的间隙
@@ -237,16 +237,7 @@ Item {
     // 添加任务窗口
     Popup {
         id: addTaskPopup
-
-        property int calculatedY: {
-            var baseY = titleBar.height + toolMode.spacing;
-            if (settingsPopup.visible) {
-                baseY += settingsPopup.height + toolMode.spacing;
-            }
-            return baseY;
-        }
-
-        y: calculatedY
+        y: toolMode.calculateStackedY(addTaskPopup)
         width: 400
         height: 250
         modal: false // 非模态，允许同时打开多个弹出窗口
@@ -295,26 +286,14 @@ Item {
     // 主内容区窗口
     Popup {
         id: mainContentPopup
-
-        property int baseHeight: 200
-        property int calculatedY: {
-            var baseY = titleBar.height + toolMode.spacing;
-            if (settingsPopup.visible) {
-                baseY += settingsPopup.height + toolMode.spacing;
-            }
-            if (addTaskPopup.visible) {
-                baseY += addTaskPopup.height + toolMode.spacing;
-            }
-            return baseY;
-        }
-        y: calculatedY
-
+        y: toolMode.calculateStackedY(mainContentPopup)
         width: 400
         height: baseHeight
         modal: false // 非模态，允许同时打开多个弹出窗口
         focus: true
         closePolicy: Popup.NoAutoClose
         visible: globalState.isDesktopWidget && globalState.isShowTodos // 在小组件模式下且需要显示所有任务时显示
+        property int baseHeight: 200
 
         contentItem: Rectangle {
             color: ThemeManager.secondaryBackgroundColor
@@ -336,7 +315,12 @@ Item {
 
                 // 待办列表
                 TodoListContainer {
-                    selectedTodo: toolMode.selectedTodo
+                    onSelectedTodoChanged: {
+                        toolMode.selectedTodo = selectedTodo;
+                        if (globalState.isDesktopWidget && selectedTodo) {
+                            globalState.isShowDropdown = true;
+                        }
+                    }
                 }
             }
         }
@@ -345,30 +329,14 @@ Item {
     // 待办事项详情窗口
     Popup {
         id: todoItemDropdown
-
-        property int calculatedY: {
-            var baseY = titleBar.height + toolMode.spacing;
-            if (settingsPopup.visible) {
-                baseY += settingsPopup.height + toolMode.spacing;
-            }
-            if (addTaskPopup.visible) {
-                baseY += addTaskPopup.height + toolMode.spacing;
-            }
-            if (mainContentPopup.visible) {
-                baseY += mainContentPopup.height + toolMode.spacing;
-            }
-            return baseY;
-        }
-        y: calculatedY
+        y: toolMode.calculateStackedY(todoItemDropdown)
         width: mainContentPopup.width
         height: 180
         modal: false
         focus: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        // closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        closePolicy: Popup.NoAutoClose
         visible: globalState.isDesktopWidget && globalState.isShowDropdown
-
-        property int currentTodoIndex: -1
-        property var currentTodoData: null
 
         contentItem: Rectangle {
             color: ThemeManager.secondaryBackgroundColor
@@ -379,7 +347,7 @@ Item {
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 10
-                spacing: 8
+                spacing: 10
 
                 // 顶部标题栏和收回按钮
                 RowLayout {
@@ -387,7 +355,7 @@ Item {
                     spacing: 10
 
                     Label {
-                        text: todoItemDropdown.currentTodoData ? todoItemDropdown.currentTodoData.title : ""
+                        text: toolMode.selectedTodo ? toolMode.selectedTodo.title : ""
                         font.bold: true
                         font.pixelSize: 14
                         color: ThemeManager.textColor
@@ -461,5 +429,28 @@ Item {
                 }
             }
         }
+    }
+
+    function calculateStackedY(popup) {
+        var y = titleBar.height + toolMode.spacing;
+
+        // 所有 Popup 按显示顺序放在数组里
+        var popupsInOrder = [ // 索引
+            settingsPopup // 0
+            , addTaskPopup // 1
+            , mainContentPopup // 2
+            , todoItemDropdown // 3
+        ];
+
+        for (var i = 0; i < popupsInOrder.length; i++) {
+            var p = popupsInOrder[i];
+            if (p === popup)
+                break;  // 到当前 Popup 就停
+            if (p.visible) {
+                y += p.height + toolMode.spacing;
+            }
+        }
+
+        return y;
     }
 }

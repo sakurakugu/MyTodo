@@ -265,7 +265,9 @@ Page {
                 Divider {}
 
                 TodoListContainer {
-                    selectedTodo: homePage.selectedTodo
+                    onSelectedTodoChanged: {
+                        homePage.selectedTodo = selectedTodo;
+                    }
                 }
             }
 
@@ -383,22 +385,22 @@ Page {
                         // 标题栏输入框
                         CustomTextInput {
                             id: titleField
-                            text: selectedTodo ? (selectedTodo.title || qsTr("无标题")) : qsTr("选择一个待办事项")
+                            text: homePage.selectedTodo ? (homePage.selectedTodo.title || qsTr("无标题")) : qsTr("选择一个待办事项")
                             font.pixelSize: 18
                             Layout.fillHeight: true
                             Layout.fillWidth: true
                             font.bold: true
-                            enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done" // 只有选中待办事项且不在回收站或已完成模式时才能编辑
+                            enabled: homePage.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done" // 只有选中待办事项且不在回收站或已完成模式时才能编辑
                             borderWidth: 0
                             backgroundColor: "transparent"
 
                             // 保存标题的函数
                             function saveTitleIfChanged() {
-                                if (selectedTodo && text !== selectedTodo.title) {
+                                if (homePage.selectedTodo && text !== homePage.selectedTodo.title) {
                                     // 通过TodoManager的updateTodo方法保存更改
-                                    todoManager.updateTodo(selectedTodo.index, "title", text);
+                                    todoManager.updateTodo(homePage.selectedTodo.index, "title", text);
                                     // 更新本地selectedTodo对象以保持UI同步
-                                    selectedTodo.title = text;
+                                    homePage.selectedTodo.title = text;
                                 }
                             }
 
@@ -443,11 +445,11 @@ Page {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: {
-                        if (!selectedTodo)
+                        if (!homePage.selectedTodo)
                             return 0;
                         return 32;
                     }
-                    visible: selectedTodo !== null
+                    visible: homePage.selectedTodo !== null
                     color: ThemeManager.backgroundColor
 
                     // 左边框
@@ -476,20 +478,20 @@ Page {
 
                             property bool isCreatedText: false
                             property string timeText: {
-                                if (!selectedTodo)
+                                if (!homePage.selectedTodo)
                                     return "";
                                 if (todoFilter.currentFilter === "recycle") {
-                                    return selectedTodo.deletedAt ? qsTr("删除时间: ") + Qt.formatDateTime(selectedTodo.deletedAt, "yyyy-MM-dd hh:mm") : "";
+                                    return homePage.selectedTodo.deletedAt ? qsTr("删除时间: ") + Qt.formatDateTime(homePage.selectedTodo.deletedAt, "yyyy-MM-dd hh:mm") : "";
                                 } else if (todoFilter.currentFilter === "done") {
-                                    return selectedTodo.completedAt ? qsTr("完成时间: ") + Qt.formatDateTime(selectedTodo.completedAt, "yyyy-MM-dd hh:mm") : "";
+                                    return homePage.selectedTodo.completedAt ? qsTr("完成时间: ") + Qt.formatDateTime(homePage.selectedTodo.completedAt, "yyyy-MM-dd hh:mm") : "";
                                 } else {
-                                    return selectedTodo.lastModifiedAt ? qsTr("修改时间: ") + Qt.formatDateTime(selectedTodo.lastModifiedAt, "yyyy-MM-dd hh:mm") : "";
+                                    return homePage.selectedTodo.lastModifiedAt ? qsTr("修改时间: ") + Qt.formatDateTime(homePage.selectedTodo.lastModifiedAt, "yyyy-MM-dd hh:mm") : "";
                                 }
                             }
                             property string createdText: {
-                                if (!selectedTodo)
+                                if (!homePage.selectedTodo)
                                     return "";
-                                return selectedTodo.createdAt ? qsTr("创建时间: ") + Qt.formatDateTime(selectedTodo.createdAt, "yyyy-MM-dd hh:mm") : "";
+                                return homePage.selectedTodo.createdAt ? qsTr("创建时间: ") + Qt.formatDateTime(homePage.selectedTodo.createdAt, "yyyy-MM-dd hh:mm") : "";
                             }
 
                             MouseArea {
@@ -529,14 +531,14 @@ Page {
 
                             CustomButton {
                                 text: {
-                                    if (!selectedTodo)
+                                    if (!homePage.selectedTodo)
                                         return qsTr("未分类");
-                                    return selectedTodo.category || qsTr("未分类");
+                                    return homePage.selectedTodo.category || qsTr("未分类");
                                 }
                                 font.pixelSize: 12
                                 implicitHeight: 30
                                 implicitWidth: 70
-                                enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                                enabled: homePage.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                 onClicked: {
                                     var pos = mapToItem(null, 0, height);
                                     todoCategoryManager.popup(pos.x, pos.y, false);
@@ -572,18 +574,18 @@ Page {
                     Layout.fillHeight: true
                     Layout.margins: 8
                     placeholderText: qsTr("输入详情")
-                    text: selectedTodo ? (selectedTodo.description || "") : ""
+                    text: homePage.selectedTodo ? (homePage.selectedTodo.description || "") : ""
                     wrapMode: TextEdit.WrapAnywhere
-                    enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                    enabled: homePage.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
 
                     onEditingFinished: {
                         saveDescriptionIfChanged();
                     }
 
                     function saveDescriptionIfChanged() {
-                        if (selectedTodo && text !== selectedTodo.description) {
-                            todoManager.updateTodo(selectedTodo.index, "description", text);
-                            selectedTodo.description = text;
+                        if (homePage.selectedTodo && text !== homePage.selectedTodo.description) {
+                            todoManager.updateTodo(homePage.selectedTodo.index, "description", text);
+                            homePage.selectedTodo.description = text;
                         }
                     }
                 }
@@ -594,7 +596,7 @@ Page {
                     Layout.fillWidth: true
                     height: 20
                     color: "transparent"
-                    visible: selectedTodo !== null
+                    visible: homePage.selectedTodo !== null
 
                     Row {
                         anchors.right: parent.right
@@ -718,13 +720,13 @@ Page {
 
                                 CustomButton {
                                     text: {
-                                        if (!selectedTodo)
+                                        if (!homePage.selectedTodo)
                                             return qsTr("未分类");
-                                        return selectedTodo.category || qsTr("未分类");
+                                        return homePage.selectedTodo.category || qsTr("未分类");
                                     }
                                     font.pixelSize: 12
                                     implicitHeight: 40
-                                    enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                                    enabled: homePage.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     onClicked: {
                                         var pos = mapToItem(null, 0, height);
                                         todoCategoryManager.popup(pos.x, pos.y, false);
@@ -753,20 +755,20 @@ Page {
                                 CustomButton {
                                     id: drawerDeadlineField
                                     text: {
-                                        if (selectedTodo && selectedTodo.deadline && !isNaN(selectedTodo.deadline.getTime()))
-                                            return Qt.formatDateTime(selectedTodo.deadline, "yyyy-MM-dd hh:mm");
+                                        if (homePage.selectedTodo && homePage.selectedTodo.deadline && !isNaN(homePage.selectedTodo.deadline.getTime()))
+                                            return Qt.formatDateTime(homePage.selectedTodo.deadline, "yyyy-MM-dd hh:mm");
                                         return qsTr("点击选择日期");
                                     }
-                                    enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                                    enabled: homePage.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     font.pixelSize: 12
                                     Layout.fillWidth: true
                                     implicitHeight: 40
                                     is2ndColor: true
 
                                     onClicked: {
-                                        deadlineDatePicker.selectedDate = selectedTodo && selectedTodo.deadline ? selectedTodo.deadline : new Date();
+                                        deadlineDatePicker.selectedDate = homePage.selectedTodo && homePage.selectedTodo.deadline ? homePage.selectedTodo.deadline : new Date();
                                         deadlineDatePicker.open();
-                                        console.log(selectedTodo.deadline);
+                                        console.log(homePage.selectedTodo.deadline);
                                     }
                                 }
                             }
@@ -790,13 +792,13 @@ Page {
                                 RecurrenceSelector {
                                     id: drawerIntervalSelector
                                     Layout.fillWidth: true
-                                    value: selectedTodo ? selectedTodo.recurrenceInterval : 0
-                                    enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                                    value: homePage.selectedTodo ? homePage.selectedTodo.recurrenceInterval : 0
+                                    enabled: homePage.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
 
                                     onIntervalChanged: function (newValue) {
-                                        if (selectedTodo && newValue !== selectedTodo.recurrenceInterval) {
-                                            todoManager.updateTodo(selectedTodo.index, "recurrenceInterval", newValue);
-                                            selectedTodo.recurrenceInterval = newValue;
+                                        if (homePage.selectedTodo && newValue !== homePage.selectedTodo.recurrenceInterval) {
+                                            todoManager.updateTodo(homePage.selectedTodo.index, "recurrenceInterval", newValue);
+                                            homePage.selectedTodo.recurrenceInterval = newValue;
                                         }
                                     }
                                 }
@@ -822,15 +824,15 @@ Page {
                                     id: drawerCountSpinBox
                                     from: 0
                                     to: 999
-                                    value: selectedTodo ? selectedTodo.recurrenceCount : 0
-                                    enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                                    value: homePage.selectedTodo ? homePage.selectedTodo.recurrenceCount : 0
+                                    enabled: homePage.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     implicitWidth: 100
                                     implicitHeight: 25
 
                                     onValueChanged: {
-                                        if (selectedTodo && value !== selectedTodo.recurrenceCount) {
-                                            todoManager.updateTodo(selectedTodo.index, "recurrenceCount", value);
-                                            selectedTodo.recurrenceCount = value;
+                                        if (homePage.selectedTodo && value !== homePage.selectedTodo.recurrenceCount) {
+                                            todoManager.updateTodo(homePage.selectedTodo.index, "recurrenceCount", value);
+                                            homePage.selectedTodo.recurrenceCount = value;
                                         }
                                     }
                                 }
@@ -862,18 +864,18 @@ Page {
                                 CustomButton {
                                     id: drawerStartDateField
                                     text: {
-                                        if (selectedTodo && selectedTodo.recurrenceStartDate && !isNaN(selectedTodo.recurrenceStartDate.getTime()))
-                                            return Qt.formatDate(selectedTodo.recurrenceStartDate, "yyyy-MM-dd");
+                                        if (homePage.selectedTodo && homePage.selectedTodo.recurrenceStartDate && !isNaN(homePage.selectedTodo.recurrenceStartDate.getTime()))
+                                            return Qt.formatDate(homePage.selectedTodo.recurrenceStartDate, "yyyy-MM-dd");
                                         return qsTr("点击选择日期");
                                     }
-                                    enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                                    enabled: homePage.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     font.pixelSize: 12
                                     Layout.fillWidth: true
                                     implicitHeight: 40
                                     is2ndColor: true
 
                                     onClicked: {
-                                        startDatePicker.selectedDate = selectedTodo && selectedTodo.recurrenceStartDate ? selectedTodo.recurrenceStartDate : new Date();
+                                        startDatePicker.selectedDate = homePage.selectedTodo && homePage.selectedTodo.recurrenceStartDate ? homePage.selectedTodo.recurrenceStartDate : new Date();
                                         startDatePicker.open();
                                     }
                                 }
@@ -892,16 +894,16 @@ Page {
                                 CustomCheckBox {
                                     id: drawerCompletedCheckBox
                                     text: qsTr("已完成:")
-                                    checked: selectedTodo && selectedTodo.completed !== undefined ? selectedTodo.completed : false
-                                    enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle"
+                                    checked: homePage.selectedTodo && homePage.selectedTodo.completed !== undefined ? homePage.selectedTodo.completed : false
+                                    enabled: homePage.selectedTodo !== null && todoFilter.currentFilter !== "recycle"
                                     fontSize: 16
                                     implicitHeight: 30
                                     isCheckBoxOnLeft: false
 
                                     onCheckedChanged: {
-                                        if (selectedTodo && checked !== selectedTodo.completed) {
-                                            todoManager.updateTodo(selectedTodo.index, "isCompleted", checked);
-                                            selectedTodo.completed = checked;
+                                        if (homePage.selectedTodo && checked !== homePage.selectedTodo.completed) {
+                                            todoManager.updateTodo(homePage.selectedTodo.index, "isCompleted", checked);
+                                            homePage.selectedTodo.completed = checked;
                                         }
                                     }
                                 }
@@ -920,16 +922,16 @@ Page {
                                 CustomCheckBox {
                                     id: drawerImportantCheckBox
                                     text: qsTr("重要:")
-                                    checked: selectedTodo && selectedTodo.important !== undefined ? selectedTodo.important : false
-                                    enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                                    checked: homePage.selectedTodo && homePage.selectedTodo.important !== undefined ? homePage.selectedTodo.important : false
+                                    enabled: homePage.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     fontSize: 16
                                     implicitHeight: 30
                                     isCheckBoxOnLeft: false
 
                                     onCheckedChanged: {
-                                        if (selectedTodo && checked !== selectedTodo.important) {
-                                            todoManager.updateTodo(selectedTodo.index, "important", checked);
-                                            selectedTodo.important = checked;
+                                        if (homePage.selectedTodo && checked !== homePage.selectedTodo.important) {
+                                            todoManager.updateTodo(homePage.selectedTodo.index, "important", checked);
+                                            homePage.selectedTodo.important = checked;
                                         }
                                     }
                                 }
@@ -955,7 +957,7 @@ Page {
                                 CustomButton {
                                     text: qsTr("删除")
                                     font.pixelSize: 16
-                                    enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                                    enabled: homePage.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     backgroundColor: ThemeManager.errorColor
                                     hoverColor: Qt.darker(ThemeManager.errorColor, 1.1)
                                     pressedColor: Qt.darker(ThemeManager.errorColor, 1.2)
@@ -963,8 +965,8 @@ Page {
                                     implicitHeight: 40
 
                                     onClicked: {
-                                        if (selectedTodo) {
-                                            todoManager.removeTodo(selectedTodo.index);
+                                        if (homePage.selectedTodo) {
+                                            todoManager.removeTodo(homePage.selectedTodo.index);
                                         }
                                     }
                                 }
@@ -1110,9 +1112,9 @@ Page {
         id: deadlineDatePicker
 
         onConfirmed: {
-            if (selectedTodo) {
-                todoManager.updateTodo(selectedTodo.index, "deadline", selectedDate);
-                selectedTodo.deadline = selectedDate;
+            if (homePage.selectedTodo) {
+                todoManager.updateTodo(homePage.selectedTodo.index, "deadline", selectedDate);
+                homePage.selectedTodo.deadline = selectedDate;
             }
         }
     }
@@ -1123,9 +1125,9 @@ Page {
         enableTimeMode: false
 
         onConfirmed: {
-            if (selectedTodo) {
-                todoManager.updateTodo(selectedTodo.index, "recurrenceStartDate", selectedDate);
-                selectedTodo.recurrenceStartDate = selectedDate;
+            if (homePage.selectedTodo) {
+                todoManager.updateTodo(homePage.selectedTodo.index, "recurrenceStartDate", selectedDate);
+                homePage.selectedTodo.recurrenceStartDate = selectedDate;
             }
         }
     }

@@ -190,29 +190,9 @@ void GlobalState::updateWidgetHeight() {
     if (!m_isDesktopWidget)
         return;
 
-    int totalHeight = 50; // 标题栏高度
-    int popupSpacing = 6; // 弹窗间距
+    // TODO: 之后再说，到时候从WidgetMode中移动进来
 
-    // 计算需要显示的弹窗总高度
-    if (m_isShowSetting) {
-        totalHeight += 250 + popupSpacing;
-    }
-    if (m_isShowAddTask) {
-        totalHeight += 250 + popupSpacing;
-    }
-    if (m_isShowTodos) {
-        totalHeight += 200 + popupSpacing;
-    }
-    if (m_isShowDropdown) {
-        totalHeight += 180 + popupSpacing;
-    }
-
-    // 设置最小高度和额外边距
-    int minHeight = 100;
-    int extraMargin = 60;
-    int finalHeight = qMax(minHeight, totalHeight + extraMargin);
-
-    emit heightChanged(finalHeight);
+    emit heightChanged(1);
 }
 
 void GlobalState::toggleAddTaskVisible() {

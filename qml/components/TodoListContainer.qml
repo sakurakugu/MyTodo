@@ -222,7 +222,6 @@ ListView {
                             recurrenceStartDate: model.recurrenceStartDate,
                             important: model.important
                         };
-                        root.currentIndex = index;
                     }
                 }
 
@@ -378,7 +377,6 @@ ListView {
                 hoverEnabled: true
                 onClicked: {
                     itemMouseArea.enabled = false; // 先禁用以防多次点
-                    root.currentIndex = index; // 设置当前项索引
                     todoManager.markAsDoneOrTodo(index);     // 切换完成状态
                     // model.isCompleted = !model.isCompleted;
 
@@ -416,7 +414,6 @@ ListView {
                 hoverEnabled: true
                 onClicked: {
                     itemMouseArea.enabled = false; // 先禁用以防多次点
-                    root.currentIndex = index; // 设置当前项索引
 
                     // 检查是否在回收站中
                     if (todoFilter.currentFilter === "recycle") {
@@ -550,6 +547,7 @@ ListView {
                     } else {
                         // 普通模式（点击一次）下显示详情
                         selectedTodo = {
+                            index: index,
                             title: model.title,
                             description: model.description,
                             category: model.category,
@@ -562,9 +560,9 @@ ListView {
                             deadline: model.deadline,
                             recurrenceInterval: model.recurrenceInterval,
                             recurrenceCount: model.recurrenceCount,
-                            recurrenceStartDate: model.recurrenceStartDate
+                            recurrenceStartDate: model.recurrenceStartDate,
+                            important: model.important
                         };
-                        root.currentIndex = index;
                     }
                     mouse.accepted = true;  // 已处理点击事件，阻止事件传递
                 }

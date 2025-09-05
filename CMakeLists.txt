@@ -95,7 +95,6 @@ set(QML_COMPONENT_FILES
     qml/components/MainBackground.qml               # 主背景
     qml/components/TitleBar.qml                     # 标题栏
     
-    
     qml/components/TodoListContainer.qml            # 待办列表显示区域
     qml/components/ThemeManager.qml                 # 主题管理器
     qml/components/IconButton.qml                   # 图标按钮
@@ -114,7 +113,6 @@ set(QML_COMPONENT_FILES
     qml/components/CustomTextEdit.qml              # 自定义文本编辑框
     qml/components/CustomCheckBox.qml              # 自定义复选框
     qml/components/ControlRow.qml                   # 自定义控件行
-
 
     qml/TestPage.qml # 测试页面
 )
