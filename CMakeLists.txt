@@ -105,13 +105,17 @@ set(QML_COMPONENT_FILES
     qml/components/TodoCategoryManager.qml          # 待办事项分类管理器
     qml/components/WindowResizeHandler.qml          # 待办事项项管理器
     qml/components/Divider.qml                      # 分割线
+    qml/components/RecurrenceSelector.qml           # 重复选择器
     qml/components/CustomSwitch.qml                 # 自定义开关
-    qml/components/SwitchRow.qml                    # 自定义开关行
     qml/components/CustomButton.qml                 # 通用按钮
     qml/components/CustomTextInput.qml              # 自定义文本输入框
     qml/components/CustomComboBox.qml              # 自定义下拉列表框
     qml/components/CustomSpinBox.qml               # 自定义数字输入框
     qml/components/CustomTextEdit.qml              # 自定义文本编辑框
+    qml/components/CustomCheckBox.qml              # 自定义复选框
+    qml/components/SwitchRow.qml                    # 自定义开关行
+    qml/components/ControlRow.qml                   # 自定义控件行
+
 
     qml/TestPage.qml # 测试页面
 )

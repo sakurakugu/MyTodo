@@ -262,6 +262,7 @@ ColumnLayout {
                                 lastModifiedAt: model.lastModifiedAt,
                                 completedAt: model.completedAt,
                                 deletedAt: model.deletedAt,
+                                deadline: model.deadline,
                                 recurrenceInterval: model.recurrenceInterval,
                                 recurrenceCount: model.recurrenceCount,
                                 recurrenceStartDate: model.recurrenceStartDate,
@@ -604,6 +605,7 @@ ColumnLayout {
                                 lastModifiedAt: model.lastModifiedAt,
                                 completedAt: model.completedAt,
                                 deletedAt: model.deletedAt,
+                                deadline: model.deadline,
                                 recurrenceInterval: model.recurrenceInterval,
                                 recurrenceCount: model.recurrenceCount,
                                 recurrenceStartDate: model.recurrenceStartDate

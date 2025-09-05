@@ -55,8 +55,9 @@ SpinBox {
         readOnly: !root.editable
         validator: root.validator
         inputMethodHints: Qt.ImhFormattedNumbersOnly
-        leftPadding: 30
-        rightPadding: 30
+        anchors.fill: parent
+        anchors.leftMargin: 30
+        anchors.rightMargin: 30
 
         onTextEdited: {
             if (root.editable) {

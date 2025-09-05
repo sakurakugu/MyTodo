@@ -578,7 +578,7 @@ Page {
             Rectangle {
                 id: overlay
                 anchors.fill: parent
-                anchors.topMargin: titleBar.height + detailTitleBar.height
+                anchors.topMargin: titleBar.height + detailTitleBar.height - 1
                 color: "transparent"
                 opacity: 0.3
                 z: 99
@@ -646,11 +646,7 @@ Page {
                     }
 
                     // 分隔线
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 1
-                        color: ThemeManager.borderColor
-                    }
+                    Divider {}
 
                     // 待办事项属性编辑区域
                     ScrollView {
@@ -669,10 +665,13 @@ Page {
                                 spacing: 8
                                 Layout.alignment: Qt.AlignVCenter
 
-                                // TODO: 改成图标
+                                IconButton {
+                                    text: "\ue605"
+                                    fontSize: 18
+                                }
                                 Text {
                                     text: "分类:"
-                                    font.pixelSize: 12
+                                    font.pixelSize: 16
                                     color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
                                 }
@@ -684,7 +683,7 @@ Page {
                                         return selectedTodo.category || "未分类";
                                     }
                                     font.pixelSize: 12
-                                    Layout.preferredHeight: 30
+                                    implicitHeight: 40
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     onClicked: {
                                         var pos = mapToItem(null, 0, height);
@@ -700,31 +699,34 @@ Page {
                                 Layout.fillWidth: true
                                 spacing: 8
 
-                                Text {
-                                    text: "📅"
-                                    font.pixelSize: 14
-                                    verticalAlignment: Text.AlignVCenter
+                                IconButton {
+                                    text: "\ue6e5"
                                 }
 
                                 Text {
                                     text: "截止日期:"
-                                    font.pixelSize: 12
+                                    font.pixelSize: 16
                                     color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
                                 CustomButton {
                                     id: drawerDeadlineField
-                                    text: selectedTodo && selectedTodo.deadline ? Qt.formatDateTime(selectedTodo.deadline, "yyyy-MM-dd hh:mm") : "点击选择日期"
+                                    text: {
+                                        if (selectedTodo.deadline && !isNaN(selectedTodo.deadline.getTime()))
+                                            return Qt.formatDateTime(selectedTodo.deadline, "yyyy-MM-dd hh:mm");
+                                        return "点击选择日期";
+                                    }
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     font.pixelSize: 12
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 30
+                                    implicitHeight: 40
                                     is2ndColor: true
 
                                     onClicked: {
                                         deadlineDatePicker.selectedDate = selectedTodo && selectedTodo.deadline ? selectedTodo.deadline : new Date();
                                         deadlineDatePicker.open();
+                                        console.log(selectedTodo.deadline);
                                     }
                                 }
                             }
@@ -734,41 +736,29 @@ Page {
                                 Layout.fillWidth: true
                                 spacing: 8
 
-                                Text {
-                                    text: "🔄"
-                                    font.pixelSize: 14
-                                    verticalAlignment: Text.AlignVCenter
+                                IconButton {
+                                    text: "\ue8ef"
                                 }
 
                                 Text {
-                                    text: "每"
-                                    font.pixelSize: 12
+                                    text: "重复:"
+                                    font.pixelSize: 16
                                     color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
-                                SpinBox {
-                                    id: drawerIntervalSpinBox
-                                    from: 0
-                                    to: 365
+                                RecurrenceSelector {
+                                    id: drawerIntervalSelector
+                                    Layout.fillWidth: true
                                     value: selectedTodo ? selectedTodo.recurrenceInterval : 0
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
-                                    Layout.preferredWidth: 80
-                                    Layout.preferredHeight: 30
 
-                                    onValueChanged: {
-                                        if (selectedTodo && value !== selectedTodo.recurrenceInterval) {
-                                            todoManager.updateTodo(selectedTodo.index, "recurrenceInterval", value);
-                                            selectedTodo.recurrenceInterval = value;
+                                    onIntervalChanged: function(newValue) {
+                                        if (selectedTodo && newValue !== selectedTodo.recurrenceInterval) {
+                                            todoManager.updateTodo(selectedTodo.index, "recurrenceInterval", newValue);
+                                            selectedTodo.recurrenceInterval = newValue;
                                         }
                                     }
-                                }
-
-                                Text {
-                                    text: "天重复"
-                                    font.pixelSize: 12
-                                    color: ThemeManager.textColor
-                                    verticalAlignment: Text.AlignVCenter
                                 }
                             }
 
@@ -777,27 +767,25 @@ Page {
                                 Layout.fillWidth: true
                                 spacing: 8
 
-                                Text {
-                                    text: "📊"
-                                    font.pixelSize: 14
-                                    verticalAlignment: Text.AlignVCenter
+                                IconButton {
+                                    text: "\ue601"
                                 }
 
                                 Text {
                                     text: "共"
-                                    font.pixelSize: 12
+                                    font.pixelSize: 16
                                     color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
-                                SpinBox {
+                                CustomSpinBox {
                                     id: drawerCountSpinBox
                                     from: 0
                                     to: 999
                                     value: selectedTodo ? selectedTodo.recurrenceCount : 0
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
-                                    Layout.preferredWidth: 80
-                                    Layout.preferredHeight: 30
+                                    implicitWidth: 100
+                                    implicitHeight: 25
 
                                     onValueChanged: {
                                         if (selectedTodo && value !== selectedTodo.recurrenceCount) {
@@ -809,7 +797,7 @@ Page {
 
                                 Text {
                                     text: "次"
-                                    font.pixelSize: 12
+                                    font.pixelSize: 16
                                     color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
                                 }
@@ -820,26 +808,28 @@ Page {
                                 Layout.fillWidth: true
                                 spacing: 8
 
-                                Text {
-                                    text: "📆"
-                                    font.pixelSize: 14
-                                    verticalAlignment: Text.AlignVCenter
+                                IconButton {
+                                    text: "\ue74b"
                                 }
 
                                 Text {
                                     text: "开始日期:"
-                                    font.pixelSize: 12
+                                    font.pixelSize: 16
                                     color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
                                 CustomButton {
                                     id: drawerStartDateField
-                                    text: selectedTodo && selectedTodo.recurrenceStartDate ? Qt.formatDate(selectedTodo.recurrenceStartDate, "yyyy-MM-dd") : "点击选择日期"
+                                    text: {
+                                        if (selectedTodo.recurrenceStartDate && !isNaN(selectedTodo.recurrenceStartDate.getTime()))
+                                            return Qt.formatDate(selectedTodo.recurrenceStartDate, "yyyy-MM-dd");
+                                        return "点击选择日期";
+                                    }
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     font.pixelSize: 12
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 30
+                                    implicitHeight: 40
                                     is2ndColor: true
 
                                     onClicked: {
@@ -852,20 +842,21 @@ Page {
                             // 完成状态
                             RowLayout {
                                 Layout.fillWidth: true
+                                Layout.preferredHeight: 30
                                 spacing: 8
 
-                                Text {
-                                    text: "✅"
-                                    font.pixelSize: 14
-                                    verticalAlignment: Text.AlignVCenter
+                                IconButton {
+                                    text: "\ue8eb"
                                 }
 
-                                CheckBox {
+                                CustomCheckBox {
                                     id: drawerCompletedCheckBox
-                                    text: "已完成"
+                                    text: "已完成:"
                                     checked: selectedTodo && selectedTodo.completed !== undefined ? selectedTodo.completed : false
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle"
-                                    font.pixelSize: 12
+                                    fontSize: 16
+                                    implicitHeight: 30
+                                    isCheckBoxOnLeft: false
 
                                     onCheckedChanged: {
                                         if (selectedTodo && checked !== selectedTodo.completed) {
@@ -879,20 +870,21 @@ Page {
                             // 重要程度
                             RowLayout {
                                 Layout.fillWidth: true
+                                Layout.preferredHeight: 30
                                 spacing: 8
 
-                                Text {
-                                    text: "⭐"
-                                    font.pixelSize: 14
-                                    verticalAlignment: Text.AlignVCenter
+                                IconButton {
+                                    text: "\ue8de"
                                 }
 
-                                CheckBox {
+                                CustomCheckBox {
                                     id: drawerImportantCheckBox
-                                    text: "重要"
+                                    text: "重要:"
                                     checked: selectedTodo && selectedTodo.important !== undefined ? selectedTodo.important : false
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
-                                    font.pixelSize: 12
+                                    fontSize: 16
+                                    implicitHeight: 30
+                                    isCheckBoxOnLeft: false
 
                                     onCheckedChanged: {
                                         if (selectedTodo && checked !== selectedTodo.important) {
@@ -906,20 +898,29 @@ Page {
                             // 删除按钮
                             RowLayout {
                                 Layout.fillWidth: true
+                                Layout.preferredHeight: 30
                                 spacing: 8
 
+                                IconButton {
+                                    text: "\ue8f5"
+                                }
+
                                 Text {
-                                    text: "❌"
-                                    font.pixelSize: 14
+                                    text: "删除:"
+                                    font.pixelSize: 16
+                                    color: ThemeManager.textColor
                                     verticalAlignment: Text.AlignVCenter
                                 }
 
                                 CustomButton {
                                     text: "删除"
+                                    font.pixelSize: 16
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
                                     backgroundColor: ThemeManager.errorColor
                                     hoverColor: Qt.darker(ThemeManager.errorColor, 1.1)
                                     pressedColor: Qt.darker(ThemeManager.errorColor, 1.2)
+                                    textColor: "white"
+                                    implicitHeight: 40
 
                                     onClicked: {
                                         if (selectedTodo) {
