@@ -1,5 +1,5 @@
 /**
- * @file iconButton.qml
+ * @file IconButton.qml
  * @brief 自定义按钮组件
  *
  * 提供统一样式的按钮组件，支持：
@@ -22,7 +22,7 @@ import QtQuick
  * 支持主题色彩定制和多种视觉状态。
  */
 Item {
-    id: iconButton
+    id: root
 
     // 自定义外观属性
     property color textColor: ThemeManager.textColor      ///< 文本颜色，支持主题
@@ -54,11 +54,11 @@ Item {
     Rectangle {
         id: backgroundRect
         anchors.fill: parent
-        color: iconButton.backgroundColor           ///< 背景色
+        color: root.backgroundColor           ///< 背景色
         radius: 3                                   ///< 圆角半径
-        border.width: iconButton.isHovered ? 1 : 0  ///< 悬停时显示边框
-        border.color: iconButton.borderColor          ///< 边框颜色与文本颜色一致
-        opacity: iconButton.isPressed ? 0.7 : (iconButton.isHovered ? 0.9 : 1.0) ///< 状态透明度
+        border.width: root.isHovered ? 1 : 0  ///< 悬停时显示边框
+        border.color: root.borderColor          ///< 边框颜色与文本颜色一致
+        opacity: root.isPressed ? 0.7 : (root.isHovered ? 0.9 : 1.0) ///< 状态透明度
 
         /// 透明度变化动画
         Behavior on opacity {
@@ -71,13 +71,13 @@ Item {
     // 按钮文本内容
     Text {
         anchors.centerIn: parent
-        text: iconButton.text                       ///< 显示按钮文本
-        color: iconButton.textColor                 ///< 文本颜色
-        font.pixelSize: iconButton.fontSize         ///< 字体大小
+        text: root.text                       ///< 显示按钮文本
+        color: root.textColor                 ///< 文本颜色
+        font.pixelSize: root.fontSize         ///< 字体大小
         font.family: "iconfont"                     ///< 使用图标字体
         horizontalAlignment: Text.AlignHCenter      ///< 水平居中
         verticalAlignment: Text.AlignVCenter        ///< 垂直居中
-        font.bold: iconButton.isFocused             ///< 焦点时加粗
+        font.bold: root.isFocused             ///< 焦点时加粗
     }
 
     // 鼠标交互区域
@@ -85,6 +85,6 @@ Item {
         id: mouseArea
         anchors.fill: parent
         hoverEnabled: true
-        onClicked: iconButton.clicked()
+        onClicked: root.clicked()
     }
 }

@@ -4,10 +4,10 @@ import QtQuick.Controls
 Window {
     id: root
     visible: true
-    width: 800
-    height: 640
-    minimumWidth: 800
-    minimumHeight: 640
+    width: globalState.isDesktopWidget ? 400 : 800 // 400是小组件的宽度
+    height: globalState.isDesktopWidget ? 35 : 640 // 35是小组件标题栏的高度
+    minimumWidth: globalState.isDesktopWidget ? 400 : 800
+    minimumHeight: globalState.isDesktopWidget ? 35 : 640
     title: qsTr("我的待办")
 
     // 背景透明度设置 - 必须保持透明，否则在Windows下的小窗口模式下会出现黑色背景问题
@@ -44,7 +44,6 @@ Window {
         focus: true
         visible: !globalState.isDesktopWidget && depth > 0 // 小窗口模式时隐藏主页面
         initialItem: homePage
-        // initialItem: testPage
         clip: true  ///< 裁剪内容以配合窗口圆角效果
 
         pushEnter: Transition {
@@ -82,13 +81,6 @@ Window {
     }
 
     // 各种页面
-    // 测试页面
-    // TestPage {
-    //     id: testPage
-    //     root: root
-    //     stackView: stackView
-    // }
-
     // 主页面
     HomePage {
         id: homePage
@@ -111,6 +103,7 @@ Window {
     WidgetMode {
         id: widgetMode
         visible: globalState.isDesktopWidget
+        root: root
         loginStatusDialogs: loginStatusDialogs
         todoCategoryManager: todoCategoryManager
     }

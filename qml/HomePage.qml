@@ -24,6 +24,13 @@ Page {
 
     background: MainBackground {}
 
+    // 测试页面
+    TestPage {
+        id: testPage
+        root: homePage.root
+        stackView: homePage.stackView
+    }
+
     // 主布局
     RowLayout {
         anchors.fill: parent
@@ -171,28 +178,10 @@ Page {
                     Layout.fillHeight: true
                 }
 
-                // 刷新
+                // 测试
                 IconButton {
-                    id: refreshButton
-                    text: "\ue8e2"              ///< 刷新图标
-
-                    // 添加旋转动画
-                    RotationAnimation {
-                        id: refreshButtonAnimation
-                        target: refreshButton
-                        from: 0
-                        to: 360
-                        duration: 1000
-                        running: false
-                    }
-
-                    onClicked: {
-                        if (!globalState.refreshing) {
-                            globalState.refreshing = true;
-                            refreshButtonAnimation.start();  // 开始旋转动画
-                            todoManager.syncWithServer();
-                        }
-                    }
+                    text: "\ue991"
+                    onClicked: homePage.stackView.push(testPage)
                 }
 
                 // 深色模式
@@ -223,10 +212,61 @@ Page {
                 isTopOrLeft: true
             }
 
-            TodoListContainer {
-                root: homePage.root
+            ColumnLayout {
+                anchors.fill: parent
                 anchors.topMargin: 1
                 anchors.bottomMargin: 1
+                spacing: 0
+
+                // 搜索栏和工具栏
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 68
+                    color: ThemeManager.backgroundColor
+
+                    // 窗口拖拽处理区域
+                    WindowDragHandler {
+                        anchors.fill: parent
+                        targetWindow: homePage.root
+                    }
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        spacing: 8
+
+                        // 搜索框
+                        CustomTextInput {
+                            id: searchField
+                            leftIcon: "\ue8f2"  // 使用内置的左侧图标功能
+                            implicitWidth: parent.width - addButton.width - parent.spacing
+                            implicitHeight: 30
+                            placeholderText: qsTr("搜索")
+                            selectByMouse: true
+                            verticalAlignment: TextInput.AlignVCenter
+                            onTextChanged: {
+                                todoFilter.searchText = text;
+                            }
+                        }
+
+                        // 添加待办事项按钮
+                        IconButton {
+                            id: addButton
+                            text: "\ue8e1"
+                            onClicked: todoManager.addTodo(qsTr("新的待办事项"))
+
+                            backgroundItem.radius: 4
+                            backgroundItem.border.width: 1
+                            backgroundItem.border.color: isHovered ? Qt.darker(borderColor, 1.2) : borderColor
+                            backgroundItem.color: isHovered ? Qt.darker(ThemeManager.secondaryBackgroundColor, 1.2) : ThemeManager.secondaryBackgroundColor
+                        }
+                    }
+                }
+
+                Divider {}
+
+                TodoListContainer {}
             }
 
             // 下边框
@@ -753,7 +793,7 @@ Page {
                                     value: selectedTodo ? selectedTodo.recurrenceInterval : 0
                                     enabled: selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
 
-                                    onIntervalChanged: function(newValue) {
+                                    onIntervalChanged: function (newValue) {
                                         if (selectedTodo && newValue !== selectedTodo.recurrenceInterval) {
                                             todoManager.updateTodo(selectedTodo.index, "recurrenceInterval", newValue);
                                             selectedTodo.recurrenceInterval = newValue;

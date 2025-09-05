@@ -12,8 +12,6 @@ Page {
     property var stackView
     property var loginStatusDialogs
 
-    property bool preventDragging: setting.get("setting/preventDragging", false) // 是否允许拖动
-
     // 应用代理设置函数
     function applyProxySettings() {
         if (!setting.getProxyEnabled()) {
@@ -106,7 +104,7 @@ Page {
                 id: darkModeCheckBox
                 text: qsTr("深色模式")
                 checked: globalState.isDarkMode
-                enabled: !followSystemThemeCheckBox.checked
+                enabled: !globalState.isFollowSystemDarkMode
                 leftMargin: 10
                 controlType: ControlRow.ControlType.Switch
 
@@ -126,22 +124,22 @@ Page {
 
                 Component.onCompleted: {
                     if (checked) {
+                        globalState.isFollowSystemDarkMode = checked;
                         // 如果启用跟随系统，立即同步系统主题
-                        var systemDarkMode = globalState.isSystemDarkMode;
-                        if (globalState.isDarkMode !== systemDarkMode) {
-                            darkModeCheckBox.checked = systemDarkMode;
+                        if (globalState.isDarkMode !== globalState.isSystemInDarkMode) {
+                            globalState.isDarkMode = globalState.isSystemInDarkMode;
                         }
                     }
                 }
 
                 onCheckedChanged: {
                     setting.save("setting/followSystemTheme", checked);
+                    globalState.isFollowSystemDarkMode = checked;
 
                     if (checked) {
                         // 启用跟随系统时，立即同步系统主题
-                        var systemDarkMode = globalState.isSystemDarkMode;
-                        if (globalState.isDarkMode !== systemDarkMode) {
-                            darkModeCheckBox.checked = systemDarkMode;
+                        if (globalState.isDarkMode !== globalState.isSystemInDarkMode) {
+                            globalState.isDarkMode = globalState.isSystemInDarkMode;
                         }
                     }
                 }
@@ -149,11 +147,10 @@ Page {
                 // 监听系统主题变化
                 Connections {
                     target: globalState
-                    function onSystemDarkModeChanged() {
+                    function onSystemInDarkModeChanged() {
                         if (followSystemThemeCheckBox.checked) {
-                            var systemDarkMode = globalState.isSystemDarkMode;
-                            if (globalState.isDarkMode !== systemDarkMode) {
-                                darkModeCheckBox.checked = systemDarkMode;
+                            if (globalState.isDarkMode !== globalState.isSystemInDarkMode) {
+                                globalState.isDarkMode = globalState.isSystemInDarkMode;
                             }
                         }
                     }
@@ -163,13 +160,13 @@ Page {
             ControlRow {
                 id: preventDraggingCheckBox
                 text: qsTr("防止拖动窗口（小窗口模式）")
-                checked: settingPage.preventDragging
+                checked: globalState.preventDragging
                 enabled: globalState.isDesktopWidget
                 leftMargin: 10
                 controlType: ControlRow.ControlType.Switch
                 onCheckedChanged: {
-                    settingPage.preventDragging = checked;
-                    setting.save("setting/preventDragging", settingPage.preventDragging);
+                    globalState.preventDragging = checked;
+                    setting.save("setting/preventDragging", globalState.preventDragging);
                 }
             }
 

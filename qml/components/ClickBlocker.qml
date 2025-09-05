@@ -3,7 +3,7 @@
 import QtQuick
 
 Item {
-    id: blocker
+    id: root
     anchors.fill: parent
     // z: 要自己设置
 
@@ -13,12 +13,12 @@ Item {
     Rectangle {
         anchors.fill: parent
         color: "transparent"  // 默认透明
-        visible: blocker.enabled
+        visible: root.enabled
 
         MouseArea {
             anchors.fill: parent
             acceptedButtons: Qt.AllButtons
-            enabled: blocker.enabled // 只有当 enabled 为 true 时才拦截
+            enabled: root.enabled // 只有当 enabled 为 true 时才拦截
             hoverEnabled: true // 鼠标悬停时也拦截
         }
     }

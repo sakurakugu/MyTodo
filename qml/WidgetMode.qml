@@ -4,16 +4,71 @@ import QtQuick.Layouts
 import "components"
 
 Item {
-    id: widgetMode
+    id: toolMode
     visible: globalState.isDesktopWidget
-
-    property bool preventDragging: setting.get("setting/preventDragging", false) // 是否允许拖动
-
     // 外部导入的组件
     property var loginStatusDialogs
     property var todoCategoryManager
+    property var root
 
-    /// 标题栏
+    
+    property int spacing: 10 // 弹窗之间的间距
+    
+    // 动态计算总宽度和高度
+    property int totalWidth: 400  // 固定宽度
+    property int totalHeight: {
+        var height = titleBar.height;  // 标题栏高度
+        
+        if (settingsPopup.visible) {
+            height += spacing + settingsPopup.height;
+        }
+        if (addTaskPopup.visible) {
+            height += spacing + addTaskPopup.height;
+        }
+        if (mainContentPopup.visible) {
+            height += spacing + mainContentPopup.height;
+        }
+        if (todoItemDropdown.visible) {
+            height += spacing + todoItemDropdown.height;
+        }
+        
+        return height;
+    }
+    
+    // 当尺寸变化时通知父窗口
+    onTotalWidthChanged: {
+        if (root && globalState.isDesktopWidget) {
+            root.width = totalWidth;
+        }
+    }
+    
+    onTotalHeightChanged: {
+        if (root && globalState.isDesktopWidget) {
+            root.height = totalHeight;
+        }
+    }
+    
+    // 监听小组件模式状态变化
+    Connections {
+        target: globalState
+        function onIsDesktopWidgetChanged() {
+            if (globalState.isDesktopWidget && root) {
+                // 切换到小组件模式时立即更新尺寸
+                root.width = totalWidth;
+                root.height = totalHeight;
+            }
+        }
+    }
+    
+    // 组件完成时初始化尺寸
+    Component.onCompleted: {
+        if (globalState.isDesktopWidget && root) {
+            root.width = totalWidth;
+            root.height = totalHeight;
+        }
+    }
+
+    // 标题栏
     Rectangle {
         id: titleBar
         anchors.top: parent.top
@@ -27,7 +82,8 @@ Item {
         // 窗口拖拽处理区域
         WindowDragHandler {
             anchors.fill: parent
-            targetWindow: root
+            targetWindow: toolMode.root
+            enabled: !globalState.preventDragging
         }
 
         RowLayout {
@@ -99,7 +155,7 @@ Item {
     // 设置窗口
     Popup {
         id: settingsPopup
-        y: 50
+        y: titleBar.height + toolMode.spacing
         width: 400
         height: 250
         padding: 0 // 消除Popup和contentItem之间的间隙
@@ -132,7 +188,7 @@ Item {
                     id: darkModeCheckBox
                     text: qsTr("深色模式")
                     checked: globalState.isDarkMode
-                    enabled: !followSystemThemeManagerCheckBox.checked
+                    enabled: !globalState.isFollowSystemDarkMode
                     leftMargin: 10
                     controlType: ControlRow.ControlType.Switch
 
@@ -146,13 +202,13 @@ Item {
                 ControlRow {
                     id: preventDraggingCheckBox
                     text: qsTr("防止拖动窗口（小窗口模式）")
-                    checked: settingPage.preventDragging
+                    checked: globalState.preventDragging
                     enabled: globalState.isDesktopWidget
                     leftMargin: 10
                     controlType: ControlRow.ControlType.Switch
                     onCheckedChanged: {
-                        settingPage.preventDragging = checked;
-                        setting.save("setting/preventDragging", settingPage.preventDragging);
+                        globalState.preventDragging = checked;
+                        setting.save("setting/preventDragging", globalState.preventDragging);
                     }
                 }
 
@@ -181,7 +237,16 @@ Item {
     // 添加任务窗口
     Popup {
         id: addTaskPopup
-        y: settingsPopup.visible ? settingsPopup.y + 250 + 6 : 50
+
+        property int calculatedY: {
+            var baseY = titleBar.height + toolMode.spacing;
+            if (settingsPopup.visible) {
+                baseY += settingsPopup.height + toolMode.spacing;
+            }
+            return baseY;
+        }
+
+        y: calculatedY
         width: 400
         height: 250
         modal: false // 非模态，允许同时打开多个弹出窗口
@@ -233,16 +298,15 @@ Item {
 
         property int baseHeight: 200
         property int calculatedY: {
-            var baseY = 50;
+            var baseY = titleBar.height + toolMode.spacing;
+            if (settingsPopup.visible) {
+                baseY += settingsPopup.height + toolMode.spacing;
+            }
             if (addTaskPopup.visible) {
-                baseY = addTaskPopup.y + 250 + 6; // 使用固定高度避免循环依赖
-            } else if (settingsPopup.visible) {
-                baseY = settingsPopup.y + 250 + 6; // 使用固定高度避免循环依赖
+                baseY += addTaskPopup.height + toolMode.spacing;
             }
             return baseY;
         }
-
-        // 根据其他弹出窗口的可见性动态计算位置
         y: calculatedY
 
         width: 400
@@ -409,11 +473,19 @@ Item {
     Popup {
         id: todoItemDropdown
 
-        property int calculatedY: {
-            return mainContentPopup.y + mainContentPopup.height + 6;
+       property int calculatedY: {
+            var baseY = titleBar.height + toolMode.spacing;
+            if (settingsPopup.visible) {
+                baseY += settingsPopup.height + toolMode.spacing;
+            }
+            if (addTaskPopup.visible) {
+                baseY += addTaskPopup.height + toolMode.spacing;
+            }
+            if (mainContentPopup.visible) {
+                baseY += mainContentPopup.height + toolMode.spacing;
+            }
+            return baseY;
         }
-
-        // x: mainContentPopup.x
         y: calculatedY
         width: mainContentPopup.width
         height: 180

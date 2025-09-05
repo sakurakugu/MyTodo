@@ -25,7 +25,7 @@ GlobalState::GlobalState(QObject *parent)
       m_isShowDropdown(false) { // 初始化是否显示下拉菜单为false
 
     // 监听系统主题变化
-    connect(QGuiApplication::instance(), SIGNAL(paletteChanged(QPalette)), this, SIGNAL(systemDarkModeChanged()));
+    connect(QGuiApplication::instance(), SIGNAL(paletteChanged(QPalette)), this, SIGNAL(systemInDarkModeChanged()));
 }
 
 bool GlobalState::isDarkMode() const {
@@ -36,6 +36,17 @@ void GlobalState::setIsDarkMode(bool value) {
     if (m_isDarkMode != value) {
         m_isDarkMode = value;
         emit isDarkModeChanged();
+    }
+}
+
+bool GlobalState::isFollowSystemDarkMode() const {
+    return m_isFollowSystemDarkMode;
+}
+
+void GlobalState::setIsFollowSystemDarkMode(bool value) {
+    if (m_isFollowSystemDarkMode != value) {
+        m_isFollowSystemDarkMode = value;
+        emit isFollowSystemDarkModeChanged();
     }
 }
 
@@ -116,7 +127,7 @@ void GlobalState::setRefreshing(bool value) {
     }
 }
 
-bool GlobalState::isSystemDarkMode() const {
+bool GlobalState::isSystemInDarkMode() const {
 
 #if defined(Q_OS_WIN) // Windows 平台
     QSettings settings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",

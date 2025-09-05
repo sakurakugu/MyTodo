@@ -3,12 +3,19 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "../components"
 
-ColumnLayout {
-    anchors.fill: parent
-    spacing: 0
+// 待办事项列表
+ListView {
+    id: root
+    Layout.fillWidth: true
+    Layout.fillHeight: true
+    clip: true
 
-    // 待导入的属性
-    property Window root
+    // 使用 C++ 的 todoManager
+    model: todoManager
+
+    // 下拉刷新相关属性与逻辑
+    property int pullThreshold: 20 // 下拉刷新触发阈值
+    property real pullDistance: 0  // 当前下拉距离
 
     // 智能时间格式化函数
     function formatDateTime(dateTime) {
@@ -64,528 +71,265 @@ ColumnLayout {
         }
     }
 
-    // 搜索栏和工具栏
-    Rectangle {
-        Layout.fillWidth: true
-        Layout.preferredHeight: 68
-        color: ThemeManager.backgroundColor
+    onContentYChanged: {
+        pullDistance = contentY < 0 ? -contentY : 0;
+    }
 
-        // 窗口拖拽处理区域
-        WindowDragHandler {
-            anchors.fill: parent
-            targetWindow: root
-        }
+    onMovementEnded: {
+        // 如果下拉距离超过阈值且在顶部，触发刷新
+        if (contentY < -pullThreshold && atYBeginning && !globalState.refreshing) {
+            globalState.refreshing = true;
+            todoManager.syncWithServer();
+        } else {}
+    }
 
+    header: Item {
+        width: root.width
+        height: globalState.refreshing ? 50 : Math.min(50, root.pullDistance)
+        visible: height > 0 || globalState.refreshing
         RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 8
-            anchors.rightMargin: 8
-            spacing: 8
+            anchors.centerIn: parent
+            spacing: 6
+            // 刷新
+            IconButton {
+                id: refreshIndicatorIcon
+                text: "\ue8e2"              // 刷新图标
+                visible: globalState.refreshing || root.pullDistance > 0
+                width: 20
+                height: 20
+                Layout.alignment: Qt.AlignVCenter
 
-            // 搜索框
-            CustomTextInput {
-                id: searchField
-                leftIcon: "\ue8f2"  // 使用内置的左侧图标功能
-                implicitWidth: parent.width - addButton.width - parent.spacing
-                implicitHeight: 30
-                placeholderText: qsTr("搜索")
-                selectByMouse: true
-                verticalAlignment: TextInput.AlignVCenter
-                onTextChanged: {
-                    todoFilter.searchText = text;
+                // 根据下拉比例旋转
+                rotation: {
+                    if (globalState.refreshing) {
+                        // 刷新时保持旋转动画
+                        return 0; // 由下面的RotationAnimation控制
+                    } else {
+                        // 根据下拉比例计算旋转角度 (0-360度)
+                        var ratio = Math.min(root.pullDistance / (root.pullThreshold * 5), 1.0);
+                        return ratio * 360;
+                    }
+                }
+
+                // 刷新时的旋转动画
+                RotationAnimation {
+                    target: refreshIndicatorIcon
+                    from: 0
+                    to: 360
+                    duration: 1000
+                    loops: Animation.Infinite
+                    running: globalState.refreshing
                 }
             }
-
-            // 添加待办事项按钮
-            IconButton {
-                id: addButton
-                text: "\ue8e1"
-                onClicked: todoManager.addTodo(qsTr("新的待办事项"))
-
-                backgroundItem.radius: 4
-                backgroundItem.border.width: 1
-                backgroundItem.border.color: isHovered ? Qt.darker(borderColor, 1.2) : borderColor
-                backgroundItem.color: isHovered ? Qt.darker(ThemeManager.secondaryBackgroundColor, 1.2) : ThemeManager.secondaryBackgroundColor
+            Label {
+                text: globalState.refreshing ? qsTr("正在同步...") : (root.pullDistance >= root.pullThreshold ? qsTr("释放刷新") : qsTr("下拉刷新"))
+                color: ThemeManager.textColor
+                font.pixelSize: 12
+                Layout.alignment: Qt.AlignVCenter
             }
         }
     }
 
-    Divider {}
+    // 下拉距离重置动画
+    NumberAnimation {
+        id: pullDistanceAnimation
+        target: root
+        property: "pullDistance"
+        to: 0
+        duration: 300
+        easing.type: Easing.OutCubic
+    }
 
-    // 待办事项列表
-    ListView {
-        id: todoListView
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        clip: true
-
-        // 使用 C++ 的 todoManager
-        model: todoManager
-
-        // 下拉刷新相关属性与逻辑
-        property int pullThreshold: 20 // 下拉刷新触发阈值
-        property real pullDistance: 0  // 当前下拉距离
-
-        onContentYChanged: {
-            pullDistance = contentY < 0 ? -contentY : 0;
-        }
-
-        onMovementEnded: {
-            // 如果下拉距离超过阈值且在顶部，触发刷新
-            if (contentY < -pullThreshold && atYBeginning && !globalState.refreshing) {
+    Connections {
+        target: todoManager
+        function onSyncStarted() {
+            if (!globalState.refreshing && root.atYBeginning) {
                 globalState.refreshing = true;
-                todoManager.syncWithServer();
-            } else {}
-        }
-
-        header: Item {
-            width: todoListView.width
-            height: globalState.refreshing ? 50 : Math.min(50, todoListView.pullDistance)
-            visible: height > 0 || globalState.refreshing
-            RowLayout {
-                anchors.centerIn: parent
-                spacing: 6
-                // 刷新
-                IconButton {
-                    id: refreshIndicatorIcon
-                    text: "\ue8e2"              // 刷新图标
-                    visible: globalState.refreshing || todoListView.pullDistance > 0
-                    width: 20
-                    height: 20
-                    Layout.alignment: Qt.AlignVCenter
-
-                    // 根据下拉比例旋转
-                    rotation: {
-                        if (globalState.refreshing) {
-                            // 刷新时保持旋转动画
-                            return 0; // 由下面的RotationAnimation控制
-                        } else {
-                            // 根据下拉比例计算旋转角度 (0-360度)
-                            var ratio = Math.min(todoListView.pullDistance / (todoListView.pullThreshold * 5), 1.0);
-                            return ratio * 360;
-                        }
-                    }
-
-                    // 刷新时的旋转动画
-                    RotationAnimation {
-                        target: refreshIndicatorIcon
-                        from: 0
-                        to: 360
-                        duration: 1000
-                        loops: Animation.Infinite
-                        running: globalState.refreshing
-                    }
-                }
-                Label {
-                    text: globalState.refreshing ? qsTr("正在同步...") : (todoListView.pullDistance >= todoListView.pullThreshold ? qsTr("释放刷新") : qsTr("下拉刷新"))
-                    color: ThemeManager.textColor
-                    font.pixelSize: 12
-                    Layout.alignment: Qt.AlignVCenter
-                }
             }
         }
-
-        // 下拉距离重置动画
-        NumberAnimation {
-            id: pullDistanceAnimation
-            target: todoListView
-            property: "pullDistance"
-            to: 0
-            duration: 300
-            easing.type: Easing.OutCubic
+        function onSyncCompleted(result, message) {
+            globalState.refreshing = false;
+            // 使用动画平滑重置下拉距离
+            pullDistanceAnimation.start();
+            // 强制刷新ListView以确保显示最新数据
+            root.model = null;
+            root.model = todoManager;
         }
+    }
 
-        Connections {
-            target: todoManager
-            function onSyncStarted() {
-                if (!globalState.refreshing && todoListView.atYBeginning) {
-                    globalState.refreshing = true;
-                }
-            }
-            function onSyncCompleted(result, message) {
-                globalState.refreshing = false;
-                refreshButtonAnimation.stop();  // 停止刷新按钮的旋转动画
-                // 使用动画平滑重置下拉距离
-                pullDistanceAnimation.start();
-                // 强制刷新ListView以确保显示最新数据
-                todoListView.model = null;
-                todoListView.model = todoManager;
-            }
-        }
+    delegate: Item {
+        id: delegateItem
+        width: parent ? parent.width : 0
+        height: 50
 
-        delegate: Item {
-            id: delegateItem
-            width: parent ? parent.width : 0
-            height: 50
+        property bool isSelected: selectedItems.indexOf(index) !== -1
+        property real swipeOffset: 0
+        property bool swipeActive: false
 
-            property bool isSelected: selectedItems.indexOf(index) !== -1
-            property real swipeOffset: 0
-            property bool swipeActive: false
-
-            // 主内容区域
-            Rectangle {
-                id: mainContent
-                anchors.fill: parent
-                x: delegateItem.swipeOffset
-                color: ThemeManager.backgroundColor
-                // 长按和点击处理
-                MouseArea {
-                    id: itemMouseArea
-                    anchors.fill: parent
-
-                    onClicked: {
-                        if (multiSelectMode) {
-                            // 多选模式下切换选中状态
-                            var newSelectedItems = selectedItems.slice();
-                            var itemIndex = newSelectedItems.indexOf(index);
-                            if (itemIndex !== -1) {
-                                newSelectedItems.splice(itemIndex, 1);
-                            } else {
-                                newSelectedItems.push(index);
-                            }
-                            selectedItems = newSelectedItems;
-
-                            // 如果没有选中项，退出多选模式
-                            if (selectedItems.length === 0) {
-                                multiSelectMode = false;
-                            }
-                        } else {
-                            // 普通模式下显示详情
-                            selectedTodo = {
-                                index: index,
-                                title: model.title,
-                                description: model.description,
-                                category: model.category,
-                                priority: model.priority,
-                                completed: model.completed,
-                                createdAt: model.createdAt,
-                                lastModifiedAt: model.lastModifiedAt,
-                                completedAt: model.completedAt,
-                                deletedAt: model.deletedAt,
-                                deadline: model.deadline,
-                                recurrenceInterval: model.recurrenceInterval,
-                                recurrenceCount: model.recurrenceCount,
-                                recurrenceStartDate: model.recurrenceStartDate,
-                                important: model.important
-                            };
-                            todoListView.currentIndex = index;
-                        }
-                    }
-
-                    onPressAndHold: {
-                        // 长按进入多选模式
-                        if (!multiSelectMode) {
-                            multiSelectMode = true;
-                            selectedItems = [index];
-                        }
-                    }
-                }
-
-                // 内容区域
-                // 圆角边框
-                Rectangle {
-                    anchors.fill: parent
-                    radius: 10
-                    border.width: 1
-                    border.color: ThemeManager.borderColor
-                    anchors.leftMargin: 2
-                    anchors.rightMargin: 2
-                    anchors.topMargin: 2
-                    anchors.bottomMargin: 0
-
-                    color: delegateItem.isSelected ? ThemeManager.selectedColor || "lightblue" : (index % 2 === 0 ? ThemeManager.secondaryBackgroundColor : ThemeManager.backgroundColor)
-
-                    RowLayout {
-                        anchors.fill: parent
-                        spacing: 8
-                        ColumnLayout {
-                            spacing: 1
-                            Item {
-                                Layout.fillHeight: true
-                            }
-
-                            // “是否重要等”和“标题”
-                            RowLayout {
-                                Layout.leftMargin: 8
-                                Layout.rightMargin: 8
-                                spacing: 8
-
-                                // 待办状态指示器
-                                Rectangle {
-                                    width: 10
-                                    height: 10
-                                    radius: 4
-                                    color: (model.isCompleted || false) ? ThemeManager.completedColor : (model.important || false) ? ThemeManager.highImportantColor : ThemeManager.lowImportantColor
-
-                                    // TODO ：如果是备忘录模式记得开启它
-                                    // MouseArea {
-                                    //     anchors.fill: parent
-                                    //     onClicked: function (mouse) {
-                                    //         if (!multiSelectMode) {
-                                    //             todoManager.markAsDone(index);
-                                    //         }
-                                    //         mouse.accepted = true;
-                                    //     }
-                                    // }
-                                }
-
-                                // 待办标题
-                                Label {
-                                    text: model.title
-                                    font.strikeout: model.isCompleted || false
-                                    color: (model.isCompleted || false) ? ThemeManager.secondaryTextColor : ThemeManager.textColor
-                                    Layout.fillWidth: true
-                                    elide: Text.ElideRight
-                                    maximumLineCount: 1
-                                }
-                            }
-                            // TODO:如果是记录（笔记或备忘录）
-                            // “时间”和“部分内容”
-                            RowLayout {
-                                Layout.leftMargin: 8
-                                Layout.rightMargin: 8
-                                spacing: 4
-                                // 时间
-                                Label {
-                                    text: formatDateTime(model.lastModifiedAt)
-                                    font.pixelSize: 12
-                                    color: ThemeManager.secondaryTextColor
-                                }
-                                Label {
-                                    text: "|"
-                                    font.pixelSize: 12
-                                    color: ThemeManager.secondaryTextColor
-                                    visible: model.description !== ""
-                                }
-                                // 部分内容
-                                Label {
-                                    text: model.description
-                                    font.pixelSize: 12
-                                    color: ThemeManager.secondaryTextColor
-                                    Layout.fillWidth: true
-                                    elide: Text.ElideRight
-                                    maximumLineCount: 1
-                                }
-                            }
-
-                            Item {
-                                Layout.fillHeight: true
-                            }
-                        }
-
-                        // 多选复选框（仅在多选模式下显示）
-                        CheckBox {
-                            visible: multiSelectMode
-                            checked: delegateItem.isSelected
-                            Layout.preferredWidth: visible ? implicitWidth : 0
-                            Layout.preferredHeight: visible ? implicitHeight : 0
-                            onClicked: {
-                                var newSelectedItems = selectedItems.slice();
-                                var itemIndex = newSelectedItems.indexOf(index);
-                                if (checked && itemIndex === -1) {
-                                    newSelectedItems.push(index);
-                                } else if (!checked && itemIndex !== -1) {
-                                    newSelectedItems.splice(itemIndex, 1);
-                                }
-                                selectedItems = newSelectedItems;
-
-                                // 如果没有选中项，退出多选模式
-                                if (selectedItems.length === 0) {
-                                    multiSelectMode = false;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // TODO： 现在左右滑动没让主体也跟着滑动
-            // 右划完成背景
-            Rectangle {
-                id: completeBackground
-                anchors.left: parent.left
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                width: Math.abs(delegateItem.swipeOffset)
-                color: (model.isCompleted || false) ? ThemeManager.warningColor : ThemeManager.successColor
-                visible: delegateItem.swipeOffset > 0
-
-                Text {
-                    anchors.centerIn: parent
-                    text: (model.isCompleted || false) ? qsTr("未完成") : qsTr("已完成")
-                    color: ThemeManager.backgroundColor
-                    font.pixelSize: 14
-                }
-
-                MouseArea {
-                    id: completeMouseArea
-                    anchors.fill: parent
-                    z: 10  // 确保在最上层
-                    hoverEnabled: true
-                    onClicked: {
-                        itemMouseArea.enabled = false; // 先禁用以防多次点
-                        todoListView.currentIndex = index; // 设置当前项索引
-                        todoManager.markAsDoneOrTodo(index);     // 切换完成状态
-                        // model.isCompleted = !model.isCompleted;
-
-                        // 延迟重新启用项目的MouseArea
-                        Qt.callLater(function () {
-                            if (itemMouseArea) {
-                                itemMouseArea.enabled = true;
-                            }
-                        });
-                    }
-                }
-            }
-
-            // 左划删除背景
-            Rectangle {
-                id: deleteBackground
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                width: Math.abs(delegateItem.swipeOffset)
-                color: ThemeManager.errorColor
-                visible: delegateItem.swipeOffset < 0
-
-                Text {
-                    anchors.centerIn: parent
-                    text: qsTr("删除")
-                    color: "white"
-                    font.pixelSize: 14
-                }
-
-                MouseArea {
-                    id: deleteMouseArea
-                    anchors.fill: parent
-                    z: 10  // 确保在最上层
-                    hoverEnabled: true
-                    onClicked: {
-                        itemMouseArea.enabled = false; // 先禁用以防多次点
-                        todoListView.currentIndex = index; // 设置当前项索引
-
-                        // 检查是否在回收站中
-                        if (todoFilter.currentFilter === "recycle") {
-                            // 在回收站中，弹出确认弹窗进行硬删除
-                            confirmDeleteDialog.selectedIndices = [index];
-                            confirmDeleteDialog.open();
-                        } else {
-                            // 不在回收站中，执行软删除
-                            todoManager.removeTodo(index);
-                        }
-
-                        // 延迟重新启用项目的MouseArea
-                        Qt.callLater(function () {
-                            if (itemMouseArea) {
-                                itemMouseArea.enabled = true;
-                            }
-                        });
-                    }
-                }
-            }
-
-            // 左划手势处理
+        // 主内容区域
+        Rectangle {
+            id: mainContent
+            anchors.fill: parent
+            x: delegateItem.swipeOffset
+            color: ThemeManager.backgroundColor
+            // 长按和点击处理
             MouseArea {
-                id: swipeArea
+                id: itemMouseArea
                 anchors.fill: parent
-                enabled: !multiSelectMode
-                pressAndHoldInterval: 500  // 长按时间为500毫秒
-                propagateComposedEvents: true  // 允许事件传递到子组件
 
-                property real startX: 0
-                property bool isDragging: false
-                property bool isLongPressed: false  // 跟踪长按状态
+                onClicked: {
+                    if (multiSelectMode) {
+                        // 多选模式下切换选中状态
+                        var newSelectedItems = selectedItems.slice();
+                        var itemIndex = newSelectedItems.indexOf(index);
+                        if (itemIndex !== -1) {
+                            newSelectedItems.splice(itemIndex, 1);
+                        } else {
+                            newSelectedItems.push(index);
+                        }
+                        selectedItems = newSelectedItems;
 
-                // 按下时记录初始位置
-                onPressed: function (mouse) {
-                    // 如果点击在删除区域，不处理
-                    if (delegateItem.swipeOffset < 0 && mouse.x > parent.width + delegateItem.swipeOffset) {
-                        mouse.accepted = false;
-                        return;
+                        // 如果没有选中项，退出多选模式
+                        if (selectedItems.length === 0) {
+                            multiSelectMode = false;
+                        }
+                    } else {
+                        // 普通模式下显示详情
+                        selectedTodo = {
+                            index: index,
+                            title: model.title,
+                            description: model.description,
+                            category: model.category,
+                            priority: model.priority,
+                            completed: model.completed,
+                            createdAt: model.createdAt,
+                            lastModifiedAt: model.lastModifiedAt,
+                            completedAt: model.completedAt,
+                            deletedAt: model.deletedAt,
+                            deadline: model.deadline,
+                            recurrenceInterval: model.recurrenceInterval,
+                            recurrenceCount: model.recurrenceCount,
+                            recurrenceStartDate: model.recurrenceStartDate,
+                            important: model.important
+                        };
+                        root.currentIndex = index;
                     }
-                    // 如果点击在完成区域，不处理
-                    if (delegateItem.swipeOffset > 0 && mouse.x < delegateItem.swipeOffset) {
-                        mouse.accepted = false;
-                        return;
-                    }
-                    startX = mouse.x;
-                    isDragging = false;
-                    isLongPressed = false;  // 重置长按状态
                 }
 
-                // 拖动时处理
-                onPositionChanged: function (mouse) {
-                    if (pressed) {
-                        // 如果点击在删除区域，不处理拖动
-                        if (delegateItem.swipeOffset < 0 && mouse.x > parent.width + delegateItem.swipeOffset) {
-                            mouse.accepted = false;
-                            return;
-                        }
-                        // 如果点击在完成区域，不处理拖动
-                        if (delegateItem.swipeOffset > 0 && mouse.x < delegateItem.swipeOffset) {
-                            mouse.accepted = false;
-                            return;
+                onPressAndHold: {
+                    // 长按进入多选模式
+                    if (!multiSelectMode) {
+                        multiSelectMode = true;
+                        selectedItems = [index];
+                    }
+                }
+            }
+
+            // 内容区域
+            // 圆角边框
+            Rectangle {
+                anchors.fill: parent
+                radius: 10
+                border.width: 1
+                border.color: ThemeManager.borderColor
+                anchors.leftMargin: 2
+                anchors.rightMargin: 2
+                anchors.topMargin: 2
+                anchors.bottomMargin: 0
+
+                color: delegateItem.isSelected ? ThemeManager.selectedColor || "lightblue" : (index % 2 === 0 ? ThemeManager.secondaryBackgroundColor : ThemeManager.backgroundColor)
+
+                RowLayout {
+                    anchors.fill: parent
+                    spacing: 8
+                    ColumnLayout {
+                        spacing: 1
+                        Item {
+                            Layout.fillHeight: true
                         }
 
-                        var deltaX = mouse.x - startX;
-                        if (Math.abs(deltaX) > 20) {
-                            // 增加拖拽阈值到20像素
-                            isDragging = true;
-                        }
+                        // “是否重要等”和“标题”
+                        RowLayout {
+                            Layout.leftMargin: 8
+                            Layout.rightMargin: 8
+                            spacing: 8
 
-                        if (isDragging && deltaX < 0) {
-                            // 左划删除
-                            delegateItem.swipeOffset = Math.max(deltaX, -80);
-                            delegateItem.swipeActive = true;
-                        } else if (isDragging && deltaX > 0) {
-                            if (delegateItem.swipeOffset < 0) {
-                                // 从左划状态向右滑动回弹
-                                delegateItem.swipeOffset = Math.min(0, delegateItem.swipeOffset + deltaX);
-                            } else {
-                                // 右划切换完成状态
-                                delegateItem.swipeOffset = Math.min(deltaX, 80);
-                                delegateItem.swipeActive = true;
+                            // 待办状态指示器
+                            Rectangle {
+                                width: 10
+                                height: 10
+                                radius: 4
+                                color: (model.isCompleted || false) ? ThemeManager.completedColor : (model.important || false) ? ThemeManager.highImportantColor : ThemeManager.lowImportantColor
+
+                                // TODO ：如果是备忘录模式记得开启它
+                                // MouseArea {
+                                //     anchors.fill: parent
+                                //     onClicked: function (mouse) {
+                                //         if (!multiSelectMode) {
+                                //             todoManager.markAsDone(index);
+                                //         }
+                                //         mouse.accepted = true;
+                                //     }
+                                // }
+                            }
+
+                            // 待办标题
+                            Label {
+                                text: model.title
+                                font.strikeout: model.isCompleted || false
+                                color: (model.isCompleted || false) ? ThemeManager.secondaryTextColor : ThemeManager.textColor
+                                Layout.fillWidth: true
+                                elide: Text.ElideRight
+                                maximumLineCount: 1
                             }
                         }
-                    }
-                }
-
-                // 释放时处理
-                onReleased: function (mouse) {
-                    // 如果点击在删除区域，直接传递事件
-                    if (delegateItem.swipeOffset < 0 && mouse.x > parent.width + delegateItem.swipeOffset) {
-                        mouse.accepted = false;
-                        isDragging = false;
-                        delegateItem.swipeActive = false;
-                        return;
-                    }
-                    // 如果点击在完成区域，直接传递事件
-                    if (delegateItem.swipeOffset > 0 && mouse.x < delegateItem.swipeOffset) {
-                        mouse.accepted = false;
-                        isDragging = false;
-                        delegateItem.swipeActive = false;
-                        return;
-                    }
-
-                    if (isDragging) {
-                        // 如果左划距离不够，回弹
-                        if (delegateItem.swipeOffset > -40 && delegateItem.swipeOffset < 0) {
-                            swipeResetAnimation.start();
-                        } else
-                        // 如果右划距离不够，回弹
-                        if (delegateItem.swipeOffset < 40 && delegateItem.swipeOffset > 0) {
-                            swipeResetAnimation.start();
+                        // TODO:如果是记录（笔记或备忘录）
+                        // “时间”和“部分内容”
+                        RowLayout {
+                            Layout.leftMargin: 8
+                            Layout.rightMargin: 8
+                            spacing: 4
+                            // 时间
+                            Label {
+                                text: formatDateTime(model.lastModifiedAt)
+                                font.pixelSize: 12
+                                color: ThemeManager.secondaryTextColor
+                            }
+                            Label {
+                                text: "|"
+                                font.pixelSize: 12
+                                color: ThemeManager.secondaryTextColor
+                                visible: model.description !== ""
+                            }
+                            // 部分内容
+                            Label {
+                                text: model.description
+                                font.pixelSize: 12
+                                color: ThemeManager.secondaryTextColor
+                                Layout.fillWidth: true
+                                elide: Text.ElideRight
+                                maximumLineCount: 1
+                            }
                         }
-                    } else if (!delegateItem.swipeActive && !isLongPressed) {
-                        // 如果不是滑动且未触发长按，执行点击逻辑
-                        if (multiSelectMode) {
-                            // 多选模式下切换选中状态
+
+                        Item {
+                            Layout.fillHeight: true
+                        }
+                    }
+
+                    // 多选复选框（仅在多选模式下显示）
+                    CheckBox {
+                        visible: multiSelectMode
+                        checked: delegateItem.isSelected
+                        Layout.preferredWidth: visible ? implicitWidth : 0
+                        Layout.preferredHeight: visible ? implicitHeight : 0
+                        onClicked: {
                             var newSelectedItems = selectedItems.slice();
                             var itemIndex = newSelectedItems.indexOf(index);
-                            if (itemIndex !== -1) {
-                                newSelectedItems.splice(itemIndex, 1);
-                            } else {
+                            if (checked && itemIndex === -1) {
                                 newSelectedItems.push(index);
+                            } else if (!checked && itemIndex !== -1) {
+                                newSelectedItems.splice(itemIndex, 1);
                             }
                             selectedItems = newSelectedItems;
 
@@ -593,121 +337,320 @@ ColumnLayout {
                             if (selectedItems.length === 0) {
                                 multiSelectMode = false;
                             }
-                        } else {
-                            // 普通模式（点击一次）下显示详情
-                            selectedTodo = {
-                                title: model.title,
-                                description: model.description,
-                                category: model.category,
-                                priority: model.priority,
-                                completed: model.completed,
-                                createdAt: model.createdAt,
-                                lastModifiedAt: model.lastModifiedAt,
-                                completedAt: model.completedAt,
-                                deletedAt: model.deletedAt,
-                                deadline: model.deadline,
-                                recurrenceInterval: model.recurrenceInterval,
-                                recurrenceCount: model.recurrenceCount,
-                                recurrenceStartDate: model.recurrenceStartDate
-                            };
-                            todoListView.currentIndex = index;
                         }
-                        mouse.accepted = true;  // 已处理点击事件，阻止事件传递
                     }
+                }
+            }
+        }
+
+        // TODO： 现在左右滑动没让主体也跟着滑动
+        // 右划完成背景
+        Rectangle {
+            id: completeBackground
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            width: Math.abs(delegateItem.swipeOffset)
+            color: (model.isCompleted || false) ? ThemeManager.warningColor : ThemeManager.successColor
+            visible: delegateItem.swipeOffset > 0
+
+            Text {
+                anchors.centerIn: parent
+                text: (model.isCompleted || false) ? qsTr("未完成") : qsTr("已完成")
+                color: ThemeManager.backgroundColor
+                font.pixelSize: 14
+            }
+
+            MouseArea {
+                id: completeMouseArea
+                anchors.fill: parent
+                z: 10  // 确保在最上层
+                hoverEnabled: true
+                onClicked: {
+                    itemMouseArea.enabled = false; // 先禁用以防多次点
+                    root.currentIndex = index; // 设置当前项索引
+                    todoManager.markAsDoneOrTodo(index);     // 切换完成状态
+                    // model.isCompleted = !model.isCompleted;
+
+                    // 延迟重新启用项目的MouseArea
+                    Qt.callLater(function () {
+                        if (itemMouseArea) {
+                            itemMouseArea.enabled = true;
+                        }
+                    });
+                }
+            }
+        }
+
+        // 左划删除背景
+        Rectangle {
+            id: deleteBackground
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            width: Math.abs(delegateItem.swipeOffset)
+            color: ThemeManager.errorColor
+            visible: delegateItem.swipeOffset < 0
+
+            Text {
+                anchors.centerIn: parent
+                text: qsTr("删除")
+                color: "white"
+                font.pixelSize: 14
+            }
+
+            MouseArea {
+                id: deleteMouseArea
+                anchors.fill: parent
+                z: 10  // 确保在最上层
+                hoverEnabled: true
+                onClicked: {
+                    itemMouseArea.enabled = false; // 先禁用以防多次点
+                    root.currentIndex = index; // 设置当前项索引
+
+                    // 检查是否在回收站中
+                    if (todoFilter.currentFilter === "recycle") {
+                        // 在回收站中，弹出确认弹窗进行硬删除
+                        confirmDeleteDialog.selectedIndices = [index];
+                        confirmDeleteDialog.open();
+                    } else {
+                        // 不在回收站中，执行软删除
+                        todoManager.removeTodo(index);
+                    }
+
+                    // 延迟重新启用项目的MouseArea
+                    Qt.callLater(function () {
+                        if (itemMouseArea) {
+                            itemMouseArea.enabled = true;
+                        }
+                    });
+                }
+            }
+        }
+
+        // 左划手势处理
+        MouseArea {
+            id: swipeArea
+            anchors.fill: parent
+            enabled: !multiSelectMode
+            pressAndHoldInterval: 500  // 长按时间为500毫秒
+            propagateComposedEvents: true  // 允许事件传递到子组件
+
+            property real startX: 0
+            property bool isDragging: false
+            property bool isLongPressed: false  // 跟踪长按状态
+
+            // 按下时记录初始位置
+            onPressed: function (mouse) {
+                // 如果点击在删除区域，不处理
+                if (delegateItem.swipeOffset < 0 && mouse.x > parent.width + delegateItem.swipeOffset) {
+                    mouse.accepted = false;
+                    return;
+                }
+                // 如果点击在完成区域，不处理
+                if (delegateItem.swipeOffset > 0 && mouse.x < delegateItem.swipeOffset) {
+                    mouse.accepted = false;
+                    return;
+                }
+                startX = mouse.x;
+                isDragging = false;
+                isLongPressed = false;  // 重置长按状态
+            }
+
+            // 拖动时处理
+            onPositionChanged: function (mouse) {
+                if (pressed) {
+                    // 如果点击在删除区域，不处理拖动
+                    if (delegateItem.swipeOffset < 0 && mouse.x > parent.width + delegateItem.swipeOffset) {
+                        mouse.accepted = false;
+                        return;
+                    }
+                    // 如果点击在完成区域，不处理拖动
+                    if (delegateItem.swipeOffset > 0 && mouse.x < delegateItem.swipeOffset) {
+                        mouse.accepted = false;
+                        return;
+                    }
+
+                    var deltaX = mouse.x - startX;
+                    if (Math.abs(deltaX) > 20) {
+                        // 增加拖拽阈值到20像素
+                        isDragging = true;
+                    }
+
+                    if (isDragging && deltaX < 0) {
+                        // 左划删除
+                        delegateItem.swipeOffset = Math.max(deltaX, -80);
+                        delegateItem.swipeActive = true;
+                    } else if (isDragging && deltaX > 0) {
+                        if (delegateItem.swipeOffset < 0) {
+                            // 从左划状态向右滑动回弹
+                            delegateItem.swipeOffset = Math.min(0, delegateItem.swipeOffset + deltaX);
+                        } else {
+                            // 右划切换完成状态
+                            delegateItem.swipeOffset = Math.min(deltaX, 80);
+                            delegateItem.swipeActive = true;
+                        }
+                    }
+                }
+            }
+
+            // 释放时处理
+            onReleased: function (mouse) {
+                // 如果点击在删除区域，直接传递事件
+                if (delegateItem.swipeOffset < 0 && mouse.x > parent.width + delegateItem.swipeOffset) {
+                    mouse.accepted = false;
                     isDragging = false;
                     delegateItem.swipeActive = false;
+                    return;
+                }
+                // 如果点击在完成区域，直接传递事件
+                if (delegateItem.swipeOffset > 0 && mouse.x < delegateItem.swipeOffset) {
+                    mouse.accepted = false;
+                    isDragging = false;
+                    delegateItem.swipeActive = false;
+                    return;
                 }
 
-                // 长按处理
-                onPressAndHold: function (mouse) {
-                    if (!isDragging) {
-                        isLongPressed = true;  // 标记已触发长按
-                        // 长按进入多选模式
-                        if (!multiSelectMode) {
-                            multiSelectMode = true;
-                            selectedItems = [index];
+                if (isDragging) {
+                    // 如果左划距离不够，回弹
+                    if (delegateItem.swipeOffset > -40 && delegateItem.swipeOffset < 0) {
+                        swipeResetAnimation.start();
+                    } else
+                    // 如果右划距离不够，回弹
+                    if (delegateItem.swipeOffset < 40 && delegateItem.swipeOffset > 0) {
+                        swipeResetAnimation.start();
+                    }
+                } else if (!delegateItem.swipeActive && !isLongPressed) {
+                    // 如果不是滑动且未触发长按，执行点击逻辑
+                    if (multiSelectMode) {
+                        // 多选模式下切换选中状态
+                        var newSelectedItems = selectedItems.slice();
+                        var itemIndex = newSelectedItems.indexOf(index);
+                        if (itemIndex !== -1) {
+                            newSelectedItems.splice(itemIndex, 1);
+                        } else {
+                            newSelectedItems.push(index);
                         }
+                        selectedItems = newSelectedItems;
+
+                        // 如果没有选中项，退出多选模式
+                        if (selectedItems.length === 0) {
+                            multiSelectMode = false;
+                        }
+                    } else {
+                        // 普通模式（点击一次）下显示详情
+                        selectedTodo = {
+                            title: model.title,
+                            description: model.description,
+                            category: model.category,
+                            priority: model.priority,
+                            completed: model.completed,
+                            createdAt: model.createdAt,
+                            lastModifiedAt: model.lastModifiedAt,
+                            completedAt: model.completedAt,
+                            deletedAt: model.deletedAt,
+                            deadline: model.deadline,
+                            recurrenceInterval: model.recurrenceInterval,
+                            recurrenceCount: model.recurrenceCount,
+                            recurrenceStartDate: model.recurrenceStartDate
+                        };
+                        root.currentIndex = index;
+                    }
+                    mouse.accepted = true;  // 已处理点击事件，阻止事件传递
+                }
+                isDragging = false;
+                delegateItem.swipeActive = false;
+            }
+
+            // 长按处理
+            onPressAndHold: function (mouse) {
+                if (!isDragging) {
+                    isLongPressed = true;  // 标记已触发长按
+                    // 长按进入多选模式
+                    if (!multiSelectMode) {
+                        multiSelectMode = true;
+                        selectedItems = [index];
                     }
                 }
             }
-
-            // 滑动回弹动画
-            NumberAnimation {
-                id: swipeResetAnimation
-                target: delegateItem
-                property: "swipeOffset"
-                to: 0
-                duration: 200
-                easing.type: Easing.OutQuad
-            }
         }
 
-        // 多选模式下的操作栏
-        Rectangle {
-            visible: multiSelectMode
-            anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 60
-            color: ThemeManager.backgroundColor || "white"
-            border.width: 1
-            border.color: ThemeManager.borderColor || "lightgray"
+        // 滑动回弹动画
+        NumberAnimation {
+            id: swipeResetAnimation
+            target: delegateItem
+            property: "swipeOffset"
+            to: 0
+            duration: 200
+            easing.type: Easing.OutQuad
+        }
+    }
 
-            RowLayout {
-                anchors.fill: parent
-                anchors.margins: 4
-                spacing: 2
+    // 多选模式下的操作栏
+    Rectangle {
+        visible: multiSelectMode
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 60
+        color: ThemeManager.backgroundColor || "white"
+        border.width: 1
+        border.color: ThemeManager.borderColor || "lightgray"
 
-                Label {
-                    text: qsTr("已选择 %1 项").arg(selectedItems.length)
-                    color: ThemeManager.textColor
-                    Layout.leftMargin: 4
+        RowLayout {
+            anchors.fill: parent
+            anchors.margins: 4
+            spacing: 2
+
+            Label {
+                text: qsTr("已选择 %1 项").arg(selectedItems.length)
+                color: ThemeManager.textColor
+                Layout.leftMargin: 4
+            }
+
+            CustomButton {
+                text: qsTr("取消")
+                is2ndColor: true
+                implicitWidth: 50
+                implicitHeight: 36
+                fontSize: 12
+                onClicked: {
+                    multiSelectMode = false;
+                    selectedItems = [];
                 }
+            }
 
-                CustomButton {
-                    text: qsTr("取消")
-                    is2ndColor: true
-                    implicitWidth: 50
-                    implicitHeight: 36
-                    fontSize: 12
-                    onClicked: {
+            CustomButton {
+                text: qsTr("删除")
+                enabled: selectedItems.length > 0
+                backgroundColor: ThemeManager.errorColor
+                hoverColor: Qt.darker(ThemeManager.errorColor, 1.1)
+                pressedColor: Qt.darker(ThemeManager.errorColor, 1.2)
+                implicitWidth: 50
+                implicitHeight: 36
+                fontSize: 12
+                onClicked: {
+                    // 检查是否在回收站中
+                    if (todoFilter.currentFilter === "recycle") {
+                        // 在回收站中，弹出确认弹窗进行硬删除
+                        confirmDeleteDialog.selectedIndices = selectedItems.slice();
+                        confirmDeleteDialog.open();
+                    } else {
+                        // 不在回收站中，执行软删除
+                        var sortedIndices = selectedItems.slice().sort(function (a, b) {
+                            return b - a;
+                        });
+                        for (var i = 0; i < sortedIndices.length; i++) {
+                            todoManager.removeTodo(sortedIndices[i]);
+                        }
                         multiSelectMode = false;
                         selectedItems = [];
                     }
                 }
-
-                CustomButton {
-                    text: qsTr("删除")
-                    enabled: selectedItems.length > 0
-                    backgroundColor: ThemeManager.errorColor
-                    hoverColor: Qt.darker(ThemeManager.errorColor, 1.1)
-                    pressedColor: Qt.darker(ThemeManager.errorColor, 1.2)
-                    implicitWidth: 50
-                    implicitHeight: 36
-                    fontSize: 12
-                    onClicked: {
-                        // 检查是否在回收站中
-                        if (todoFilter.currentFilter === "recycle") {
-                            // 在回收站中，弹出确认弹窗进行硬删除
-                            confirmDeleteDialog.selectedIndices = selectedItems.slice();
-                            confirmDeleteDialog.open();
-                        } else {
-                            // 不在回收站中，执行软删除
-                            var sortedIndices = selectedItems.slice().sort(function (a, b) {
-                                return b - a;
-                            });
-                            for (var i = 0; i < sortedIndices.length; i++) {
-                                todoManager.removeTodo(sortedIndices[i]);
-                            }
-                            multiSelectMode = false;
-                            selectedItems = [];
-                        }
-                    }
-                }
             }
         }
-
-        // 将垂直滚动条附加到ListView本身
-        ScrollBar.vertical: ScrollBar {}
     }
+
+    // 将垂直滚动条附加到ListView本身
+    ScrollBar.vertical: ScrollBar {}
 }

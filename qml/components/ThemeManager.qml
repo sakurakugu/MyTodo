@@ -13,7 +13,7 @@ pragma Singleton
 import QtQuick
 
 QtObject {
-    id: themeManager
+    id: root
 
     // 主题状态
     property bool isDarkMode: globalState.isDarkMode

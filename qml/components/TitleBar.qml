@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import "../components"
 
 Rectangle {
-    id: titleBar
+    id: root
     height: 32
     width: parent.width
     color: ThemeManager.secondaryBackgroundColor
@@ -23,7 +23,7 @@ Rectangle {
     // 窗口拖拽处理区域
     WindowDragHandler {
         anchors.fill: parent
-        targetWindow: titleBar.targetWindow
+        targetWindow: root.targetWindow
     }
 
     // 左侧返回按钮和标题
@@ -33,18 +33,18 @@ Rectangle {
         spacing: 8
 
         IconButton {
-            visible: titleBar.showBackButton
+            visible: root.showBackButton
             text: "\ue8fa"
             onClicked: {
-                if (titleBar.targetWindow) {
-                    titleBar.stackView.pop();
+                if (root.targetWindow) {
+                    root.stackView.pop();
                 }
             }
         }
 
         // 标题
         Text {
-            text: titleBar.title
+            text: root.title
             color: ThemeManager.textColor
             font.pixelSize: 14
             font.bold: true
@@ -62,29 +62,29 @@ Rectangle {
 
         // 最小化按钮
         IconButton {
-            visible: titleBar.showMinimizeButton
+            visible: root.showMinimizeButton
             text: "\ue65a"
-            onClicked: titleBar.targetWindow.showMinimized()
+            onClicked: root.targetWindow.showMinimized()
         }
 
         // 最大化/恢复按钮
         IconButton {
-            visible: titleBar.showMaximizeButton
-            text: titleBar.targetWindow.visibility === Window.Maximized ? "\ue600" : "\ue65b"
+            visible: root.showMaximizeButton
+            text: root.targetWindow.visibility === Window.Maximized ? "\ue600" : "\ue65b"
             onClicked: {
-                if (titleBar.targetWindow.visibility === Window.Maximized) {
-                    titleBar.targetWindow.showNormal();
+                if (root.targetWindow.visibility === Window.Maximized) {
+                    root.targetWindow.showNormal();
                 } else {
-                    titleBar.targetWindow.showMaximized();
+                    root.targetWindow.showMaximized();
                 }
             }
         }
 
         // 关闭按钮
         IconButton {
-            visible: titleBar.showCloseButton
+            visible: root.showCloseButton
             text: "\ue8d1"
-            onClicked: titleBar.targetWindow.close()
+            onClicked: root.targetWindow.close()
         }
     }
 }
