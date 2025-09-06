@@ -112,6 +112,7 @@ set(QML_COMPONENT_FILES
     qml/components/CustomSpinBox.qml               # 自定义数字输入框
     qml/components/CustomTextEdit.qml              # 自定义文本编辑框
     qml/components/CustomCheckBox.qml              # 自定义复选框
+    qml/components/CustomPopup.qml                 # 自定义弹出窗口
     qml/components/ControlRow.qml                   # 自定义控件行
 
     qml/TestPage.qml # 测试页面

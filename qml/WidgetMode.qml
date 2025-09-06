@@ -11,7 +11,6 @@ Item {
     property var todoCategoryManager
     property var root
 
-    property var selectedTodo: null       // 当前选中的待办事项
     property int spacing: 10 // 弹窗之间的间距
 
     // 动态计算总宽度和高度
@@ -22,17 +21,36 @@ Item {
         if (settingsPopup.visible) {
             height += spacing + settingsPopup.height;
         }
-        if (addTaskPopup.visible) {
-            height += spacing + addTaskPopup.height;
-        }
         if (mainContentPopup.visible) {
             height += spacing + mainContentPopup.height;
         }
-        if (todoItemDropdown.visible) {
-            height += spacing + todoItemDropdown.height;
+        if (addTaskPopup.visible) {
+            height += spacing + addTaskPopup.height;
         }
 
         return height;
+    }
+
+    function calculateStackedY(popup) {
+        var y = titleBar.height + toolMode.spacing;
+
+        // 所有 Popup 按显示顺序放在数组里
+        var popupsInOrder = [ // 索引
+            settingsPopup // 0
+            , mainContentPopup // 1
+            , addTaskPopup // 2
+        ];
+
+        for (var i = 0; i < popupsInOrder.length; i++) {
+            var p = popupsInOrder[i];
+            if (p === popup)
+                break;  // 到当前 Popup 就停
+            if (p.visible) {
+                y += p.height + toolMode.spacing;
+            }
+        }
+
+        return y;
     }
 
     // 当尺寸变化时通知父窗口
@@ -137,7 +155,15 @@ Item {
             /// 添加任务按钮
             IconButton {
                 text: "\ue903"                                 ///< 加号图标
-                onClicked: globalState.toggleAddTaskVisible()   ///< 切换添加任务界面显示
+                onClicked: {
+                    if (globalState.isShowAddTask) {
+                        globalState.isNew = false;
+                    } else {
+                        globalState.isNew = true;
+                    }
+                    globalState.selectedTodo = null;
+                    globalState.toggleAddTaskVisible();   ///< 切换添加任务界面显示
+                }
             }
 
             /// 普通模式和小组件模式切换按钮
@@ -153,130 +179,68 @@ Item {
     }
 
     // 设置窗口
-    Popup {
+    CustomPopup {
         id: settingsPopup
         y: toolMode.calculateStackedY(settingsPopup)
         width: 400
-        height: 250
-        padding: 0 // 消除Popup和contentItem之间的间隙
-
-        modal: false // 非模态，允许同时打开多个弹出窗口
-        focus: true
-        closePolicy: Popup.NoAutoClose
+        height: 200
         visible: globalState.isDesktopWidget && globalState.isShowSetting
 
-        contentItem: Rectangle {
-            color: ThemeManager.secondaryBackgroundColor
-            border.color: ThemeManager.borderColor
-            border.width: 1
-            radius: 5
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 10
 
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 10
-                spacing: 10
+            Label {
+                text: "设置"
+                font.bold: true
+                font.pixelSize: 16
+                color: ThemeManager.textColor
+            }
 
-                Label {
-                    text: "设置"
-                    font.bold: true
-                    font.pixelSize: 16
-                    color: ThemeManager.textColor
-                }
+            // 设置内容
+            ControlRow {
+                id: darkModeCheckBox
+                text: qsTr("深色模式")
+                checked: globalState.isDarkMode
+                enabled: !globalState.isFollowSystemDarkMode
+                leftMargin: 10
+                controlType: ControlRow.ControlType.Switch
 
-                // 设置内容
-                ControlRow {
-                    id: darkModeCheckBox
-                    text: qsTr("深色模式")
-                    checked: globalState.isDarkMode
-                    enabled: !globalState.isFollowSystemDarkMode
-                    leftMargin: 10
-                    controlType: ControlRow.ControlType.Switch
-
-                    onCheckedChanged: {
-                        globalState.isDarkMode = checked;
-                        // 保存设置到配置文件
-                        setting.save("setting/isDarkMode", checked);
-                    }
-                }
-
-                ControlRow {
-                    id: preventDraggingCheckBox
-                    text: qsTr("防止拖动窗口（小窗口模式）")
-                    checked: globalState.preventDragging
-                    enabled: globalState.isDesktopWidget
-                    leftMargin: 10
-                    controlType: ControlRow.ControlType.Switch
-                    onCheckedChanged: {
-                        globalState.preventDragging = checked;
-                        setting.save("setting/preventDragging", globalState.preventDragging);
-                    }
-                }
-
-                ControlRow {
-                    text: todoManager.isLoggedIn ? qsTr("自动同步") : qsTr("自动同步（未登录）")
-                    checked: todoSyncServer.isAutoSyncEnabled
-                    leftMargin: 10
-                    controlType: ControlRow.ControlType.Switch
-
-                    onCheckedChanged: {
-                        if (checked) {
-                            // 如果未登录，显示提示并重置开关
-                            if (!todoManager.isLoggedIn) {
-                                toggle();
-                                settingPage.loginStatusDialogs.showLoginRequired();
-                            } else {
-                                todoSyncServer.setAutoSyncEnabled(checked);
-                            }
-                        }
-                    }
+                onCheckedChanged: {
+                    globalState.isDarkMode = checked;
+                    // 保存设置到配置文件
+                    setting.save("setting/isDarkMode", checked);
                 }
             }
-        }
-    }
 
-    // 添加任务窗口
-    Popup {
-        id: addTaskPopup
-        y: toolMode.calculateStackedY(addTaskPopup)
-        width: 400
-        height: 250
-        modal: false // 非模态，允许同时打开多个弹出窗口
-        focus: true
-        closePolicy: Popup.NoAutoClose
-        visible: globalState.isDesktopWidget && globalState.isShowAddTask
-
-        // TODO: 这里可以天空标题输入框，还有一些详细设置
-        contentItem: Rectangle {
-            color: ThemeManager.secondaryBackgroundColor
-            border.color: ThemeManager.borderColor
-            border.width: 1
-            radius: 5
-
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 10
-                spacing: 10
-
-                Label {
-                    text: "添加任务"
-                    font.bold: true
-                    font.pixelSize: 16
-                    color: ThemeManager.textColor
+            ControlRow {
+                id: preventDraggingCheckBox
+                text: qsTr("防止拖动窗口（小窗口模式）")
+                checked: globalState.preventDragging
+                enabled: globalState.isDesktopWidget
+                leftMargin: 10
+                controlType: ControlRow.ControlType.Switch
+                onCheckedChanged: {
+                    globalState.preventDragging = checked;
+                    setting.save("setting/preventDragging", globalState.preventDragging);
                 }
+            }
 
-                ScrollView {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
-                }
+            ControlRow {
+                text: todoManager.isLoggedIn ? qsTr("自动同步") : qsTr("自动同步（未登录）")
+                checked: todoSyncServer.isAutoSyncEnabled
+                leftMargin: 10
+                controlType: ControlRow.ControlType.Switch
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignRight
-
-                    CustomButton {
-                        text: "添加"
-                        onClicked: todoManager.addTodo(qsTr("新的待办事项"))
+                onCheckedChanged: {
+                    if (checked) {
+                        // 如果未登录，显示提示并重置开关
+                        if (!todoManager.isLoggedIn) {
+                            toggle();
+                            settingPage.loginStatusDialogs.showLoginRequired();
+                        } else {
+                            todoSyncServer.setAutoSyncEnabled(checked);
+                        }
                     }
                 }
             }
@@ -284,173 +248,307 @@ Item {
     }
 
     // 主内容区窗口
-    Popup {
+    CustomPopup {
         id: mainContentPopup
         y: toolMode.calculateStackedY(mainContentPopup)
         width: 400
         height: baseHeight
-        modal: false // 非模态，允许同时打开多个弹出窗口
-        focus: true
-        closePolicy: Popup.NoAutoClose
         visible: globalState.isDesktopWidget && globalState.isShowTodos // 在小组件模式下且需要显示所有任务时显示
-        property int baseHeight: 200
+        property int baseHeight: 275 // 一个待办事项的高度为50，其他的占了75px的高度
 
-        contentItem: Rectangle {
-            color: ThemeManager.secondaryBackgroundColor
-            border.color: ThemeManager.borderColor
-            border.width: 1
-            radius: 5
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 10
+            spacing: 10
 
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 10
-                spacing: 10
+            Label {
+                text: "待办任务"
+                font.bold: true
+                font.pixelSize: 16
+                color: ThemeManager.textColor
+            }
 
-                Label {
-                    text: "待办任务"
+            // 待办列表
+            TodoListContainer {}
+        }
+    }
+
+    // 添加任务与显示详情窗口
+    CustomPopup {
+        id: addTaskPopup
+        y: toolMode.calculateStackedY(addTaskPopup)
+        width: 400
+        height: 250
+        visible: globalState.isDesktopWidget && globalState.isShowAddTask
+
+        // TODO: 这里可以天空标题输入框，还有一些详细设置
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 10
+
+            RowLayout {
+                CustomTextInput {
+                    id: titleInput
+                    text: globalState.selectedTodo ? (globalState.selectedTodo.title || qsTr("无标题")) : qsTr("新建待办")
                     font.bold: true
                     font.pixelSize: 16
-                    color: ThemeManager.textColor
+                    borderWidth: 0
+                    Layout.fillWidth: true
+                    backgroundColor: "transparent"
                 }
 
-                // 待办列表
-                TodoListContainer {
-                    onSelectedTodoChanged: {
-                        toolMode.selectedTodo = selectedTodo;
-                        if (globalState.isDesktopWidget && selectedTodo) {
-                            globalState.isShowDropdown = true;
-                        }
+                // 关闭按钮
+                IconButton {
+                    text: "\ue8d1"
+                    onClicked: {
+                        globalState.isShowAddTask = !globalState.isShowAddTask;
+                        globalState.isNew = true;
                     }
                 }
             }
-        }
-    }
 
-    // 待办事项详情窗口
-    Popup {
-        id: todoItemDropdown
-        y: toolMode.calculateStackedY(todoItemDropdown)
-        width: mainContentPopup.width
-        height: 180
-        modal: false
-        focus: true
-        // closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-        closePolicy: Popup.NoAutoClose
-        visible: globalState.isDesktopWidget && globalState.isShowDropdown
+            CustomTextEdit {
+                id: contentInput
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                placeholderText: qsTr("输入详情")
+                text: globalState.selectedTodo ? (globalState.selectedTodo.description || "") : ""
+                wrapMode: TextEdit.WrapAnywhere
+                clip: true
 
-        contentItem: Rectangle {
-            color: ThemeManager.secondaryBackgroundColor
-            border.color: ThemeManager.borderColor
-            border.width: 1
-            radius: 5
+                onEditingFinished: {
+                    saveDescriptionIfChanged();
+                }
 
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 10
-                spacing: 10
+                function saveDescriptionIfChanged() {
+                    if (globalState.isNew) {
+                        return;
+                    }
+                    if (globalState.selectedTodo && text !== globalState.selectedTodo.description) {
+                        todoManager.updateTodo(globalState.selectedTodo.index, "description", text);
+                        globalState.selectedTodo.description = text;
+                    }
+                }
+            }
 
-                // 顶部标题栏和收回按钮
+            RowLayout {
+                Layout.fillWidth: true
                 RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 10
+                    Layout.alignment: Qt.AlignLeft
 
-                    Label {
-                        text: toolMode.selectedTodo ? toolMode.selectedTodo.title : ""
-                        font.bold: true
-                        font.pixelSize: 14
-                        color: ThemeManager.textColor
-                        Layout.fillWidth: true
-                        elide: Text.ElideRight
-                    }
-
-                    // 收回按钮
-                    Rectangle {
-                        width: 24
-                        height: 24
-                        color: "transparent"
-                        border.width: 0
-                        radius: 12
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "^"
-                            color: ThemeManager.textColor
-                            font.pixelSize: 16
-                            font.bold: true
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: {
-                                globalState.toggleDropdownVisible();
-                            }
-                            onEntered: {
-                                parent.color = ThemeManager.borderColor;
-                            }
-                            onExited: {
-                                parent.color = "transparent";
-                            }
+                    // 选择分类
+                    IconButton {
+                        text: "\ue605"
+                        onClicked: {
+                            var pos = mapToItem(null, 0, height);
+                            todoCategoryManager.popup(pos.x, pos.y, false);
                         }
                     }
-                }
 
-                Rectangle {
-                    Layout.fillWidth: true
-                    height: 1
-                    color: ThemeManager.borderColor
-                }
+                    // 截止日期
+                    IconButton {
+                        text: "\ue6e5"
+                        onClicked: {
+                            deadlineDatePicker.selectedDate = globalState.selectedTodo && globalState.selectedTodo.deadline ? globalState.selectedTodo.deadline : new Date();
+                            deadlineDatePicker.open();
+                        }
+                    }
 
-                CustomButton {
-                    text: "查看详情"
-                    Layout.fillWidth: true
-                    onClicked: {
-                        globalState.toggleDropdownVisible();
-                        todoDetailsDialog.openTodoDetails(todoItemDropdown.currentTodoData, todoItemDropdown.currentTodoIndex);
+                    // 重复天数
+                    IconButton {
+                        text: "\ue8ef"
+                        onClicked: recurrenceIntervalRowDialog.open()
+                    }
+
+                    // 重复次数
+                    IconButton {
+                        text: "\ue601"
+                        onClicked: recurrenceCountRowDialog.open()
+                    }
+
+                    // 重复开始日期
+                    IconButton {
+                        text: "\ue74b"
+                        onClicked: {
+                            if (globalState.isNew) {
+                                return;
+                            } else {
+                                startDatePicker.selectedDate = globalState.selectedTodo && globalState.selectedTodo.recurrenceStartDate ? globalState.selectedTodo.recurrenceStartDate : new Date();
+                                startDatePicker.open();
+                            }
+                        }
+                    }
+
+                    // 完成状态
+                    IconButton {
+                        text: "\ue8eb"
+                        visible: !globalState.isNew
+                        property bool checked: globalState.selectedTodo ? (globalState.selectedTodo.completed || false) : false
+                        onClicked: {
+                            checked = !checked;
+                            if (globalState.selectedTodo && checked !== globalState.selectedTodo.completed) {
+                                todoManager.updateTodo(globalState.selectedTodo.index, "isCompleted", checked);
+                                globalState.selectedTodo.completed = checked;
+                            }
+                        }
+                    }
+
+                    // 重要程度
+                    IconButton {
+                        text: "\ue8de"
+                        property bool checked: globalState.selectedTodo ? (globalState.selectedTodo.important || false) : false
+                        onClicked: {
+                            checked = !checked;
+                            if (globalState.isNew) {
+                                globalState.selectedTodo.important = checked;
+                            } else if (globalState.selectedTodo && checked !== globalState.selectedTodo.important) {
+                                todoManager.updateTodo(globalState.selectedTodo.index, "important", checked);
+                                globalState.selectedTodo.important = checked;
+                            }
+                        }
+                    }
+
+                    // 删除按钮
+                    IconButton {
+                        text: "\ue8f5"
+                        visible: !globalState.isNew
+                        onClicked: {
+                            if (globalState.selectedTodo) {
+                                todoManager.removeTodo(globalState.selectedTodo.index);
+                                globalState.selectedTodo = null;
+                            }
+                        }
                     }
                 }
 
-                CustomButton {
-                    text: "标记完成"
-                    Layout.fillWidth: true
-                    onClicked: {
-                        todoManager.markAsDone(todoItemDropdown.currentTodoIndex);
-                        globalState.toggleDropdownVisible();
+                RowLayout {
+                    Layout.alignment: Qt.AlignRight
+                    CustomButton {
+                        text: globalState.isNew ? qsTr("添加") : qsTr("保存")
+                        onClicked: {
+                            if (globalState.isNew) {
+                                // TODO：c++中有些没实现
+                                todoManager.addTodo(titleInput.text, contentInput.text);
+                            } else {
+                                todoManager.updateTodo(globalState.selectedTodo.index, "title", titleInput.text);
+                                todoManager.updateTodo(globalState.selectedTodo.index, "description", contentInput.text);
+                                todoManager.updateTodo(globalState.selectedTodo.index, "deadline", globalState.selectedTodo.deadline);
+                                todoManager.updateTodo(globalState.selectedTodo.index, "recurrenceCount", globalState.selectedTodo.recurrenceCount);
+                                todoManager.updateTodo(globalState.selectedTodo.index, "recurrenceStartDate", globalState.selectedTodo.recurrenceStartDate);
+                                todoManager.updateTodo(globalState.selectedTodo.index, "recurrenceInterval", globalState.selectedTodo.recurrenceInterval);
+                                todoManager.updateTodo(globalState.selectedTodo.index, "important", globalState.selectedTodo.important);
+                                todoManager.updateTodo(globalState.selectedTodo.index, "category", globalState.selectedTodo.category);
+                                todoManager.updateTodo(globalState.selectedTodo.index, "completed", globalState.selectedTodo.completed);
+                            }
+                            globalState.selectedTodo = null;
+                        }
                     }
                 }
+            }
+        }
+    }
+    BaseDialog {
+        id: recurrenceCountRowDialog
+        dialogTitle: "重复次数"
+        RowLayout {
+            Layout.alignment: Qt.AlignCenter
+            IconButton {
+                text: "\ue601"
+            }
 
-                CustomButton {
-                    text: "删除任务"
-                    Layout.fillWidth: true
-                    onClicked: {
-                        todoManager.removeTodo(todoItemDropdown.currentTodoIndex);
-                        globalState.toggleDropdownVisible();
+            Text {
+                text: qsTr("共")
+                font.pixelSize: 16
+                color: ThemeManager.textColor
+                verticalAlignment: Text.AlignVCenter
+            }
+
+            CustomSpinBox {
+                id: drawerCountSpinBox
+                from: 0
+                to: 999
+                value: globalState.selectedTodo ? globalState.selectedTodo.recurrenceCount : 0
+                enabled: globalState.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                implicitWidth: 100
+                implicitHeight: 25
+
+                onValueChanged: {
+                    if (globalState.selectedTodo && value !== globalState.selectedTodo.recurrenceCount) {
+                        todoManager.updateTodo(globalState.selectedTodo.index, "recurrenceCount", value);
+                        globalState.selectedTodo.recurrenceCount = value;
+                    }
+                }
+            }
+
+            Text {
+                text: qsTr("次")
+                font.pixelSize: 16
+                color: ThemeManager.textColor
+                verticalAlignment: Text.AlignVCenter
+            }
+        }
+    }
+
+    BaseDialog {
+        id: recurrenceIntervalRowDialog
+        dialogTitle: "重复天数"
+
+        RowLayout {
+            Layout.alignment: Qt.AlignCenter
+            IconButton {
+                text: "\ue8ef"
+            }
+            Text {
+                text: qsTr("重复:")
+                font.pixelSize: 16
+                color: ThemeManager.textColor
+                verticalAlignment: Text.AlignVCenter
+            }
+
+            RecurrenceSelector {
+                id: drawerIntervalSelector
+                Layout.fillWidth: true
+                value: globalState.selectedTodo ? globalState.selectedTodo.recurrenceInterval : 0
+                enabled: globalState.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+
+                onIntervalChanged: function (newValue) {
+                    if (globalState.isNew) {
+                        globalState.selectedTodo.recurrenceInterval = newValue;
+                    } else if (globalState.selectedTodo && newValue !== globalState.selectedTodo.recurrenceInterval) {
+                        todoManager.updateTodo(globalState.selectedTodo.index, "recurrenceInterval", newValue);
+                        globalState.selectedTodo.recurrenceInterval = newValue;
                     }
                 }
             }
         }
     }
 
-    function calculateStackedY(popup) {
-        var y = titleBar.height + toolMode.spacing;
+    // 开始日期选择器
+    DateTimePicker {
+        id: startDatePicker
+        enableTimeMode: false
 
-        // 所有 Popup 按显示顺序放在数组里
-        var popupsInOrder = [ // 索引
-            settingsPopup // 0
-            , addTaskPopup // 1
-            , mainContentPopup // 2
-            , todoItemDropdown // 3
-        ];
-
-        for (var i = 0; i < popupsInOrder.length; i++) {
-            var p = popupsInOrder[i];
-            if (p === popup)
-                break;  // 到当前 Popup 就停
-            if (p.visible) {
-                y += p.height + toolMode.spacing;
+        onConfirmed: {
+            if (globalState.isNew) {
+                globalState.selectedTodo.recurrenceStartDate = selectedDate;
+            } else if (globalState.selectedTodo) {
+                todoManager.updateTodo(globalState.selectedTodo.index, "recurrenceStartDate", selectedDate);
+                globalState.selectedTodo.recurrenceStartDate = selectedDate;
             }
         }
+    }
 
-        return y;
+    // 截止日期选择器
+    DateTimePicker {
+        id: deadlineDatePicker
+
+        onConfirmed: {
+            if (globalState.isNew) {
+                globalState.selectedTodo.deadline = selectedDate;
+            } else if (globalState.selectedTodo) {
+                todoManager.updateTodo(globalState.selectedTodo.index, "deadline", selectedDate);
+                globalState.selectedTodo.deadline = selectedDate;
+            }
+        }
     }
 }

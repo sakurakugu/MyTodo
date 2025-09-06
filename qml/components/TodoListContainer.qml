@@ -13,9 +13,6 @@ ListView {
     // 使用 C++ 的 todoManager
     model: todoManager
 
-    // 外部导入的组件
-    property var selectedTodo
-
     property bool multiSelectMode: false  // 多选模式
     property var selectedItems: []        // 选中的项目索引列表
 
@@ -204,8 +201,7 @@ ListView {
                             multiSelectMode = false;
                         }
                     } else {
-                        // 普通模式下显示详情
-                        selectedTodo = {
+                        globalState.selectedTodo = {
                             index: index,
                             title: model.title,
                             description: model.description,
@@ -222,6 +218,16 @@ ListView {
                             recurrenceStartDate: model.recurrenceStartDate,
                             important: model.important
                         };
+                        // 普通模式下切换添加任务窗口显示状态
+                        // 如果点击的是同一个待办项，则切换isShowAddTask状态
+                        if (globalState.isDesktopWidget) {
+                            if (globalState.selectedTodo.index === index) {
+                                globalState.isShowAddTask = !globalState.isShowAddTask;
+                            } else {
+                                globalState.isShowAddTask = true;
+                            }
+                            globalState.isNew = false;
+                        }
                     }
                 }
 
@@ -435,7 +441,7 @@ ListView {
             }
         }
 
-        // 左划手势处理
+        // 手势处理
         MouseArea {
             id: swipeArea
             anchors.fill: parent
@@ -544,25 +550,6 @@ ListView {
                         if (selectedItems.length === 0) {
                             multiSelectMode = false;
                         }
-                    } else {
-                        // 普通模式（点击一次）下显示详情
-                        selectedTodo = {
-                            index: index,
-                            title: model.title,
-                            description: model.description,
-                            category: model.category,
-                            priority: model.priority,
-                            completed: model.completed,
-                            createdAt: model.createdAt,
-                            lastModifiedAt: model.lastModifiedAt,
-                            completedAt: model.completedAt,
-                            deletedAt: model.deletedAt,
-                            deadline: model.deadline,
-                            recurrenceInterval: model.recurrenceInterval,
-                            recurrenceCount: model.recurrenceCount,
-                            recurrenceStartDate: model.recurrenceStartDate,
-                            important: model.important
-                        };
                     }
                     mouse.accepted = true;  // 已处理点击事件，阻止事件传递
                 }

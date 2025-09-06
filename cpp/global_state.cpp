@@ -20,12 +20,14 @@ GlobalState::GlobalState(QObject *parent)
       m_isDarkMode(false),             // 初始化是否为深色模式为false
       m_isFollowSystemDarkMode(false), // 初始化是否跟随系统深色模式为false
       m_isDesktopWidget(false),        // 初始化是否为桌面窗口为false
+      m_isNew(false),                  // 初始化是否为新创建的为false
       m_isShowAddTask(false),          // 初始化是否显示添加任务为false
       m_isShowTodos(true),             // 初始化是否显示待办事项为true
       m_isShowSetting(false),          // 初始化是否显示设置为false
       m_isShowDropdown(false),         // 初始化是否显示下拉菜单为false
       m_preventDragging(false),        // 初始化是否防止窗口拖动为false
-      m_refreshing(false) {            // 初始化是否刷新中为false
+      m_refreshing(false),             // 初始化是否刷新中为false
+      m_selectedTodo(QVariant()) {     // 初始化选中的待办事项为null
 
     // 监听系统主题变化
     connect(QGuiApplication::instance(), SIGNAL(paletteChanged(QPalette)), this, SIGNAL(systemInDarkModeChanged()));
@@ -61,6 +63,17 @@ void GlobalState::setIsDesktopWidget(bool value) {
     if (m_isDesktopWidget != value) {
         m_isDesktopWidget = value;
         emit isDesktopWidgetChanged();
+    }
+}
+
+bool GlobalState::isNew() const {
+    return m_isNew;
+}
+
+void GlobalState::setIsNew(bool value) {
+    if (m_isNew != value) {
+        m_isNew = value;
+        emit isNewChanged();
     }
 }
 
@@ -127,6 +140,17 @@ void GlobalState::setRefreshing(bool value) {
     if (m_refreshing != value) {
         m_refreshing = value;
         emit refreshingChanged();
+    }
+}
+
+QVariant GlobalState::selectedTodo() const {
+    return m_selectedTodo;
+}
+
+void GlobalState::setSelectedTodo(const QVariant &value) {
+    if (m_selectedTodo != value) {
+        m_selectedTodo = value;
+        emit selectedTodoChanged();
     }
 }
 

@@ -35,7 +35,7 @@ Item {
             }
         }
 
-        background: MainBackground{}
+        background: MainBackground {}
 
         // 分类筛选
         MenuItem {
@@ -104,7 +104,12 @@ Item {
                         if (root.isFilterMode) {
                             todoFilter.currentCategory = modelData;
                         } else {
-                            todoManager.updateTodo(selectedTodo.index, "category", modelData);
+                            if (globalState.selectedTodo && globalState.selectedTodo.index !== null) {
+                                todoManager.updateTodo(globalState.selectedTodo.index, "category", modelData);
+                            }
+                            if (globalState.selectedTodo) {
+                                globalState.selectedTodo.category = modelData;
+                            }
                             root.close();  // 选择后关闭菜单
                         }
                     }
@@ -161,7 +166,12 @@ Item {
                                 if (root.isFilterMode) {
                                     todoFilter.currentCategory = modelData;
                                 } else {
-                                    todoManager.updateTodo(selectedTodo.index, "category", modelData);
+                                    if (globalState.selectedTodo && globalState.selectedTodo.index !== null) {
+                                        todoManager.updateTodo(globalState.selectedTodo.index, "category", modelData);
+                                    }
+                                    if (globalState.selectedTodo) {
+                                        globalState.selectedTodo.category = modelData;
+                                    }
                                 }
                                 root.close();
                             }

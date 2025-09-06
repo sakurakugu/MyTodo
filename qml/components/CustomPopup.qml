@@ -1,0 +1,23 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import "../components"
+
+Popup {
+    modal: false // 非模态，允许同时打开该弹窗时与其他地方交互
+    focus: true
+    closePolicy: Popup.NoAutoClose
+
+    background: Rectangle {
+        color: ThemeManager.secondaryBackgroundColor
+        border.color: ThemeManager.borderColor
+        radius: 5
+    }
+
+    contentItem: Rectangle {
+        color: ThemeManager.backgroundColor
+        border.color: ThemeManager.borderColor
+        border.width: 1
+        radius: 5
+    }
+}

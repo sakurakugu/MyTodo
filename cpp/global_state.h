@@ -11,12 +11,15 @@
 #pragma once
 
 #include <QObject>
+#include <QVariant>
 
 class GlobalState : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool isDarkMode READ isDarkMode WRITE setIsDarkMode NOTIFY isDarkModeChanged)
-    Q_PROPERTY(bool isFollowSystemDarkMode READ isFollowSystemDarkMode WRITE setIsFollowSystemDarkMode NOTIFY isFollowSystemDarkModeChanged)
+    Q_PROPERTY(bool isFollowSystemDarkMode READ isFollowSystemDarkMode WRITE setIsFollowSystemDarkMode NOTIFY
+                   isFollowSystemDarkModeChanged)
     Q_PROPERTY(bool isDesktopWidget READ isDesktopWidget WRITE setIsDesktopWidget NOTIFY isDesktopWidgetChanged)
+    Q_PROPERTY(bool isNew READ isNew WRITE setIsNew NOTIFY isNewChanged)
     Q_PROPERTY(bool isShowAddTask READ isShowAddTask WRITE setIsShowAddTask NOTIFY isShowAddTaskChanged)
     Q_PROPERTY(bool isShowTodos READ isShowTodos WRITE setIsShowTodos NOTIFY isShowTodosChanged)
     Q_PROPERTY(bool isShowSetting READ isShowSetting WRITE setIsShowSetting NOTIFY isShowSettingChanged)
@@ -24,6 +27,7 @@ class GlobalState : public QObject {
     Q_PROPERTY(bool isSystemInDarkMode READ isSystemInDarkMode NOTIFY systemInDarkModeChanged)
     Q_PROPERTY(bool preventDragging READ preventDragging WRITE setPreventDragging NOTIFY preventDraggingChanged)
     Q_PROPERTY(bool refreshing READ refreshing WRITE setRefreshing NOTIFY refreshingChanged)
+    Q_PROPERTY(QVariant selectedTodo READ selectedTodo WRITE setSelectedTodo NOTIFY selectedTodoChanged)
 
   public:
     explicit GlobalState(QObject *parent = nullptr);
@@ -37,6 +41,9 @@ class GlobalState : public QObject {
 
     bool isDesktopWidget() const;
     void setIsDesktopWidget(bool value);
+
+    bool isNew() const;
+    void setIsNew(bool value);
 
     bool isShowAddTask() const;
     void setIsShowAddTask(bool value);
@@ -55,6 +62,9 @@ class GlobalState : public QObject {
 
     bool refreshing() const;
     void setRefreshing(bool value);
+
+    QVariant selectedTodo() const;
+    void setSelectedTodo(const QVariant &value);
 
     bool isSystemInDarkMode() const;
 
@@ -77,24 +87,28 @@ class GlobalState : public QObject {
     void isDarkModeChanged();
     void isFollowSystemDarkModeChanged();
     void isDesktopWidgetChanged();
+    void isNewChanged();
     void isShowAddTaskChanged();
     void isShowTodosChanged();
     void isShowSettingChanged();
     void isShowDropdownChanged();
     void preventDraggingChanged();
     void refreshingChanged();
+    void selectedTodoChanged();
     void systemInDarkModeChanged();
     void widthChanged(int width);
     void heightChanged(int height);
 
   private:
-    bool m_isDarkMode;              // 深色模式
-    bool m_isFollowSystemDarkMode;  // 跟随系统深色模式
-    bool m_isDesktopWidget;         // 小工具模式
-    bool m_isShowAddTask;           // 小工具模式--添加任务弹窗可见性
-    bool m_isShowTodos;             // 小工具模式--待办列表弹窗可见性
-    bool m_isShowSetting;           // 小工具模式--设置弹窗可见性
-    bool m_isShowDropdown;          // 小工具模式--下拉菜单可见性
-    bool m_preventDragging;         // 防止窗口拖动
-    bool m_refreshing;              // 刷新中
+    bool m_isDarkMode;             // 深色模式
+    bool m_isFollowSystemDarkMode; // 跟随系统深色模式
+    bool m_isDesktopWidget;        // 小工具模式
+    bool m_isNew;                  // 小工具模式--是否是新创建的
+    bool m_isShowAddTask;          // 小工具模式--添加任务弹窗可见性
+    bool m_isShowTodos;            // 小工具模式--待办列表弹窗可见性
+    bool m_isShowSetting;          // 小工具模式--设置弹窗可见性
+    bool m_isShowDropdown;         // 小工具模式--下拉菜单可见性
+    bool m_preventDragging;        // 防止窗口拖动
+    bool m_refreshing;             // 刷新中
+    QVariant m_selectedTodo;       // 当前选中的待办事项
 };
