@@ -11,6 +11,9 @@
  * - 与项目整体风格一致的外观
  *
  * @author Sakurakugu
+ * @date 2025-09-05 01:04:35(UTC+8) 周五
+ * @change 2025-09-05 18:17:08(UTC+8) 周五
+ * @version 0.4.0
  */
 
 import QtQuick

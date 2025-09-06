@@ -7,8 +7,8 @@
  *
  * @author Sakurakugu
  * @date 2025-08-19 07:39:54(UTC+8) 周二
- * @change 2025-09-03 21:09:00(UTC+8) 周六
- * @version 1.0.0
+ * @change 2025-09-05 00:31:59(UTC+8) 周五
+ * @version 0.4.0
  */
 import QtQuick
 import QtQuick.Controls

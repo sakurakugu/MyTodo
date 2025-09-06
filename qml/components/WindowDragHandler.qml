@@ -9,8 +9,9 @@
  * - 智能位置计算
  *
  * @author Sakurakugu
- * @date 2025-08-31
- * @version 1.0.0
+ * @date 2025-08-31 22:44:07(UTC+8) 周日
+ * @change 2025-09-05 23:00:06(UTC+8) 周五
+ * @version 0.4.0
  */
 
 import QtQuick

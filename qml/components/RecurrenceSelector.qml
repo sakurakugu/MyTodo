@@ -8,6 +8,9 @@
  * - 与项目整体风格一致的外观
  *
  * @author Sakurakugu
+ * @date 2025-09-05 18:17:08(UTC+8) 周五
+ * @change 2025-09-05 18:38:37(UTC+8) 周五
+ * @version 0.4.0
  */
 
 import QtQuick
@@ -31,12 +34,36 @@ RowLayout {
 
     // 预设选项数据
     property var presetOptions: [
-        { text: qsTr("不重复"), value: 0, description: qsTr("永不重复") },
-        { text: qsTr("每天"), value: -1, description: qsTr("每天重复") },
-        { text: qsTr("每周"), value: -7, description: qsTr("每周重复") },
-        { text: qsTr("每月"), value: -30, description: qsTr("每月重复") },
-        { text: qsTr("每年"), value: -365, description: qsTr("每年重复") },
-        { text: qsTr("永远"), value: -999, description: qsTr("一直重复") },
+        {
+            text: qsTr("不重复"),
+            value: 0,
+            description: qsTr("永不重复")
+        },
+        {
+            text: qsTr("每天"),
+            value: -1,
+            description: qsTr("每天重复")
+        },
+        {
+            text: qsTr("每周"),
+            value: -7,
+            description: qsTr("每周重复")
+        },
+        {
+            text: qsTr("每月"),
+            value: -30,
+            description: qsTr("每月重复")
+        },
+        {
+            text: qsTr("每年"),
+            value: -365,
+            description: qsTr("每年重复")
+        },
+        {
+            text: qsTr("永远"),
+            value: -999,
+            description: qsTr("一直重复")
+        },
     ]
 
     // 内部状态

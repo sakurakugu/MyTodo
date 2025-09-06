@@ -2,8 +2,9 @@
  * @file config.cpp
  * @brief 配置类实现
  * @author sakurakugu
- * @date 2025-08-17 07:17:29(UTC+8) 周日
- * @version 2025-08-22 16:24:28(UTC+8) 周五
+ * @date 2025-08-16 20:05:55(UTC+8) 周六
+ * @change 2025-08-31 15:07:38(UTC+8) 周日
+ * @version 0.4.0
  */
 #include "config.h"
 

@@ -5,7 +5,8 @@
  *
  * @param parent 父对象指针，默认值为nullptr。
  * @date 2025-08-21 21:31:41(UTC+8) 周四
- * @version 2025-08-23 21:09:00(UTC+8) 周六
+ * @change 2025-09-04 23:39:30(UTC+8) 周四
+ * @version 0.4.0
  */
 #include "setting.h"
 #include "default_value.h"

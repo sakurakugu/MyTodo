@@ -6,8 +6,9 @@
  * 将同步逻辑从TodoManager中分离，实现单一职责原则。
  *
  * @author Sakurakugu
- * @date 2025-01-25
- * @version 1.0.0
+ * @date 2025-08-24 23:07:18(UTC+8) 周日
+ * @change 2025-09-03 12:29:16(UTC+8) 周三
+ * @version 0.4.0
  */
 
 #pragma once

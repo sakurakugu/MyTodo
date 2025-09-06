@@ -1,4 +1,13 @@
-// 通用标题栏，用于常规页面顶部
+/**
+ * @brief 通用标题栏组件
+ *
+ * 该组件用于创建通用的标题栏，用于常规页面顶部。
+ *
+ * @author Sakurakugu
+ * @date 2025-09-04 23:39:30(UTC+8) 周四
+ * @change 2025-09-06 00:46:10(UTC+8) 周六
+ * @version 0.4.0
+ */
 import QtQuick
 import QtQuick.Layouts
 import "../components"

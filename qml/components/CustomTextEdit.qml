@@ -6,6 +6,9 @@
  * 支持主题切换、占位符文本、错误提示、滚动条、自动换行等功能。
  *
  * @author Sakurakugu
+ * @date 2025-09-05 16:50:25(UTC+8) 周五
+ * @change 2025-09-05 16:50:25(UTC+8) 周五
+ * @version 0.4.0
  */
 
 import QtQuick
@@ -99,22 +102,19 @@ Item {
             id: verticalScrollBar
             width: root.scrollBarWidth
             policy: root.showScrollBar ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
-            
+
             contentItem: Rectangle {
                 implicitWidth: root.scrollBarWidth
                 radius: width / 2
-                color: verticalScrollBar.pressed ? root.scrollBarHandleColor : 
-                       verticalScrollBar.hovered ? Qt.lighter(root.scrollBarHandleColor, 1.2) : 
-                       root.scrollBarColor
-                opacity: verticalScrollBar.policy === ScrollBar.AlwaysOn || 
-                        (verticalScrollBar.active && verticalScrollBar.size < 1.0) ? 1.0 : 0.0
-                
+                color: verticalScrollBar.pressed ? root.scrollBarHandleColor : verticalScrollBar.hovered ? Qt.lighter(root.scrollBarHandleColor, 1.2) : root.scrollBarColor
+                opacity: verticalScrollBar.policy === ScrollBar.AlwaysOn || (verticalScrollBar.active && verticalScrollBar.size < 1.0) ? 1.0 : 0.0
+
                 Behavior on opacity {
                     NumberAnimation {
                         duration: 150
                     }
                 }
-                
+
                 Behavior on color {
                     ColorAnimation {
                         duration: 150
@@ -218,10 +218,7 @@ Item {
         textEdit.cursorPosition = position;
         // 确保光标可见
         var rect = textEdit.positionToRectangle(position);
-        scrollView.contentItem.contentY = Math.max(0, Math.min(
-            rect.y - scrollView.height / 2,
-            textEdit.height - scrollView.height
-        ));
+        scrollView.contentItem.contentY = Math.max(0, Math.min(rect.y - scrollView.height / 2, textEdit.height - scrollView.height));
     }
 
     // 方法：滚动到底部

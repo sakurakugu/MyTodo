@@ -6,8 +6,9 @@
  * 从TodoManager类中拆分出来，实现单一职责原则。
  *
  * @author Sakurakugu
- * @date 2025-01-25
- * @version 1.0.0
+ * @date 2025-08-25 00:54:11(UTC+8) 周一
+ * @change 2025-08-25 18:38:47(UTC+8) 周一
+ * @version 0.4.0
  */
 
 #pragma once

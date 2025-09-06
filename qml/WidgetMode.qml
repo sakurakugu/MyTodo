@@ -1,3 +1,13 @@
+/**
+ * @brief 小组件模式组件
+ *
+ * 该组件用于创建应用的小组件模式，包含应用的设置页面、主内容页面和添加任务页面等。
+ *
+ * @author Sakurakugu
+ * @date 2025-08-17 03:57:06(UTC+8) 周日
+ * @change 2025-09-06 16:55:02(UTC+8) 周六
+ * @version 0.4.0
+ */
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts

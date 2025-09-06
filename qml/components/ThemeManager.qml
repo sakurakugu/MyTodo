@@ -6,8 +6,9 @@
  * 它提供了切换主题、获取当前主题颜色和样式的功能。
  *
  * @author Sakurakugu
- * @date 2025-08-19 07:39:54(UTC+8) 周二
- * @version 2025-08-23 21:09:00(UTC+8) 周六
+ * @date 2025-08-17 07:17:29(UTC+8) 周日
+ * @change 2025-09-06 00:46:10(UTC+8) 周六
+ * @version 0.4.0
  */
 pragma Singleton
 import QtQuick

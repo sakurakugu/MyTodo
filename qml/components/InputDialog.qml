@@ -6,9 +6,9 @@
  * 支持输入验证和自定义提示信息。
  *
  * @author Sakurakugu
- * @date 2025-09-02
- * @change 2025-09-03
- * @version 1.0.0
+ * @date 2025-09-02 15:32:07(UTC+8) 周二
+ * @change 2025-09-05 00:31:59(UTC+8) 周五
+ * @version 0.4.0
  */
 
 import QtQuick

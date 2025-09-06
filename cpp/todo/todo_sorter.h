@@ -5,8 +5,9 @@
  * 该文件定义了TodoSorter类，用于管理待办事项的排序功能。
  *
  * @author Sakurakugu
- * @date 2025-01-24
- * @version 1.0.0
+ * @date 2025-08-25 01:51:47(UTC+8) 周一
+ * @change 2025-08-25 18:38:47(UTC+8) 周一
+ * @version 0.4.0
  */
 
 #pragma once

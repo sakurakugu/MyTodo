@@ -9,6 +9,9 @@
  * - 扁平化和填充设计风格
  *
  * @author Sakurakugu
+ * @date 2025-08-17 07:17:29(UTC+8) 周日
+ * @change 2025-09-04 23:39:30(UTC+8) 周四
+ * @version 0.4.0
  */
 
 import QtQuick

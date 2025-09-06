@@ -6,7 +6,8 @@
  *
  * @author Sakurakugu
  * @date 2025-08-24 20:05:55(UTC+8) 周六
- * @version 2025-08-24 23:04:19(UTC+8) 周五
+ * @change 2025-09-04 23:39:30(UTC+8) 周四
+ * @version 0.4.0
  */
 
 #include "user_auth.h"

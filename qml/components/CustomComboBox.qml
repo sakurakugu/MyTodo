@@ -7,6 +7,11 @@
  * - 悬停和按下效果
  * - 可配置的字体大小和圆角
  * - 与项目整体风格一致的外观
+ *
+ * @author Sakurakugu
+ * @date 2025-09-05 00:31:59(UTC+8) 周五
+ * @change 2025-09-05 00:31:59(UTC+8) 周五
+ * @version 0.4.0
  */
 
 import QtQuick

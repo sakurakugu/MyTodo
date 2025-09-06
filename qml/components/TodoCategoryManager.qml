@@ -1,4 +1,13 @@
-// 种类选择菜单（用于修改待办事项分类）
+/**
+ * @brief 待办事项分类选择菜单组件
+ *
+ * 该组件用于创建待办事项分类选择菜单，用于修改待办事项的分类。
+ *
+ * @author Sakurakugu
+ * @date 2025-09-02 23:48:22(UTC+8) 周二
+ * @change 2025-09-06 16:55:02(UTC+8) 周六
+ * @version 0.4.0
+ */
 
 import QtQuick
 import QtQuick.Controls

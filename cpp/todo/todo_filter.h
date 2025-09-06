@@ -5,8 +5,9 @@
  * 该文件定义了TodoFilter类，用于管理待办事项的筛选功能。
  *
  * @author Sakurakugu
- * @date 2025-01-24
- * @version 1.0.0
+ * @date 2025-08-25 01:51:47(UTC+8) 周一
+ * @change 2025-09-01 10:47:47(UTC+8) 周一
+ * @version 0.4.0
  */
 
 #pragma once

@@ -6,6 +6,9 @@
  * 支持主题切换、占位符文本、错误提示、左右图标等功能。
  *
  * @author Sakurakugu
+ * @date 2025-09-05 00:31:59(UTC+8) 周五
+ * @change 2025-09-05 16:50:25(UTC+8) 周五
+ * @version 0.4.0
  */
 
 import QtQuick

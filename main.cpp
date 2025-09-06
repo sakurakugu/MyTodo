@@ -10,7 +10,8 @@
  *
  * @author Sakurakugu
  * @date 2025-08-16 20:05:55(UTC+8) 周六
- * @version 2025-08-23 21:09:00(UTC+8) 周六
+ * @change 2025-08-31 22:44:07(UTC+8) 周日
+ * @version 0.4.0
  */
 // Qt 相关头文件
 #include <QGuiApplication>

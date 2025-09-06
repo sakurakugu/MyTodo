@@ -5,8 +5,9 @@
  * 该文件实现了TodoSorter类的所有排序功能。
  *
  * @author Sakurakugu
- * @date 2025-01-24
- * @version 1.0.0
+ * @date 2025-08-25 01:51:47(UTC+8) 周一
+ * @change 2025-08-25 18:38:47(UTC+8) 周一
+ * @version 0.4.0
  */
 
 #include "todo_sorter.h"

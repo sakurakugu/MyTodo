@@ -4,6 +4,11 @@
  *
  * 该文件定义了一个通用的控件行组件，支持多种控件类型（开关、按钮、单选框等），
  * 将文本标签放在左侧，控件放在右侧，适合在设置页面中使用。
+ *
+ * @author Sakurakugu
+ * @date 2025-09-05 18:17:08(UTC+8) 周五
+ * @change 2025-09-05 18:38:37(UTC+8) 周五
+ * @version 0.4.0
  */
 import QtQuick
 import QtQuick.Controls

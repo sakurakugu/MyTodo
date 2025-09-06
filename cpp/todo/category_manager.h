@@ -6,8 +6,9 @@
  * 从TodoManager中拆分出来，专门负责类别的CRUD操作和服务器同步。
  *
  * @author Sakurakugu
- * @date 2025-01-24
- * @version 1.0.0
+ * @date 2025-08-25 01:28:49(UTC+8) 周一
+ * @change 2025-09-03 00:37:33(UTC+8) 周三
+ * @version 0.4.0
  */
 
 #pragma once

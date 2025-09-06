@@ -1,12 +1,15 @@
-import QtQuick
-import QtQuick.Controls
-
 /**
- * 分割线组件，适合用在Layout中，用在Rectangle中老是飘到顶部，还不如直接用如下注释掉的Rectangle
- * 提供水平和垂直分割线功能，支持自定义样式
+ * @brief 分割线组件
+ *
+ * 该组件用于在布局中添加水平或垂直的分割线，用于分隔不同的内容区域。
  *
  * @author Sakurakugu
+ * @date 2025-09-04 13:14:53(UTC+8) 周四
+ * @change 2025-09-05 14:08:26(UTC+8) 周五
+ * @version 0.4.0
  */
+import QtQuick
+import QtQuick.Controls
 
 //  Rectangle {
 //     anchors.left: parent.left

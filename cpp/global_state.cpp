@@ -5,7 +5,8 @@
  *
  * @author Sakurakugu
  * @date 2025-08-16 20:05:55(UTC+8) 周六
- * @version 2025-08-22 18:34:35(UTC+8) 周五
+ * @change 2025-09-06 16:55:02(UTC+8) 周六
+ * @version 0.4.0
  */
 #include "global_state.h"
 #include <QCoreApplication>

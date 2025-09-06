@@ -1,3 +1,13 @@
+/**
+ * @brief 主应用组件
+ *
+ * 该组件是应用的入口点，负责创建和管理应用的窗口、页面和组件。
+ *
+ * @author Sakurakugu
+ * @date 2025-08-16 20:05:55(UTC+8) 周六
+ * @change 2025-09-06 00:46:10(UTC+8) 周六
+ * @version 0.4.0
+ */
 import QtQuick
 import QtQuick.Controls
 

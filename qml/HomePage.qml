@@ -1,3 +1,13 @@
+/**
+ * @brief 首页组件
+ *
+ * 该组件用于创建应用的首页，包含用户头像、功能按钮和待办事项列表等。
+ *
+ * @author Sakurakugu
+ * @date 2025-08-31 22:44:07(UTC+8) 周日
+ * @change 2025-09-06 16:55:02(UTC+8) 周六
+ * @version 0.4.0
+ */
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts

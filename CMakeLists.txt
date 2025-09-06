@@ -3,13 +3,13 @@
 #
 # 作者： sakurakugu
 # 首次创建日期： 2025-08-16 20:05:55(UTC+8) 周六
-# 最后更新日期： 2025-08-23 21:09:00(UTC+8) 周六
+# 最后更新日期： 2025-09-06 16:55:02(UTC+8) 周六
 
 cmake_minimum_required(VERSION 3.16)
 
 # 项目基本信息
 project(MyTodo 
-    VERSION 0.3.0
+    VERSION 0.4.0
     DESCRIPTION "待办事项管理应用"
     HOMEPAGE_URL "https://github.com/sakurakugu/MyTodo"
     LANGUAGES CXX

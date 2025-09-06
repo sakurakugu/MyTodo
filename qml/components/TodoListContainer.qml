@@ -1,3 +1,13 @@
+/**
+ * @brief 待办事项列表容器组件
+ *
+ * 该组件用于创建待办事项列表容器，用于显示待办事项列表。
+ *
+ * @author Sakurakugu
+ * @date 2025-09-05 14:08:26(UTC+8) 周五
+ * @change 2025-09-06 16:55:02(UTC+8) 周六
+ * @version 0.4.0
+ */
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts

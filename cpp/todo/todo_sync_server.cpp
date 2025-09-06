@@ -5,8 +5,9 @@
  * 该文件实现了TodoSyncServer类的所有方法，负责待办事项的服务器同步功能。
  *
  * @author Sakurakugu
- * @date 2025-01-25
- * @version 1.0.0
+ * @date 2025-08-24 23:07:18(UTC+8) 周日
+ * @change 2025-09-06 01:29:53(UTC+8) 周六
+ * @version 0.4.0
  */
 
 #include "todo_sync_server.h"

@@ -3,6 +3,11 @@
  * @brief 自定义开关组件
  *
  * 该文件定义了一个自定义的开关组件，支持主题切换和动画效果。
+ *
+ * @author Sakurakugu
+ * @date 2025-09-04 14:37:56(UTC+8) 周四
+ * @change 2025-09-04 14:37:56(UTC+8) 周四
+ * @version 0.4.0
  */
 import QtQuick
 import QtQuick.Effects

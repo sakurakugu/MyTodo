@@ -1,3 +1,13 @@
+/**
+ * @brief 设置页面组件
+ *
+ * 该组件用于创建应用的设置页面，包含应用的代理设置、主题设置、关于信息等。
+ *
+ * @author Sakurakugu
+ * @date 2025-08-16 20:05:55(UTC+8) 周六
+ * @change 2025-09-06 01:29:53(UTC+8) 周六
+ * @version 0.4.0
+ */
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts

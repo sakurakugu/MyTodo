@@ -6,8 +6,9 @@
  * 从TodoManager中拆分出来，专门负责用户登录、注销、令牌管理等认证相关操作。
  *
  * @author Sakurakugu
- * @date 2025-08-24 20:05:55(UTC+8) 周六
- * @version 2025-08-24 23:04:19(UTC+8) 周五
+ * @date 2025-08-24 21:43:31(UTC+8) 周日
+ * @change 2025-09-02 16:02:06(UTC+8) 周二
+ * @version 0.4.0
  */
 
 #pragma once

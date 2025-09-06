@@ -4,6 +4,11 @@
  *
  * 该文件定义了一个自定义的复选框组件，支持主题切换和动画效果。
  * 提供与项目风格一致的复选框控件。
+ *
+ * @author Sakurakugu
+ * @date 2025-09-05 18:17:08(UTC+8) 周五
+ * @change 2025-09-05 18:17:08(UTC+8) 周五
+ * @version 0.4.0
  */
 import QtQuick
 import QtQuick.Effects

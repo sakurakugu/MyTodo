@@ -3,7 +3,8 @@
  * @brief 网络请求类实现
  * @author Sakurakugu
  * @date 2025-08-17 07:17:29(UTC+8) 周日
- * @version 2025-08-22 23:04:19(UTC+8) 周五
+ * @change 2025-09-03 11:55:09(UTC+8) 周三
+ * @version 0.4.0
  */
 #include "network_request.h"
 #include "config.h"
