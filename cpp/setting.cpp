@@ -139,7 +139,7 @@ int Setting::getMaxLogFiles() const {
 }
 
 QString Setting::getLogFilePath() const {
-    return m_logger.getLogFilePath();
+    return QString::fromStdString(m_logger.getLogFilePath());
 }
 
 void Setting::clearLogs() {

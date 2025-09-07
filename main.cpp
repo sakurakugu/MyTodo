@@ -48,15 +48,8 @@ int main(int argc, char *argv[]) {
 #if defined(Q_OS_WIN) && defined(QT_DEBUG)
     // Windows平台
     UINT cp = GetACP();
-    if (cp == 65001) {
-        // 设置 Windows 控制台输入输出为 UTF-8
-        SetConsoleCP(CP_UTF8);
-        SetConsoleOutputCP(CP_UTF8);
-    } else if (cp == 936) {
-        // 设置 Windows 控制台输入输出为 GBK
-        SetConsoleCP(936);
-        SetConsoleOutputCP(936);
-    }
+    SetConsoleCP(cp);
+    SetConsoleOutputCP(cp);
 #endif
 
     // printResources();
@@ -124,9 +117,8 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("globalState", &globalState);
 
     // 连接用户登录成功信号到TodoManager的更新用户UUID函数
-    QObject::connect(&userAuth, &UserAuth::loginSuccessful, &todoManager, [&todoManager]() {
-        todoManager.updateAllTodosUserUuid();
-    });
+    QObject::connect(&userAuth, &UserAuth::loginSuccessful, &todoManager,
+                     [&todoManager]() { todoManager.updateAllTodosUserUuid(); });
 
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app, []() { QCoreApplication::exit(-1); },

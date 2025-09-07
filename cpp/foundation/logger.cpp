@@ -19,25 +19,34 @@
 
 Logger::Logger(QObject *parent) noexcept
     : QObject(parent),                    // 初始化父对象
-      m_logFile(nullptr),                 // 初始化日志文件管理
-      m_logStream(nullptr),               // 初始化日志流管理
+      m_logFile(nullptr),                 // 初始化日志文件流
       m_logLevel(LogLevel::Info),         // 初始化日志级别为Info
       m_logToFile(true),                  // 初始化是否记录到文件为true
       m_logToConsole(true),               // 初始化是否记录到控制台为true
       m_maxLogFileSize(10 * 1024 * 1024), // 初始化最大日志文件大小为10MB
-      m_maxLogFiles(5)                    // 初始化最大日志文件数量为5
+      m_maxLogFiles(5),                   // 初始化最大日志文件数量为5
+      m_appName(DefaultValues::appName)   // 初始化应用程序名称
 {
+    // 编译时检查应用名
+    static_assert(!DefaultValues::appName.empty(), "应用名不能为空");
+    static_assert(DefaultValues::appName.size() > 0, "应用名长度必须大于0");
+
     // 设置日志目录
     try {
+        // 设置日志目录，默认存放在Appdata/Local/应用名/logs
+        // 测试时存放在可执行文件所在文件夹中的/logs
 #if defined(QT_DEBUG)
-        m_logDir = QCoreApplication::applicationDirPath() + "/logs";
+        m_logDir =
+            std::format("{}/{}/logs", QCoreApplication::applicationDirPath().toStdString(), m_appName);
 #else
-        m_logDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/logs";
+        m_logDir = std::format("{}/{}/logs",
+                               QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation).toStdString(),
+                               m_appName);
 #endif
-        m_logFileName = QString::fromStdString(std::string{DefaultValues::logFileName}) + ".log";
+        m_logFileName = m_appName + ".log";
 
         // 使用 std::filesystem 确保目录存在
-        std::filesystem::path logPath{m_logDir.toStdString()};
+        std::filesystem::path logPath{m_logDir};
         if (!std::filesystem::exists(logPath)) {
             std::filesystem::create_directories(logPath);
         }
@@ -53,10 +62,8 @@ Logger::Logger(QObject *parent) noexcept
 
 Logger::~Logger() noexcept {
     try {
-        if (m_logStream) {
-            m_logStream->flush();
-        }
-        if (m_logFile && m_logFile->isOpen()) {
+        if (m_logFile && m_logFile->is_open()) {
+            m_logFile->flush();
             m_logFile->close();
         }
     } catch (...) {
@@ -116,13 +123,10 @@ std::expected<void, LogError> Logger::setLogToFile(bool enabled) noexcept {
                 return result;
             }
         } else if (!enabled && m_logFile) {
-            if (m_logStream) {
-                m_logStream->flush();
-            }
-            if (m_logFile && m_logFile->isOpen()) {
+            if (m_logFile && m_logFile->is_open()) {
+                m_logFile->flush();
                 m_logFile->close();
             }
-            m_logStream.reset();
             m_logFile.reset();
         }
 
@@ -148,8 +152,8 @@ std::expected<void, LogError> Logger::setLogToConsole(bool enabled) noexcept {
  *
  * @return QString 日志文件路径
  */
-QString Logger::getLogFilePath() const noexcept {
-    return QString("%1/%2").arg(m_logDir, m_logFileName);
+std::string Logger::getLogFilePath() const noexcept {
+    return m_logDir + "/" + m_logFileName;
 }
 
 /**
@@ -162,17 +166,14 @@ std::expected<void, LogError> Logger::clearLogs() noexcept {
         std::unique_lock lock(m_shared_mutex);
 
         // 关闭当前日志文件
-        if (m_logStream) {
-            m_logStream->flush();
-        }
-        if (m_logFile && m_logFile->isOpen()) {
+        if (m_logFile && m_logFile->is_open()) {
+            m_logFile->flush();
             m_logFile->close();
         }
-        m_logStream.reset();
         m_logFile.reset();
 
         // 删除所有日志文件
-        std::filesystem::path logDirPath{m_logDir.toStdString()};
+        std::filesystem::path logDirPath{m_logDir};
         if (!std::filesystem::exists(logDirPath)) {
             return std::unexpected(LogError::FileOpenFailed);
         }
@@ -205,7 +206,7 @@ std::expected<void, LogError> Logger::clearLogs() noexcept {
  * @brief 轮转日志文件
  *
  * @return std::expected<void, LogError> 操作结果
- * 
+ *
  * 检查日志文件是否超过最大大小限制，如果超过则进行轮转。
  */
 std::expected<void, LogError> Logger::rotateLogFile() noexcept {
@@ -241,35 +242,36 @@ void Logger::writeLog(QtMsgType type, const QMessageLogContext &context, const Q
             }
         }();
 
+        // 早期返回，避免不必要的处理
         if (static_cast<std::underlying_type_t<LogLevel>>(msgLevel) <
             static_cast<std::underlying_type_t<LogLevel>>(currentLevel)) {
-            return; // 早期返回，避免不必要的处理
+            return;
         }
 
         // 使用共享锁进行读操作
         std::shared_lock lock(m_shared_mutex);
 
         // 日志格式化
-        QString formattedMsg = formatLogMessage(type, context, msg);
+        std::string formattedMsg = formatLogMessage(type, context, msg);
 
-        // 原子读取输出标志
+        // 读取输出标志
         const bool toConsole = m_logToConsole.load(std::memory_order_acquire);
         const bool toFile = m_logToFile.load(std::memory_order_acquire);
 
         // 输出到控制台 - 无锁操作
         if (toConsole) {
-            QString coloredMsg = formatColoredLogMessage(type, formattedMsg);
-            std::cout << coloredMsg.toLocal8Bit().toStdString() << std::endl;
+            std::string coloredMsg = formatColoredLogMessage(type, formattedMsg);
+            std::cout << coloredMsg << std::endl;
         }
 
         // 输出到文件 - 需要升级为独占锁
-        if (toFile && m_logStream) {
+        if (toFile && m_logFile) {
             lock.unlock();                               // 释放共享锁
             std::unique_lock uniqueLock(m_shared_mutex); // 获取独占锁
 
-            if (m_logStream) { // 双重检查
-                *m_logStream << formattedMsg << Qt::endl;
-                m_logStream->flush();
+            if (m_logFile && m_logFile->is_open()) { // 双重检查
+                *m_logFile << formattedMsg << std::endl;
+                m_logFile->flush();
 
                 // 检查是否需要轮转日志文件
                 static_cast<void>(checkLogRotation());
@@ -283,7 +285,7 @@ void Logger::writeLog(QtMsgType type, const QMessageLogContext &context, const Q
  * @brief 初始化日志文件
  *
  * 初始化日志文件，创建日志文件目录和文件流。
- * 
+ *
  * @return std::expected<void, LogError> 操作结果
  */
 std::expected<void, LogError> Logger::initLogFile() noexcept {
@@ -292,38 +294,34 @@ std::expected<void, LogError> Logger::initLogFile() noexcept {
             return {};
         }
 
-        const QString logFilePath = getLogFilePath();
+        const std::string logFilePath = getLogFilePath();
 
         // 检查磁盘空间
-        std::filesystem::path filePath{logFilePath.toStdString()};
+        std::filesystem::path filePath{logFilePath};
         std::error_code ec;
         auto space = std::filesystem::space(filePath.parent_path(), ec);
         if (ec || space.available < 1024 * 1024) { // 至少需要 1MB 空间
             return std::unexpected(LogError::DiskSpaceInsufficient);
         }
 
-        m_logFile = std::make_unique<QFile>(logFilePath);
+        m_logFile = std::make_unique<std::ofstream>(logFilePath, std::ios::out | std::ios::app);
 
-        if (!m_logFile->open(QIODevice::WriteOnly | QIODevice::Append)) {
+        if (!m_logFile->is_open()) {
             m_logFile.reset();
             return std::unexpected(LogError::FileOpenFailed);
         }
 
-        m_logStream = std::make_unique<QTextStream>(m_logFile.get());
-        m_logStream->setEncoding(QStringConverter::Utf8);
+        // 启动标记
+        const auto now = std::chrono::system_clock::now();
+        const auto startMsg = std::format("\n=== {} 应用启动 [{:%Y-%m-%d %H:%M:%S}] ===\n", DefaultValues::appName,
+                                          std::chrono::floor<std::chrono::seconds>(now));
 
-        // 优化的启动标记
-        const auto now = QDateTime::currentDateTime();
-        const auto startMsg = QString::fromStdString(
-            std::format("\n=== MyTodo 应用启动 [{}] ===", now.toString("yyyy-MM-dd hh:mm:ss").toStdString()));
-
-        *m_logStream << startMsg << Qt::endl;
-        m_logStream->flush();
+        *m_logFile << startMsg;
+        m_logFile->flush();
 
         return {};
     } catch (const std::exception &) {
         m_logFile.reset();
-        m_logStream.reset();
         return std::unexpected(LogError::FileOpenFailed);
     }
 }
@@ -332,7 +330,7 @@ std::expected<void, LogError> Logger::initLogFile() noexcept {
  * @brief 检查日志文件是否需要轮转
  *
  * 检查日志文件是否超过最大大小限制，如果超过则进行轮转。
- * 
+ *
  * @return std::expected<void, LogError> 操作结果
  */
 std::expected<void, LogError> Logger::checkLogRotation() noexcept {
@@ -342,28 +340,29 @@ std::expected<void, LogError> Logger::checkLogRotation() noexcept {
         }
 
         const auto maxSize = m_maxLogFileSize.load(std::memory_order_acquire);
-        if (m_logFile->size() <= maxSize) {
+
+        // 获取文件大小
+        std::filesystem::path logPath{getLogFilePath()};
+        std::error_code ec;
+        auto fileSize = std::filesystem::file_size(logPath, ec);
+        if (ec || fileSize <= static_cast<std::uintmax_t>(maxSize)) {
             return {}; // 无需轮转
         }
 
-        if (m_logStream) {
-            m_logStream->flush();
-        }
-        if (m_logFile && m_logFile->isOpen()) {
+        if (m_logFile && m_logFile->is_open()) {
+            m_logFile->flush();
             m_logFile->close();
         }
-        m_logStream.reset();
         m_logFile.reset();
 
-        // 优化的文件轮转
-        const QString currentLogPath = getLogFilePath();
+        // 文件轮转
+        const std::string currentLogPath = getLogFilePath();
         const auto timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
-        const auto rotatedLogPath = QString::fromStdString(
-            std::format("{}/{}_{}.log", m_logDir.toStdString(), DefaultValues::logFileName, timestamp.toStdString()));
+        const auto rotatedLogPath =
+            QString::fromStdString(std::format("{}/{}_{}.log", m_logDir, m_logFileName, timestamp.toStdString()));
 
         // 使用 std::filesystem 进行文件操作
-        std::error_code ec;
-        std::filesystem::rename(std::filesystem::path{currentLogPath.toStdString()},
+        std::filesystem::rename(std::filesystem::path{currentLogPath},
                                 std::filesystem::path{rotatedLogPath.toStdString()}, ec);
 
         if (ec) {
@@ -372,7 +371,7 @@ std::expected<void, LogError> Logger::checkLogRotation() noexcept {
 
         // 清理旧的日志文件
         const auto maxFiles = m_maxLogFiles.load(std::memory_order_acquire);
-        std::filesystem::path logDirPath{m_logDir.toStdString()};
+        std::filesystem::path logDirPath{m_logDir};
 
         std::vector<std::filesystem::directory_entry> logFiles;
         for (const auto &entry : std::filesystem::directory_iterator(logDirPath, ec)) {
@@ -380,8 +379,7 @@ std::expected<void, LogError> Logger::checkLogRotation() noexcept {
                 break;
 
             const auto filename = entry.path().filename().string();
-            if (entry.is_regular_file() && filename.starts_with(DefaultValues::logFileName) &&
-                filename.ends_with(".log")) {
+            if (entry.is_regular_file() && filename.starts_with(m_logFileName) && filename.ends_with(".log")) {
                 logFiles.push_back(entry);
             }
         }
@@ -416,78 +414,41 @@ std::expected<void, LogError> Logger::checkLogRotation() noexcept {
  * @param msg 日志消息
  * @return QString 格式化后的日志消息
  */
-QString Logger::formatLogMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg) const noexcept {
+std::string Logger::formatLogMessage(QtMsgType type, const QMessageLogContext &context,
+                                     const QString &msg) const noexcept {
+// 如果 Qt 版本小于 7.0.0
+#if QT_VERSION >= QT_VERSION_CHECK(7, 0, 0)
+    constexpr std::array<std::string_view, 5> levelNames = {"调试", "信息", "警告", "错误", "致命"};
+#else
+    constexpr std::array<std::string_view, 5> levelNames = {"调试", "警告", "错误", "致命", "信息"};
+#endif
+    const auto levelIndex = static_cast<size_t>(type);
+    const auto levelStr = (levelIndex < levelNames.size()) ? levelNames[levelIndex] : "未知";
+    // 时间戳生成
+    const auto now = std::chrono::system_clock::now();
+    const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
     try {
-        // C++23 constexpr 级别映射
-        constexpr std::array<std::string_view, 5> levelNames = {"调试", "警告", "错误", "致命", "信息"};
-
-        const auto levelIndex = static_cast<size_t>(type);
-        const auto levelStr = (levelIndex < levelNames.size()) ? levelNames[levelIndex] : "未知";
-
-        // 高性能时间戳生成
-        const auto now = std::chrono::system_clock::now();
-        const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
-
+#if defined(QT_DEBUG)
         // 文件名提取
-        const auto fileName = context.file ? std::filesystem::path{context.file}.filename().string() : "未知";
-
-        const auto result =
-            std::format("[{:%Y-%m-%d %H:%M:%S}.{:03d}] [{}] [{}:{}] {}", std::chrono::floor<std::chrono::seconds>(now),
-                        ms.count(), levelStr, fileName, context.line, msg.toStdString());
-
-        return QString::fromStdString(result);
+        const auto fileName = context.file ? std::filesystem::path{context.file}.filename().string() : "未知文件";
+        return std::format("[{:%Y-%m-%d %H:%M:%S}.{:03d}] [{}] [{}:{}] {}",
+                           std::chrono::floor<std::chrono::seconds>(now), ms.count(), levelStr, fileName, context.line,
+                           msg.toStdString());
+#else
+        return std::format("[{:%Y-%m-%d %H:%M:%S}.{:03d}] [{}] {}", std::chrono::floor<std::chrono::seconds>(now),
+                           ms.count(), levelStr, msg.toStdString());
+#endif
     } catch (const std::exception &) {
         // 回退到简单格式
-        auto timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz");
-        auto typeStr = messageTypeToString(type);
+#if defined(QT_DEBUG)
         auto fileName = QFileInfo(context.file ? context.file : "").baseName();
-        return QString("[%1] [%2] [%3:%4] %5").arg(timestamp, typeStr, fileName, QString::number(context.line), msg);
-    }
-}
-
-/**
- * @brief 将日志类型转换为字符串
- *
- * @param type 日志类型
- * @return QString 日志类型的字符串表示
- */
-QString Logger::messageTypeToString(QtMsgType type) noexcept {
-    switch (type) {
-    case QtDebugMsg:
-        return "调试";
-    case QtInfoMsg:
-        return "信息";
-    case QtWarningMsg:
-        return "警告";
-    case QtCriticalMsg:
-        return "错误";
-    case QtFatalMsg:
-        return "致命";
-    default:
-        return "未知";
-    }
-}
-
-/**
- * @brief 获取日志类型对应的ANSI颜色代码
- *
- * @param type 日志类型
- * @return QString ANSI颜色代码
- */
-QString Logger::getColorCode(QtMsgType type) noexcept {
-    switch (type) {
-    case QtDebugMsg:
-        return "\033[36m";    // 青色
-    case QtInfoMsg:
-        return "\033[32m";    // 绿色
-    case QtWarningMsg:
-        return "\033[33m";    // 黄色
-    case QtCriticalMsg:
-        return "\033[31m";    // 红色
-    case QtFatalMsg:
-        return "\033[35m";    // 紫色
-    default:
-        return "\033[0m";     // 重置颜色
+        return std::format("[{:%Y-%m-%d %H:%M:%S}.{:03d}] [{}] [{}:{}] {}",
+                           std::chrono::floor<std::chrono::seconds>(now), ms.count(), levelStr, fileName.toStdString(),
+                           QString::number(context.line).toStdString(), msg.toStdString());
+#else
+        return std::format("[{:%Y-%m-%d %H:%M:%S}.{:03d}] [{}] {}", std::chrono::floor<std::chrono::seconds>(now),
+                           ms.count(), levelStr, msg.toStdString());
+#endif
     }
 }
 
@@ -499,18 +460,20 @@ QString Logger::getColorCode(QtMsgType type) noexcept {
  * @param msg 日志消息
  * @return QString 格式化后的带颜色日志消息
  */
-QString Logger::formatColoredLogMessage(QtMsgType type, const QString &msg) const noexcept {
+std::string Logger::formatColoredLogMessage(QtMsgType type, const std::string &msg) const noexcept {
+// 如果 Qt 版本小于 7.0.0
+#if QT_VERSION >= QT_VERSION_CHECK(7, 0, 0)
+    constexpr std::array<std::string_view, 5> colorCode = {"\033[36m", "\033[32m", "\033[33m", "\033[31m", "\033[35m"};
+#else
+    constexpr std::array<std::string_view, 5> colorCode = {"\033[36m", "\033[33m", "\033[31m", "\033[35m", "\033[32m"};
+#endif
+    const auto levelIndex = static_cast<size_t>(type);
+    const auto colorStart = (levelIndex < colorCode.size()) ? colorCode[levelIndex] : "\033[0m";
+    constexpr std::string_view colorEnd = "\033[0m";
     try {
         // 添加颜色代码
-        const QString colorCode = getColorCode(type);
-        const QString resetCode = "\033[0m";
-        
-        return colorCode + msg + resetCode;
+        return std::format("{}{}{}", colorStart, msg, colorEnd);
     } catch (const std::exception &) {
-        // 回退到简单格式
-        const QString colorCode = getColorCode(type);
-        const QString resetCode = "\033[0m";
-        return QString("%1%2%3")
-            .arg(colorCode, msg, resetCode);
+        return msg;
     }
 }

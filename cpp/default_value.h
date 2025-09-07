@@ -19,5 +19,5 @@ namespace DefaultValues {
     inline constexpr std::string_view userAuthApiEndpoint{"/auth_api.php"};
     inline constexpr std::string_view categoriesApiEndpoint{"/todo/categories_api.php"};
 
-    inline constexpr std::string_view logFileName{"MyTodo"}; // 日志文件名（不包括后缀 ".log")
+    inline constexpr std::string_view appName{"MyTodo"}; // 应用程序名称
 } // namespace DefaultValues
