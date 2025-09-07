@@ -35,29 +35,29 @@ class Config : public QObject {
     Config(Config &&) = delete;
     Config &operator=(Config &&) = delete;
 
-    bool save(QStringView key, const QVariant &value) noexcept;
-    QVariant get(QStringView key, const QVariant &defaultValue = QVariant{}) const noexcept;
-    void remove(QStringView key) noexcept;
-    bool contains(QStringView key) const noexcept;
-    QStringList allKeys() const noexcept;
-    void clear() noexcept;
+    bool save(QStringView key, const QVariant &value) noexcept;                              // 保存配置项
+    QVariant get(QStringView key, const QVariant &defaultValue = QVariant{}) const noexcept; // 获取配置项
+    void remove(QStringView key) noexcept;                                                   // 删除配置项
+    bool contains(QStringView key) const noexcept;                                           // 检查配置项是否存在
+    QStringList allKeys() const noexcept;                                                    // 获取所有配置项键
+    void clear() noexcept;                                                                   // 清空所有配置项
 
     // 存储类型和路径管理相关方法
-    bool openConfigFilePath() const noexcept;
-    QString getConfigFilePath() const noexcept;
+    bool openConfigFilePath() const noexcept;   // 打开配置文件路径
+    QString getConfigFilePath() const noexcept; // 获取配置文件路径
 
   private:
     explicit Config(QObject *parent = nullptr);
     ~Config() noexcept override;
 
-    mutable toml::value m_tomlData; // 配置数据
-    QString m_configFilePath;       // 配置文件路径
+    mutable toml::value m_tomlData;   // 配置数据
+    QString m_configFilePath;         // 配置文件路径
     mutable bool m_isChanged = false; // 配置是否已修改
 
     // 辅助方法
-    void loadFromFile() const noexcept;
-    bool saveToFile() const noexcept;
-    QString getDefaultConfigPath() const noexcept;
-    toml::value variantToToml(const QVariant &value) const noexcept;
-    QVariant tomlToVariant(const toml::value &value) const noexcept;
+    void loadFromFile() const noexcept;                              // 从文件加载配置
+    bool saveToFile() const noexcept;                                // 保存配置到文件
+    QString getDefaultConfigPath() const noexcept;                   // 获取默认配置文件路径
+    toml::value variantToToml(const QVariant &value) const noexcept; // Variant转换为Toml值
+    QVariant tomlToVariant(const toml::value &value) const noexcept; // Toml值转换为Variant
 };

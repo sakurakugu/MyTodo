@@ -10,12 +10,20 @@
 #include "default_value.h"
 
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QDir>
+#include <QFileInfo>
 
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <mutex>
 #include <qstandardpaths.h>
 #include <shared_mutex>
+#include <string_view>
 
 Logger::Logger(QObject *parent) noexcept
     : QObject(parent),                    // 初始化父对象
@@ -36,8 +44,7 @@ Logger::Logger(QObject *parent) noexcept
         // 设置日志目录，默认存放在Appdata/Local/应用名/logs
         // 测试时存放在可执行文件所在文件夹中的/logs
 #if defined(QT_DEBUG)
-        m_logDir =
-            std::format("{}/{}/logs", QCoreApplication::applicationDirPath().toStdString(), m_appName);
+        m_logDir = std::format("{}/{}/logs", QCoreApplication::applicationDirPath().toStdString(), m_appName);
 #else
         m_logDir = std::format("{}/{}/logs",
                                QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation).toStdString(),
@@ -225,22 +232,26 @@ void Logger::writeLog(QtMsgType type, const QMessageLogContext &context, const Q
     try {
         // 快速级别检查 - 无锁操作
         const auto currentLevel = m_logLevel.load(std::memory_order_acquire);
-        const auto msgLevel = [type]() -> LogLevel {
-            switch (type) {
-            case QtDebugMsg:
-                return LogLevel::Debug;
-            case QtInfoMsg:
-                return LogLevel::Info;
-            case QtWarningMsg:
-                return LogLevel::Warning;
-            case QtCriticalMsg:
-                return LogLevel::Critical;
-            case QtFatalMsg:
-                return LogLevel::Fatal;
-            default:
-                return LogLevel::Info;
-            }
-        }();
+#if QT_VERSION >= QT_VERSION_CHECK(7, 0, 0)
+        static constexpr std::array<LogLevel, 5> qtMsgToLogLevel = {
+            LogLevel::Debug,    // QtDebugMsg
+            LogLevel::Info,     // QtInfoMsg
+            LogLevel::Warning,  // QtWarningMsg
+            LogLevel::Critical, // QtCriticalMsg
+            LogLevel::Fatal     // QtFatalMsg
+        };
+#else
+        static constexpr std::array<LogLevel, 5> qtMsgToLogLevel = {
+            LogLevel::Debug,    // QtDebugMsg
+            LogLevel::Warning,  // QtWarningMsg
+            LogLevel::Critical, // QtCriticalMsg
+            LogLevel::Fatal,    // QtFatalMsg
+            LogLevel::Info      // QtInfoMsg
+        };
+#endif
+
+        const auto typeIndex = static_cast<size_t>(type);
+        const auto msgLevel = (typeIndex < qtMsgToLogLevel.size()) ? qtMsgToLogLevel[typeIndex] : LogLevel::Info;
 
         // 早期返回，避免不必要的处理
         if (static_cast<std::underlying_type_t<LogLevel>>(msgLevel) <
@@ -250,13 +261,16 @@ void Logger::writeLog(QtMsgType type, const QMessageLogContext &context, const Q
 
         // 使用共享锁进行读操作
         std::shared_lock lock(m_shared_mutex);
-
-        // 日志格式化
-        std::string formattedMsg = formatLogMessage(type, context, msg);
-
         // 读取输出标志
         const bool toConsole = m_logToConsole.load(std::memory_order_acquire);
         const bool toFile = m_logToFile.load(std::memory_order_acquire);
+
+        if (!toConsole && !toFile) {
+            return;
+        }
+
+        // 日志格式化
+        std::string formattedMsg = formatLogMessage(type, context, msg);
 
         // 输出到控制台 - 无锁操作
         if (toConsole) {
@@ -264,14 +278,20 @@ void Logger::writeLog(QtMsgType type, const QMessageLogContext &context, const Q
             std::cout << coloredMsg << std::endl;
         }
 
-        // 输出到文件 - 需要升级为独占锁
-        if (toFile && m_logFile) {
+        // 输出到文件 - 使用独占锁
+        if (toFile) {
             lock.unlock();                               // 释放共享锁
             std::unique_lock uniqueLock(m_shared_mutex); // 获取独占锁
 
-            if (m_logFile && m_logFile->is_open()) { // 双重检查
-                *m_logFile << formattedMsg << std::endl;
-                m_logFile->flush();
+            if (m_logFile && m_logFile->is_open()) {
+                *m_logFile << formattedMsg << '\n';
+
+                // 批量刷新：每10条日志或Critical以上级别才刷新
+                static thread_local int flushCounter = 0;
+                if (++flushCounter >= 10 || msgLevel >= LogLevel::Critical) {
+                    m_logFile->flush();
+                    flushCounter = 0;
+                }
 
                 // 检查是否需要轮转日志文件
                 static_cast<void>(checkLogRotation());
@@ -358,12 +378,10 @@ std::expected<void, LogError> Logger::checkLogRotation() noexcept {
         // 文件轮转
         const std::string currentLogPath = getLogFilePath();
         const auto timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
-        const auto rotatedLogPath =
-            QString::fromStdString(std::format("{}/{}_{}.log", m_logDir, m_logFileName, timestamp.toStdString()));
+        const auto rotatedLogPath = std::format("{}/{}_{}.log", m_logDir, m_logFileName, timestamp.toStdString());
 
-        // 使用 std::filesystem 进行文件操作
-        std::filesystem::rename(std::filesystem::path{currentLogPath},
-                                std::filesystem::path{rotatedLogPath.toStdString()}, ec);
+        // 重命名文件
+        std::filesystem::rename(std::filesystem::path{currentLogPath}, std::filesystem::path{rotatedLogPath}, ec);
 
         if (ec) {
             return std::unexpected(LogError::RotationFailed);
@@ -378,9 +396,11 @@ std::expected<void, LogError> Logger::checkLogRotation() noexcept {
             if (ec)
                 break;
 
-            const auto filename = entry.path().filename().string();
-            if (entry.is_regular_file() && filename.starts_with(m_logFileName) && filename.ends_with(".log")) {
-                logFiles.push_back(entry);
+            if (entry.is_regular_file()) {
+                const auto filename = entry.path().filename().string();
+                if (filename.starts_with(m_logFileName) && filename.ends_with(".log")) {
+                    logFiles.push_back(entry);
+                }
             }
         }
 
@@ -396,6 +416,8 @@ std::expected<void, LogError> Logger::checkLogRotation() noexcept {
             const auto filesToRemove = logFiles.size() - maxFiles + 1;
             for (size_t i = 0; i < filesToRemove && i < logFiles.size(); ++i) {
                 std::filesystem::remove(logFiles[i].path(), ec);
+                if (ec)
+                    break; // 遇到错误时停止删除
             }
         }
 
@@ -414,14 +436,15 @@ std::expected<void, LogError> Logger::checkLogRotation() noexcept {
  * @param msg 日志消息
  * @return QString 格式化后的日志消息
  */
-std::string Logger::formatLogMessage(QtMsgType type, const QMessageLogContext &context,
+std::string Logger::formatLogMessage(QtMsgType type, [[maybe_unused]] const QMessageLogContext &context,
                                      const QString &msg) const noexcept {
 // 如果 Qt 版本小于 7.0.0
 #if QT_VERSION >= QT_VERSION_CHECK(7, 0, 0)
-    constexpr std::array<std::string_view, 5> levelNames = {"调试", "信息", "警告", "错误", "致命"};
+    static constexpr std::array<std::string_view, 5> levelNames = {"调试", "信息", "警告", "错误", "致命"};
 #else
-    constexpr std::array<std::string_view, 5> levelNames = {"调试", "警告", "错误", "致命", "信息"};
+    static constexpr std::array<std::string_view, 5> levelNames = {"调试", "警告", "错误", "致命", "信息"};
 #endif
+
     const auto levelIndex = static_cast<size_t>(type);
     const auto levelStr = (levelIndex < levelNames.size()) ? levelNames[levelIndex] : "未知";
     // 时间戳生成
@@ -463,17 +486,35 @@ std::string Logger::formatLogMessage(QtMsgType type, const QMessageLogContext &c
 std::string Logger::formatColoredLogMessage(QtMsgType type, const std::string &msg) const noexcept {
 // 如果 Qt 版本小于 7.0.0
 #if QT_VERSION >= QT_VERSION_CHECK(7, 0, 0)
-    constexpr std::array<std::string_view, 5> colorCode = {"\033[36m", "\033[32m", "\033[33m", "\033[31m", "\033[35m"};
+    static constexpr std::array<std::string_view, 5> colorCodes = {
+        "\033[36m", // 青色 - Debug
+        "\033[32m", // 绿色 - Info
+        "\033[33m", // 黄色 - Warning
+        "\033[31m", // 红色 - Critical
+        "\033[35m"  // 紫色 - Fatal
+    };
 #else
-    constexpr std::array<std::string_view, 5> colorCode = {"\033[36m", "\033[33m", "\033[31m", "\033[35m", "\033[32m"};
+    static constexpr std::array<std::string_view, 5> colorCodes = {
+        "\033[36m", // 青色 - Debug
+        "\033[33m", // 黄色 - Warning
+        "\033[31m", // 红色 - Critical
+        "\033[35m", // 紫色 - Fatal
+        "\033[32m"  // 绿色 - Info
+    };
 #endif
+
     const auto levelIndex = static_cast<size_t>(type);
-    const auto colorStart = (levelIndex < colorCode.size()) ? colorCode[levelIndex] : "\033[0m";
+    const auto colorStart = (levelIndex < colorCodes.size()) ? colorCodes[levelIndex] : "\033[0m";
     constexpr std::string_view colorEnd = "\033[0m";
     try {
-        // 添加颜色代码
         return std::format("{}{}{}", colorStart, msg, colorEnd);
     } catch (const std::exception &) {
-        return msg;
+        // 回退：直接拼接避免format异常
+        std::string result;
+        result.reserve(msg.size() + colorStart.size() + colorEnd.size());
+        result = colorStart;
+        result += msg;
+        result += colorEnd;
+        return result;
     }
 }

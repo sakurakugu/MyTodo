@@ -10,6 +10,25 @@
  * @version 0.4.0
  */
 
+ /**
+  * 使用方法
+  * 1. 包含头文件
+  *    #include "logger.h"
+  * 2. 初始化日志系统
+  *        qInstallMessageHandler(Logger::messageHandler);
+  * 3. 设置日志级别
+  *    日志级别从低到高依次为：Debug、Info、Warning、Critical、Fatal
+  *        Logger::GetInstance().setLogLevel(Logger::LogLevel::Info);
+  * 4. 记录日志
+  *       qDebug() << "这是一条调试日志";  // 因为设置级别为Info，调试日志不显示
+  *       qInfo() << "这是一条信息日志";
+  * 5. 日志文件
+  *    日志文件默认存放在Appdata/Local/应用名/logs目录下
+  *    日志文件名称为应用名.log
+  *    日志文件大小为10MB，超过10MB会自动轮转
+  *    日志文件轮转时会保留5个备份文件
+  */
+
 #pragma once
 
 #include <QDateTime>

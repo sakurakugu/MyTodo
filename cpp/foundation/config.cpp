@@ -79,9 +79,9 @@ bool Config::save(QStringView key, const QVariant &value) noexcept {
  */
 QVariant Config::get(QStringView key, const QVariant &defaultValue) const noexcept {
     try {
-        QString keyStr = key.toString();
-        QStringList keyParts = keyStr.split('/');
-        const toml::value *current = &m_tomlData;
+        QString keyStr = key.toString();          // 转换为 QString
+        QStringList keyParts = keyStr.split('/'); // 转换为 QStringList
+        const toml::value *current = &m_tomlData; // 转换为 const toml::value *
 
         // 遍历嵌套键
         for (const QString &part : keyParts) {
