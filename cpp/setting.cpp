@@ -34,9 +34,8 @@ int Setting::getOsType() const {
 }
 
 // 本地配置相关方法实现
-bool Setting::save(const QString &key, const QVariant &value) {
-    auto result = m_config.save(key, value);
-    return result;
+void Setting::save(const QString &key, const QVariant &value) {
+    m_config.save(key, value);
 }
 
 QVariant Setting::get(const QString &key, const QVariant &defaultValue) const {
@@ -48,11 +47,11 @@ void Setting::remove(const QString &key) {
     m_config.remove(key);
 }
 
-bool Setting::contains(const QString &key) {
+bool Setting::contains(const QString &key) const {
     return m_config.contains(key);
 }
 
-QStringList Setting::allKeys() {
+QStringList Setting::allKeys() const {
     return m_config.allKeys();
 }
 
@@ -257,12 +256,14 @@ void Setting::updateServerConfig(const QString &baseUrl) {
 
     qDebug() << "服务器配置已更新:" << baseUrl;
     qDebug() << "HTTPS状态:" << (isHttpsUrl(baseUrl) ? "安全" : "不安全");
-    
+
     // 发出信号通知其他组件
     emit baseUrlChanged(baseUrl);
 }
 
-void Setting::setProxyConfig(int type, const QString &host, int port, const QString &username, const QString &password, bool enabled) {
+void Setting::setProxyConfig(int type, const QString &host, int port, const QString &username, const QString &password,
+                             bool enabled) {
     setProxyEnabled(enabled);
-    NetworkProxy::GetInstance().setProxyConfig(static_cast<NetworkProxy::ProxyType>(type), host, port, username, password);
+    NetworkProxy::GetInstance().setProxyConfig(static_cast<NetworkProxy::ProxyType>(type), host, port, username,
+                                               password);
 }

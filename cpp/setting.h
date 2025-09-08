@@ -32,12 +32,12 @@ class Setting : public QObject {
     Q_INVOKABLE int getOsType() const;
 
     // 本地配置相关方法
-    Q_INVOKABLE bool save(const QString &key, const QVariant &value); ///< 保存设置到配置文件
+    Q_INVOKABLE void save(const QString &key, const QVariant &value); ///< 保存设置到配置文件
     Q_INVOKABLE QVariant get(const QString &key,
                              const QVariant &defaultValue = QVariant()) const; ///< 从配置文件读取设置
     Q_INVOKABLE void remove(const QString &key);                               ///< 移除设置
-    Q_INVOKABLE bool contains(const QString &key);                             ///< 检查设置是否存在
-    Q_INVOKABLE QStringList allKeys();                                         ///< 获取所有设置的键名
+    Q_INVOKABLE bool contains(const QString &key) const;                       ///< 检查设置是否存在
+    Q_INVOKABLE QStringList allKeys() const;                                   ///< 获取所有设置的键名
     Q_INVOKABLE void clear();                                                  ///< 清除所有设置
     Q_INVOKABLE bool openConfigFilePath() const;                               ///< 打开配置文件所在目录
     Q_INVOKABLE QString getConfigFilePath() const;                             ///< 获取配置文件路径
@@ -61,7 +61,8 @@ class Setting : public QObject {
     Q_INVOKABLE void updateServerConfig(const QString &baseUrl); // 更新服务器配置
 
     // 网络配置相关
-    Q_INVOKABLE void setProxyConfig(int type, const QString &host, int port, const QString &username, const QString &password, bool enabled); ///< 设置代理配置
+    Q_INVOKABLE void setProxyConfig(int type, const QString &host, int port, const QString &username,
+                                    const QString &password, bool enabled); ///< 设置代理配置
 
     // 日志配置相关方法
     Q_INVOKABLE void setLogLevel(Logger::LogLevel logLevel); ///< 设置日志级别
@@ -76,7 +77,7 @@ class Setting : public QObject {
     Q_INVOKABLE int getMaxLogFiles() const;                  ///< 获取最大日志文件数量
     Q_INVOKABLE QString getLogFilePath() const;              ///< 获取日志文件路径
     Q_INVOKABLE void clearLogs();                            ///< 清除所有日志文件
-    Q_INVOKABLE void initializeDefaultServerConfig(); ///< 初始化默认服务器配置
+    Q_INVOKABLE void initializeDefaultServerConfig();        ///< 初始化默认服务器配置
 
   signals:
     void baseUrlChanged(const QString &newBaseUrl); // 服务器基础URL变化信号
