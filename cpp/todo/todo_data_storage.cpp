@@ -186,52 +186,6 @@ bool TodoDataStorage::saveToLocalStorage(const std::vector<std::unique_ptr<TodoI
 }
 
 /**
- * @brief 导出待办事项到文件
- * @param todos 待办事项容器引用
- * @param filePath 导出文件路径
- * @return 导出是否成功
- */
-bool TodoDataStorage::exportTodos(const std::vector<std::unique_ptr<TodoItem>> &todos, const QString &filePath) {
-    QJsonArray todosArray;
-
-    // 将所有待办事项转换为JSON格式
-    for (const auto &todo : todos) {
-        QJsonObject todoObj = todoToJson(todo.get());
-        todosArray.append(todoObj);
-    }
-
-    // 创建根JSON对象
-    QJsonObject rootObj;
-    rootObj["version"] = "1.0";
-    rootObj["exportDate"] = QDateTime::currentDateTime().toString(Qt::ISODate);
-    rootObj["todos"] = todosArray;
-
-    // 写入文件
-    QJsonDocument doc(rootObj);
-    QFile file(filePath);
-
-    // 确保目录存在
-    QFileInfo fileInfo(filePath);
-    QDir dir = fileInfo.absoluteDir();
-    if (!dir.exists()) {
-        dir.mkpath(".");
-    }
-
-    if (!file.open(QIODevice::WriteOnly)) {
-        qWarning() << "无法打开文件进行写入:" << filePath;
-        emit dataOperationCompleted(false, QString("无法打开文件: %1").arg(filePath));
-        return false;
-    }
-
-    file.write(doc.toJson());
-    file.close();
-
-    qDebug() << "成功导出" << todos.size() << "个待办事项到" << filePath;
-    emit dataOperationCompleted(true, QString("成功导出 %1 个待办事项").arg(todos.size()));
-    return true;
-}
-
-/**
  * @brief 简单导入待办事项（跳过冲突项目）
  * @param todos 待办事项容器引用
  * @param filePath 导入文件路径
@@ -706,25 +660,25 @@ bool TodoDataStorage::validateJsonFormat(const QJsonObject &jsonObject) {
  */
 std::unique_ptr<TodoItem> TodoDataStorage::createTodoFromJson(const QJsonObject &jsonObject, QObject *parent) {
     return std::make_unique<TodoItem>(
-        jsonObject["id"].toInt(),                                                       // id
-        QUuid::fromString(jsonObject["uuid"].toString()),                               // uuid
-        QUuid::fromString(jsonObject["userUuid"].toString()),                           // userUuid
-        jsonObject["title"].toString(),                                                 // title
-        jsonObject["description"].toString(),                                           // description
-        jsonObject["category"].toString(),                                              // category
-        jsonObject["important"].toBool(),                                               // important
-        QDateTime::fromString(jsonObject["deadline"].toString(), Qt::ISODate),          // deadline
-        jsonObject["recurrenceInterval"].toInt(0),                                     // recurrenceInterval
-        jsonObject["recurrenceCount"].toInt(-1),                                       // recurrenceCount
+        jsonObject["id"].toInt(),                                                     // id
+        QUuid::fromString(jsonObject["uuid"].toString()),                             // uuid
+        QUuid::fromString(jsonObject["userUuid"].toString()),                         // userUuid
+        jsonObject["title"].toString(),                                               // title
+        jsonObject["description"].toString(),                                         // description
+        jsonObject["category"].toString(),                                            // category
+        jsonObject["important"].toBool(),                                             // important
+        QDateTime::fromString(jsonObject["deadline"].toString(), Qt::ISODate),        // deadline
+        jsonObject["recurrenceInterval"].toInt(0),                                    // recurrenceInterval
+        jsonObject["recurrenceCount"].toInt(-1),                                      // recurrenceCount
         QDate::fromString(jsonObject["recurrenceStartDate"].toString(), Qt::ISODate), // recurrenceStartDate
-        jsonObject["isCompleted"].toBool(false),                                        // isCompleted
-        QDateTime::fromString(jsonObject["completedAt"].toString(), Qt::ISODate),       // completedAt
-        jsonObject["isDeleted"].toBool(false),                                          // isDeleted
-        QDateTime::fromString(jsonObject["deletedAt"].toString(), Qt::ISODate),         // deletedAt
-        QDateTime::fromString(jsonObject["createdAt"].toString(), Qt::ISODate),         // createdAt
-        QDateTime::fromString(jsonObject["updatedAt"].toString(), Qt::ISODate),         // updatedAt
-        QDateTime::fromString(jsonObject["lastModifiedAt"].toString(), Qt::ISODate),    // lastModifiedAt
-        false,                                                                          // synced
+        jsonObject["isCompleted"].toBool(false),                                      // isCompleted
+        QDateTime::fromString(jsonObject["completedAt"].toString(), Qt::ISODate),     // completedAt
+        jsonObject["isDeleted"].toBool(false),                                        // isDeleted
+        QDateTime::fromString(jsonObject["deletedAt"].toString(), Qt::ISODate),       // deletedAt
+        QDateTime::fromString(jsonObject["createdAt"].toString(), Qt::ISODate),       // createdAt
+        QDateTime::fromString(jsonObject["updatedAt"].toString(), Qt::ISODate),       // updatedAt
+        QDateTime::fromString(jsonObject["lastModifiedAt"].toString(), Qt::ISODate),  // lastModifiedAt
+        false,                                                                        // synced
         parent);
 }
 

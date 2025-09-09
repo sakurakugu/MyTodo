@@ -546,16 +546,12 @@ Page {
             defaultSuffix: "json"
             selectedFile: {
                 var now = new Date();
-                var dateStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0') + "_" + String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
+                var dateStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0') + "_" + String(now.getHours()).padStart(2, '0') + "：" + String(now.getMinutes()).padStart(2, '0');
                 return "file:///" + "MyTodo_导出_" + dateStr + ".json";
             }
             onAccepted: {
                 var filePath = selectedFile.toString().replace("file:///", "");
-                if (todoManager.exportTodos(filePath)) {
-                    modalDialog.showInfo(qsTr("导出成功"), qsTr("待办事项已成功导出！"));
-                } else {
-                    modalDialog.showError(qsTr("导出失败"), qsTr("导出待办事项时发生错误，请检查文件路径和权限。"));
-                }
+                setting.exportToJsonFile(filePath);
             }
         }
 

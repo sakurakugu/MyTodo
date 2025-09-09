@@ -7,6 +7,7 @@
  * @version 0.4.0
  */
 #include "config.h"
+#include "version.h"
 
 #if defined(Q_OS_WIN)
 #include <windows.h>
@@ -28,12 +29,15 @@
 #include <stdexcept>
 #include <string>
 #include <system_error>
+#include <vector>
 
 Config::Config(QObject *parent)
-    : QObject(parent),                   //
-      m_config(toml::table{}),           //
-      m_filePath(getDefaultConfigPath()) //
+    : QObject(parent),        //
+      m_config(toml::table{}) //
 {
+    findExistingConfigFile();            // 先查找是否有现有配置文件，确定配置位置
+    m_filePath = getDefaultConfigPath(); // 设置配置文件路径
+
     // 确保配置目录存在
     std::filesystem::path filePath(m_filePath);
     std::filesystem::path dir = filePath.parent_path();
@@ -114,7 +118,7 @@ bool Config::saveToFile() const {
  * @param key 设置键名
  * @param value 设置值
  */
-void Config::save(const QString &key, const QVariant &value, std::string_view comment) {
+void Config::save(const QString &key, const QVariant &value) {
     if (key.isEmpty()) {
         qWarning() << "配置项键名不能为空";
         return;
@@ -156,8 +160,8 @@ void Config::save(const QString &key, const QVariant &value, std::string_view co
  * @param value 配置项值
  * @return 操作结果或错误信息
  */
-void Config::set(const QString &key, const QVariant &value, std::string_view comment) {
-    save(key, value, comment);
+void Config::set(const QString &key, const QVariant &value) {
+    save(key, value);
 }
 
 /**
@@ -353,6 +357,26 @@ bool Config::openConfigFilePath() const {
  * @brief 获取默认配置文件路径
  * @return 默认配置文件路径
  */
+/**
+ * @brief 查找现有配置文件并更新配置位置
+ */
+void Config::findExistingConfigFile() {
+    // 按优先级顺序查找配置文件
+    std::vector<ConfigLocation> searchOrder = {ConfigLocation::ApplicationPath, ConfigLocation::AppDataLocal};
+
+    for (const auto &location : searchOrder) {
+        std::string configPath = getConfigLocationPath(location);
+        if (std::filesystem::exists(configPath)) {
+            m_configLocation = location;
+            qDebug() << "找到现有配置文件:" << configPath;
+            return;
+        }
+    }
+
+    // 如果没有找到现有配置文件，使用默认位置
+    qDebug() << "未找到现有配置文件，使用默认位置";
+}
+
 std::string Config::getDefaultConfigPath() const {
     try {
         // 使用当前配置位置设置
@@ -387,7 +411,7 @@ std::unique_ptr<toml::node> Config::variantToToml(const QVariant &value) {
             auto dt = value.toDateTime().toUTC();
             // 如果是空值或无效时间，保存为最小值 0001-01-01T00:00:00
             if (!dt.isValid() || dt.isNull()) {
-                return std::make_unique<toml::value<toml::date_time>>(toml::date_time{{1, 1, 1}, {0, 0, 0, 0}});
+                return std::make_unique<toml::value<toml::date_time>>(toml::date_time{{1970, 1, 1}, {0, 0, 0, 0}});
             }
             return std::make_unique<toml::value<toml::date_time>>(toml::date_time{
                 {dt.date().year(), dt.date().month(), dt.date().day()},
@@ -397,7 +421,7 @@ std::unique_ptr<toml::node> Config::variantToToml(const QVariant &value) {
             auto d = value.toDate();
             // 如果是空值或无效日期，保存为最小值 0001-01-01
             if (!d.isValid() || d.isNull()) {
-                return std::make_unique<toml::value<toml::date>>(toml::date{1, 1, 1});
+                return std::make_unique<toml::value<toml::date>>(toml::date{1970, 1, 1});
             }
             return std::make_unique<toml::value<toml::date>>(toml::date{d.year(), d.month(), d.day()});
         }
@@ -638,6 +662,10 @@ std::string Config::exportToJson(const QStringList &excludeKeys) const {
 
             copyTable(m_config, filteredConfig, "");
 
+            filteredConfig.insert("export_info/version", APP_VERSION_STRING); // 应用版本
+            filteredConfig.insert("export_info/export_time",
+                                  QDateTime::currentDateTime().toString(Qt::ISODate).toStdString()); // 添加导出时间
+
             std::ostringstream oss;
             oss << toml::json_formatter{filteredConfig};
             return oss.str();
@@ -693,6 +721,9 @@ void Config::setConfigLocation(ConfigLocation location) {
         return; // 位置未改变
     }
 
+    ConfigLocation oldLocation = m_configLocation;
+    std::string oldPath = m_filePath;
+
     try {
         // 保存当前配置到文件
         if (m_needsSave) {
@@ -712,18 +743,34 @@ void Config::setConfigLocation(ConfigLocation location) {
             }
         }
 
+        // 如果旧配置文件存在，复制到新位置
+        if (std::filesystem::exists(oldPath) && oldPath != newPath) {
+            std::filesystem::copy_file(oldPath, newPath, std::filesystem::copy_options::overwrite_existing);
+            qDebug() << "配置文件已复制到新位置:" << newPath;
+        }
+
         m_filePath = newPath;
 
         // 重新加载配置
         loadFromFile();
+
+        // 确认新配置文件加载成功后，删除旧配置文件
+        if (std::filesystem::exists(oldPath) && oldPath != newPath) {
+            try {
+                std::filesystem::remove(oldPath);
+                qDebug() << "已删除旧配置文件:" << oldPath;
+            } catch (const std::exception &e) {
+                qWarning() << "删除旧配置文件失败:" << oldPath << "错误:" << e.what();
+            }
+        }
 
         qDebug() << "配置文件位置已切换到:" << m_filePath;
 
     } catch (const std::exception &e) {
         qCritical() << "切换配置文件位置失败:" << e.what();
         // 恢复原位置
-        m_configLocation = (location == ConfigLocation::ApplicationPath) ? ConfigLocation::AppDataLocal
-                                                                         : ConfigLocation::ApplicationPath;
+        m_configLocation = oldLocation;
+        m_filePath = oldPath;
     }
 }
 
@@ -752,8 +799,7 @@ std::string Config::getConfigLocationPath(ConfigLocation location) const {
     }
     case ConfigLocation::AppDataLocal: {
         // AppData/Local目录
-        basePath =
-            QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+        basePath = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
         if (basePath.isEmpty()) {
             // 备用方案：使用应用程序目录
             basePath = QCoreApplication::applicationDirPath();

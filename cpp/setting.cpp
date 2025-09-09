@@ -69,6 +69,12 @@ QString Setting::getConfigFilePath() const {
     return m_config.getConfigFilePath();
 }
 
+void Setting::exportToJsonFile(const QString &filePath) {
+    QStringList excludeKeys;
+    excludeKeys << "proxy"  << "auth";
+    m_config.exportToJsonFile(filePath, excludeKeys);
+}
+
 // 日志配置相关方法实现
 void Setting::setLogLevel(Logger::LogLevel logLevel) {
     m_config.save(QStringLiteral("log/level"), static_cast<int>(logLevel));

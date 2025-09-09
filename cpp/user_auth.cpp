@@ -404,15 +404,15 @@ void UserAuth::handleTokenRefreshSuccess(const QJsonObject &response) {
 
 void UserAuth::loadStoredCredentials() {
     // 尝试从设置中加载存储的凭据
-    if (m_setting.contains(QStringLiteral("user/accessToken"))) {
-        m_accessToken = m_setting.get(QStringLiteral("user/accessToken")).toString();
-        m_refreshToken = m_setting.get(QStringLiteral("user/refreshToken")).toString();
+    if (m_setting.contains(QStringLiteral("auth/accessToken"))) {
+        m_accessToken = m_setting.get(QStringLiteral("auth/accessToken")).toString();
+        m_refreshToken = m_setting.get(QStringLiteral("auth/refreshToken")).toString();
         m_username = m_setting.get(QStringLiteral("user/username")).toString();
         m_email = m_setting.get(QStringLiteral("user/email")).toString();
         m_uuid = QUuid::fromString(m_setting.get(QStringLiteral("user/uuid")).toString());
 
         // 加载令牌过期时间
-        m_tokenExpiryTime = m_setting.get(QStringLiteral("user/tokenExpiryTime"), 0).toLongLong();
+        m_tokenExpiryTime = m_setting.get(QStringLiteral("auth/tokenExpiryTime"), 0).toLongLong();
 
         // 设置网络管理器的认证令牌
         if (!m_accessToken.isEmpty()) {
@@ -469,12 +469,12 @@ void UserAuth::validateStoredToken() {
 void UserAuth::saveCredentials() {
     // 保存凭据到本地设置
     if (!m_accessToken.isEmpty()) {
-        m_setting.save(QStringLiteral("user/accessToken"), m_accessToken);
-        m_setting.save(QStringLiteral("user/refreshToken"), m_refreshToken);
+        m_setting.save(QStringLiteral("auth/accessToken"), m_accessToken);
+        m_setting.save(QStringLiteral("auth/refreshToken"), m_refreshToken);
+        m_setting.save(QStringLiteral("auth/tokenExpiryTime"), m_tokenExpiryTime);
         m_setting.save(QStringLiteral("user/username"), m_username);
         m_setting.save(QStringLiteral("user/email"), m_email);
         m_setting.save(QStringLiteral("user/uuid"), m_uuid);
-        m_setting.save(QStringLiteral("user/tokenExpiryTime"), m_tokenExpiryTime);
     }
 }
 
@@ -494,12 +494,15 @@ void UserAuth::clearCredentials() {
     // 清除设置中的凭据
     if (m_setting.contains(QStringLiteral("user"))) {
         m_setting.remove(QStringLiteral("user"));
-        m_setting.remove(QStringLiteral("user/accessToken"));
-        m_setting.remove(QStringLiteral("user/refreshToken"));
         m_setting.remove(QStringLiteral("user/username"));
         m_setting.remove(QStringLiteral("user/email"));
         m_setting.remove(QStringLiteral("user/uuid"));
-        m_setting.remove(QStringLiteral("user/tokenExpiryTime"));
+    }
+    if (m_setting.contains(QStringLiteral("auth"))) {
+        m_setting.remove(QStringLiteral("auth"));
+        m_setting.remove(QStringLiteral("auth/accessToken"));
+        m_setting.remove(QStringLiteral("auth/refreshToken"));
+        m_setting.remove(QStringLiteral("auth/tokenExpiryTime"));
     }
 
     // 清除网络管理器的认证令牌

@@ -74,9 +74,7 @@ class TodoDataStorage : public QObject {
     bool saveToLocalStorage(const std::vector<std::unique_ptr<TodoItem>> &todos); // 将待办事项保存到本地存储
 
     // 文件导入导出功能
-    bool exportTodos( // 导出待办事项到文件
-        const std::vector<std::unique_ptr<TodoItem>> &todos, const QString &filePath);
-    bool importTodos( // 从文件导入待办事项（简单导入，跳过冲突）
+    bool importTodos(                          // 从文件导入待办事项（简单导入，跳过冲突）
         std::vector<std::unique_ptr<TodoItem>> &todos, const QString &filePath);
     QVariantList checkImportConflicts( // 检查导入文件中的冲突项目
         const std::vector<std::unique_ptr<TodoItem>> &todos, const QString &filePath);
