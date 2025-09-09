@@ -9,7 +9,6 @@
 #include "config.h"
 
 #if defined(Q_OS_WIN)
-#include <QProcess>
 #include <windows.h>
 #endif
 
@@ -18,27 +17,31 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QProcess>
 #include <QSaveFile>
 #include <QTextStream>
 #include <QTimeZone>
 #include <QUrl>
+#include <filesystem>
 #include <functional>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <system_error>
 
 Config::Config(QObject *parent)
-    : QObject(parent),                    //
-      m_config(toml::table{}),            //
-      m_filePath(getDefaultConfigPath())  //
+    : QObject(parent),                   //
+      m_config(toml::table{}),           //
+      m_filePath(getDefaultConfigPath()) //
 {
     // 确保配置目录存在
-    QFileInfo fileInfo(m_filePath);
-    QDir dir = fileInfo.absoluteDir();
-    if (!dir.exists()) {
-        dir.mkpath(".");
+    std::filesystem::path filePath(m_filePath);
+    std::filesystem::path dir = filePath.parent_path();
+    // 如果目录不存在，创建它
+    if (!std::filesystem::exists(dir)) {
+        std::filesystem::create_directories(dir);
     }
-    
+
     // 尝试加载现有配置文件
     loadFromFile();
 }
@@ -58,12 +61,12 @@ void Config::loadFromFile() {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     try {
-        if (!QFileInfo::exists(m_filePath)) {
+        if (!std::filesystem::exists(m_filePath)) {
             qDebug() << "配置文件不存在，将创建新的配置文件:" << m_filePath;
             return;
         }
 
-        m_config = toml::parse_file(m_filePath.toStdString());
+        m_config = toml::parse_file(m_filePath);
         qInfo() << "成功加载配置文件:" << m_filePath;
 
     } catch (const toml::parse_error &e) {
@@ -83,7 +86,7 @@ bool Config::saveToFile() const {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     try {
-        std::ofstream file(m_filePath.toStdString());
+        std::ofstream file(m_filePath);
         if (!file.is_open()) {
             qCritical() << "写入配置文件失败，文件无法打开:" << m_filePath;
             return false;
@@ -111,7 +114,7 @@ bool Config::saveToFile() const {
  * @param key 设置键名
  * @param value 设置值
  */
-void Config::save(const QString &key, const QVariant &value) {
+void Config::save(const QString &key, const QVariant &value, std::string_view comment) {
     if (key.isEmpty()) {
         qWarning() << "配置项键名不能为空";
         return;
@@ -139,8 +142,8 @@ void Config::save(const QString &key, const QVariant &value) {
         }
 
         table->insert(parts.last().toStdString(), *variantToToml(value));
-        m_needsSave = true;  // 标记需要保存
-    } catch (const std::exception& e) {
+        m_needsSave = true; // 标记需要保存
+    } catch (const std::exception &e) {
         qCritical() << "保存配置项失败:" << key << "错误:" << e.what();
     } catch (...) {
         qCritical() << "保存配置项失败:" << key << "未知错误";
@@ -153,8 +156,8 @@ void Config::save(const QString &key, const QVariant &value) {
  * @param value 配置项值
  * @return 操作结果或错误信息
  */
-void Config::set(const QString &key, const QVariant &value) {
-    save(key, value);
+void Config::set(const QString &key, const QVariant &value, std::string_view comment) {
+    save(key, value, comment);
 }
 
 /**
@@ -313,7 +316,7 @@ void Config::clear() {
  * @return 配置文件路径
  */
 QString Config::getConfigFilePath() const {
-    return m_filePath;
+    return QString::fromStdString(m_filePath);
 }
 
 /**
@@ -324,12 +327,12 @@ bool Config::openConfigFilePath() const {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     try {
-        if (m_filePath.isEmpty()) {
+        if (m_filePath.empty()) {
             qCritical() << "配置文件路径为空";
             return false;
         }
 
-        QFileInfo fileInfo(m_filePath);
+        QFileInfo fileInfo(QString::fromStdString(m_filePath));
         QString dirPath = fileInfo.absolutePath();
 
         if (QDesktopServices::openUrl(QUrl::fromLocalFile(dirPath))) {
@@ -350,7 +353,7 @@ bool Config::openConfigFilePath() const {
  * @brief 获取默认配置文件路径
  * @return 默认配置文件路径
  */
-QString Config::getDefaultConfigPath() const {
+std::string Config::getDefaultConfigPath() const {
     try {
         // 使用当前配置位置设置
         return getConfigLocationPath(m_configLocation);
@@ -358,7 +361,7 @@ QString Config::getDefaultConfigPath() const {
     } catch (const std::exception &e) {
         qCritical() << "获取默认配置路径失败:" << e.what();
         // 应用程序目录
-        return QDir(QCoreApplication::applicationDirPath()).absoluteFilePath("config.toml");
+        return QDir(QCoreApplication::applicationDirPath()).absoluteFilePath("config.toml").toStdString();
     }
 }
 
@@ -384,8 +387,7 @@ std::unique_ptr<toml::node> Config::variantToToml(const QVariant &value) {
             auto dt = value.toDateTime().toUTC();
             // 如果是空值或无效时间，保存为最小值 0001-01-01T00:00:00
             if (!dt.isValid() || dt.isNull()) {
-                return std::make_unique<toml::value<toml::date_time>>(toml::date_time{
-                    {1, 1, 1}, {0, 0, 0, 0}});
+                return std::make_unique<toml::value<toml::date_time>>(toml::date_time{{1, 1, 1}, {0, 0, 0, 0}});
             }
             return std::make_unique<toml::value<toml::date_time>>(toml::date_time{
                 {dt.date().year(), dt.date().month(), dt.date().day()},
@@ -466,8 +468,8 @@ QVariant Config::tomlToVariant(const toml::node *node) const {
             QTime time(dt.time.hour, dt.time.minute, dt.time.second, dt.time.nanosecond / 1000000);
             QDateTime result(date, time, QTimeZone::UTC);
             // 如果读取到的是最小值 0001-01-01T00:00:00，返回空值
-            if (dt.date.year == 1 && dt.date.month == 1 && dt.date.day == 1 &&
-                dt.time.hour == 0 && dt.time.minute == 0 && dt.time.second == 0 && dt.time.nanosecond == 0) {
+            if (dt.date.year == 1 && dt.date.month == 1 && dt.date.day == 1 && dt.time.hour == 0 &&
+                dt.time.minute == 0 && dt.time.second == 0 && dt.time.nanosecond == 0) {
                 return QDateTime();
             }
             return result;
@@ -513,7 +515,7 @@ QVariant Config::tomlToVariant(const toml::node *node) const {
 void Config::collectKeys(const toml::table &tbl, const QString &prefix, QStringList &out) const {
     for (auto &[k, v] : tbl) {
         QString key = prefix.isEmpty() ? QString::fromStdString(std::string(k))
-                                       : prefix + "." + QString::fromStdString(std::string(k));
+                                       : prefix + "/" + QString::fromStdString(std::string(k)); // TODO: 这里是.还是/
 
         if (v.is_table()) {
             collectKeys(*v.as_table(), key, out);
@@ -594,7 +596,7 @@ void Config::saveBatch(const QVariantMap &values) {
  * @param excludeKeys 要排除的键列表
  * @return JSON字符串
  */
-QString Config::exportToJson(const QStringList &excludeKeys) const {
+std::string Config::exportToJson(const QStringList &excludeKeys) const {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     try {
@@ -602,7 +604,7 @@ QString Config::exportToJson(const QStringList &excludeKeys) const {
             // 如果没有排除键，直接转换
             std::ostringstream oss;
             oss << toml::json_formatter{m_config};
-            return QString::fromStdString(oss.str());
+            return oss.str();
         } else {
             // 如果有排除键，需要创建过滤后的副本
             toml::table filteredConfig;
@@ -638,7 +640,7 @@ QString Config::exportToJson(const QStringList &excludeKeys) const {
 
             std::ostringstream oss;
             oss << toml::json_formatter{filteredConfig};
-            return QString::fromStdString(oss.str());
+            return oss.str();
         }
 
     } catch (const std::exception &e) {
@@ -648,60 +650,35 @@ QString Config::exportToJson(const QStringList &excludeKeys) const {
 }
 
 /**
- * @brief 导出配置为YAML格式
+ * @brief 导出配置到JSON文件
+ * @param filePath 文件路径
  * @param excludeKeys 要排除的键列表
- * @return YAML字符串
+ * @return 操作是否成功
  */
-QString Config::exportToYaml(const QStringList &excludeKeys) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-
+bool Config::exportToJsonFile(const QString &filePath, const QStringList &excludeKeys) const {
     try {
-        if (excludeKeys.isEmpty()) {
-            // 如果没有排除键，直接转换
-            std::ostringstream oss;
-            oss << toml::yaml_formatter{m_config};
-            return QString::fromStdString(oss.str());
-        } else {
-            // 如果有排除键，需要创建过滤后的副本
-            toml::table filteredConfig;
+        std::string jsonContent = exportToJson(excludeKeys);
 
-            // 递归复制配置，排除指定键
-            std::function<void(const toml::table &, toml::table &, const QString &)> copyTable =
-                [&](const toml::table &source, toml::table &dest, const QString &prefix) {
-                    for (auto &[key, value] : source) {
-                        QString fullKey = prefix.isEmpty() ? QString::fromStdString(std::string(key))
-                                                           : prefix + "/" + QString::fromStdString(std::string(key));
-
-                        // 检查是否在排除列表中
-                        if (excludeKeys.contains(fullKey)) {
-                            continue;
-                        }
-
-                        std::string keyStr = std::string(key);
-
-                        if (value.is_table()) {
-                            toml::table nestedTable;
-                            copyTable(*value.as_table(), nestedTable, fullKey);
-                            if (!nestedTable.empty()) {
-                                dest.insert(keyStr, std::move(nestedTable));
-                            }
-                        } else {
-                            // 直接复制值
-                            dest.insert(keyStr, value);
-                        }
-                    }
-                };
-
-            copyTable(m_config, filteredConfig, "");
-
-            std::ostringstream oss;
-            oss << toml::yaml_formatter{filteredConfig};
-            return QString::fromStdString(oss.str());
+        std::ofstream file(filePath.toStdString());
+        if (!file.is_open()) {
+            qCritical() << "无法打开文件进行写入:" << filePath;
+            return false;
         }
 
+        file << jsonContent;
+        file.close();
+
+        if (file.fail()) {
+            qCritical() << "写入JSON文件失败:" << filePath;
+            return false;
+        }
+
+        qInfo() << "成功导出配置到JSON文件:" << filePath;
+        return true;
+
     } catch (const std::exception &e) {
-        qCritical() << "导出YAML失败:" << e.what();
-        return "";
+        qCritical() << "导出JSON文件失败:" << e.what();
+        return false;
     }
 }
 
@@ -724,13 +701,14 @@ void Config::setConfigLocation(ConfigLocation location) {
 
         // 更新位置和文件路径
         m_configLocation = location;
-        QString newPath = getConfigLocationPath(location);
+        std::string newPath = getConfigLocationPath(location);
 
         // 确保新目录存在
-        QDir dir = QFileInfo(newPath).absoluteDir();
-        if (!dir.exists()) {
-            if (!dir.mkpath(".")) {
-                throw std::runtime_error("无法创建配置目录: " + dir.absolutePath().toStdString());
+        std::filesystem::path newFilePath(newPath);
+        std::filesystem::path dir = newFilePath.parent_path();
+        if (!std::filesystem::exists(dir)) {
+            if (!std::filesystem::create_directories(dir)) {
+                throw std::runtime_error("无法创建配置目录: " + dir.string());
             }
         }
 
@@ -763,7 +741,7 @@ Config::ConfigLocation Config::getConfigLocation() const {
  * @param location 配置位置
  * @return 配置文件完整路径
  */
-QString Config::getConfigLocationPath(ConfigLocation location) const {
+std::string Config::getConfigLocationPath(ConfigLocation location) const {
     QString basePath;
 
     switch (location) {
@@ -774,7 +752,8 @@ QString Config::getConfigLocationPath(ConfigLocation location) const {
     }
     case ConfigLocation::AppDataLocal: {
         // AppData/Local目录
-        basePath = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+        basePath =
+            QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
         if (basePath.isEmpty()) {
             // 备用方案：使用应用程序目录
             basePath = QCoreApplication::applicationDirPath();
@@ -787,5 +766,6 @@ QString Config::getConfigLocationPath(ConfigLocation location) const {
         break;
     }
 
-    return QDir(basePath).absoluteFilePath("config.toml");
+    std::filesystem::path configPath = std::filesystem::path(basePath.toStdString()) / "config.toml";
+    return configPath.string();
 }
