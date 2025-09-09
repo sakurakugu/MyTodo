@@ -62,8 +62,8 @@ class Setting : public QObject {
     Q_INVOKABLE void updateServerConfig(const QString &baseUrl); // 更新服务器配置
 
     // 网络配置相关
-    Q_INVOKABLE void setProxyConfig(int type, const QString &host, int port, const QString &username,
-                                    const QString &password, bool enabled); ///< 设置代理配置
+    Q_INVOKABLE void setProxyConfig(bool enableProxy, int type, const QString &host, int port, const QString &username,
+                                    const QString &password); ///< 设置代理配置
 
     // 日志配置相关方法
     Q_INVOKABLE void setLogLevel(Logger::LogLevel logLevel); ///< 设置日志级别

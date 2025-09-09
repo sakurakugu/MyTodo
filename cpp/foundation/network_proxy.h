@@ -72,7 +72,7 @@ class NetworkProxy : public QObject {
     NetworkProxy &operator=(NetworkProxy &&) = delete;
 
     // 代理配置管理
-    void setProxyConfig(ProxyType type, const QString &host = QString(), int port = 0,
+    void setProxyConfig(bool enableProxy, ProxyType type, const QString &host = QString(), int port = 0,
                         const QString &username = QString(), const QString &password = QString()); // 设置代理配置
     void applyProxyToManager(QNetworkAccessManager *manager) noexcept; // 将代理配置应用到网络管理器
     void clearProxyConfig() noexcept;                                  // 清除代理配置
@@ -89,7 +89,6 @@ class NetworkProxy : public QObject {
     void saveProxyConfigToSettings() noexcept;   // 保存代理设置到配置
 
     // 代理状态检查
-    constexpr bool isProxyEnabled() const noexcept; // 检查代理是否启用
     QString getProxyDescription() const noexcept;   // 获取代理配置描述
 
   signals:

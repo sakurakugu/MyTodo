@@ -39,8 +39,7 @@ void Setting::save(const QString &key, const QVariant &value) {
 }
 
 QVariant Setting::get(const QString &key, const QVariant &defaultValue) const {
-    auto result = m_config.get(key, defaultValue);
-    return result.isValid() ? result : defaultValue;
+    return m_config.get(key, defaultValue);
 }
 
 void Setting::remove(const QString &key) {
@@ -71,13 +70,13 @@ QString Setting::getConfigFilePath() const {
 
 void Setting::exportToJsonFile(const QString &filePath) {
     QStringList excludeKeys;
-    excludeKeys << "proxy"  << "auth";
+    excludeKeys << "proxy" << "auth";
     m_config.exportToJsonFile(filePath, excludeKeys);
 }
 
 // 日志配置相关方法实现
 void Setting::setLogLevel(Logger::LogLevel logLevel) {
-    m_config.save(QStringLiteral("log/level"), static_cast<int>(logLevel));
+    m_config.save("log/level", static_cast<int>(logLevel));
     auto result = m_logger.setLogLevel(logLevel);
     if (!result) {
         qWarning() << "无法设置日志级别:" << static_cast<int>(result.error());
@@ -85,12 +84,12 @@ void Setting::setLogLevel(Logger::LogLevel logLevel) {
 }
 
 Logger::LogLevel Setting::getLogLevel() const {
-    auto result = m_config.get(QStringLiteral("log/level"), static_cast<int>(Logger::LogLevel::Info));
-    return result.isValid() ? static_cast<Logger::LogLevel>(result.toInt()) : Logger::LogLevel::Info;
+    auto result = m_config.get("log/level", static_cast<int>(Logger::LogLevel::Info));
+    return static_cast<Logger::LogLevel>(result.toInt());
 }
 
 void Setting::setLogToFile(bool enabled) {
-    m_config.save(QStringLiteral("log/toFile"), enabled);
+    m_config.save("log/toFile", enabled);
     auto result = m_logger.setLogToFile(enabled);
     if (!result) {
         qWarning() << "无法设置日志是否记录到文件:" << static_cast<int>(result.error());
@@ -98,12 +97,12 @@ void Setting::setLogToFile(bool enabled) {
 }
 
 bool Setting::getLogToFile() const {
-    auto result = m_config.get(QStringLiteral("log/toFile"), true);
-    return result.isValid() ? result.toBool() : true;
+    auto result = m_config.get("log/toFile", true);
+    return result.toBool();
 }
 
 void Setting::setLogToConsole(bool enabled) {
-    m_config.save(QStringLiteral("log/toConsole"), enabled);
+    m_config.save("log/toConsole", enabled);
     auto result = m_logger.setLogToConsole(enabled);
     if (!result) {
         qWarning() << "无法设置日志是否记录到控制台:" << static_cast<int>(result.error());
@@ -111,12 +110,12 @@ void Setting::setLogToConsole(bool enabled) {
 }
 
 bool Setting::getLogToConsole() const {
-    auto result = m_config.get(QStringLiteral("log/toConsole"), true);
-    return result.isValid() ? result.toBool() : true;
+    auto result = m_config.get("log/toConsole", true);
+    return result.toBool();
 }
 
 void Setting::setMaxLogFileSize(qint64 maxSize) {
-    m_config.save(QStringLiteral("log/maxFileSize"), maxSize);
+    m_config.save("log/maxFileSize", maxSize);
     auto result = m_logger.setMaxLogFileSize(maxSize);
     if (!result) {
         qWarning() << "无法设置最大日志文件大小:" << static_cast<int>(result.error());
@@ -125,12 +124,12 @@ void Setting::setMaxLogFileSize(qint64 maxSize) {
 
 qint64 Setting::getMaxLogFileSize() const {
     constexpr qint64 defaultSize = 10 * 1024 * 1024; // 默认10MB
-    auto result = m_config.get(QStringLiteral("log/maxFileSize"), defaultSize);
-    return result.isValid() ? result.toLongLong() : defaultSize;
+    auto result = m_config.get("log/maxFileSize", defaultSize);
+    return result.toLongLong();
 }
 
 void Setting::setMaxLogFiles(int maxFiles) {
-    m_config.save(QStringLiteral("log/maxFiles"), maxFiles);
+    m_config.save("log/maxFiles", maxFiles);
     auto result = m_logger.setMaxLogFiles(maxFiles);
     if (!result) {
         qWarning() << "无法设置最大日志文件数量:" << static_cast<int>(result.error());
@@ -139,8 +138,8 @@ void Setting::setMaxLogFiles(int maxFiles) {
 
 int Setting::getMaxLogFiles() const {
     constexpr int defaultFiles = 5; // 默认保留5个文件
-    auto result = m_config.get(QStringLiteral("log/maxFiles"), defaultFiles);
-    return result.isValid() ? result.toInt() : defaultFiles;
+    auto result = m_config.get("log/maxFiles", defaultFiles);
+    return result.toInt();
 }
 
 QString Setting::getLogFilePath() const {
@@ -160,82 +159,81 @@ void Setting::clearLogs() {
  */
 void Setting::initializeDefaultServerConfig() {
     // 检查并设置默认的服务器基础URL
-    if (!m_config.contains(QStringLiteral("server/baseUrl"))) {
-        m_config.save(QStringLiteral("server/baseUrl"), QString::fromStdString(std::string{DefaultValues::baseUrl}));
+    if (!m_config.contains("server/baseUrl")) {
+        m_config.save("server/baseUrl", QString::fromStdString(std::string{DefaultValues::baseUrl}));
     }
 
     // 检查并设置默认的待办事项API端点
-    if (!m_config.contains(QStringLiteral("server/todoApiEndpoint"))) {
-        m_config.save(QStringLiteral("server/todoApiEndpoint"),
-                      QString::fromStdString(std::string{DefaultValues::todoApiEndpoint}));
+    if (!m_config.contains("server/todoApiEndpoint")) {
+        m_config.save("server/todoApiEndpoint", QString::fromStdString(std::string{DefaultValues::todoApiEndpoint}));
     }
 
     // 检查并设置默认的认证API端点
-    if (!m_config.contains(QStringLiteral("server/authApiEndpoint"))) {
-        m_config.save(QStringLiteral("server/authApiEndpoint"),
+    if (!m_config.contains("server/authApiEndpoint")) {
+        m_config.save("server/authApiEndpoint",
                       QString::fromStdString(std::string{DefaultValues::userAuthApiEndpoint}));
     }
 
     // 检查并设置默认的分类API端点
-    if (!m_config.contains(QStringLiteral("server/categoriesApiEndpoint"))) {
-        m_config.save(QStringLiteral("server/categoriesApiEndpoint"),
+    if (!m_config.contains("server/categoriesApiEndpoint")) {
+        m_config.save("server/categoriesApiEndpoint",
                       QString::fromStdString(std::string{DefaultValues::categoriesApiEndpoint}));
     }
 }
 
 // 代理配置相关方法实现
 void Setting::setProxyType(int type) {
-    m_config.save(QStringLiteral("proxy/type"), type);
+    m_config.save("proxy/type", type);
 }
 
 int Setting::getProxyType() const {
-    auto result = m_config.get(QStringLiteral("proxy/type"), 0); // 默认为NoProxy
-    return result.isValid() ? result.toInt() : 0;
+    auto result = m_config.get("proxy/type", 0); // 默认为NoProxy
+    return result.toInt();
 }
 
 void Setting::setProxyHost(const QString &host) {
-    m_config.save(QStringLiteral("proxy/host"), host);
+    m_config.save("proxy/host", host);
 }
 
 QString Setting::getProxyHost() const {
-    auto result = m_config.get(QStringLiteral("proxy/host"), QString());
-    return result.isValid() ? result.toString() : QString();
+    auto result = m_config.get("proxy/host", QString());
+    return result.toString();
 }
 
 void Setting::setProxyPort(int port) {
-    m_config.save(QStringLiteral("proxy/port"), port);
+    m_config.save("proxy/port", port);
 }
 
 int Setting::getProxyPort() const {
-    auto result = m_config.get(QStringLiteral("proxy/port"), 8080); // 默认端口8080
-    return result.isValid() ? result.toInt() : 8080;
+    auto result = m_config.get("proxy/port", 8080); // 默认端口8080
+    return result.toInt();
 }
 
 void Setting::setProxyUsername(const QString &username) {
-    m_config.save(QStringLiteral("proxy/username"), username);
+    m_config.save("proxy/username", username);
 }
 
 QString Setting::getProxyUsername() const {
-    auto result = m_config.get(QStringLiteral("proxy/username"), QString());
-    return result.isValid() ? result.toString() : QString();
+    auto result = m_config.get("proxy/username", QString());
+    return result.toString();
 }
 
 void Setting::setProxyPassword(const QString &password) {
-    m_config.save(QStringLiteral("proxy/password"), password);
+    m_config.save("proxy/password", password);
 }
 
 QString Setting::getProxyPassword() const {
-    auto result = m_config.get(QStringLiteral("proxy/password"), QString());
-    return result.isValid() ? result.toString() : QString();
+    auto result = m_config.get("proxy/password", QString());
+    return result.toString();
 }
 
 void Setting::setProxyEnabled(bool enabled) {
-    m_config.save(QStringLiteral("proxy/enabled"), enabled);
+    m_config.save("proxy/enabled", enabled);
 }
 
 bool Setting::getProxyEnabled() const {
-    auto result = m_config.get(QStringLiteral("proxy/enabled"), false);
-    return result.isValid() ? result.toBool() : false;
+    auto result = m_config.get("proxy/enabled", false);
+    return result.toBool();
 }
 
 /**
@@ -267,9 +265,8 @@ void Setting::updateServerConfig(const QString &baseUrl) {
     emit baseUrlChanged(baseUrl);
 }
 
-void Setting::setProxyConfig(int type, const QString &host, int port, const QString &username, const QString &password,
-                             bool enabled) {
-    setProxyEnabled(enabled);
-    NetworkProxy::GetInstance().setProxyConfig(static_cast<NetworkProxy::ProxyType>(type), host, port, username,
-                                               password);
+void Setting::setProxyConfig(bool enableProxy, int type, const QString &host, int port, const QString &username,
+                             const QString &password) {
+    NetworkProxy::GetInstance().setProxyConfig(enableProxy, static_cast<NetworkProxy::ProxyType>(type), host, port,
+                                               username, password);
 }

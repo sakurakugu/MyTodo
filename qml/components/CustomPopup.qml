@@ -23,6 +23,19 @@ Popup {
         color: ThemeManager.secondaryBackgroundColor
         border.color: ThemeManager.borderColor
         radius: 5
+
+        // 颜色过渡动画
+        Behavior on color {
+            ColorAnimation {
+                duration: ThemeManager.colorAnimationDuration
+            }
+        }
+
+        Behavior on border.color {
+            ColorAnimation {
+                duration: ThemeManager.colorAnimationDuration
+            }
+        }
     }
 
     contentItem: Rectangle {
@@ -30,5 +43,18 @@ Popup {
         border.color: ThemeManager.borderColor
         border.width: 1
         radius: 5
+
+        // 颜色过渡动画
+        Behavior on color {
+            ColorAnimation {
+                duration: ThemeManager.colorAnimationDuration
+            }
+        }
+
+        Behavior on border.color {
+            ColorAnimation {
+                duration: ThemeManager.colorAnimationDuration
+            }
+        }
     }
 }

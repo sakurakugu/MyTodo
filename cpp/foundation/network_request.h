@@ -125,10 +125,6 @@ class NetworkRequest : public QObject {
     void cancelRequest(RequestType type);                            // 取消指定类型的请求
     void cancelAllRequests();                                        // 取消所有请求
 
-    // 网络状态检查
-    bool isNetworkAvailable() const; // 检查网络是否可用
-    void checkNetworkConnectivity(); // 检查网络连接状态
-
   signals:
     void requestCompleted(RequestType type, const QJsonObject &response);             // 请求完成信号
     void requestFailed(RequestType type, NetworkError error, const QString &message); // 请求失败信号
@@ -186,13 +182,10 @@ class NetworkRequest : public QObject {
     QMap<RequestType, qint64> m_activeRequests;     // 活跃请求映射（用于去重）
     qint64 m_nextRequestId;                         // 下一个请求ID
 
-    bool m_isOnline; // 是否在线
-
     // 配置常量
     static const int DEFAULT_TIMEOUT_MS = 10000;
     static const int MAX_CONCURRENT_REQUESTS = 5;
     static const int CONNECTIVITY_CHECK_INTERVAL = 30000; // 30秒检查一次网络连接
 
-    QTimer *m_connectivityTimer;  // 连接定时器
     NetworkProxy &m_proxyManager; // 代理管理器
 };

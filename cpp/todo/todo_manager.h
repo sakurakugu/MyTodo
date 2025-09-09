@@ -92,7 +92,7 @@ class TodoManager : public QAbstractListModel {
      *
      * 创建TodoManager实例，初始化网络管理器、设置对象和本地存储。
      */
-    explicit TodoManager(QObject *parent = nullptr);
+    explicit TodoManager(TodoSyncServer *syncManager, QObject *parent = nullptr);
     ~TodoManager();
 
     // QAbstractListModel 必要的实现方法

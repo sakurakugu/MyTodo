@@ -24,7 +24,6 @@
 #include <algorithm>
 
 TodoDataStorage::TodoDataStorage(Setting &setting, QObject *parent) : QObject(parent), m_setting(setting) {
-    qDebug() << "TodoDataStorage 初始化完成";
 }
 
 TodoDataStorage::~TodoDataStorage() {

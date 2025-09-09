@@ -31,19 +31,9 @@ NetworkRequest::NetworkRequest(QObject *parent)
     : QObject(parent),                                   //
       m_networkRequest(new QNetworkAccessManager(this)), //
       m_nextRequestId(1),                                //
-      m_isOnline(false),                                 //
-      m_connectivityTimer(new QTimer(this)),             //
       m_proxyManager(NetworkProxy::GetInstance()) {      //
     // 设置默认配置
     m_networkRequest->setProxy(QNetworkProxy::NoProxy);
-
-    // 设置网络连接检查定时器
-    m_connectivityTimer->setInterval(CONNECTIVITY_CHECK_INTERVAL);
-    connect(m_connectivityTimer, &QTimer::timeout, this, &NetworkRequest::checkNetworkConnectivity);
-    m_connectivityTimer->start();
-
-    // 初始网络状态检查
-    checkNetworkConnectivity();
 
     // 应用代理配置到网络管理器
     m_proxyManager.applyProxyToManager(m_networkRequest);
@@ -125,12 +115,6 @@ QString NetworkRequest::getApiUrl(const QString &endpoint) const {
 }
 
 void NetworkRequest::sendRequest(RequestType type, const RequestConfig &config) {
-    // 检查网络连接
-    if (!m_isOnline) {
-        emit requestFailed(type, ConnectionError, "网络连接不可用");
-        return;
-    }
-
     // 检查是否为重复请求
     if (isDuplicateRequest(type)) {
         qDebug() << "忽略重复请求:" << type;
@@ -218,9 +202,8 @@ void NetworkRequest::onReplyFinished() {
                     qDebug() << "请求成功:" << request.type;
                 } else {
                     // 服务器返回错误
-                    QString serverMessage = fullResponse.contains("error") ? 
-                                          fullResponse["error"].toString() : 
-                                          fullResponse["message"].toString();
+                    QString serverMessage = fullResponse.contains("error") ? fullResponse["error"].toString()
+                                                                           : fullResponse["message"].toString();
                     throw QString("服务器错误: %1").arg(serverMessage);
                 }
             } else {
@@ -237,7 +220,7 @@ void NetworkRequest::onReplyFinished() {
             errorMessage = getErrorMessage(networkError, reply->errorString());
 
             qWarning() << "网络请求失败:" << request.type << "- HTTP状态码:" << httpStatus << "-" << errorMessage;
-            
+
             // 如果是401错误，可能是认证问题
             if (httpStatus == 401) {
                 qWarning() << "认证失败，可能需要重新登录";
@@ -449,21 +432,6 @@ void NetworkRequest::cancelAllRequests() {
             request.reply->abort();
         }
         cleanupRequest(requestId);
-    }
-}
-
-bool NetworkRequest::isNetworkAvailable() const {
-    return m_isOnline;
-}
-
-void NetworkRequest::checkNetworkConnectivity() {
-    // TODO: 检查网络连接状态
-    bool online = true; // 简化实现，实际应用中可以发送测试请求
-
-    if (online != m_isOnline) {
-        m_isOnline = online;
-        emit networkStatusChanged(m_isOnline);
-        qDebug() << "当前网络状态:" << (m_isOnline ? "在线" : "离线");
     }
 }
 

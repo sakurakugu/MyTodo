@@ -19,6 +19,11 @@ QtObject {
     // 主题状态
     property bool isDarkMode: globalState.isDarkMode
 
+    // 动画配置
+    readonly property int colorAnimationDuration: 150    ///< 颜色动画持续时间（毫秒）
+    readonly property int opacityAnimationDuration: 100  ///< 透明度动画持续时间（毫秒）
+    readonly property int positionAnimationDuration: 200 ///< 位置动画持续时间（毫秒）
+
     // 主色调
     readonly property color primaryColor: isDarkMode ? "#2c3e50" : "#4a86e8"
     readonly property color primaryColorLight: isDarkMode ? "#34495e" : "#6fa8f5"

@@ -58,8 +58,6 @@ TodoSyncServer::TodoSyncServer(QObject *parent)
     if (m_isAutoSyncEnabled) {
         startAutoSyncTimer();
     }
-
-    qDebug() << "TodoSyncServer 初始化完成";
 }
 
 TodoSyncServer::~TodoSyncServer() {

@@ -38,10 +38,10 @@ NetworkProxy::~NetworkProxy() {
  * @param username 代理用户名（可选）
  * @param password 代理密码（可选）
  */
-void NetworkProxy::setProxyConfig(ProxyType type, const QString &host, int port, const QString &username,
-                                  const QString &password) {
+void NetworkProxy::setProxyConfig(bool enableProxy, ProxyType type, const QString &host, int port,
+                                  const QString &username, const QString &password) {
+    m_proxyEnabled = enableProxy;
     updateProxyConfig(type, host, port, username, password);
-    m_proxyEnabled = (type != ProxyType::NoProxy);
 
     qDebug() << "代理配置已更新" << getProxyDescription();
     emit proxyConfigChanged(type, host, port);
@@ -62,11 +62,9 @@ void NetworkProxy::applyProxyToManager(QNetworkAccessManager *manager) noexcept 
         manager->setProxy(proxy);
         qDebug() << "代理配置已应用" << getProxyDescription();
     } catch (const std::exception &e) {
-        const QString error = QString::fromUtf8(e.what());
-        qWarning() << "应用代理配置时发生异常" << ": " << error;
+        qWarning() << "应用代理配置时发生异常" << ": " << e.what();
     } catch (...) {
-        const QString error = QStringLiteral("应用代理配置时发生未知异常");
-        qWarning() << error;
+        qWarning() << "应用代理配置时发生未知异常";
     }
 }
 
@@ -74,7 +72,7 @@ void NetworkProxy::applyProxyToManager(QNetworkAccessManager *manager) noexcept 
  * @brief 清除代理配置
  */
 void NetworkProxy::clearProxyConfig() noexcept {
-    setProxyConfig(ProxyType::NoProxy);
+    setProxyConfig(false, ProxyType::NoProxy);
 }
 
 /**
@@ -125,7 +123,7 @@ void NetworkProxy::loadProxyConfigFromSettings() noexcept {
         Config &config = Config::GetInstance();
 
         // 检查是否启用代理
-        auto enabledResult = config.get(QStringLiteral("proxy/enabled"), false);
+        auto enabledResult = config.get("proxy/enabled", false);
         m_proxyEnabled = enabledResult.isValid() ? enabledResult.toBool() : false;
 
         if (!m_proxyEnabled) {
@@ -134,11 +132,11 @@ void NetworkProxy::loadProxyConfigFromSettings() noexcept {
         }
 
         // 获取代理配置
-        auto typeResult = config.get(QStringLiteral("proxy/type"), 0);
-        auto hostResult = config.get(QStringLiteral("proxy/host"), QString());
-        auto portResult = config.get(QStringLiteral("proxy/port"), 8080);
-        auto usernameResult = config.get(QStringLiteral("proxy/username"), QString());
-        auto passwordResult = config.get(QStringLiteral("proxy/password"), QString());
+        auto typeResult = config.get("proxy/type", 0);
+        auto hostResult = config.get("proxy/host", QString());
+        auto portResult = config.get("proxy/port", 8080);
+        auto usernameResult = config.get("proxy/username", QString());
+        auto passwordResult = config.get("proxy/password", QString());
 
         ProxyType type = static_cast<ProxyType>(typeResult.isValid() ? typeResult.toInt() : 0);
         QString host = hostResult.isValid() ? hostResult.toString() : QString();
@@ -152,12 +150,10 @@ void NetworkProxy::loadProxyConfigFromSettings() noexcept {
         qDebug() << "已从配置加载代理设置" << getProxyDescription();
         return;
     } catch (const std::exception &e) {
-        const QString error = QString::fromUtf8(e.what());
-        qWarning() << "加载代理配置时发生异常" << ": " << error;
+        qWarning() << "加载代理配置时发生异常" << ": " << e.what();
         return;
     } catch (...) {
-        const QString error = QStringLiteral("加载代理配置时发生未知异常");
-        qWarning() << error;
+        qWarning() << "加载代理配置时发生未知异常";
         return;
     }
 }
@@ -169,32 +165,22 @@ void NetworkProxy::saveProxyConfigToSettings() noexcept {
     try {
         Config &config = Config::GetInstance();
 
-        config.save(QStringLiteral("proxy/enabled"), m_proxyEnabled);
-        config.save(QStringLiteral("proxy/type"), static_cast<int>(m_proxyType));
-        config.save(QStringLiteral("proxy/host"), m_proxyHost);
-        config.save(QStringLiteral("proxy/port"), m_proxyPort);
-        config.save(QStringLiteral("proxy/username"), m_proxyUsername);
-        config.save(QStringLiteral("proxy/password"), m_proxyPassword);
+        config.save("proxy/enabled", m_proxyEnabled);
+        config.save("proxy/type", static_cast<int>(m_proxyType));
+        config.save("proxy/host", m_proxyHost);
+        config.save("proxy/port", m_proxyPort);
+        config.save("proxy/username", m_proxyUsername);
+        config.save("proxy/password", m_proxyPassword);
 
         qDebug() << "代理设置已保存到配置文件";
         return;
     } catch (const std::exception &e) {
-        const QString error = QString::fromUtf8(e.what());
-        qWarning() << "保存代理配置时发生异常" << ": " << error;
+        qWarning() << "保存代理配置时发生异常" << ": " << e.what();
         return;
     } catch (...) {
-        const QString error = QStringLiteral("保存代理配置时发生未知异常");
-        qWarning() << error;
+        qWarning() << "保存代理配置时发生未知异常";
         return;
     }
-}
-
-/**
- * @brief 检查代理是否启用
- * @return 如果代理启用则返回true
- */
-constexpr bool NetworkProxy::isProxyEnabled() const noexcept {
-    return m_proxyEnabled && (m_proxyType != ProxyType::NoProxy);
 }
 
 /**
@@ -202,7 +188,7 @@ constexpr bool NetworkProxy::isProxyEnabled() const noexcept {
  * @return 代理配置的文本描述
  */
 QString NetworkProxy::getProxyDescription() const noexcept {
-    if (!isProxyEnabled()) {
+    if (!m_proxyEnabled) {
         return QStringLiteral("未启用代理");
     }
 
@@ -222,7 +208,7 @@ QString NetworkProxy::getProxyDescription() const noexcept {
 
     const QString typeStr = QString::fromUtf8(getTypeString(m_proxyType));
 
-    if (m_proxyType == ProxyType::SystemProxy) {
+    if (m_proxyType == ProxyType::NoProxy || m_proxyType == ProxyType::SystemProxy) {
         return typeStr;
     }
 

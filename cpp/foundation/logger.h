@@ -93,7 +93,7 @@ class Logger : public QObject {
     // 消息处理函数
     static void messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) noexcept;
 
-    // C++23 优化的配置方法 - 使用 std::expected 错误处理
+    // 使用 std::expected 错误处理
     std::expected<void, LogError> setLogLevel(LogLevel level) noexcept;   // 设置日志级别
     std::expected<void, LogError> setLogToFile(bool enabled) noexcept;    // 设置是否将日志输出到文件
     std::expected<void, LogError> setLogToConsole(bool enabled) noexcept; // 设置是否将日志输出到控制台

@@ -64,7 +64,20 @@ Item {
         /// 透明度变化动画
         Behavior on opacity {
             NumberAnimation {
-                duration: 100
+                duration: ThemeManager.opacityAnimationDuration
+            }
+        }
+
+        /// 颜色过渡动画
+        Behavior on color {
+            ColorAnimation {
+                duration: ThemeManager.colorAnimationDuration
+            }
+        }
+
+        Behavior on border.color {
+            ColorAnimation {
+                duration: ThemeManager.colorAnimationDuration
             }
         }
     }
@@ -79,6 +92,13 @@ Item {
         horizontalAlignment: Text.AlignHCenter      ///< 水平居中
         verticalAlignment: Text.AlignVCenter        ///< 垂直居中
         font.bold: root.isFocused             ///< 焦点时加粗
+
+        /// 文本颜色过渡动画
+        Behavior on color {
+            ColorAnimation {
+                duration: ThemeManager.colorAnimationDuration
+            }
+        }
     }
 
     // 鼠标交互区域

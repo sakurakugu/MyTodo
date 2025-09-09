@@ -11,10 +11,10 @@
 #include "todo_manager.h"
 #include "category_manager.h"
 #include "foundation/network_request.h"
+#include "global_state.h"
 #include "todo_filter.h"
 #include "todo_sorter.h"
 #include "user_auth.h"
-#include "global_state.h"
 
 #include <QDateTime>
 #include <QDir>
@@ -27,12 +27,13 @@
 #include <QProcess>
 #include <QUuid>
 
-TodoManager::TodoManager(QObject *parent)
+TodoManager::TodoManager( TodoSyncServer *syncManager, QObject *parent)
     : QAbstractListModel(parent),                      //
       m_filterCacheDirty(true),                        //
       m_networkRequest(NetworkRequest::GetInstance()), //
       m_setting(Setting::GetInstance()),               //
-      m_isAutoSync(false)                              //
+      m_isAutoSync(false),                             //
+      m_syncManager(syncManager)                       //
 {
 
     // 初始化默认服务器配置
@@ -57,9 +58,6 @@ TodoManager::TodoManager(QObject *parent)
 
     // 创建数据管理器
     m_dataManager = new TodoDataStorage(m_setting, this);
-
-    // 创建同步管理器
-    m_syncManager = new TodoSyncServer(this);
 
     // 连接同步管理器信号
     connect(m_syncManager, &TodoSyncServer::syncStarted, this, &TodoManager::onSyncStarted);
@@ -1041,8 +1039,7 @@ void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
             newItem->setDeadline(QDateTime::fromString(todoObj["deadline"].toString(), Qt::ISODate));
             newItem->setRecurrenceInterval(todoObj["recurrenceInterval"].toInt());
             newItem->setRecurrenceCount(todoObj["recurrenceCount"].toInt());
-            newItem->setRecurrenceStartDate(
-                QDate::fromString(todoObj["recurrenceStartDate"].toString(), Qt::ISODate));
+            newItem->setRecurrenceStartDate(QDate::fromString(todoObj["recurrenceStartDate"].toString(), Qt::ISODate));
             newItem->setIsCompleted(todoObj["is_completed"].toBool());
             newItem->setCompletedAt(QDateTime::fromString(todoObj["completed_at"].toString(), Qt::ISODate));
             newItem->setIsDeleted(todoObj["is_deleted"].toBool());

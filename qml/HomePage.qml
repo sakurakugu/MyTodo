@@ -53,6 +53,19 @@ Page {
             topLeftRadius: 10
             bottomLeftRadius: 10
 
+            // 颜色过渡动画
+            Behavior on color {
+                ColorAnimation {
+                    duration: ThemeManager.colorAnimationDuration
+                }
+            }
+
+            Behavior on border.color {
+                ColorAnimation {
+                    duration: ThemeManager.colorAnimationDuration
+                }
+            }
+
             // 窗口拖拽处理区域
             WindowDragHandler {
                 anchors.fill: parent
@@ -214,6 +227,13 @@ Page {
             Layout.fillHeight: true
             color: ThemeManager.backgroundColor
 
+            // 颜色过渡动画
+            Behavior on color {
+                ColorAnimation {
+                    duration: ThemeManager.colorAnimationDuration
+                }
+            }
+
             // 上边框
             Divider {
                 isTopOrLeft: true
@@ -230,6 +250,13 @@ Page {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 68
                     color: ThemeManager.backgroundColor
+
+                    // 颜色过渡动画
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: ThemeManager.colorAnimationDuration
+                        }
+                    }
 
                     // 窗口拖拽处理区域
                     WindowDragHandler {
@@ -296,6 +323,19 @@ Page {
             color: ThemeManager.backgroundColor
             topRightRadius: 10
             bottomRightRadius: 10
+
+            // 颜色过渡动画
+            Behavior on color {
+                ColorAnimation {
+                    duration: ThemeManager.colorAnimationDuration
+                }
+            }
+
+            Behavior on border.color {
+                ColorAnimation {
+                    duration: ThemeManager.colorAnimationDuration
+                }
+            }
 
             // 抽屉显示状态
             property bool drawerVisible: false
@@ -367,6 +407,13 @@ Page {
                     Layout.preferredHeight: 40
                     color: ThemeManager.backgroundColor
 
+                    // 颜色过渡动画
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: ThemeManager.colorAnimationDuration
+                        }
+                    }
+
                     // 左边框
                     Rectangle {
                         anchors.left: parent.left
@@ -374,6 +421,13 @@ Page {
                         anchors.bottom: parent.bottom
                         width: 1
                         color: ThemeManager.borderColor
+
+                        // 颜色过渡动画
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: ThemeManager.colorAnimationDuration
+                            }
+                        }
                     }
 
                     // 窗口拖拽处理区域

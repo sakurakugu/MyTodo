@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
     UserAuth &userAuth = UserAuth::GetInstance();     // 获取UserAuth实例
     TodoSyncServer todoSyncServer;                    // 创建TodoSyncServer实例
     CategoryManager categoryManager(&todoSyncServer); // 创建CategoryManager实例
-    TodoManager todoManager;                          // 创建TodoManager实例
+    TodoManager todoManager(&todoSyncServer);         // 创建TodoManager实例
     GlobalState globalState;                          // 创建GlobalState实例
 
     // 检查是否通过开机自启动启动

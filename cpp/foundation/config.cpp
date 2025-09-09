@@ -30,6 +30,7 @@
 #include <string>
 #include <system_error>
 #include <vector>
+#include <iostream>
 
 Config::Config(QObject *parent)
     : QObject(parent),        //
@@ -134,7 +135,7 @@ void Config::save(const QString &key, const QVariant &value) {
             return;
         }
 
-        toml::table *table = &m_config;
+        toml::table *table = &m_config; // 指向根表的指针
 
         // 获取或创建嵌套表
         for (int i = 0; i < parts.size() - 1; ++i) {
@@ -145,7 +146,9 @@ void Config::save(const QString &key, const QVariant &value) {
             table = (*table)[k].as_table();
         }
 
-        table->insert(parts.last().toStdString(), *variantToToml(value));
+        // 插入或赋值
+        table->insert_or_assign(parts.last().toStdString(), *variantToToml(value));
+        qInfo() << "配置项" << key.toStdString() << ", 值为:" << value;
         m_needsSave = true; // 标记需要保存
     } catch (const std::exception &e) {
         qCritical() << "保存配置项失败:" << key << "错误:" << e.what();

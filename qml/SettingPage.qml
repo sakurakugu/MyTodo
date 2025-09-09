@@ -26,7 +26,7 @@ Page {
     function applyProxySettings() {
         if (!setting.getProxyEnabled()) {
             // 禁用代理
-            setting.setProxyConfig(0, "", 0, "", "", false); // NoProxy
+            setting.setProxyConfig(false, 0, "", 0, "", ""); // NoProxy
         } else {
             var proxyType = setting.getProxyType();
             var host = setting.getProxyHost();
@@ -34,7 +34,7 @@ Page {
             var username = setting.getProxyUsername();
             var password = setting.getProxyPassword();
 
-            setting.setProxyConfig(proxyType, host, port, username, password, true);
+            setting.setProxyConfig(true, proxyType, host, port, username, password);
         }
     }
 
@@ -236,6 +236,7 @@ Page {
             CustomComboBox {
                 id: proxyTypeCombo
                 enabled: proxyEnabledSwitch.checked
+                visible: proxyEnabledSwitch.checked
                 Layout.leftMargin: 20
                 model: [qsTr("不使用代理"), qsTr("系统代理"), qsTr("HTTP代理"), qsTr("SOCKS5代理")]
                 currentIndex: setting.getProxyType()

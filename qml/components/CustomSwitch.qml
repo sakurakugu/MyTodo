@@ -38,6 +38,13 @@ Item {
         color: root.enabled ? ThemeManager.textColor : ThemeManager.secondaryTextColor
         font.pixelSize: 14
         visible: !root.isSwitchOnLeft
+
+        // 文本颜色过渡动画
+        Behavior on color {
+            ColorAnimation {
+                duration: ThemeManager.colorAnimationDuration
+            }
+        }
     }
 
     // 开关轨道
@@ -57,7 +64,7 @@ Item {
         // 过渡动画
         Behavior on color {
             ColorAnimation {
-                duration: 150
+                duration: ThemeManager.colorAnimationDuration
             }
         }
 
@@ -70,6 +77,13 @@ Item {
             border.width: 1
             border.color: root.checked ? Qt.darker(ThemeManager.successColor, 1.1) : Qt.darker(ThemeManager.button2Color, 1.1)
             opacity: 0.3
+
+            // 边框颜色过渡动画
+            Behavior on border.color {
+                ColorAnimation {
+                    duration: ThemeManager.colorAnimationDuration
+                }
+            }
         }
     }
 
@@ -83,10 +97,17 @@ Item {
         anchors.verticalCenter: switchTrack.verticalCenter
         x: switchTrack.x + (root.checked ? switchTrack.width - width - 3 : 3)
 
+        // 颜色过渡动画
+        Behavior on color {
+            ColorAnimation {
+                duration: ThemeManager.colorAnimationDuration
+            }
+        }
+
         // 位置动画
         Behavior on x {
             NumberAnimation {
-                duration: 150
+                duration: ThemeManager.colorAnimationDuration
                 easing.type: Easing.InOutQuad
             }
         }
@@ -111,6 +132,13 @@ Item {
         color: root.enabled ? ThemeManager.textColor : ThemeManager.secondaryTextColor
         font.pixelSize: 14
         visible: root.isSwitchOnLeft
+
+        // 文本颜色过渡动画
+        Behavior on color {
+            ColorAnimation {
+                duration: ThemeManager.colorAnimationDuration
+            }
+        }
     }
 
     // 鼠标区域
