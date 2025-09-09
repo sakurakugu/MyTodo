@@ -8,6 +8,7 @@
  */
 #include "logger.h"
 #include "default_value.h"
+#include "version.h"
 
 #include <QCoreApplication>
 #include <QDateTime>
@@ -52,7 +53,7 @@ Logger::Logger(QObject *parent) noexcept
 #endif
         m_logFileName = m_appName + ".log";
 
-        // 使用 std::filesystem 确保目录存在
+        // 确保目录存在
         std::filesystem::path logPath{m_logDir};
         if (!std::filesystem::exists(logPath)) {
             std::filesystem::create_directories(logPath);
@@ -333,8 +334,8 @@ std::expected<void, LogError> Logger::initLogFile() noexcept {
 
         // 启动标记
         const auto now = std::chrono::system_clock::now();
-        const auto startMsg = std::format("\n=== {} 应用启动 [{:%Y-%m-%d %H:%M:%S}] ===\n", DefaultValues::appName,
-                                          std::chrono::floor<std::chrono::seconds>(now));
+        const auto startMsg = std::format("\n=== {} ({}) 应用启动 [{:%Y-%m-%d %H:%M:%S}] ===\n", DefaultValues::appName,
+                                          APP_VERSION_STRING, std::chrono::floor<std::chrono::seconds>(now));
 
         *m_logFile << startMsg;
         m_logFile->flush();

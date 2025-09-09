@@ -14,10 +14,10 @@
 #include <string_view>
 
 namespace DefaultValues {
-    inline constexpr std::string_view baseUrl{"https://api.example.com"};
-    inline constexpr std::string_view todoApiEndpoint{"/todo/todo_api.php"};
-    inline constexpr std::string_view userAuthApiEndpoint{"/auth_api.php"};
-    inline constexpr std::string_view categoriesApiEndpoint{"/todo/categories_api.php"};
+    constexpr std::string_view baseUrl{"https://api.example.com"};
+    constexpr std::string_view todoApiEndpoint{"/todo/todo_api.php"};
+    constexpr std::string_view userAuthApiEndpoint{"/auth_api.php"};
+    constexpr std::string_view categoriesApiEndpoint{"/todo/categories_api.php"};
 
-    inline constexpr std::string_view appName{"MyTodo"}; // 应用程序名称
+    constexpr std::string_view appName{"MyTodo"}; // 应用程序名称
 } // namespace DefaultValues

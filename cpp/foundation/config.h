@@ -22,7 +22,7 @@
 #include <optional>
 #include <string_view>
 #include <toml++/toml.hpp>
-// import tomlplusplus; // Qt暂时不推荐用
+
 class Config : public QObject {
     Q_OBJECT
 

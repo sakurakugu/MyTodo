@@ -7,9 +7,12 @@
 
 cmake_minimum_required(VERSION 3.16)
 
+# 包含版本号处理模块
+include("${CMAKE_SOURCE_DIR}/cpp/script/version.cmake")
+
 # 项目基本信息
 project(MyTodo 
-    VERSION 0.4.0
+    VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
     DESCRIPTION "待办事项管理应用"
     HOMEPAGE_URL "https://github.com/sakurakugu/MyTodo"
     LANGUAGES CXX
@@ -24,6 +27,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)              # 禁用编译器扩展，确保可�
 set(CMAKE_AUTORCC ON)                      # 自动处理资源文件
 set(CMAKE_AUTOMOC ON)                      # 自动处理 MOC
 set(CMAKE_AUTOUIC ON)                      # 自动处理 UIC
+
 
 # 构建类型优化
 if(NOT CMAKE_BUILD_TYPE)
@@ -285,6 +289,7 @@ target_link_libraries(MyTodo PRIVATE ${PRIVATE_LIBRARIES})
 # 包含目录配置
 target_include_directories(MyTodo PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp     # C++ 头文件目录
+    ${INCLUDE_DIR}                      # 由 script 自动设置的生成文件目录
 )
 
 # 安装配置
