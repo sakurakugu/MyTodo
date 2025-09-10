@@ -29,10 +29,10 @@
 #include "cpp/foundation/logger.h"
 #include "cpp/global_state.h"
 #include "cpp/setting.h"
-#include "cpp/todo/category_manager.h"
-#include "cpp/todo/todo_filter.h"
-#include "cpp/todo/todo_manager.h"
-#include "cpp/todo/todo_sorter.h"
+#include "cpp/todos/category/category_manager.h"
+#include "cpp/todos/todo/todo_filter.h"
+#include "cpp/todos/todo/todo_manager.h"
+#include "cpp/todos/todo/todo_sorter.h"
 #include "cpp/user_auth.h"
 
 #include <QDebug>

@@ -50,7 +50,7 @@ class CategorieItem : public QObject {
                   const QString &name,        ///< 分类名称
                   const QUuid &userUuid,      ///< 用户UUID
                   const QDateTime &createdAt, ///< 创建时间
-                  bool synced,                ///< 是否已与服务器同步
+                  bool synced,                ///< 是否已与服务器同步（是否要上传）
                   QObject *parent = nullptr);
 
     int id() const noexcept { return m_id; } // 获取ID

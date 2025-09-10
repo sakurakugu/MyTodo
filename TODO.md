@@ -5,6 +5,7 @@
 服务器与本地合并时，如果本地的数据含有“已同步”，则直接看最后更新时间，然后根据时间判断是否需要更新。否则让用户来判断
 添加检查更新的功能，还有启动时检查更新功能
 还有可以选择将配置保存在appdata还是在程序目录下
+[2025-09-10 12:20:42.282] [警告] [SettingPage.qml:954] qrc:/qt/qml/MyTodo/qml/SettingPage.qml:954: TypeError: Property 'close' of object SettingPage_QMLTYPE_32(0x1b162f76400) is not a function
 
 # 最后最后再做的
 

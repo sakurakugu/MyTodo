@@ -9,7 +9,7 @@
  * @version 0.4.0
  */
 #include "todo_manager.h"
-#include "category_manager.h"
+#include "../category/category_manager.h"
 #include "foundation/network_request.h"
 #include "global_state.h"
 #include "todo_filter.h"
@@ -74,8 +74,6 @@ TodoManager::TodoManager( TodoSyncServer *syncManager, QObject *parent)
 
     // 创建待办事项类别管理器
     m_categoryManager = new CategoryManager(m_syncManager, this);
-    connect(m_categoryManager, &CategoryManager::categoryOperationCompleted, this,
-            &TodoManager::categoryOperationCompleted);
 
     // 通过数据管理器加载本地数据
     m_dataManager->loadFromLocalStorage(m_todos);

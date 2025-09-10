@@ -22,9 +22,9 @@
 #include <memory>
 #include <vector>
 
-#include "category_manager.h" // 类别管理器
+#include "../category/category_manager.h" // 类别管理器
 #include "foundation/network_request.h"
-#include "items/todo_item.h"
+#include "../items/todo_item.h"
 #include "setting.h"
 #include "todo_data_storage.h" // 数据管理器
 #include "todo_filter.h"       // 筛选管理器
@@ -129,7 +129,6 @@ class TodoManager : public QAbstractListModel {
   signals:
     void syncStarted();                                                        // 同步操作开始信号
     void syncCompleted(bool success, const QString &errorMessage = QString()); // 同步操作完成信号
-    void categoryOperationCompleted(bool success, const QString &message);     // 类别操作完成信号
 
   private slots:
     void onSyncStarted();                                                            // 处理同步开始

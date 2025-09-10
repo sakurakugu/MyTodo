@@ -130,26 +130,27 @@ set_source_files_properties(
 # 项目源文件配置
 set(ITEM_SOURCES
     # 数据库条目模块
-    cpp/items/todo_item.cpp
-    cpp/items/todo_item.h
-    cpp/items/categorie_item.cpp
-    cpp/items/categorie_item.h
+    cpp/todos/items/todo_item.cpp
+    cpp/todos/items/todo_item.h
+    cpp/todos/items/categorie_item.cpp
+    cpp/todos/items/categorie_item.h
 )
 
 set(CORE_SOURCES
     # 核心数据模型
-    cpp/todo/todo_manager.cpp
-    cpp/todo/todo_manager.h
-    cpp/todo/todo_sync_server.cpp
-    cpp/todo/todo_sync_server.h
-    cpp/todo/todo_data_storage.cpp
-    cpp/todo/todo_data_storage.h
-    cpp/todo/category_manager.cpp
-    cpp/todo/category_manager.h
-    cpp/todo/todo_sorter.cpp
-    cpp/todo/todo_sorter.h
-    cpp/todo/todo_filter.cpp
-    cpp/todo/todo_filter.h
+    cpp/todos/todo/todo_manager.cpp
+    cpp/todos/todo/todo_manager.h
+    cpp/todos/todo/todo_sync_server.cpp
+    cpp/todos/todo/todo_sync_server.h
+    cpp/todos/todo/todo_data_storage.cpp
+    cpp/todos/todo/todo_data_storage.h
+    cpp/todos/todo/todo_sorter.cpp
+    cpp/todos/todo/todo_sorter.h
+    cpp/todos/todo/todo_filter.cpp
+    cpp/todos/todo/todo_filter.h
+
+    cpp/todos/category/category_manager.h
+    cpp/todos/category/category_manager.cpp
 )
 
 set(NETWORK_SOURCES

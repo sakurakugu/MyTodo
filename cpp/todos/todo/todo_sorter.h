@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include "items/todo_item.h"
+#include "../items/todo_item.h"
 #include <QObject>
 #include <memory>
 #include <vector>
