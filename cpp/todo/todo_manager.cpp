@@ -398,6 +398,17 @@ void TodoManager::invalidateFilterCache() {
     m_filterCacheDirty = true;
 }
 
+
+int TodoManager::generateUniqueId() {
+    int maxId = 0;
+    for (const auto &todo : m_todos) {
+        if (todo->id() > maxId) {
+            maxId = todo->id();
+        }
+    }
+    return maxId + 1;
+}
+
 /**
  * @brief 添加新的待办事项
  * @param title 任务标题（必填）
@@ -410,7 +421,7 @@ void TodoManager::addTodo(const QString &title, const QString &description, cons
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
 
     auto newItem = std::make_unique<TodoItem>(        //
-        0,                                            // id (auto-generated)
+        generateUniqueId(),                           // id (auto-generated unique)
         QUuid::createUuid(),                          // uuid
         UserAuth::GetInstance().getUuid(),            // userUuid
         title,                                        // title

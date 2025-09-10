@@ -20,6 +20,7 @@
 #include <QVariantList>
 #include <QVariantMap>
 #include <memory>
+#include <toml++/toml.hpp>
 #include <vector>
 
 #include "items/todo_item.h"
@@ -73,29 +74,22 @@ class TodoDataStorage : public QObject {
     bool loadFromLocalStorage(std::vector<std::unique_ptr<TodoItem>> &todos);     // 从本地存储加载待办事项
     bool saveToLocalStorage(const std::vector<std::unique_ptr<TodoItem>> &todos); // 将待办事项保存到本地存储
 
-    // 文件导入导出功能
-    bool importTodos(                          // 从文件导入待办事项（简单导入，跳过冲突）
-        std::vector<std::unique_ptr<TodoItem>> &todos, const QString &filePath);
-    QVariantList checkImportConflicts( // 检查导入文件中的冲突项目
-        const std::vector<std::unique_ptr<TodoItem>> &todos, const QString &filePath);
-    bool importTodosWithConflictResolution( // 带冲突解决策略的导入
-        std::vector<std::unique_ptr<TodoItem>> &todos, const QString &filePath, ConflictResolution conflictResolution);
-    bool importTodosWithIndividualResolution( // 带个别冲突处理的导入
-        std::vector<std::unique_ptr<TodoItem>> &todos, const QString &filePath, const QVariantMap &resolutions);
-    QVariantList importTodosWithAutoResolution( // 自动导入无冲突项目，返回冲突项目列表
-        std::vector<std::unique_ptr<TodoItem>> &todos, const QString &filePath);
+    // 文件导入功能
+    bool importFromToml(const toml::table &table,
+                        std::vector<std::unique_ptr<TodoItem>> &todos); // 从TOML表导入待办事项
+    bool importFromToml(const toml::table &table,
+                        std::vector<std::unique_ptr<TodoItem>> &todos,
+                        ConflictResolution resolution); // 从TOML表导入待办事项（指定冲突解决策略）
 
   signals:
     void dataOperationCompleted(bool success, const QString &message);            // 数据操作完成信号
     void importCompleted(int importedCount, int skippedCount, int conflictCount); // 导入操作完成信号
 
   private:
-    bool validateJsonFormat(const QJsonObject &jsonObject); // 验证JSON文件格式
-    std::unique_ptr<TodoItem> createTodoFromJson(const QJsonObject &jsonObject,
-                                                 QObject *parent);                       // 从JSON对象创建TodoItem
-    QJsonObject todoToJson(const TodoItem *todo);                                        // 将TodoItem转换为JSON对象
-    TodoItem *findTodoById(const std::vector<std::unique_ptr<TodoItem>> &todos, int id); // 查找具有指定ID的待办事项
-
+    // 辅助方法
+    std::unique_ptr<TodoItem> createTodoItemFromToml(const toml::table &todoTable, int newId);
+    void updateTodoItemFromToml(TodoItem *item, const toml::table &todoTable);
+    
     // 成员变量
     Setting &m_setting; ///< 设置对象引用
 };

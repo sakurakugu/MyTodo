@@ -39,12 +39,12 @@ class Config : public QObject {
     Config &operator=(Config &&) = delete;
 
     void save(const QString &key, const QVariant &value);                 // 保存配置项
-    void set(const QString &key, const QVariant &value);                  // 设置配置项
+    void set(const QString &key, const QVariant &value);                  // 设置配置项（和上面一样的，只是别名）
     std::optional<QVariant> get(const QString &key) const;                // 获取配置项
     QVariant get(const QString &key, const QVariant &defaultValue) const; // 获取配置项（带默认值）
     void remove(const QString &key);                                      // 删除配置项
+    const toml::node *find(const QString &key) const noexcept;            // 查找配置项
     bool contains(const QString &key) const noexcept;                     // 检查配置项是否存在
-    QStringList allKeys() const;                                          // 获取所有配置项键
     void clear();                                                         // 清空所有配置项
 
     // 批量操作接口
@@ -53,8 +53,12 @@ class Config : public QObject {
 
     // JSON 导出功能
     std::string exportToJson(const QStringList &excludeKeys = QStringList()) const;
-    bool exportToJsonFile(const QString &filePath,
+    bool exportToJsonFile(const std::string &filePath,
                           const QStringList &excludeKeys = QStringList()) const; // 导出到JSON文件
+
+    // JSON 转换为 TOML
+    bool JsonToToml(const std::string &jsonContent, toml::table *table);  // JSON字符串 转换为 TOML
+    bool JsonFileToToml(const std::string &filePath, toml::table *table); // JSON文件 转换为 TOML
 
     // 配置文件位置切换
     enum class ConfigLocation {
@@ -74,6 +78,14 @@ class Config : public QObject {
     explicit Config(QObject *parent = nullptr);
     ~Config() noexcept override;
 
+    // 辅助方法
+    void loadFromFile();                                              // 从文件加载配置
+    bool saveToFile() const;                                          // 保存配置到文件
+    std::string getDefaultConfigPath() const;                         // 获取默认配置文件路径
+    void findExistingConfigFile();                                    // 查找现有配置文件并更新位置
+    std::unique_ptr<toml::node> variantToToml(const QVariant &value); // QVariant转换为Toml值
+    QVariant tomlToVariant(const toml::node *node) const;             // Toml值转换为QVariant
+
     mutable std::mutex m_mutex;       // 线程安全保护
     toml::table m_config;             // 配置数据
     std::string m_filePath;           // 配置文件路径
@@ -83,13 +95,4 @@ class Config : public QObject {
 #else
     ConfigLocation m_configLocation = ConfigLocation::AppDataLocal;
 #endif
-
-    // 辅助方法
-    void loadFromFile();                                              // 从文件加载配置
-    bool saveToFile() const;                                          // 保存配置到文件
-    std::string getDefaultConfigPath() const;                         // 获取默认配置文件路径
-    void findExistingConfigFile();                                    // 查找现有配置文件并更新位置
-    std::unique_ptr<toml::node> variantToToml(const QVariant &value); // QVariant转换为Toml值
-    QVariant tomlToVariant(const toml::node *node) const;             // Toml值转换为QVariant
-    void collectKeys(const toml::table &tbl, const QString &prefix, QStringList &out) const; // 递归收集所有键
 };

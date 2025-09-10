@@ -110,8 +110,8 @@ class TodoManager : public QAbstractListModel {
     // CRUD操作
     Q_INVOKABLE void addTodo(const QString &title, const QString &description = QString(),
                              const QString &category = "未分类", bool important = false,
-                             const QString &deadline = QString());                           // 添加新的待办事项
-    Q_INVOKABLE bool updateTodo(int index, const QVariantMap &todoData);                     // 更新现有待办事项
+                             const QString &deadline = QString());                          // 添加新的待办事项
+    Q_INVOKABLE bool updateTodo(int index, const QVariantMap &todoData);                    // 更新现有待办事项
     Q_INVOKABLE bool updateTodo(int index, const QString &roleName, const QVariant &value); // 更新现有待办事项
     Q_INVOKABLE bool removeTodo(int index);
     Q_INVOKABLE bool restoreTodo(int index);
@@ -164,4 +164,5 @@ class TodoManager : public QAbstractListModel {
     TodoSorter *m_sorter;               ///< 排序管理器 - 负责所有排序相关功能
 
     // 辅助方法
+    int generateUniqueId(); ///< 生成唯一的待办事项ID
 };

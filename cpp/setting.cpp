@@ -50,10 +50,6 @@ bool Setting::contains(const QString &key) const {
     return m_config.contains(key);
 }
 
-QStringList Setting::allKeys() const {
-    return m_config.allKeys();
-}
-
 void Setting::clear() {
     m_config.clear();
 }
@@ -71,7 +67,7 @@ QString Setting::getConfigFilePath() const {
 void Setting::exportToJsonFile(const QString &filePath) {
     QStringList excludeKeys;
     excludeKeys << "proxy" << "auth";
-    m_config.exportToJsonFile(filePath, excludeKeys);
+    m_config.exportToJsonFile(filePath.toStdString(), excludeKeys);
 }
 
 // 日志配置相关方法实现

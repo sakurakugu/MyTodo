@@ -16,21 +16,26 @@
 #include <QCoreApplication>
 #include <QDesktopServices>
 #include <QFileInfo>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonValue>
 #include <QProcess>
 #include <QSaveFile>
 #include <QTextStream>
 #include <QTimeZone>
 #include <QUrl>
+#include <cmath>
 #include <filesystem>
+#include <fstream>
 #include <functional>
+#include <iostream>
+#include <limits>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <system_error>
 #include <vector>
-#include <iostream>
 
 Config::Config(QObject *parent)
     : QObject(parent),        //
@@ -252,13 +257,13 @@ void Config::remove(const QString &key) {
 }
 
 /**
- * @brief 检查设置是否存在
- * @param key 设置键名
- * @return 设置是否存在
+ * @brief 查找配置项
+ * @param key 配置项键名
+ * @return 配置项节点指针
  */
-bool Config::contains(const QString &key) const noexcept {
+const toml::node *Config::find(const QString &key) const noexcept {
     if (key.isEmpty()) {
-        return false;
+        return nullptr;
     }
 
     std::lock_guard<std::mutex> lock(m_mutex);
@@ -266,40 +271,32 @@ bool Config::contains(const QString &key) const noexcept {
     try {
         QStringList parts = key.split('/', Qt::SkipEmptyParts);
         if (parts.isEmpty()) {
-            return false;
+            return nullptr;
         }
 
         const toml::node *node = &m_config;
 
         for (const auto &part : parts) {
             if (!node->is_table())
-                return false;
+                return nullptr;
             node = node->as_table()->get(part.toStdString());
             if (!node)
-                return false;
+                return nullptr;
         }
 
-        return true;
+        return node; // 返回最终节点
     } catch (...) {
-        return false;
+        return nullptr;
     }
 }
 
 /**
- * @brief 获取所有设置的键名
- * @return 所有设置的键名列表
+ * @brief 检查设置是否存在
+ * @param key 设置键名
+ * @return 设置是否存在
  */
-QStringList Config::allKeys() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-
-    QStringList result;
-    try {
-        collectKeys(m_config, QString(), result);
-        return result;
-    } catch (const std::exception &e) {
-        qWarning() << "获取所有配置项键名失败:" << e.what();
-        return QStringList{};
-    }
+bool Config::contains(const QString &key) const noexcept {
+    return find(key) != nullptr;
 }
 
 /**
@@ -412,7 +409,7 @@ std::unique_ptr<toml::node> Config::variantToToml(const QVariant &value) {
             return std::make_unique<toml::value<std::string>>(value.toString().toStdString());
         case QMetaType::QDateTime: {
             auto dt = value.toDateTime().toUTC();
-            // 如果是空值或无效时间，保存为最小值 0001-01-01T00:00:00
+            // 如果是空值或无效时间，保存为最小值 1970-01-01T00:00:00
             if (!dt.isValid() || dt.isNull()) {
                 return std::make_unique<toml::value<toml::date_time>>(toml::date_time{{1970, 1, 1}, {0, 0, 0, 0}});
             }
@@ -422,7 +419,7 @@ std::unique_ptr<toml::node> Config::variantToToml(const QVariant &value) {
         }
         case QMetaType::QDate: {
             auto d = value.toDate();
-            // 如果是空值或无效日期，保存为最小值 0001-01-01
+            // 如果是空值或无效日期，保存为最小值 1970-01-01
             if (!d.isValid() || d.isNull()) {
                 return std::make_unique<toml::value<toml::date>>(toml::date{1970, 1, 1});
             }
@@ -494,8 +491,8 @@ QVariant Config::tomlToVariant(const toml::node *node) const {
             QDate date(dt.date.year, dt.date.month, dt.date.day);
             QTime time(dt.time.hour, dt.time.minute, dt.time.second, dt.time.nanosecond / 1000000);
             QDateTime result(date, time, QTimeZone::UTC);
-            // 如果读取到的是最小值 0001-01-01T00:00:00，返回空值
-            if (dt.date.year == 1 && dt.date.month == 1 && dt.date.day == 1 && dt.time.hour == 0 &&
+            // 如果读取到的是最小值 1970-01-01T00:00:00，返回空值
+            if (dt.date.year == 1970 && dt.date.month == 1 && dt.date.day == 1 && dt.time.hour == 0 &&
                 dt.time.minute == 0 && dt.time.second == 0 && dt.time.nanosecond == 0) {
                 return QDateTime();
             }
@@ -503,8 +500,8 @@ QVariant Config::tomlToVariant(const toml::node *node) const {
         }
         if (auto v = node->as_date()) {
             auto d = v->get();
-            // 如果读取到的是最小值 0001-01-01，返回空值
-            if (d.year == 1 && d.month == 1 && d.day == 1) {
+            // 如果读取到的是最小值 1970-01-01，返回空值
+            if (d.year == 1970 && d.month == 1 && d.day == 1) {
                 return QDate();
             }
             return QDate(d.year, d.month, d.day);
@@ -531,25 +528,6 @@ QVariant Config::tomlToVariant(const toml::node *node) const {
         // 转换失败时返回空QVariant
     }
     return {};
-}
-
-/**
- * @brief 递归收集所有键
- * @param tbl 配置表
- * @param prefix 前缀
- * @param out 输出列表
- */
-void Config::collectKeys(const toml::table &tbl, const QString &prefix, QStringList &out) const {
-    for (auto &[k, v] : tbl) {
-        QString key = prefix.isEmpty() ? QString::fromStdString(std::string(k))
-                                       : prefix + "/" + QString::fromStdString(std::string(k)); // TODO: 这里是.还是/
-
-        if (v.is_table()) {
-            collectKeys(*v.as_table(), key, out);
-        } else {
-            out.append(key);
-        }
-    }
 }
 
 /**
@@ -686,11 +664,11 @@ std::string Config::exportToJson(const QStringList &excludeKeys) const {
  * @param excludeKeys 要排除的键列表
  * @return 操作是否成功
  */
-bool Config::exportToJsonFile(const QString &filePath, const QStringList &excludeKeys) const {
+bool Config::exportToJsonFile(const std::string &filePath, const QStringList &excludeKeys) const {
     try {
         std::string jsonContent = exportToJson(excludeKeys);
 
-        std::ofstream file(filePath.toStdString());
+        std::ofstream file(filePath);
         if (!file.is_open()) {
             qCritical() << "无法打开文件进行写入:" << filePath;
             return false;
@@ -709,6 +687,159 @@ bool Config::exportToJsonFile(const QString &filePath, const QStringList &exclud
 
     } catch (const std::exception &e) {
         qCritical() << "导出JSON文件失败:" << e.what();
+        return false;
+    }
+}
+
+/**
+ * @brief JSON字符串 转换为 TOML
+ * @param jsonContent JSON字符串内容
+ * @param table 导出的table表
+ * @return 操作是否成功
+ */
+bool Config::JsonToToml(const std::string &jsonContent, toml::table *table) {
+
+    try {
+        if (jsonContent.empty()) {
+            qWarning() << "JSON内容为空";
+            return false;
+        }
+
+        // 解析JSON
+        QJsonParseError parseError;
+        QJsonDocument jsonDoc = QJsonDocument::fromJson(QByteArray::fromStdString(jsonContent), &parseError);
+
+        if (parseError.error != QJsonParseError::NoError) {
+            qCritical() << "JSON解析失败:" << parseError.errorString();
+            return false;
+        }
+
+        if (!jsonDoc.isObject()) {
+            qCritical() << "JSON根节点必须是对象";
+            return false;
+        }
+
+        QJsonObject jsonObj = jsonDoc.object();
+
+        // 递归转换JSON对象为TOML表
+        std::function<std::unique_ptr<toml::node>(const QJsonValue &)> jsonToToml =
+            [&](const QJsonValue &value) -> std::unique_ptr<toml::node> {
+            switch (value.type()) {
+            case QJsonValue::Bool:
+                return std::make_unique<toml::value<bool>>(value.toBool());
+            case QJsonValue::Double: {
+                double d = value.toDouble();
+                // 检查是否为整数
+                if (d == std::floor(d) && d >= std::numeric_limits<int64_t>::min() &&
+                    d <= std::numeric_limits<int64_t>::max()) {
+                    return std::make_unique<toml::value<int64_t>>(static_cast<int64_t>(d));
+                } else {
+                    return std::make_unique<toml::value<double>>(d);
+                }
+            }
+            case QJsonValue::String: {
+                QString str = value.toString();
+                // 尝试解析为日期时间
+                QDateTime dt = QDateTime::fromString(str, Qt::ISODate);
+                if (dt.isValid()) {
+                    dt = dt.toUTC();
+                    return std::make_unique<toml::value<toml::date_time>>(toml::date_time{
+                        {dt.date().year(), dt.date().month(), dt.date().day()},
+                        {dt.time().hour(), dt.time().minute(), dt.time().second(), dt.time().msec() * 1000000}});
+                }
+                QDate date = QDate::fromString(str, "yyyy-MM-dd");
+                if (date.isValid()) {
+                    return std::make_unique<toml::value<toml::date>>(toml::date{date.year(), date.month(), date.day()});
+                }
+                return std::make_unique<toml::value<std::string>>(str.toStdString());
+            }
+            case QJsonValue::Array: {
+                auto arr = std::make_unique<toml::array>();
+                QJsonArray jsonArray = value.toArray();
+                for (const auto &item : jsonArray) {
+                    auto tomlItem = jsonToToml(item);
+                    if (tomlItem) {
+                        arr->push_back(*tomlItem);
+                    }
+                }
+                return arr;
+            }
+            case QJsonValue::Object: {
+                auto tbl = std::make_unique<toml::table>();
+                QJsonObject jsonObject = value.toObject();
+                for (auto it = jsonObject.begin(); it != jsonObject.end(); ++it) {
+                    auto tomlValue = jsonToToml(it.value());
+                    if (tomlValue) {
+                        tbl->insert(it.key().toStdString(), *tomlValue);
+                    }
+                }
+                return tbl;
+            }
+            case QJsonValue::Null:
+            case QJsonValue::Undefined:
+            default:
+                return std::make_unique<toml::value<std::string>>(std::string{});
+            }
+        };
+
+        // 转换JSON对象为TOML表
+        auto newTomlNode = jsonToToml(QJsonValue(jsonObj));
+        if (!newTomlNode || !newTomlNode->is_table()) {
+            qCritical() << "JSON转换为TOML失败";
+            return false;
+        }
+
+        *table = *newTomlNode->as_table();
+        return true;
+
+    } catch (const std::exception &e) {
+        qCritical() << "将JSON字符串转化为Toml格式失败:" << e.what();
+        return false;
+    }
+}
+
+/**
+ * @brief JSON文件 转换为 TOML
+ * @param filePath JSON文件路径
+ * @param table 导出的table表
+ * @return 操作是否成功
+ */
+bool Config::JsonFileToToml(const std::string &filePath, toml::table *table) {
+    try {
+        if (filePath.empty()) {
+            qWarning() << "文件路径为空";
+            return false;
+        }
+
+        if (!std::filesystem::exists(filePath)) {
+            qCritical() << "JSON文件不存在:" << filePath;
+            return false;
+        }
+
+        // 读取文件内容
+        std::ifstream file(filePath);
+        if (!file.is_open()) {
+            qCritical() << "无法打开JSON文件:" << filePath;
+            return false;
+        }
+
+        std::string jsonContent((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+        file.close();
+
+        if (jsonContent.empty()) {
+            qWarning() << "JSON文件内容为空:" << filePath;
+            return false;
+        }
+
+        // 调用字符串导入方法
+        bool result = JsonToToml(jsonContent, table);
+        if (result) {
+            qInfo() << "成功将JSON文件转化为Toml格式:" << filePath;
+        }
+        return result;
+
+    } catch (const std::exception &e) {
+        qCritical() << "从JSON文件转化为Toml格式失败:" << e.what();
         return false;
     }
 }

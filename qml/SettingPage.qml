@@ -566,7 +566,7 @@ Page {
                 var filePath = selectedFile.toString().replace("file:///", "");
 
                 // 使用新的自动解决方法：先导入无冲突项目，返回冲突项目列表
-                var conflicts = todoManager.importTodosWithAutoResolution(filePath);
+                var conflicts = todoManager.importTodosFromJson(filePath);
 
                 if (conflicts.length > 0) {
                     // 有冲突，显示冲突处理对话框
