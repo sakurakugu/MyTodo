@@ -27,6 +27,7 @@
 #endif
 // 自定义头文件
 #include "cpp/foundation/logger.h"
+#include "cpp/foundation/network_request.h"
 #include "cpp/global_state.h"
 #include "cpp/setting.h"
 #include "cpp/todos/category/category_manager.h"
@@ -93,8 +94,9 @@ int main(int argc, char *argv[]) {
 
     qInfo() << "日志系统初始化完成，日志文件路径:" << setting.getLogFilePath();
     UserAuth &userAuth = UserAuth::GetInstance();     // 获取UserAuth实例
-    TodoSyncServer todoSyncServer;                    // 创建TodoSyncServer实例
-    CategorySyncServer categorySyncServer;            // 创建CategorySyncServer实例
+    NetworkRequest &networkRequest = NetworkRequest::GetInstance(); // 获取NetworkRequest实例
+    TodoSyncServer todoSyncServer(&networkRequest, &setting);                    // 创建TodoSyncServer实例
+    CategorySyncServer categorySyncServer(&networkRequest, &setting);            // 创建CategorySyncServer实例
     CategoryManager categoryManager(&categorySyncServer, setting, userAuth); // 创建CategoryManager实例
     TodoManager todoManager(&todoSyncServer, userAuth); // 创建TodoManager实例
     GlobalState globalState;                          // 创建GlobalState实例

@@ -75,7 +75,7 @@ TodoManager::TodoManager( TodoSyncServer *syncManager, UserAuth &userAuth, QObje
     });
 
     // 创建类别同步服务器
-    CategorySyncServer *categorySyncServer = new CategorySyncServer(this);
+    CategorySyncServer *categorySyncServer = new CategorySyncServer(&m_networkRequest, &m_setting, this);
     
     // 创建待办事项类别管理器
     m_categoryManager = new CategoryManager(categorySyncServer, m_setting, m_userAuth, this);

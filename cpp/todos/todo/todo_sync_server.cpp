@@ -22,136 +22,66 @@
 #include <QTimer>
 #include <QUuid>
 
-TodoSyncServer::TodoSyncServer(QObject *parent)
-    : QObject(parent),                                 //
-      m_networkRequest(NetworkRequest::GetInstance()), //
-      m_setting(Setting::GetInstance()),               //
-      m_autoSyncTimer(new QTimer(this)),               //
-      m_isAutoSyncEnabled(false),                      //
-      m_isSyncing(false),                              //
-      m_autoSyncInterval(30),                          //
-      m_currentSyncDirection(Bidirectional),           //
+TodoSyncServer::TodoSyncServer(NetworkRequest *networkRequest, Setting *setting, QObject *parent)
+    : BaseSyncServer(networkRequest, setting, parent), //
       m_currentPushIndex(0),                           //
       m_currentBatchIndex(0),                          //
-      m_totalBatches(0) {
-
-    // 初始化服务器配置
-    initializeServerConfig();
-
-    // 连接网络请求信号
-    connect(&m_networkRequest, &NetworkRequest::requestCompleted, this, &TodoSyncServer::onNetworkRequestCompleted);
-    connect(&m_networkRequest, &NetworkRequest::requestFailed, this, &TodoSyncServer::onNetworkRequestFailed);
-
-    // 连接设置变化信号
-    connect(&m_setting, &Setting::baseUrlChanged, this, &TodoSyncServer::onBaseUrlChanged);
-
-    // 配置自动同步定时器
-    m_autoSyncTimer->setSingleShot(false);
-    connect(m_autoSyncTimer, &QTimer::timeout, this, &TodoSyncServer::onAutoSyncTimer);
-
-    // 从设置中恢复状态
-    m_isAutoSyncEnabled = m_setting.get(QStringLiteral("sync/autoSyncEnabled"), false).toBool();
-    m_autoSyncInterval = m_setting.get(QStringLiteral("sync/autoSyncInterval"), 30).toInt();
-    m_lastSyncTime = m_setting.get(QStringLiteral("sync/lastSyncTime"), QString()).toString();
-
-    // 如果启用了自动同步，启动定时器
-    if (m_isAutoSyncEnabled) {
-        startAutoSyncTimer();
-    }
+      m_totalBatches(0)                                //
+{
+    // 设置待办事项特有的API端点
+    m_apiEndpoint = m_setting
+                        .get(QStringLiteral("server/todoApiEndpoint"),
+                             QString::fromStdString(std::string{DefaultValues::todoApiEndpoint}))
+                        .toString();
 }
 
 TodoSyncServer::~TodoSyncServer() {
-    // 保存当前状态到设置
-    m_setting.save(QStringLiteral("sync/autoSyncEnabled"), m_isAutoSyncEnabled);
-    m_setting.save(QStringLiteral("sync/autoSyncInterval"), m_autoSyncInterval);
-    m_setting.save(QStringLiteral("sync/lastSyncTime"), m_lastSyncTime);
-
-    qDebug() << "TodoSyncServer 已销毁";
 }
 
-// 属性访问器实现
-bool TodoSyncServer::isAutoSyncEnabled() const {
-    return m_isAutoSyncEnabled;
-}
-
-void TodoSyncServer::setAutoSyncEnabled(bool enabled) {
-    if (m_isAutoSyncEnabled != enabled) {
-        m_isAutoSyncEnabled = enabled;
-        m_setting.save(QStringLiteral("sync/autoSyncEnabled"), enabled);
-
-        if (enabled) {
-            startAutoSyncTimer();
-        } else {
-            stopAutoSyncTimer();
-        }
-
-        emit autoSyncEnabledChanged();
-        qDebug() << "自动同步" << (enabled ? "已启用" : "已禁用");
-    }
-}
-
-bool TodoSyncServer::isSyncing() const {
-    return m_isSyncing;
-}
-
-QString TodoSyncServer::lastSyncTime() const {
-    return m_lastSyncTime;
-}
-
-int TodoSyncServer::autoSyncInterval() const {
-    return m_autoSyncInterval;
-}
-
-void TodoSyncServer::setAutoSyncInterval(int minutes) {
-    if (m_autoSyncInterval != minutes && minutes > 0) {
-        m_autoSyncInterval = minutes;
-        m_setting.save(QStringLiteral("sync/autoSyncInterval"), minutes);
-
-        // 如果自动同步已启用，重新启动定时器
-        if (m_isAutoSyncEnabled) {
-            startAutoSyncTimer();
-        }
-
-        emit autoSyncIntervalChanged();
-        qDebug() << "自动同步间隔已设置为" << minutes << "分钟";
-    }
-}
-
-// 同步操作实现
+// 同步操作实现 - 重写基类方法
 void TodoSyncServer::syncWithServer(SyncDirection direction) {
     if (m_isSyncing) {
-        qDebug() << "同步操作正在进行中，忽略新的同步请求";
+        qDebug() << "同步已在进行中，忽略新的同步请求";
         return;
     }
 
-    if (!canPerformSync()) {
-        // 发出同步完成信号，通知UI重置状态
-        emit syncCompleted(AuthError, "无法同步：未登录");
-        return;
-    }
-
+    m_isSyncing = true;
     m_currentSyncDirection = direction;
+    emit syncingChanged();
+    emit syncStarted();
+
     performSync(direction);
 }
 
 void TodoSyncServer::cancelSync() {
-    if (m_isSyncing) {
-        m_isSyncing = false;
-        emit syncingChanged();
-        emit syncCompleted(NetworkError, "同步已取消");
-        qDebug() << "同步操作已取消";
+    if (!m_isSyncing) {
+        qDebug() << "没有正在进行的同步操作可以取消";
+        return;
     }
+
+    qDebug() << "取消待办事项同步操作";
+    
+    // 调用基类方法
+    BaseSyncServer::cancelSync();
+    
+    // 清理待办事项特有的状态
+    m_pendingUnsyncedItems.clear();
+    m_allUnsyncedItems.clear();
+    m_currentPushIndex = 0;
+    m_currentBatchIndex = 0;
+    m_totalBatches = 0;
 }
 
 void TodoSyncServer::resetSyncState() {
-    m_isSyncing = false;
-    m_pendingUnsyncedItems.clear();
-    m_lastSyncTime.clear();
-    m_setting.save(QStringLiteral("sync/lastSyncTime"), QString());
+    // 调用基类方法
+    BaseSyncServer::resetSyncState();
 
-    emit syncingChanged();
-    emit lastSyncTimeChanged();
-    qDebug() << "同步状态已重置";
+    // 清理待办事项特有的状态
+    m_pendingUnsyncedItems.clear();
+    m_currentPushIndex = 0;
+    m_currentBatchIndex = 0;
+    m_totalBatches = 0;
+    m_allUnsyncedItems.clear();
 }
 
 // 数据操作接口实现
@@ -164,7 +94,7 @@ QList<TodoItem *> TodoSyncServer::getUnsyncedItems() const {
     QList<TodoItem *> unsyncedItems;
     int totalItems = 0;
     int syncedItems = 0;
-    
+
     for (TodoItem *item : m_todoItems) {
         totalItems++;
         if (!item->synced()) {
@@ -173,17 +103,22 @@ QList<TodoItem *> TodoSyncServer::getUnsyncedItems() const {
             syncedItems++;
         }
     }
-    
+
     qDebug() << QString("同步状态检查: 总计=%1, 已同步=%2, 未同步=%3")
-                .arg(totalItems).arg(syncedItems).arg(unsyncedItems.size());
-    
+                    .arg(totalItems)
+                    .arg(syncedItems)
+                    .arg(unsyncedItems.size());
+
     // 打印前5个未同步项目的详细信息
     for (int i = 0; i < qMin(5, unsyncedItems.size()); i++) {
         TodoItem *item = unsyncedItems[i];
         qDebug() << QString("未同步项目 %1: ID=%2, 标题='%3', synced=%4")
-                    .arg(i+1).arg(item->id()).arg(item->title()).arg(item->synced());
+                        .arg(i + 1)
+                        .arg(item->id())
+                        .arg(item->title())
+                        .arg(item->synced());
     }
-    
+
     return unsyncedItems;
 }
 
@@ -199,44 +134,9 @@ void TodoSyncServer::markItemAsUnsynced(TodoItem *item) {
     }
 }
 
-// 配置管理实现
-void TodoSyncServer::updateServerConfig(const QString &baseUrl, const QString &apiEndpoint) {
-    bool changed = false;
-
-    if (m_serverBaseUrl != baseUrl) {
-        m_serverBaseUrl = baseUrl;
-        m_setting.save(QStringLiteral("server/baseUrl"), baseUrl);
-        changed = true;
-    }
-
-    if (m_todoApiEndpoint != apiEndpoint) {
-        m_todoApiEndpoint = apiEndpoint;
-        m_setting.save(QStringLiteral("server/todoApiEndpoint"), apiEndpoint);
-        changed = true;
-    }
-
-    if (changed) {
-        emit serverConfigChanged();
-        qDebug() << "服务器配置已更新:";
-        qDebug() << "  基础URL:" << m_serverBaseUrl;
-        qDebug() << "  待办事项API端点:" << m_todoApiEndpoint;
-    }
-}
-
-QString TodoSyncServer::getServerBaseUrl() const {
-    return m_serverBaseUrl;
-}
-
-QString TodoSyncServer::getApiEndpoint() const {
-    return m_todoApiEndpoint;
-}
-
-// 网络请求回调处理
+// 网络请求回调处理 - 重写基类方法
 void TodoSyncServer::onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response) {
     switch (type) {
-    case NetworkRequest::RequestType::Sync:
-        handleSyncSuccess(response);
-        break;
     case NetworkRequest::RequestType::FetchTodos:
         handleFetchTodosSuccess(response);
         break;
@@ -244,86 +144,27 @@ void TodoSyncServer::onNetworkRequestCompleted(NetworkRequest::RequestType type,
         handlePushChangesSuccess(response);
         break;
     default:
-        // 其他类型的请求不在同步管理器的处理范围内
+        // 调用基类的默认处理
+        BaseSyncServer::onNetworkRequestCompleted(type, response);
         break;
     }
 }
 
 void TodoSyncServer::onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
                                             const QString &message) {
-    QString typeStr;
-    SyncResult result = NetworkError;
-
-    switch (type) {
-    case NetworkRequest::RequestType::Sync:
-        typeStr = "同步";
-        break;
-    case NetworkRequest::RequestType::FetchTodos:
-        typeStr = "获取待办事项";
-        break;
-    case NetworkRequest::RequestType::PushTodos:
-        typeStr = "推送更改";
+    if (type == NetworkRequest::RequestType::PushTodos) {
         qInfo() << "项目推送失败！错误类型:" << static_cast<int>(error);
         qInfo() << "失败详情:" << message;
         qInfo() << "当前推送索引:" << m_currentPushIndex;
-        break;
-    default:
-        // 其他类型的请求不在同步管理器的处理范围内
-        qInfo() << "未知请求类型失败:" << static_cast<int>(type) << "错误:" << message;
-        return;
     }
 
-    // 根据错误类型确定同步结果
-    switch (error) {
-    case NetworkRequest::NetworkError::AuthenticationError:
-        result = AuthError;
-        qInfo() << "认证错误 - 用户可能需要重新登录";
-        break;
-    case NetworkRequest::NetworkError::UnknownError:
-        result = NetworkError;
-        qInfo() << "网络错误 - 请检查网络连接和服务器状态";
-        break;
-    default:
-        result = UnknownError;
-        qInfo() << "未知错误类型:" << static_cast<int>(error);
-        break;
-    }
-
-    qInfo() << "同步状态更新: isSyncing = false";
-    m_isSyncing = false;
-    emit syncingChanged();
-    emit syncCompleted(result, message);
-
-    qWarning() << typeStr << "失败:" << message;
-    qDebug() << "错误处理完成，同步结果:" << static_cast<int>(result);
+    // 调用基类的默认处理
+    BaseSyncServer::onNetworkRequestFailed(type, error, message);
 }
 
-void TodoSyncServer::onAutoSyncTimer() {
-    if (canPerformSync() && m_isAutoSyncEnabled && !m_isSyncing) {
-        qDebug() << "自动同步定时器触发，开始同步";
-        syncWithServer(Bidirectional);
-    }
-}
-
-void TodoSyncServer::onBaseUrlChanged(const QString &newBaseUrl) {
-    qDebug() << "服务器基础URL已更新:" << m_serverBaseUrl << "->" << newBaseUrl;
-    m_serverBaseUrl = newBaseUrl;
-    emit serverConfigChanged();
-
-    // 如果当前启用自动同步且已登录，可以选择重新同步数据
-    if (m_isAutoSyncEnabled && UserAuth::GetInstance().isLoggedIn()) {
-        // 立即同步
-        syncWithServer(Bidirectional);
-    }
-}
-
-// 同步操作实现
+// 同步操作实现 - 重写基类虚函数
 void TodoSyncServer::performSync(SyncDirection direction) {
     qDebug() << "开始同步待办事项，方向:" << direction;
-
-    m_isSyncing = true;
-    emit syncingChanged();
-    emit syncStarted();
 
     // 根据同步方向执行不同的操作
     switch (direction) {
@@ -355,7 +196,7 @@ void TodoSyncServer::fetchTodosFromServer() {
 
     try {
         NetworkRequest::RequestConfig config;
-        config.url = getApiUrl(m_todoApiEndpoint);
+        config.url = getApiUrl(m_apiEndpoint);
         config.method = "GET"; // 明确指定使用GET方法
         config.requiresAuth = true;
 
@@ -377,7 +218,7 @@ void TodoSyncServer::fetchTodosFromServer() {
 
 void TodoSyncServer::pushLocalChangesToServer() {
     qInfo() << "开始推送本地更改到服务器...";
-    
+
     if (!canPerformSync()) {
         qInfo() << "无法执行同步操作 - 检查网络连接、用户认证和服务器配置";
         m_isSyncing = false;
@@ -458,7 +299,7 @@ void TodoSyncServer::pushBatchToServer(const QList<TodoItem *> &batch) {
         }
 
         NetworkRequest::RequestConfig config;
-        config.url = getApiUrl(m_todoApiEndpoint);
+        config.url = getApiUrl(m_apiEndpoint);
         config.method = "POST"; // 批量推送使用POST方法
         config.requiresAuth = true;
         config.data["todos"] = jsonArray;
@@ -562,15 +403,16 @@ void TodoSyncServer::handlePushChangesSuccess(const QJsonObject &response) {
         int created = summary["created"].toInt();
         int updated = summary["updated"].toInt();
         int errors = summary["errors"].toArray().size();
-        
+
         qInfo() << QString("服务器处理结果: 创建=%1, 更新=%2, 错误=%3").arg(created).arg(updated).arg(errors);
-        
+
         // 如果有错误，记录详细信息
         if (errors > 0) {
             QJsonArray errorArray = summary["errors"].toArray();
             for (const auto &errorValue : errorArray) {
                 QJsonObject error = errorValue.toObject();
-                qWarning() << QString("项目 %1 处理失败: %2").arg(error["index"].toInt()).arg(error["error"].toString());
+                qWarning()
+                    << QString("项目 %1 处理失败: %2").arg(error["index"].toInt()).arg(error["error"].toString());
             }
             shouldMarkAsSynced = false;
             qWarning() << "由于服务器处理错误，不标记项目为已同步";
@@ -629,70 +471,7 @@ void TodoSyncServer::handlePushChangesSuccess(const QJsonObject &response) {
     }
 }
 
-// 辅助方法实现
-void TodoSyncServer::initializeServerConfig() {
-    // 从设置中读取服务器配置，如果不存在则使用默认值
-    m_serverBaseUrl =
-        m_setting.get(QStringLiteral("server/baseUrl"), QString::fromStdString(std::string{DefaultValues::baseUrl}))
-            .toString();
-    m_todoApiEndpoint = m_setting
-                            .get(QStringLiteral("server/todoApiEndpoint"),
-                                 QString::fromStdString(std::string{DefaultValues::todoApiEndpoint}))
-                            .toString();
-
-    qDebug() << "服务器配置 - 基础URL:" << m_serverBaseUrl << ", 待办事项API:" << m_todoApiEndpoint;
-}
-
-QString TodoSyncServer::getApiUrl(const QString &endpoint) const {
-    if (m_serverBaseUrl.isEmpty()) {
-        return endpoint;
-    }
-
-    QString baseUrl = m_serverBaseUrl;
-    if (!baseUrl.endsWith('/')) {
-        baseUrl += '/';
-    }
-
-    QString cleanEndpoint = endpoint;
-    if (cleanEndpoint.startsWith('/')) {
-        cleanEndpoint = cleanEndpoint.mid(1);
-    }
-
-    return baseUrl + cleanEndpoint;
-}
-
-void TodoSyncServer::updateLastSyncTime() {
-    m_lastSyncTime = QDateTime::currentDateTime().toString(Qt::ISODate);
-    m_setting.save(QStringLiteral("sync/lastSyncTime"), m_lastSyncTime);
-    emit lastSyncTimeChanged();
-}
-
-bool TodoSyncServer::canPerformSync() const {
-    if (!UserAuth::GetInstance().isLoggedIn()) {
-        qDebug() << "无法同步：未登录";
-        return false;
-    }
-
-    return true;
-}
-
-void TodoSyncServer::startAutoSyncTimer() {
-    if (m_autoSyncTimer->isActive()) {
-        m_autoSyncTimer->stop();
-    }
-
-    int intervalMs = m_autoSyncInterval * 60 * 1000; // 转换为毫秒
-    m_autoSyncTimer->start(intervalMs);
-
-    qDebug() << "自动同步定时器已启动，间隔:" << m_autoSyncInterval << "分钟";
-}
-
-void TodoSyncServer::stopAutoSyncTimer() {
-    if (m_autoSyncTimer->isActive()) {
-        m_autoSyncTimer->stop();
-        qDebug() << "自动同步定时器已停止";
-    }
-}
+// 辅助方法已在基类BaseSyncServer中实现
 
 void TodoSyncServer::pushSingleItem(TodoItem *item) {
     if (!item) {
@@ -705,7 +484,7 @@ void TodoSyncServer::pushSingleItem(TodoItem *item) {
     qInfo() << "开始推送项目到服务器:" << item->title() << "(ID:" << item->id() << ")";
 
     NetworkRequest::RequestConfig config;
-    config.url = getApiUrl(m_todoApiEndpoint);
+    config.url = getApiUrl(m_apiEndpoint);
     config.requiresAuth = true;
 
     // 准备项目数据
@@ -746,14 +525,14 @@ void TodoSyncServer::pushSingleItem(TodoItem *item) {
     qInfo() << "发送请求到API端点:" << config.url;
     qInfo() << "请求方法:" << config.method;
     qInfo() << "项目数据:" << QJsonDocument(itemData).toJson(QJsonDocument::Compact);
-    
+
     m_networkRequest.sendRequest(NetworkRequest::RequestType::PushTodos, config);
     qInfo() << "项目推送请求已发送，等待服务器响应...";
 }
 
 void TodoSyncServer::handleSingleItemPushSuccess() {
     qInfo() << "单个项目推送成功！";
-    
+
     // 标记当前项目为已同步
     if (m_currentPushIndex < m_pendingUnsyncedItems.size()) {
         TodoItem *item = m_pendingUnsyncedItems[m_currentPushIndex];

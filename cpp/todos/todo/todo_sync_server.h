@@ -16,13 +16,9 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QList>
-#include <QObject>
-#include <QString>
-#include <QTimer>
 
-#include "foundation/network_request.h"
+#include "../base_sync_server.h"
 #include "../items/todo_item.h"
-#include "setting.h"
 
 /**
  * @class TodoSyncServer
@@ -59,57 +55,21 @@
  * @note 该类是线程安全的，所有网络操作都在后台线程执行
  * @see TodoItem, NetworkRequest, Setting
  */
-class TodoSyncServer : public QObject {
+class TodoSyncServer : public BaseSyncServer {
     Q_OBJECT
-    Q_PROPERTY(bool isAutoSyncEnabled READ isAutoSyncEnabled WRITE setAutoSyncEnabled NOTIFY autoSyncEnabledChanged)
-    Q_PROPERTY(bool isSyncing READ isSyncing NOTIFY syncingChanged)
-    Q_PROPERTY(QString lastSyncTime READ lastSyncTime NOTIFY lastSyncTimeChanged)
-    Q_PROPERTY(int autoSyncInterval READ autoSyncInterval WRITE setAutoSyncInterval NOTIFY autoSyncIntervalChanged)
 
   public:
-    /**
-     * @enum SyncResult
-     * @brief 同步操作结果枚举
-     */
-    enum SyncResult {
-        Success = 0,       // 同步成功
-        NetworkError = 1,  // 网络错误
-        AuthError = 2,     // 认证错误
-        ConflictError = 3, // 数据冲突
-        UnknownError = 4   // 未知错误
-    };
-    Q_ENUM(SyncResult)
-
-    /**
-     * @enum SyncDirection
-     * @brief 同步方向枚举
-     */
-    enum SyncDirection {
-        Bidirectional = 0, // 双向同步（默认）
-        UploadOnly = 1,    // 仅上传
-        DownloadOnly = 2   // 仅下载
-    };
-    Q_ENUM(SyncDirection)
-
     /**
      * @brief 构造函数
      * @param parent 父对象
      */
-    explicit TodoSyncServer(QObject *parent = nullptr);
+    explicit TodoSyncServer(NetworkRequest *networkRequest, Setting *setting, QObject *parent = nullptr);
     ~TodoSyncServer();
 
-    // 属性访问器
-    Q_INVOKABLE bool isAutoSyncEnabled() const;        // 获取自动同步是否启用
-    Q_INVOKABLE void setAutoSyncEnabled(bool enabled); // 设置自动同步启用状态
-    bool isSyncing() const;                            // 获取当前是否正在同步
-    QString lastSyncTime() const;                      // 获取最后同步时间
-    int autoSyncInterval() const;                      // 获取自动同步间隔（分钟）
-    void setAutoSyncInterval(int minutes);             // 设置自动同步间隔
-
-    // 同步操作
-    Q_INVOKABLE void syncWithServer(SyncDirection direction = Bidirectional); // 与服务器同步
-    Q_INVOKABLE void cancelSync();                                            // 取消当前同步操作
-    Q_INVOKABLE void resetSyncState();                                        // 重置同步状态
+    // 同步操作（重写基类方法）
+    Q_INVOKABLE void syncWithServer(SyncDirection direction = Bidirectional) override; // 与服务器同步
+    Q_INVOKABLE void cancelSync() override;                                            // 取消当前同步操作
+    Q_INVOKABLE void resetSyncState() override;                                        // 重置同步状态
 
     // 数据操作接口
     void setTodoItems(const QList<TodoItem *> &items); // 设置待同步的待办事项列表
@@ -117,40 +77,21 @@ class TodoSyncServer : public QObject {
     void markItemAsSynced(TodoItem *item);             // 标记项目为已同步
     void markItemAsUnsynced(TodoItem *item);           // 标记项目为未同步
 
-    // 配置管理
-    void updateServerConfig(const QString &baseUrl, const QString &apiEndpoint); // 更新服务器配置
-    QString getServerBaseUrl() const;                                            // 获取服务器基础URL
-    QString getApiEndpoint() const;                                              // 获取API端点
-    QString getApiUrl(const QString &endpoint) const;                            // 获取完整API URL
-
   signals:
-    // 同步状态信号
-    void syncStarted();                                                        // 同步开始
-    void syncCompleted(SyncResult result, const QString &message = QString()); // 同步完成
-    void syncProgress(int percentage, const QString &status);                  // 同步进度
-    void syncingChanged();                                                     // 同步状态变化
-
-    // 数据更新信号
+    // 数据更新信号（待办事项特有）
     void todosUpdatedFromServer(const QJsonArray &todosArray);  // 从服务器更新的待办事项
     void localChangesUploaded(const QList<TodoItem *> &items);  // 本地更改已上传
     void syncConflictDetected(const QJsonArray &conflictItems); // 检测到同步冲突
 
-    // 配置和状态信号
-    void autoSyncEnabledChanged();  // 自动同步启用状态变化
-    void lastSyncTimeChanged();     // 最后同步时间变化
-    void autoSyncIntervalChanged(); // 自动同步间隔变化
-    void serverConfigChanged();     // 服务器配置变化
-
-  private slots:
-    void onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response); // 网络请求完成
+  protected slots:
+    void onNetworkRequestCompleted(NetworkRequest::RequestType type,
+                                   const QJsonObject &response) override; // 网络请求完成
     void onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
-                                const QString &message); // 网络请求失败
-    void onAutoSyncTimer();                              // 自动同步定时器触发
-    void onBaseUrlChanged(const QString &newBaseUrl);    // 服务器URL变化
+                                const QString &message) override; // 网络请求失败
 
-  private:
-    // 同步操作实现
-    void performSync(SyncDirection direction);                  // 执行同步操作
+  protected:
+    // 同步操作实现（重写基类方法）
+    void performSync(SyncDirection direction) override;         // 执行同步操作
     void fetchTodosFromServer();                                // 从服务器获取待办事项
     void pushLocalChangesToServer();                            // 推送本地更改到服务器
     void pushSingleItem(TodoItem *item);                        // 推送单个待办事项
@@ -162,27 +103,8 @@ class TodoSyncServer : public QObject {
     void pushBatchToServer(const QList<TodoItem *> &batch);     // 推送批次到服务器
     void pushNextBatch();                                       // 推送下一个批次
 
-    // 辅助方法
-    void initializeServerConfig(); // 初始化服务器配置
-    void updateLastSyncTime();     // 更新最后同步时间
-    bool canPerformSync() const;   // 检查是否可以执行同步
-    void startAutoSyncTimer();     // 启动自动同步定时器
-    void stopAutoSyncTimer();      // 停止自动同步定时器
-
-    // 成员变量
-    NetworkRequest &m_networkRequest; ///< 网络请求管理器
-    Setting &m_setting;               ///< 应用设置
-    QTimer *m_autoSyncTimer;          ///< 自动同步定时器
-
-    // 同步状态
-    bool m_isAutoSyncEnabled;             ///< 自动同步是否启用
-    bool m_isSyncing;                     ///< 当前是否正在同步
-    QString m_lastSyncTime;               ///< 最后同步时间
-    int m_autoSyncInterval;               ///< 自动同步间隔（分钟）
-    SyncDirection m_currentSyncDirection; ///< 当前同步方向
-
-    // 服务器配置
-    QString m_serverBaseUrl;   ///< 服务器基础URL
+  private:
+    // 服务器配置（待办事项特有）
     QString m_todoApiEndpoint; ///< 待办事项API端点
 
     // 数据管理

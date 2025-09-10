@@ -5,7 +5,7 @@
  * 该文件实现了CategorySyncServer类的所有方法，负责类别的服务器同步功能。
  *
  * @author Sakurakugu
- * @date 2025-01-09 00:00:00(UTC+8) 周四
+ * @date 2025-09-10 22:00:00(UTC+8) 周三
  * @version 0.4.0
  */
 
@@ -21,100 +21,27 @@
 #include <QTimer>
 #include <QUuid>
 
-CategorySyncServer::CategorySyncServer(QObject *parent)
-    : QObject(parent),                                 //
-      m_networkRequest(NetworkRequest::GetInstance()), //
-      m_setting(Setting::GetInstance()),               //
-      m_autoSyncTimer(new QTimer(this)),               //
-      m_isAutoSyncEnabled(false),                      //
-      m_isSyncing(false),                              //
-      m_autoSyncInterval(30),                          //
-      m_currentSyncDirection(Bidirectional),           //
+CategorySyncServer::CategorySyncServer(NetworkRequest *networkRequest, Setting *setting, QObject *parent)
+    : BaseSyncServer(networkRequest, setting, parent), //
       m_currentPushIndex(0),                           //
       m_currentBatchIndex(0),                          //
-      m_totalBatches(0) {
+      m_totalBatches(0)                                //
+{
 
-    // 初始化服务器配置
-    initializeServerConfig();
+    // 设置类别特有的API端点
+    m_apiEndpoint = m_setting
+                        .get("server/categoriesApiEndpoint",
+                             QString::fromStdString(std::string{DefaultValues::categoriesApiEndpoint}))
+                        .toString();
 
-    // 连接网络请求信号
-    connect(&m_networkRequest, &NetworkRequest::requestCompleted, this, &CategorySyncServer::onNetworkRequestCompleted);
-    connect(&m_networkRequest, &NetworkRequest::requestFailed, this, &CategorySyncServer::onNetworkRequestFailed);
-
-    // 连接设置变化信号
-    connect(&m_setting, &Setting::baseUrlChanged, this, &CategorySyncServer::onBaseUrlChanged);
-
-    // 配置自动同步定时器
-    m_autoSyncTimer->setSingleShot(false);
-    connect(m_autoSyncTimer, &QTimer::timeout, this, &CategorySyncServer::onAutoSyncTimer);
-
-    // 从设置中恢复状态
-    m_isAutoSyncEnabled = m_setting.get(QStringLiteral("categorySync/autoSyncEnabled"), false).toBool();
-    m_autoSyncInterval = m_setting.get(QStringLiteral("categorySync/autoSyncInterval"), 30).toInt();
-    m_lastSyncTime = m_setting.get(QStringLiteral("categorySync/lastSyncTime"), QString()).toString();
-
-    // 如果启用了自动同步，启动定时器
-    if (m_isAutoSyncEnabled) {
-        startAutoSyncTimer();
-    }
+    qDebug() << "CategorySyncServer 已初始化，API端点:" << m_apiEndpoint;
 }
 
 CategorySyncServer::~CategorySyncServer() {
-    // 保存当前状态到设置
-    m_setting.save(QStringLiteral("categorySync/autoSyncEnabled"), m_isAutoSyncEnabled);
-    m_setting.save(QStringLiteral("categorySync/autoSyncInterval"), m_autoSyncInterval);
-    m_setting.save(QStringLiteral("categorySync/lastSyncTime"), m_lastSyncTime);
-
     qDebug() << "CategorySyncServer 已销毁";
 }
 
-// 属性访问器实现
-bool CategorySyncServer::isAutoSyncEnabled() const {
-    return m_isAutoSyncEnabled;
-}
-
-void CategorySyncServer::setAutoSyncEnabled(bool enabled) {
-    if (m_isAutoSyncEnabled != enabled) {
-        m_isAutoSyncEnabled = enabled;
-        m_setting.save(QStringLiteral("categorySync/autoSyncEnabled"), enabled);
-
-        if (enabled) {
-            startAutoSyncTimer();
-        } else {
-            stopAutoSyncTimer();
-        }
-
-        emit autoSyncEnabledChanged();
-        qDebug() << "类别自动同步" << (enabled ? "已启用" : "已禁用");
-    }
-}
-
-bool CategorySyncServer::isSyncing() const {
-    return m_isSyncing;
-}
-
-QString CategorySyncServer::lastSyncTime() const {
-    return m_lastSyncTime;
-}
-
-int CategorySyncServer::autoSyncInterval() const {
-    return m_autoSyncInterval;
-}
-
-void CategorySyncServer::setAutoSyncInterval(int minutes) {
-    if (m_autoSyncInterval != minutes && minutes > 0) {
-        m_autoSyncInterval = minutes;
-        m_setting.save(QStringLiteral("categorySync/autoSyncInterval"), minutes);
-
-        // 如果自动同步已启用，重新启动定时器
-        if (m_isAutoSyncEnabled) {
-            startAutoSyncTimer();
-        }
-
-        emit autoSyncIntervalChanged();
-        qDebug() << "类别自动同步间隔已设置为" << minutes << "分钟";
-    }
-}
+// 属性访问器已在基类中实现
 
 // 同步操作实现
 void CategorySyncServer::syncWithServer(SyncDirection direction) {
@@ -152,22 +79,23 @@ void CategorySyncServer::pushCategories() {
 }
 
 void CategorySyncServer::cancelSync() {
-    if (m_isSyncing) {
-        m_isSyncing = false;
-        emit syncingChanged();
-        emit syncCompleted(NetworkError, "同步已取消");
-        qDebug() << "类别同步操作已取消";
+    if (!m_isSyncing) {
+        qDebug() << "没有正在进行的类别同步操作可以取消";
+        return;
     }
+
+    qDebug() << "取消类别同步操作";
+    
+    // 调用基类方法
+    BaseSyncServer::cancelSync();
+    
+    // 清理类别特有的状态
+    m_pendingUnsyncedItems.clear();
 }
 
 void CategorySyncServer::resetSyncState() {
-    m_isSyncing = false;
+    BaseSyncServer::resetSyncState();
     m_pendingUnsyncedItems.clear();
-    m_lastSyncTime.clear();
-    m_setting.save(QStringLiteral("categorySync/lastSyncTime"), QString());
-
-    emit syncingChanged();
-    emit lastSyncTimeChanged();
     qDebug() << "类别同步状态已重置";
 }
 
@@ -188,7 +116,7 @@ void CategorySyncServer::createCategoryWithServer(const QString &name) {
 
     try {
         NetworkRequest::RequestConfig config;
-        config.url = getApiUrl(m_categoriesApiEndpoint);
+        config.url = getApiUrl(m_apiEndpoint);
         config.method = "POST";
         config.requiresAuth = true;
         config.data["name"] = name;
@@ -217,7 +145,7 @@ void CategorySyncServer::updateCategoryWithServer(const QString &name, const QSt
 
     try {
         NetworkRequest::RequestConfig config;
-        config.url = getApiUrl(m_categoriesApiEndpoint);
+        config.url = getApiUrl(m_apiEndpoint);
         config.method = "PATCH";
         config.requiresAuth = true;
         config.data["old_name"] = name;
@@ -241,7 +169,7 @@ void CategorySyncServer::deleteCategoryWithServer(const QString &name) {
 
     try {
         NetworkRequest::RequestConfig config;
-        config.url = getApiUrl(m_categoriesApiEndpoint);
+        config.url = getApiUrl(m_apiEndpoint);
         config.method = "DELETE";
         config.requiresAuth = true;
         config.data["name"] = name;
@@ -266,7 +194,7 @@ std::vector<CategorieItem *> CategorySyncServer::getUnsyncedItems() const {
     std::vector<CategorieItem *> unsyncedItems;
     int totalItems = 0;
     int syncedItems = 0;
-    
+
     for (CategorieItem *item : m_categoryItems) {
         totalItems++;
         if (!item->synced()) {
@@ -275,10 +203,12 @@ std::vector<CategorieItem *> CategorySyncServer::getUnsyncedItems() const {
             syncedItems++;
         }
     }
-    
+
     qDebug() << QString("类别同步状态检查: 总计=%1, 已同步=%2, 未同步=%3")
-                .arg(totalItems).arg(syncedItems).arg(unsyncedItems.size());
-    
+                    .arg(totalItems)
+                    .arg(syncedItems)
+                    .arg(unsyncedItems.size());
+
     return unsyncedItems;
 }
 
@@ -292,56 +222,6 @@ void CategorySyncServer::markItemAsUnsynced(CategorieItem *item) {
     if (item) {
         item->setSynced(false);
     }
-}
-
-// 配置管理实现
-void CategorySyncServer::updateServerConfig(const QString &baseUrl, const QString &apiEndpoint) {
-    bool changed = false;
-
-    if (m_serverBaseUrl != baseUrl) {
-        m_serverBaseUrl = baseUrl;
-        m_setting.save(QStringLiteral("server/baseUrl"), baseUrl);
-        changed = true;
-    }
-
-    if (m_categoriesApiEndpoint != apiEndpoint) {
-        m_categoriesApiEndpoint = apiEndpoint;
-        m_setting.save(QStringLiteral("server/categoriesApiEndpoint"), apiEndpoint);
-        changed = true;
-    }
-
-    if (changed) {
-        emit serverConfigChanged();
-        qDebug() << "类别服务器配置已更新:";
-        qDebug() << "  基础URL:" << m_serverBaseUrl;
-        qDebug() << "  类别API端点:" << m_categoriesApiEndpoint;
-    }
-}
-
-QString CategorySyncServer::getServerBaseUrl() const {
-    return m_serverBaseUrl;
-}
-
-QString CategorySyncServer::getApiEndpoint() const {
-    return m_categoriesApiEndpoint;
-}
-
-QString CategorySyncServer::getApiUrl(const QString &endpoint) const {
-    if (m_serverBaseUrl.isEmpty()) {
-        return endpoint;
-    }
-
-    QString baseUrl = m_serverBaseUrl;
-    if (!baseUrl.endsWith('/')) {
-        baseUrl += '/';
-    }
-
-    QString cleanEndpoint = endpoint;
-    if (cleanEndpoint.startsWith('/')) {
-        cleanEndpoint = cleanEndpoint.mid(1);
-    }
-
-    return baseUrl + cleanEndpoint;
 }
 
 // 网络请求回调处理
@@ -360,13 +240,14 @@ void CategorySyncServer::onNetworkRequestCompleted(NetworkRequest::RequestType t
         handleDeleteCategorySuccess(response);
         break;
     default:
-        // 其他类型的请求不在类别同步管理器的处理范围内
+        // 调用基类处理其他类型的请求
+        BaseSyncServer::onNetworkRequestCompleted(type, response);
         break;
     }
 }
 
 void CategorySyncServer::onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
-                                            const QString &message) {
+                                                const QString &message) {
     QString typeStr;
     SyncResult result = NetworkError;
 
@@ -423,24 +304,7 @@ void CategorySyncServer::onNetworkRequestFailed(NetworkRequest::RequestType type
     qDebug() << "错误处理完成，同步结果:" << static_cast<int>(result);
 }
 
-void CategorySyncServer::onAutoSyncTimer() {
-    if (canPerformSync() && m_isAutoSyncEnabled && !m_isSyncing) {
-        qDebug() << "类别自动同步定时器触发，开始同步";
-        syncWithServer(Bidirectional);
-    }
-}
-
-void CategorySyncServer::onBaseUrlChanged(const QString &newBaseUrl) {
-    qDebug() << "服务器基础URL已更新:" << m_serverBaseUrl << "->" << newBaseUrl;
-    m_serverBaseUrl = newBaseUrl;
-    emit serverConfigChanged();
-
-    // 如果当前启用自动同步且已登录，可以选择重新同步数据
-    if (m_isAutoSyncEnabled && UserAuth::GetInstance().isLoggedIn()) {
-        // 立即同步
-        syncWithServer(Bidirectional);
-    }
-}
+// 自动同步定时器和URL变化处理已在基类中实现
 
 // 同步操作实现
 void CategorySyncServer::performSync(SyncDirection direction) {
@@ -480,7 +344,7 @@ void CategorySyncServer::fetchCategoriesFromServer() {
 
     try {
         NetworkRequest::RequestConfig config;
-        config.url = getApiUrl(m_categoriesApiEndpoint);
+        config.url = getApiUrl(m_apiEndpoint);
         config.method = "GET";
         config.requiresAuth = true;
 
@@ -502,7 +366,7 @@ void CategorySyncServer::fetchCategoriesFromServer() {
 
 void CategorySyncServer::pushLocalChangesToServer() {
     qInfo() << "开始推送本地类别更改到服务器...";
-    
+
     if (!canPerformSync()) {
         qInfo() << "无法执行类别同步操作 - 检查网络连接、用户认证和服务器配置";
         m_isSyncing = false;
@@ -553,7 +417,7 @@ void CategorySyncServer::pushBatchToServer(const std::vector<CategorieItem *> &b
         }
 
         NetworkRequest::RequestConfig config;
-        config.url = getApiUrl(m_categoriesApiEndpoint);
+        config.url = getApiUrl(m_apiEndpoint);
         config.method = "POST"; // 批量推送使用POST方法
         config.requiresAuth = true;
         config.data["categories"] = jsonArray;
@@ -605,15 +469,16 @@ void CategorySyncServer::handlePushChangesSuccess(const QJsonObject &response) {
         int created = summary["created"].toInt();
         int updated = summary["updated"].toInt();
         int errors = summary["errors"].toArray().size();
-        
+
         qInfo() << QString("服务器处理结果: 创建=%1, 更新=%2, 错误=%3").arg(created).arg(updated).arg(errors);
-        
+
         // 如果有错误，记录详细信息
         if (errors > 0) {
             QJsonArray errorArray = summary["errors"].toArray();
             for (const auto &errorValue : errorArray) {
                 QJsonObject error = errorValue.toObject();
-                qWarning() << QString("类别 %1 处理失败: %2").arg(error["index"].toInt()).arg(error["error"].toString());
+                qWarning()
+                    << QString("类别 %1 处理失败: %2").arg(error["index"].toInt()).arg(error["error"].toString());
             }
             shouldMarkAsSynced = false;
             qWarning() << "由于服务器处理错误，不标记类别为已同步";
@@ -649,86 +514,41 @@ void CategorySyncServer::handlePushChangesSuccess(const QJsonObject &response) {
 
 void CategorySyncServer::handleCreateCategorySuccess(const QJsonObject &response) {
     qDebug() << "创建类别成功:" << m_currentOperationName;
-    
+
     QString message = "类别创建成功";
     if (response.contains("message")) {
         message = response["message"].toString();
     }
-    
+
     emit categoryCreated(m_currentOperationName, true, message);
     emitOperationCompleted("创建类别", true, message);
 }
 
 void CategorySyncServer::handleUpdateCategorySuccess(const QJsonObject &response) {
     qDebug() << "更新类别成功:" << m_currentOperationName << "->" << m_currentOperationNewName;
-    
+
     QString message = "类别更新成功";
     if (response.contains("message")) {
         message = response["message"].toString();
     }
-    
+
     emit categoryUpdated(m_currentOperationName, m_currentOperationNewName, true, message);
     emitOperationCompleted("更新类别", true, message);
 }
 
 void CategorySyncServer::handleDeleteCategorySuccess(const QJsonObject &response) {
     qDebug() << "删除类别成功:" << m_currentOperationName;
-    
+
     QString message = "类别删除成功";
     if (response.contains("message")) {
         message = response["message"].toString();
     }
-    
+
     emit categoryDeleted(m_currentOperationName, true, message);
     emitOperationCompleted("删除类别", true, message);
 }
 
-// 辅助方法实现
-void CategorySyncServer::initializeServerConfig() {
-    // 从设置中读取服务器配置，如果不存在则使用默认值
-    m_serverBaseUrl =
-        m_setting.get(QStringLiteral("server/baseUrl"), QString::fromStdString(std::string{DefaultValues::baseUrl}))
-            .toString();
-    m_categoriesApiEndpoint = m_setting
-                            .get(QStringLiteral("server/categoriesApiEndpoint"),
-                                 QString::fromStdString(std::string{DefaultValues::categoriesApiEndpoint}))
-                            .toString();
-
-    qDebug() << "类别服务器配置 - 基础URL:" << m_serverBaseUrl << ", 类别API:" << m_categoriesApiEndpoint;
-}
-
-void CategorySyncServer::updateLastSyncTime() {
-    m_lastSyncTime = QDateTime::currentDateTime().toString(Qt::ISODate);
-    m_setting.save(QStringLiteral("categorySync/lastSyncTime"), m_lastSyncTime);
-    emit lastSyncTimeChanged();
-}
-
-bool CategorySyncServer::canPerformSync() const {
-    if (!UserAuth::GetInstance().isLoggedIn()) {
-        qDebug() << "无法同步类别：未登录";
-        return false;
-    }
-
-    return true;
-}
-
-void CategorySyncServer::startAutoSyncTimer() {
-    if (m_autoSyncTimer->isActive()) {
-        m_autoSyncTimer->stop();
-    }
-
-    int intervalMs = m_autoSyncInterval * 60 * 1000; // 转换为毫秒
-    m_autoSyncTimer->start(intervalMs);
-
-    qDebug() << "类别自动同步定时器已启动，间隔:" << m_autoSyncInterval << "分钟";
-}
-
-void CategorySyncServer::stopAutoSyncTimer() {
-    if (m_autoSyncTimer->isActive()) {
-        m_autoSyncTimer->stop();
-        qDebug() << "类别自动同步定时器已停止";
-    }
-}
+// 辅助方法实现（大部分已在基类中实现）
 
 bool CategorySyncServer::isValidCategoryName(const QString &name) const {
     return !name.trimmed().isEmpty() && name.length() <= 50;
