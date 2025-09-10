@@ -153,6 +153,8 @@ set(CORE_SOURCES
     cpp/todos/category/category_manager.cpp
     cpp/todos/category/category_sync_server.cpp
     cpp/todos/category/category_sync_server.h
+    cpp/todos/category/category_data_storage.cpp
+    cpp/todos/category/category_data_storage.h
 
     cpp/todos/base_sync_server.cpp
     cpp/todos/base_sync_server.h

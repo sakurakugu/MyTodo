@@ -11,6 +11,7 @@
 #include "todo_manager.h"
 #include "../category/category_manager.h"
 #include "../category/category_sync_server.h"
+#include "../category/category_data_storage.h"
 #include "foundation/network_request.h"
 #include "global_state.h"
 #include "todo_filter.h"
@@ -77,8 +78,11 @@ TodoManager::TodoManager( TodoSyncServer *syncManager, UserAuth &userAuth, QObje
     // 创建类别同步服务器
     CategorySyncServer *categorySyncServer = new CategorySyncServer(&m_networkRequest, &m_setting, this);
     
+    // 创建类别数据存储器
+    CategoryDataStorage *categoryDataStorage = new CategoryDataStorage(m_setting, this);
+    
     // 创建待办事项类别管理器
-    m_categoryManager = new CategoryManager(categorySyncServer, m_setting, m_userAuth, this);
+    m_categoryManager = new CategoryManager(categorySyncServer, categoryDataStorage, m_setting, m_userAuth, this);
 
     // 通过数据管理器加载本地数据
     m_dataManager->loadFromLocalStorage(m_todos);

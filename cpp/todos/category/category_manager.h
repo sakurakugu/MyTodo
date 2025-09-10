@@ -24,6 +24,7 @@
 #include "../items/categorie_item.h"
 #include "setting.h"
 #include "category_sync_server.h"
+#include "category_data_storage.h"
 #include "user_auth.h"
 
 /**
@@ -79,11 +80,12 @@ class CategoryManager : public QAbstractListModel {
      * 创建CategoryManager实例，初始化网络管理器和同步管理器。
      *
      * @param syncServer 同步服务器指针
+     * @param dataStorage 数据存储管理器指针
      * @param setting 设置管理器引用
      * @param userAuth 用户认证管理器引用
      * @param parent 父对象指针
      */
-    explicit CategoryManager(CategorySyncServer *syncServer, Setting &setting, UserAuth &userAuth, QObject *parent = nullptr);
+    explicit CategoryManager(CategorySyncServer *syncServer, CategoryDataStorage *dataStorage, Setting &setting, UserAuth &userAuth, QObject *parent = nullptr);
 
     /**
      * @brief 析构函数
@@ -104,6 +106,8 @@ class CategoryManager : public QAbstractListModel {
 
     // 属性访问器
     CategorySyncServer *getSyncServer() const { return m_syncServer; } ///< 获取同步服务器实例
+    CategoryDataStorage *getDataStorage() const { return m_dataStorage; } ///< 获取数据存储实例
+
 
     const std::vector<std::unique_ptr<CategorieItem>> &getCategoryItems() const; ///< 获取类别项目列表
     Q_INVOKABLE CategorieItem *findCategoryByName(const QString &name) const;    ///< 根据名称查找类别项目
@@ -113,6 +117,12 @@ class CategoryManager : public QAbstractListModel {
     Q_INVOKABLE CategorieItem *getCategoryAt(int index) const;                   ///< 根据索引获取类别项目
     void addDefaultCategories();                                                 ///< 添加默认类别
     void clearCategories();                                                      ///< 清空所有类别
+    
+    // 数据存储相关方法
+    void loadCategoriesFromStorage();                                            ///< 从存储加载类别
+    void saveCategoriesStorage();                                                ///< 保存类别到存储
+    void importCategories(const QString &filePath, CategoryDataStorage::FileFormat format); ///< 导入类别数据
+    void exportCategories(const QString &filePath, CategoryDataStorage::FileFormat format); ///< 导出类别数据
 
   signals:
     void categoriesChanged();                 ///< 类别列表变化信号
@@ -156,6 +166,7 @@ class CategoryManager : public QAbstractListModel {
     QTimer *m_debounceTimer; ///< 防抖定时器
 
     CategorySyncServer *m_syncServer; ///< 类别同步服务器对象
+    CategoryDataStorage *m_dataStorage; ///< 类别数据存储对象
     Setting &m_setting;               ///< 配置管理
     UserAuth &m_userAuth;             ///< 用户认证管理
 };

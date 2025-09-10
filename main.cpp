@@ -32,6 +32,7 @@
 #include "cpp/setting.h"
 #include "cpp/todos/category/category_manager.h"
 #include "cpp/todos/category/category_sync_server.h"
+#include "cpp/todos/category/category_data_storage.h"
 #include "cpp/todos/todo/todo_filter.h"
 #include "cpp/todos/todo/todo_manager.h"
 #include "cpp/todos/todo/todo_sorter.h"
@@ -97,7 +98,8 @@ int main(int argc, char *argv[]) {
     NetworkRequest &networkRequest = NetworkRequest::GetInstance(); // 获取NetworkRequest实例
     TodoSyncServer todoSyncServer(&networkRequest, &setting);                    // 创建TodoSyncServer实例
     CategorySyncServer categorySyncServer(&networkRequest, &setting);            // 创建CategorySyncServer实例
-    CategoryManager categoryManager(&categorySyncServer, setting, userAuth); // 创建CategoryManager实例
+    CategoryDataStorage categoryDataStorage(setting);                            // 创建CategoryDataStorage实例
+    CategoryManager categoryManager(&categorySyncServer, &categoryDataStorage, setting, userAuth); // 创建CategoryManager实例
     TodoManager todoManager(&todoSyncServer, userAuth); // 创建TodoManager实例
     GlobalState globalState;                          // 创建GlobalState实例
 
