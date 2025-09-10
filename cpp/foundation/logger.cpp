@@ -11,20 +11,11 @@
 #include "version.h"
 
 #include <QCoreApplication>
-#include <QDateTime>
-#include <QDir>
 #include <QFileInfo>
-
-#include <algorithm>
-#include <array>
-#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <mutex>
-#include <qstandardpaths.h>
-#include <shared_mutex>
-#include <string_view>
 
 Logger::Logger(QObject *parent) noexcept
     : QObject(parent),                    // 初始化父对象

@@ -10,6 +10,7 @@
  */
 #include "todo_manager.h"
 #include "../category/category_manager.h"
+#include "../category/category_sync_server.h"
 #include "foundation/network_request.h"
 #include "global_state.h"
 #include "todo_filter.h"
@@ -27,13 +28,14 @@
 #include <QProcess>
 #include <QUuid>
 
-TodoManager::TodoManager( TodoSyncServer *syncManager, QObject *parent)
+TodoManager::TodoManager( TodoSyncServer *syncManager, UserAuth &userAuth, QObject *parent)
     : QAbstractListModel(parent),                      //
       m_filterCacheDirty(true),                        //
       m_networkRequest(NetworkRequest::GetInstance()), //
       m_setting(Setting::GetInstance()),               //
       m_isAutoSync(false),                             //
-      m_syncManager(syncManager)                       //
+      m_syncManager(syncManager),                      //
+      m_userAuth(userAuth)                             //
 {
 
     // 初始化默认服务器配置
@@ -68,12 +70,15 @@ TodoManager::TodoManager( TodoSyncServer *syncManager, QObject *parent)
     connect(&UserAuth::GetInstance(), &UserAuth::loginSuccessful, this, [this](const QString &username) {
         Q_UNUSED(username)
         // 登录成功后立即获取类别列表
-        m_categoryManager->fetchCategories();
+        // CategorySyncServer 会自动处理类别同步
         syncWithServer();
     });
 
+    // 创建类别同步服务器
+    CategorySyncServer *categorySyncServer = new CategorySyncServer(this);
+    
     // 创建待办事项类别管理器
-    m_categoryManager = new CategoryManager(m_syncManager, this);
+    m_categoryManager = new CategoryManager(categorySyncServer, m_setting, m_userAuth, this);
 
     // 通过数据管理器加载本地数据
     m_dataManager->loadFromLocalStorage(m_todos);
@@ -85,9 +90,9 @@ TodoManager::TodoManager( TodoSyncServer *syncManager, QObject *parent)
     // 设置待办事项数据到同步管理器
     updateSyncManagerData();
 
-    // 如果已登录，获取类别列表
+    // 如果已登录，CategorySyncServer 会自动处理类别同步
     if (UserAuth::GetInstance().isLoggedIn()) {
-        m_categoryManager->fetchCategories();
+        // CategorySyncServer 会自动处理类别同步
     }
 }
 

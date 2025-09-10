@@ -30,6 +30,7 @@
 #include "cpp/global_state.h"
 #include "cpp/setting.h"
 #include "cpp/todos/category/category_manager.h"
+#include "cpp/todos/category/category_sync_server.h"
 #include "cpp/todos/todo/todo_filter.h"
 #include "cpp/todos/todo/todo_manager.h"
 #include "cpp/todos/todo/todo_sorter.h"
@@ -93,8 +94,9 @@ int main(int argc, char *argv[]) {
     qInfo() << "日志系统初始化完成，日志文件路径:" << setting.getLogFilePath();
     UserAuth &userAuth = UserAuth::GetInstance();     // 获取UserAuth实例
     TodoSyncServer todoSyncServer;                    // 创建TodoSyncServer实例
-    CategoryManager categoryManager(&todoSyncServer); // 创建CategoryManager实例
-    TodoManager todoManager(&todoSyncServer);         // 创建TodoManager实例
+    CategorySyncServer categorySyncServer;            // 创建CategorySyncServer实例
+    CategoryManager categoryManager(&categorySyncServer, setting, userAuth); // 创建CategoryManager实例
+    TodoManager todoManager(&todoSyncServer, userAuth); // 创建TodoManager实例
     GlobalState globalState;                          // 创建GlobalState实例
 
     // 检查是否通过开机自启动启动

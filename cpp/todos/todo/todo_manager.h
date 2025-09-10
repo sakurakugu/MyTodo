@@ -92,7 +92,7 @@ class TodoManager : public QAbstractListModel {
      *
      * 创建TodoManager实例，初始化网络管理器、设置对象和本地存储。
      */
-    explicit TodoManager(TodoSyncServer *syncManager, QObject *parent = nullptr);
+    explicit TodoManager(TodoSyncServer *syncManager, UserAuth &userAuth, QObject *parent = nullptr);
     ~TodoManager();
 
     // QAbstractListModel 必要的实现方法
@@ -161,6 +161,7 @@ class TodoManager : public QAbstractListModel {
     CategoryManager *m_categoryManager; ///< 类别管理器 - 负责类别相关操作
     TodoFilter *m_filter;               ///< 筛选管理器 - 负责所有筛选相关功能
     TodoSorter *m_sorter;               ///< 排序管理器 - 负责所有排序相关功能
+    UserAuth &m_userAuth;               ///< 用户认证管理器
 
     // 辅助方法
     int generateUniqueId(); ///< 生成唯一的待办事项ID

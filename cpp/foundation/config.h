@@ -11,16 +11,7 @@
  */
 #pragma once
 
-#include <QDebug>
-#include <QDir>
 #include <QObject>
-#include <QStandardPaths>
-#include <QString>
-#include <QStringList>
-#include <QVariant>
-#include <mutex>
-#include <optional>
-#include <string_view>
 #include <toml++/toml.hpp>
 
 class Config : public QObject {

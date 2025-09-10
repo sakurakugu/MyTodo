@@ -21,10 +21,9 @@
 #include <memory>
 #include <vector>
 
-#include "foundation/network_request.h"
 #include "../items/categorie_item.h"
 #include "setting.h"
-#include "../todo/todo_sync_server.h"
+#include "category_sync_server.h"
 #include "user_auth.h"
 
 /**
@@ -79,10 +78,12 @@ class CategoryManager : public QAbstractListModel {
      *
      * 创建CategoryManager实例，初始化网络管理器和同步管理器。
      *
-     * @param syncManager 同步管理器指针
+     * @param syncServer 同步服务器指针
+     * @param setting 设置管理器引用
+     * @param userAuth 用户认证管理器引用
      * @param parent 父对象指针
      */
-    explicit CategoryManager(TodoSyncServer *syncManager, QObject *parent = nullptr);
+    explicit CategoryManager(CategorySyncServer *syncServer, Setting &setting, UserAuth &userAuth, QObject *parent = nullptr);
 
     /**
      * @brief 析构函数
@@ -97,22 +98,12 @@ class CategoryManager : public QAbstractListModel {
 
     // 类别管理相关方法
     Q_INVOKABLE QStringList getCategories() const;                                          ///< 获取类别列表
-    Q_INVOKABLE void fetchCategories();                                                     ///< 从服务器获取类别列表
-    Q_INVOKABLE void pushCategories();                                                      ///< 推送类别列表到服务器
     Q_INVOKABLE void createCategory(const QString &name);                                   ///< 创建新类别
     Q_INVOKABLE void updateCategory(const QString &name, const QString &newName);           ///< 更新类别名称
     Q_INVOKABLE void deleteCategory(const QString &name);                                   ///< 删除类别
-    Q_INVOKABLE void createCategoryWithServer(const QString &name);                         ///< 创建新类别到服务器
-    Q_INVOKABLE void updateCategoryWithServer(const QString &name, const QString &newName); ///< 更新类别名称到服务器
-    Q_INVOKABLE void deleteCategoryWithServer(const QString &name);                         ///< 删除类别到服务器
 
     // 属性访问器
-    bool isLoading() const {
-        return m_isLoading;
-    } ///< 获取加载状态
-    QString lastError() const {
-        return m_lastError;
-    } ///< 获取最后的错误信息
+    CategorySyncServer *getSyncServer() const { return m_syncServer; } ///< 获取同步服务器实例
 
     const std::vector<std::unique_ptr<CategorieItem>> &getCategoryItems() const; ///< 获取类别项目列表
     Q_INVOKABLE CategorieItem *findCategoryByName(const QString &name) const;    ///< 根据名称查找类别项目
@@ -132,18 +123,12 @@ class CategoryManager : public QAbstractListModel {
     void operationCompleted(const QString &operation, bool success, const QString &message); ///< 操作完成信号
 
   public slots:
-    void onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response); ///< 处理网络请求完成
-    void onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
-                                const QString &message); ///< 处理网络请求失败
+    void onCategoriesUpdatedFromServer(const QJsonArray &categoriesArray); ///< 处理从服务器更新的类别数据
 
   private:
     // 辅助方法
-    void handleFetchCategoriesSuccess(const QJsonObject &response);   ///< 处理获取类别列表成功响应
-    void handleCategoryOperationSuccess(const QJsonObject &response); ///< 处理类别操作成功响应
     void updateCategoriesFromJson(const QJsonArray &categoriesArray); ///< 从JSON数组更新类别列表
     bool isValidCategoryName(const QString &name) const;              ///< 验证类别名称
-    void updateServerConfig(const QString &apiEndpoint);              ///< 更新服务器配置
-    bool isCanSync();                                                 ///< 是否可以同步
 
     // 模型相关辅助方法
     QVariant getItemData(const CategorieItem *item, int role) const; ///< 根据角色获取项目数据
@@ -170,8 +155,7 @@ class CategoryManager : public QAbstractListModel {
     QString m_lastError;     ///< 最后的错误信息
     QTimer *m_debounceTimer; ///< 防抖定时器
 
-    NetworkRequest &m_networkRequest; ///< 网络管理器引用
-    TodoSyncServer *m_syncManager;    ///< 同步管理器指针
-    UserAuth &m_userAuth;             ///< 用户认证引用
+    CategorySyncServer *m_syncServer; ///< 类别同步服务器对象
     Setting &m_setting;               ///< 配置管理
+    UserAuth &m_userAuth;             ///< 用户认证管理
 };

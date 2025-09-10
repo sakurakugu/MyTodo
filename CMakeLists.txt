@@ -151,6 +151,8 @@ set(CORE_SOURCES
 
     cpp/todos/category/category_manager.h
     cpp/todos/category/category_manager.cpp
+    cpp/todos/category/category_sync_server.cpp
+    cpp/todos/category/category_sync_server.h
 )
 
 set(NETWORK_SOURCES

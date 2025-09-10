@@ -15,27 +15,11 @@
 
 #include <QCoreApplication>
 #include <QDesktopServices>
-#include <QFileInfo>
+#include <QDir>
 #include <QJsonArray>
-#include <QJsonDocument>
 #include <QJsonObject>
-#include <QJsonValue>
-#include <QProcess>
-#include <QSaveFile>
-#include <QTextStream>
-#include <QTimeZone>
+#include <QStandardPaths>
 #include <QUrl>
-#include <cmath>
-#include <filesystem>
-#include <fstream>
-#include <functional>
-#include <iostream>
-#include <limits>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <system_error>
-#include <vector>
 
 Config::Config(QObject *parent)
     : QObject(parent),        //

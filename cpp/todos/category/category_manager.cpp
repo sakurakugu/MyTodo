@@ -13,24 +13,20 @@
 
 #include "category_manager.h"
 #include "default_value.h"
-#include "user_auth.h"
 #include <QDebug>
 #include <QJsonDocument>
 #include <algorithm>
 
-CategoryManager::CategoryManager(TodoSyncServer *syncManager, QObject *parent)
+CategoryManager::CategoryManager(CategorySyncServer *syncServer, Setting &setting, UserAuth &userAuth, QObject *parent)
     : QAbstractListModel(parent),                      //
-      m_isLoading(false),                              //
       m_debounceTimer(new QTimer(this)),               //
-      m_networkRequest(NetworkRequest::GetInstance()), //
-      m_syncManager(syncManager),                      //
-      m_userAuth(UserAuth::GetInstance()),             //
-      m_setting(Setting::GetInstance())                //
+      m_syncServer(syncServer),                        //
+      m_setting(setting),                              //
+      m_userAuth(userAuth)                             //
 {
 
-    // 连接网络请求信号
-    connect(&m_networkRequest, &NetworkRequest::requestCompleted, this, &CategoryManager::onNetworkRequestCompleted);
-    connect(&m_networkRequest, &NetworkRequest::requestFailed, this, &CategoryManager::onNetworkRequestFailed);
+    // 连接同步服务器信号
+    connect(m_syncServer, &CategorySyncServer::categoriesUpdatedFromServer, this, &CategoryManager::onCategoriesUpdatedFromServer);
 
     // 设置防抖定时器
     m_debounceTimer->setSingleShot(true);
@@ -39,11 +35,7 @@ CategoryManager::CategoryManager(TodoSyncServer *syncManager, QObject *parent)
     // 连接信号槽
     setupConnections(); // 300ms防抖
 
-    // 从配置中加载服务器配置
-    m_categoriesApiEndpoint = m_setting
-                                  .get(QStringLiteral("server/categoriesApiEndpoint"),
-                                       QString::fromStdString(std::string{DefaultValues::categoriesApiEndpoint}))
-                                  .toString();
+
 
     // 添加默认类别
     addDefaultCategories();
@@ -240,38 +232,9 @@ const std::vector<std::unique_ptr<CategorieItem>> &CategoryManager::getCategoryI
     return m_categoryItems;
 }
 
-// 配置管理实现
-void CategoryManager::updateServerConfig(const QString &apiEndpoint) {
-    bool changed = false;
 
-    if (m_categoriesApiEndpoint != apiEndpoint) {
-        m_categoriesApiEndpoint = apiEndpoint;
-        m_setting.save(QStringLiteral("server/categoriesApiEndpoint"), apiEndpoint);
-        changed = true;
-    }
 
-    if (changed) {
-        qDebug() << "服务器配置已更新:";
-        qDebug() << "  待办类别API端点:" << m_categoriesApiEndpoint;
-    }
-}
 
-/**
- * @brief 是否可以同步
- * @return 如果可以同步返回true，否则返回false
- */
-bool CategoryManager::isCanSync() {
-    if (!m_userAuth.isLoggedIn()) {
-        qWarning() << "用户未登录，无法推送类别列表";
-        return false;
-    }
-
-    if (!m_syncManager) {
-        qWarning() << "同步管理器未初始化";
-        return false;
-    }
-    return true;
-}
 
 /**
  * @brief 根据名称查找类别项目
@@ -350,34 +313,9 @@ void CategoryManager::clearCategories() {
     endModelUpdate();
 }
 
-void CategoryManager::fetchCategories() {
 
-    if (!isCanSync()) {
-        return;
-    }
 
-    QJsonObject requestData;
-    requestData["action"] = "fetch";
 
-    NetworkRequest::RequestConfig config;
-    config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
-    config.method = "GET"; // 获取分类使用GET方法
-    config.data = requestData;
-    config.requiresAuth = true;
-
-    qDebug() << "开始获取类别列表...";
-    m_networkRequest.sendRequest(NetworkRequest::FetchCategories, config);
-}
-
-/**
- * @brief 推送类别列表到服务器
- */
-void CategoryManager::pushCategories() {
-
-    if (!isCanSync()) {
-        return;
-    }
-}
 
 void CategoryManager::createCategory(const QString &name) {
     qDebug() << "=== 开始创建类别 ===" << name;
@@ -405,7 +343,10 @@ void CategoryManager::createCategory(const QString &name) {
     emit categoriesChanged();
     emitOperationCompleted("createCategory", true, "类别创建成功");
 
-    createCategoryWithServer(name);
+    // 通过同步服务器创建类别
+    if (m_syncServer) {
+        m_syncServer->createCategoryWithServer(name);
+    }
 }
 
 void CategoryManager::updateCategory(const QString &name, const QString &newName) {
@@ -450,7 +391,10 @@ void CategoryManager::updateCategory(const QString &name, const QString &newName
     emit categoriesChanged();
     emitOperationCompleted("updateCategory", true, "类别更新成功");
 
-    updateCategoryWithServer(name, newName);
+    // 通过同步服务器更新类别
+    if (m_syncServer) {
+        m_syncServer->updateCategoryWithServer(name, newName);
+    }
 }
 
 void CategoryManager::deleteCategory(const QString &name) {
@@ -490,262 +434,32 @@ void CategoryManager::deleteCategory(const QString &name) {
     emit categoriesChanged();
     emitOperationCompleted("deleteCategory", true, "类别删除成功");
 
-    deleteCategoryWithServer(name);
+    // 通过同步服务器删除类别
+    if (m_syncServer) {
+        m_syncServer->deleteCategoryWithServer(name);
+    }
 }
 
-void CategoryManager::createCategoryWithServer(const QString &name) {
 
-    if (!isCanSync()) {
-        return;
-    }
 
-    if (name.trimmed().isEmpty()) {
-        const QString error = "类别名称不能为空";
-        qWarning() << error;
-        emitOperationCompleted("createWithServer", false, error);
-        return;
-    }
 
-    // 检查是否已存在同名类别
-    if (m_categories.contains(name.trimmed())) {
-        const QString error = "类别名称已存在";
-        qWarning() << error;
-        emitOperationCompleted("createWithServer", false, error);
-        return;
-    }
 
-    QJsonObject requestData;
-    requestData["action"] = "create";
-    requestData["name"] = name.trimmed();
 
-    NetworkRequest::RequestConfig config;
-    config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
-    config.method = "POST"; // 创建分类使用POST方法
-    config.data = requestData;
-    config.requiresAuth = true;
-
-    qDebug() << "开始创建类别:" << name.trimmed();
-    m_networkRequest.sendRequest(NetworkRequest::CreateCategory, config);
-}
-
-void CategoryManager::updateCategoryWithServer(const QString &name, const QString &newName) {
-
-    if (!isCanSync()) {
-        return;
-    }
-
-    if (name == "未分类") {
-        const QString error = "不能更新系统默认类别 \"未分类\"";
-        emitOperationCompleted("updateWithServer", false, error);
-        return;
-    }
-
-    // 检查原类别是否存在
-    CategorieItem *existingCategory = findCategoryByName(name);
-    if (!existingCategory) {
-        const QString error = "要更新的类别不存在";
-        qWarning() << error << name;
-        emitOperationCompleted("updateWithServer", false, error);
-        return;
-    }
-
-    // 检查新名称是否与其他类别重复（排除自身）
-    CategorieItem *duplicateCategory = findCategoryByName(newName);
-    if (duplicateCategory && duplicateCategory->id() != existingCategory->id()) {
-        const QString error = "类别名称已存在";
-        qWarning() << error << newName;
-        emitOperationCompleted("updateWithServer", false, error);
-        return;
-    }
-
-    if (newName.trimmed().isEmpty()) {
-        const QString error = "新类别名称不能为空";
-        qWarning() << error;
-        emitOperationCompleted("updateWithServer", false, error);
-        return;
-    }
-
-    QJsonObject requestData;
-    requestData["action"] = "update";
-    requestData["uuid"] = existingCategory->uuid().toString(QUuid::WithoutBraces);
-    requestData["name"] = newName.trimmed();
-
-    qDebug() << "开始更新类别 - UUID:" << existingCategory->uuid().toString(QUuid::WithoutBraces) << "原名称:" << name
-             << "新名称:" << newName.trimmed();
-
-    NetworkRequest::RequestConfig config;
-    config.url = m_syncManager->getApiUrl(m_categoriesApiEndpoint);
-    config.method = "PUT"; // 更新分类使用PUT方法
-    config.data = requestData;
-    config.requiresAuth = true;
-
-    m_networkRequest.sendRequest(NetworkRequest::UpdateCategory, config);
-}
-
-void CategoryManager::deleteCategoryWithServer(const QString &name) {
-
-    if (!isCanSync()) {
-        return;
-    }
-
-    // 检查是否为默认类别
-    CategorieItem *category = findCategoryByName(name);
-    if (!category) {
-        const QString error = "要删除的类别不存在";
-        qWarning() << error << name;
-        emitOperationCompleted("deleteWithServer", false, error);
-        return;
-    }
-
-    if (!category->canBeDeleted()) {
-        const QString error = "不能删除系统默认类别";
-        emitOperationCompleted("deleteWithServer", false, error);
-        return;
-    }
-
-    qDebug() << "开始删除类别:" << name << "UUID:" << category->uuid().toString(QUuid::WithoutBraces);
-
-    // DELETE 请求通过 URL 参数传递 UUID，不使用请求体
-    NetworkRequest::RequestConfig config;
-    config.url =
-        m_syncManager->getApiUrl(m_categoriesApiEndpoint) + "?uuid=" + category->uuid().toString(QUuid::WithoutBraces);
-    config.method = "DELETE"; // 删除分类使用DELETE方法
-    config.requiresAuth = true;
-
-    m_networkRequest.sendRequest(NetworkRequest::DeleteCategory, config);
-}
 
 /**
- * @brief 处理网络请求完成
- * @param type 请求类型
- * @param response 响应数据
+ * @brief 处理从服务器更新的类别数据
+ * @param categoriesArray 类别数据数组
  */
-void CategoryManager::onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response) {
-
-    switch (type) {
-    case NetworkRequest::FetchCategories:
-        handleFetchCategoriesSuccess(response);
-        break;
-    case NetworkRequest::CreateCategory:
-    case NetworkRequest::UpdateCategory:
-    case NetworkRequest::DeleteCategory:
-        handleCategoryOperationSuccess(response);
-        break;
-    default:
-        // 不是类别相关的请求，忽略
-        qWarning() << "未知的网络请求类型:" << type;
-        break;
-    }
+void CategoryManager::onCategoriesUpdatedFromServer(const QJsonArray &categoriesArray) {
+    qDebug() << "从同步服务器接收到类别更新:" << categoriesArray.size() << "个类别";
+    updateCategoriesFromJson(categoriesArray);
 }
 
-/**
- * @brief 处理网络请求失败
- * @param type 请求类型
- * @param error 错误类型
- * @param message 错误消息
- */
-void CategoryManager::onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
-                                             const QString &message) {
-    QString errorMessage = QString("网络请求失败: %1, 错误类型: %2").arg(message).arg(error);
 
-    qWarning() << "网络请求失败:" << errorMessage;
 
-    switch (type) {
-    case NetworkRequest::FetchCategories:
-        qWarning() << "获取类别列表失败:" << errorMessage;
-        emitOperationCompleted("fetch", false, errorMessage);
-        break;
-    case NetworkRequest::CreateCategory:
-        qWarning() << "创建类别失败:" << errorMessage;
-        emitOperationCompleted("createWithServer", false, errorMessage);
-        break;
-    case NetworkRequest::UpdateCategory:
-        qWarning() << "更新类别失败:" << errorMessage;
-        emitOperationCompleted("updateWithServer", false, errorMessage);
-        break;
-    case NetworkRequest::DeleteCategory:
-        qWarning() << "删除类别失败:" << errorMessage;
-        emitOperationCompleted("deleteWithServer", false, errorMessage);
-        break;
-    default:
-        qWarning() << "未知的网络请求类型:" << type;
-        break;
-    }
-}
 
-/**
- * @brief 处理获取类别列表成功响应
- * @param response 服务器响应数据
- */
-void CategoryManager::handleFetchCategoriesSuccess(const QJsonObject &response) {
-    // 添加调试信息，输出完整的服务器响应
-    qDebug() << "服务器响应内容:" << QJsonDocument(response).toJson(QJsonDocument::Compact);
 
-    QJsonArray categoriesArray;
 
-    // 检查是否是标准响应格式
-    if (response.contains("success")) {
-        // 标准响应格式
-        if (response["success"].toBool()) {
-            // 修复：从data字段中获取categories数组
-            QJsonObject dataObj = response["data"].toObject();
-            categoriesArray = dataObj["categories"].toArray();
-
-            qDebug() << "成功获取待办类别列表（标准格式）:" << categoriesArray.size() << "个类别";
-            updateCategoriesFromJson(categoriesArray);
-            emitOperationCompleted("fetch", true, "获取待办类别列表成功");
-        } else {
-            // 修复：错误响应中消息字段是"error"，不是"message"
-            QString errorMessage =
-                response.contains("error") ? response["error"].toString() : response["message"].toString();
-            if (errorMessage.isEmpty()) {
-                errorMessage = "获取待办类别列表失败";
-            }
-            qWarning() << "获取待办类别列表失败:" << errorMessage;
-            qWarning() << "响应包含的字段:" << response.keys();
-            emitOperationCompleted("fetch", false, errorMessage);
-        }
-    } else {
-        // 非标准响应格式，直接处理categories数组
-        if (response.contains("categories")) {
-            categoriesArray = response["categories"].toArray();
-            updateCategoriesFromJson(categoriesArray);
-            qWarning() << "成功获取待办类别列表（非标准格式）:" << categoriesArray.size() << "个类别";
-            emitOperationCompleted("fetch", true, "获取待办类别列表成功");
-        } else {
-            QString errorMessage = "响应格式错误：缺少categories字段";
-            qWarning() << "响应中没有找到categories字段";
-            qWarning() << "响应包含的字段:" << response.keys();
-            emitOperationCompleted("fetch", false, errorMessage);
-        }
-    }
-}
-
-/**
- * @brief 处理类别操作成功响应
- * @param response 服务器响应数据
- */
-void CategoryManager::handleCategoryOperationSuccess(const QJsonObject &response) {
-    bool success = response["success"].toBool();
-    // 修复：根据响应类型获取正确的消息字段
-    QString message =
-        success ? response["message"].toString()
-                : (response.contains("error") ? response["error"].toString() : response["message"].toString());
-
-    qDebug() << "类别操作结果:" << success << "消息:" << message;
-
-    if (success) {
-        // 操作成功后重新获取类别列表
-        qDebug() << "类别操作成功，重新获取类别列表...";
-        fetchCategories();
-
-        // 立即发射信号通知UI更新
-        emit categoriesChanged();
-    } else {
-    }
-
-    emitOperationCompleted("categoryOperation", success, message);
-}
 
 /**
  * @brief 从JSON数组更新类别列表
@@ -794,14 +508,11 @@ void CategoryManager::updateCategoriesFromJson(const QJsonArray &categoriesArray
  * @brief 设置信号槽连接
  */
 void CategoryManager::setupConnections() {
-    // 连接防抖定时器
+    // 连接防抖定时器（如果需要的话）
     if (m_debounceTimer) {
-        connect(m_debounceTimer, &QTimer::timeout, this, &CategoryManager::fetchCategories);
+        // 防抖定时器暂时不连接到任何槽函数
+        // connect(m_debounceTimer, &QTimer::timeout, this, &CategoryManager::someFunction);
     }
-
-    // 连接网络请求信号
-    connect(&m_networkRequest, &NetworkRequest::requestCompleted, this, &CategoryManager::onNetworkRequestCompleted);
-    connect(&m_networkRequest, &NetworkRequest::requestFailed, this, &CategoryManager::onNetworkRequestFailed);
 
     qDebug() << "CategoryManager信号槽连接完成";
 }

@@ -12,12 +12,9 @@
 
 #pragma once
 
-#include <QJsonDocument>
 #include <QJsonObject>
-#include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QObject>
-#include <QQueue>
 #include <QTimer>
 
 // 前向声明

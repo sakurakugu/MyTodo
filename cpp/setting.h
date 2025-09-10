@@ -15,6 +15,7 @@
 #include "foundation/logger.h"
 
 #include <QObject>
+#include <QJsonValue>
 
 class Config;
 class Setting : public QObject {
