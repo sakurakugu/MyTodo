@@ -22,11 +22,11 @@
 #include <QTimer>
 #include <QUuid>
 
-TodoSyncServer::TodoSyncServer(NetworkRequest *networkRequest, Setting *setting, QObject *parent)
-    : BaseSyncServer(networkRequest, setting, parent), //
-      m_currentPushIndex(0),                           //
-      m_currentBatchIndex(0),                          //
-      m_totalBatches(0)                                //
+TodoSyncServer::TodoSyncServer(QObject *parent)
+    : BaseSyncServer(parent), //
+      m_currentPushIndex(0),  //
+      m_currentBatchIndex(0), //
+      m_totalBatches(0)       //
 {
     // 设置待办事项特有的API端点
     m_apiEndpoint = m_setting
@@ -40,8 +40,33 @@ TodoSyncServer::~TodoSyncServer() {
 
 // 同步操作实现 - 重写基类方法
 void TodoSyncServer::syncWithServer(SyncDirection direction) {
+    qDebug() << "开始同步待办事项，方向:" << direction;
+    qDebug() << "同步请求前状态检查: m_isSyncing =" << m_isSyncing;
+
+    // 防止并发同步请求 - 优先检查
     if (m_isSyncing) {
-        qDebug() << "同步已在进行中，忽略新的同步请求";
+        qWarning() << "同步已在进行中，忽略重复请求";
+        emit syncCompleted(UnknownError, "同步已在进行中");
+        return;
+    }
+
+    // 检查基本同步条件（不包括 m_isSyncing 状态）
+    if (m_serverBaseUrl.isEmpty()) {
+        qDebug() << "同步检查失败：服务器基础URL为空";
+        emit syncCompleted(UnknownError, "服务器配置错误");
+        return;
+    }
+
+    if (m_apiEndpoint.isEmpty()) {
+        qDebug() << "同步检查失败：API端点为空";
+        emit syncCompleted(UnknownError, "服务器配置错误");
+        return;
+    }
+
+    // 检查用户登录状态
+    if (!UserAuth::GetInstance().isLoggedIn()) {
+        qDebug() << "同步检查失败：用户未登录或令牌已过期";
+        emit syncCompleted(AuthError, "无法同步：未登录");
         return;
     }
 
@@ -60,10 +85,10 @@ void TodoSyncServer::cancelSync() {
     }
 
     qDebug() << "取消待办事项同步操作";
-    
+
     // 调用基类方法
     BaseSyncServer::cancelSync();
-    
+
     // 清理待办事项特有的状态
     m_pendingUnsyncedItems.clear();
     m_allUnsyncedItems.clear();
@@ -184,13 +209,6 @@ void TodoSyncServer::performSync(SyncDirection direction) {
 }
 
 void TodoSyncServer::fetchTodosFromServer() {
-    if (!canPerformSync()) {
-        m_isSyncing = false;
-        emit syncingChanged();
-        emit syncCompleted(AuthError, "无法同步：未登录");
-        return;
-    }
-
     qDebug() << "从服务器获取待办事项...";
     emit syncProgress(25, "正在从服务器获取数据...");
 
@@ -218,14 +236,6 @@ void TodoSyncServer::fetchTodosFromServer() {
 
 void TodoSyncServer::pushLocalChangesToServer() {
     qInfo() << "开始推送本地更改到服务器...";
-
-    if (!canPerformSync()) {
-        qInfo() << "无法执行同步操作 - 检查网络连接、用户认证和服务器配置";
-        m_isSyncing = false;
-        emit syncingChanged();
-        emit syncCompleted(AuthError, "无法同步：未登录");
-        return;
-    }
 
     // 找出所有未同步的项目
     QList<TodoItem *> unsyncedItems = getUnsyncedItems();
@@ -383,7 +393,20 @@ void TodoSyncServer::handleFetchTodosSuccess(const QJsonObject &response) {
 
     // 如果是双向同步，成功获取数据后推送本地更改
     if (m_currentSyncDirection == Bidirectional) {
-        pushLocalChangesToServer();
+        // 检查是否有未同步的项目
+        QList<TodoItem *> unsyncedItems = getUnsyncedItems();
+        if (unsyncedItems.isEmpty()) {
+            // 没有本地更改需要推送，直接完成同步
+            qInfo() << "双向同步：没有本地更改需要推送，同步完成";
+            m_isSyncing = false;
+            emit syncingChanged();
+            updateLastSyncTime();
+            emit syncCompleted(Success, "双向同步完成");
+        } else {
+            // 有本地更改需要推送
+            qInfo() << "双向同步：检测到" << unsyncedItems.size() << "个本地更改，开始推送";
+            pushLocalChangesToServer();
+        }
     } else {
         // 仅下载模式，直接完成同步
         m_isSyncing = false;
@@ -499,7 +522,7 @@ void TodoSyncServer::pushSingleItem(TodoItem *item) {
 
     // 处理可选的日期时间字段
     if (item->deadline().isValid()) {
-        itemData["deadline"] = item->deadline().toString(Qt::ISODate);
+        itemData["deadline"] = item->deadline().date().toString(Qt::ISODate);
     }
     if (item->recurrenceInterval() > 0) {
         itemData["recurrenceInterval"] = item->recurrenceInterval();

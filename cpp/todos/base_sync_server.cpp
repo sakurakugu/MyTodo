@@ -11,12 +11,19 @@
 
 #include "base_sync_server.h"
 #include "global_state.h"
+#include "user_auth.h"
 #include <QDateTime>
 #include <QDebug>
 
-BaseSyncServer::BaseSyncServer(NetworkRequest *networkRequest, Setting *setting, QObject *parent)
-    : QObject(parent), m_networkRequest(*networkRequest), m_setting(*setting), m_autoSyncTimer(new QTimer(this)),
-      m_isAutoSyncEnabled(false), m_isSyncing(false), m_autoSyncInterval(30), m_currentSyncDirection(Bidirectional) {
+BaseSyncServer::BaseSyncServer(QObject *parent)
+    : QObject(parent),                                 // 父对象
+      m_networkRequest(NetworkRequest::GetInstance()), // 网络请求对象
+      m_setting(Setting::GetInstance()),               // 设置对象
+      m_autoSyncTimer(new QTimer(this)),               // 自动同步定时器
+      m_isSyncing(false),                              // 是否正在同步
+      m_autoSyncInterval(30),                          // 自动同步间隔
+      m_currentSyncDirection(Bidirectional)            // 当前同步方向
+{
     // 连接网络请求信号
     connect(&m_networkRequest, &NetworkRequest::requestCompleted, this, &BaseSyncServer::onNetworkRequestCompleted);
     connect(&m_networkRequest, &NetworkRequest::requestFailed, this, &BaseSyncServer::onNetworkRequestFailed);
@@ -31,32 +38,25 @@ BaseSyncServer::BaseSyncServer(NetworkRequest *networkRequest, Setting *setting,
     initializeServerConfig();
 
     // 从设置中加载自动同步配置
-    m_isAutoSyncEnabled = m_setting.get("sync/autoSyncEnabled", false).toBool();
     m_autoSyncInterval = m_setting.get("sync/autoSyncInterval", 30).toInt();
     m_lastSyncTime = m_setting.get("sync/lastSyncTime", QString()).toString();
 
     // 如果启用了自动同步，启动定时器
-    if (m_isAutoSyncEnabled) {
+    if (isAutoSyncEnabled()) {
         startAutoSyncTimer();
     }
 }
 
 BaseSyncServer::~BaseSyncServer() {
-    // 保存设置
-    m_setting.save("sync/autoSyncEnabled", m_isAutoSyncEnabled);
-    m_setting.save("sync/autoSyncInterval", m_autoSyncInterval);
-    m_setting.save("sync/lastSyncTime", m_lastSyncTime);
 }
 
-// 属性访问器实现
 bool BaseSyncServer::isAutoSyncEnabled() const {
-    return m_isAutoSyncEnabled;
+    return GlobalState::GetInstance().isAutoSyncEnabled();
 }
 
 void BaseSyncServer::setAutoSyncEnabled(bool enabled) {
-    if (m_isAutoSyncEnabled != enabled) {
-        m_isAutoSyncEnabled = enabled;
-        m_setting.save("sync/autoSyncEnabled", enabled);
+    if (isAutoSyncEnabled() != enabled) {
+        GlobalState::GetInstance().setIsAutoSyncEnabled(enabled);
 
         if (enabled) {
             startAutoSyncTimer();
@@ -86,7 +86,7 @@ void BaseSyncServer::setAutoSyncInterval(int minutes) {
         m_setting.save("sync/autoSyncInterval", minutes);
 
         // 如果自动同步已启用，重新启动定时器
-        if (m_isAutoSyncEnabled) {
+        if (GlobalState::GetInstance().isAutoSyncEnabled()) {
             startAutoSyncTimer();
         }
 
@@ -188,8 +188,29 @@ void BaseSyncServer::updateLastSyncTime() {
 
 bool BaseSyncServer::canPerformSync() const {
     // 检查是否可以执行同步
-    return !m_isSyncing && !m_serverBaseUrl.isEmpty() && !m_apiEndpoint.isEmpty();
-    // 注意：用户认证检查应该由调用方负责
+    if (m_isSyncing) {
+        qDebug() << "同步检查失败：正在进行同步操作，当前同步状态:" << m_isSyncing;
+        qDebug() << "提示：如果同步状态异常，请调用resetSyncState()方法重置";
+        return false;
+    }
+
+    if (m_serverBaseUrl.isEmpty()) {
+        qDebug() << "同步检查失败：服务器基础URL为空";
+        return false;
+    }
+
+    if (m_apiEndpoint.isEmpty()) {
+        qDebug() << "同步检查失败：API端点为空";
+        return false;
+    }
+
+    // 检查用户登录状态
+    if (!UserAuth::GetInstance().isLoggedIn()) {
+        qDebug() << "同步检查失败：用户未登录或令牌已过期";
+        return false;
+    }
+
+    return true;
 }
 
 void BaseSyncServer::startAutoSyncTimer() {

@@ -29,6 +29,8 @@ class Setting : public QObject {
     // 禁用拷贝构造和赋值操作
     Setting(const Setting &) = delete;
     Setting &operator=(const Setting &) = delete;
+    Setting(Setting &&) = delete;
+    Setting &operator=(Setting &&) = delete;
 
     Q_INVOKABLE int getOsType() const;
 

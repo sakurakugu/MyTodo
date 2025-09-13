@@ -131,6 +131,8 @@ class UserAuth : public QObject {
     // 禁用拷贝构造和赋值操作
     UserAuth(const UserAuth &) = delete;
     UserAuth &operator=(const UserAuth &) = delete;
+    UserAuth(UserAuth &&) = delete;
+    UserAuth &operator=(UserAuth &&) = delete;
 
     // 私有方法
     void handleLoginSuccess(const QJsonObject &response);        // 处理登录成功

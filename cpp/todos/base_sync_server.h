@@ -87,13 +87,13 @@ class BaseSyncServer : public QObject {
      * @brief 构造函数
      * @param parent 父对象
      */
-    explicit BaseSyncServer(NetworkRequest *networkRequest, Setting *setting, QObject *parent = nullptr);
+    explicit BaseSyncServer(QObject *parent = nullptr);
     virtual ~BaseSyncServer();
 
     // 属性访问器
     Q_INVOKABLE bool isAutoSyncEnabled() const;        // 获取自动同步是否启用
     Q_INVOKABLE void setAutoSyncEnabled(bool enabled); // 设置自动同步启用状态
-    bool isSyncing() const;                            // 获取当前是否正在同步
+    Q_INVOKABLE bool isSyncing() const;                // 获取当前是否正在同步
     QString lastSyncTime() const;                      // 获取最后同步时间
     int autoSyncInterval() const;                      // 获取自动同步间隔（分钟）
     void setAutoSyncInterval(int minutes);             // 设置自动同步间隔
@@ -146,7 +146,7 @@ class BaseSyncServer : public QObject {
     QTimer *m_autoSyncTimer;          ///< 自动同步定时器
 
     // 同步状态
-    bool m_isAutoSyncEnabled;             ///< 自动同步是否启用
+    
     bool m_isSyncing;                     ///< 当前是否正在同步
     QString m_lastSyncTime;               ///< 最后同步时间
     int m_autoSyncInterval;               ///< 自动同步间隔（分钟）

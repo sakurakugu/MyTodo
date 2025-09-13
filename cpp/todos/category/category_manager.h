@@ -22,9 +22,9 @@
 #include <vector>
 
 #include "../items/categorie_item.h"
-#include "setting.h"
-#include "category_sync_server.h"
 #include "category_data_storage.h"
+#include "category_sync_server.h"
+#include "setting.h"
 #include "user_auth.h"
 
 /**
@@ -74,23 +74,18 @@ class CategoryManager : public QAbstractListModel {
     };
     Q_ENUM(CategoryRoles)
 
-    /**
-     * @brief 构造函数
-     *
-     * 创建CategoryManager实例，初始化网络管理器和同步管理器。
-     *
-     * @param syncServer 同步服务器指针
-     * @param dataStorage 数据存储管理器指针
-     * @param setting 设置管理器引用
-     * @param userAuth 用户认证管理器引用
-     * @param parent 父对象指针
-     */
-    explicit CategoryManager(CategorySyncServer *syncServer, CategoryDataStorage *dataStorage, Setting &setting, UserAuth &userAuth, QObject *parent = nullptr);
+    // 单例模式
+    static CategoryManager &GetInstance() {
+        static CategoryManager instance;
+        return instance;
+    }
+    // 禁用拷贝构造和赋值操作
+    CategoryManager(const CategoryManager &) = delete;
+    CategoryManager &operator=(const CategoryManager &) = delete;
+    CategoryManager(CategoryManager &&) = delete;
+    CategoryManager &operator=(CategoryManager &&) = delete;
 
-    /**
-     * @brief 析构函数
-     */
-    ~CategoryManager();
+
 
     // QAbstractListModel 必要的实现方法
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -99,15 +94,24 @@ class CategoryManager : public QAbstractListModel {
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
 
     // 类别管理相关方法
-    Q_INVOKABLE QStringList getCategories() const;                                          ///< 获取类别列表
-    Q_INVOKABLE void createCategory(const QString &name);                                   ///< 创建新类别
-    Q_INVOKABLE void updateCategory(const QString &name, const QString &newName);           ///< 更新类别名称
-    Q_INVOKABLE void deleteCategory(const QString &name);                                   ///< 删除类别
+    Q_INVOKABLE QStringList getCategories() const;                                ///< 获取类别列表
+    Q_INVOKABLE void createCategory(const QString &name);                         ///< 创建新类别
+    Q_INVOKABLE void updateCategory(const QString &name, const QString &newName); ///< 更新类别名称
+    Q_INVOKABLE void deleteCategory(const QString &name);                         ///< 删除类别
+
+    // 同步相关方法
+    Q_INVOKABLE void syncWithServer();            ///< 与服务器同步类别
+    Q_INVOKABLE void fetchCategoriesFromServer(); ///< 从服务器获取类别
+    Q_INVOKABLE void pushCategoriesToServer();    ///< 推送类别到服务器
+    Q_INVOKABLE bool isSyncing() const;           ///< 检查是否正在同步
 
     // 属性访问器
-    CategorySyncServer *getSyncServer() const { return m_syncServer; } ///< 获取同步服务器实例
-    CategoryDataStorage *getDataStorage() const { return m_dataStorage; } ///< 获取数据存储实例
-
+    CategorySyncServer *getSyncServer() const {
+        return m_syncServer;
+    } ///< 获取同步服务器实例
+    CategoryDataStorage *getDataStorage() const {
+        return m_dataStorage;
+    } ///< 获取数据存储实例
 
     const std::vector<std::unique_ptr<CategorieItem>> &getCategoryItems() const; ///< 获取类别项目列表
     Q_INVOKABLE CategorieItem *findCategoryByName(const QString &name) const;    ///< 根据名称查找类别项目
@@ -117,10 +121,10 @@ class CategoryManager : public QAbstractListModel {
     Q_INVOKABLE CategorieItem *getCategoryAt(int index) const;                   ///< 根据索引获取类别项目
     void addDefaultCategories();                                                 ///< 添加默认类别
     void clearCategories();                                                      ///< 清空所有类别
-    
+
     // 数据存储相关方法
-    void loadCategoriesFromStorage();                                            ///< 从存储加载类别
-    void saveCategoriesStorage();                                                ///< 保存类别到存储
+    void loadCategoriesFromStorage();                                                       ///< 从存储加载类别
+    void saveCategoriesStorage();                                                           ///< 保存类别到存储
     void importCategories(const QString &filePath, CategoryDataStorage::FileFormat format); ///< 导入类别数据
     void exportCategories(const QString &filePath, CategoryDataStorage::FileFormat format); ///< 导出类别数据
 
@@ -136,6 +140,9 @@ class CategoryManager : public QAbstractListModel {
     void onCategoriesUpdatedFromServer(const QJsonArray &categoriesArray); ///< 处理从服务器更新的类别数据
 
   private:
+      explicit CategoryManager(QObject *parent = nullptr);
+    ~CategoryManager();
+
     // 辅助方法
     void updateCategoriesFromJson(const QJsonArray &categoriesArray); ///< 从JSON数组更新类别列表
     bool isValidCategoryName(const QString &name) const;              ///< 验证类别名称
@@ -165,8 +172,8 @@ class CategoryManager : public QAbstractListModel {
     QString m_lastError;     ///< 最后的错误信息
     QTimer *m_debounceTimer; ///< 防抖定时器
 
-    CategorySyncServer *m_syncServer; ///< 类别同步服务器对象
+    CategorySyncServer *m_syncServer;   ///< 类别同步服务器对象
     CategoryDataStorage *m_dataStorage; ///< 类别数据存储对象
-    Setting &m_setting;               ///< 配置管理
-    UserAuth &m_userAuth;             ///< 用户认证管理
+    Setting &m_setting;                 ///< 配置管理
+    UserAuth &m_userAuth;               ///< 用户认证管理
 };

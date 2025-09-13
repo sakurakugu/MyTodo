@@ -316,7 +316,7 @@ ListView {
                             spacing: 4
                             // 时间
                             Label {
-                                text: formatDateTime(model.lastModifiedAt)
+                                text: root.formatDateTime(model.lastModifiedAt)
                                 font.pixelSize: 12
                                 color: ThemeManager.secondaryTextColor
                             }

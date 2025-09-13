@@ -21,11 +21,11 @@
 #include <QTimer>
 #include <QUuid>
 
-CategorySyncServer::CategorySyncServer(NetworkRequest *networkRequest, Setting *setting, QObject *parent)
-    : BaseSyncServer(networkRequest, setting, parent), //
-      m_currentPushIndex(0),                           //
-      m_currentBatchIndex(0),                          //
-      m_totalBatches(0)                                //
+CategorySyncServer::CategorySyncServer(QObject *parent)
+    : BaseSyncServer(parent), //
+      m_currentPushIndex(0),  //
+      m_currentBatchIndex(0), //
+      m_totalBatches(0)       //
 {
 
     // 设置类别特有的API端点
@@ -45,17 +45,22 @@ CategorySyncServer::~CategorySyncServer() {
 
 // 同步操作实现
 void CategorySyncServer::syncWithServer(SyncDirection direction) {
+    qDebug() << "CategorySyncServer::syncWithServer 开始，当前同步状态:" << m_isSyncing;
+
     if (m_isSyncing) {
         qDebug() << "类别同步操作正在进行中，忽略新的同步请求";
         return;
     }
 
+    qDebug() << "调用 canPerformSync() 检查...";
     if (!canPerformSync()) {
+        qDebug() << "canPerformSync() 检查失败";
         // 发出同步完成信号，通知UI重置状态
         emit syncCompleted(AuthError, "无法同步：未登录");
         return;
     }
 
+    qDebug() << "canPerformSync() 检查通过，开始执行同步";
     m_currentSyncDirection = direction;
     performSync(direction);
 }
@@ -85,10 +90,10 @@ void CategorySyncServer::cancelSync() {
     }
 
     qDebug() << "取消类别同步操作";
-    
+
     // 调用基类方法
     BaseSyncServer::cancelSync();
-    
+
     // 清理类别特有的状态
     m_pendingUnsyncedItems.clear();
 }
@@ -332,7 +337,18 @@ void CategorySyncServer::performSync(SyncDirection direction) {
 }
 
 void CategorySyncServer::fetchCategoriesFromServer() {
-    if (!canPerformSync()) {
+    // 注意：此方法被performSync调用时，m_isSyncing已经为true，所以不需要再次检查
+    // 只检查用户认证状态即可
+    if (m_serverBaseUrl.isEmpty() || m_apiEndpoint.isEmpty()) {
+        qDebug() << "同步检查失败：服务器配置为空";
+        m_isSyncing = false;
+        emit syncingChanged();
+        emit syncCompleted(AuthError, "无法同步：服务器配置错误");
+        return;
+    }
+
+    if (!UserAuth::GetInstance().isLoggedIn()) {
+        qDebug() << "同步检查失败：用户未登录或令牌已过期";
         m_isSyncing = false;
         emit syncingChanged();
         emit syncCompleted(AuthError, "无法同步：未登录");
@@ -367,7 +383,19 @@ void CategorySyncServer::fetchCategoriesFromServer() {
 void CategorySyncServer::pushLocalChangesToServer() {
     qInfo() << "开始推送本地类别更改到服务器...";
 
-    if (!canPerformSync()) {
+    // 注意：此方法被performSync调用时，m_isSyncing已经为true，所以不需要再次检查
+    // 只检查用户认证状态即可
+    if (m_serverBaseUrl.isEmpty() || m_apiEndpoint.isEmpty()) {
+        qDebug() << "同步检查失败：服务器配置为空";
+        qInfo() << "无法执行类别同步操作 - 服务器配置错误";
+        m_isSyncing = false;
+        emit syncingChanged();
+        emit syncCompleted(AuthError, "无法同步：服务器配置错误");
+        return;
+    }
+
+    if (!UserAuth::GetInstance().isLoggedIn()) {
+        qDebug() << "同步检查失败：用户未登录或令牌已过期";
         qInfo() << "无法执行类别同步操作 - 检查网络连接、用户认证和服务器配置";
         m_isSyncing = false;
         emit syncingChanged();

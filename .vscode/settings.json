@@ -105,7 +105,8 @@
         "qjsondocument": "cpp",
         "shared_mutex": "cpp",
         "text_encoding": "cpp",
-        "qnetworkaccessmanager": "cpp"
+        "qnetworkaccessmanager": "cpp",
+        "*.in": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "search.useIgnoreFiles": false, // 禁用git忽略文件

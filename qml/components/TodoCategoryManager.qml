@@ -231,6 +231,32 @@ Item {
             }
         }
 
+        MenuItem {
+            text: qsTr("同步种类")
+            enabled: todoManager.isLoggedIn && !categoryManager.isSyncing()
+            onTriggered: {
+                categoryManager.syncWithServer();
+                root.close();  // 开始同步后关闭菜单
+            }
+            height: visible ? implicitHeight : 0
+            visible: !root.categoryMultiSelectMode
+            contentItem: RowLayout {
+                spacing: 8
+                Text {
+                    text: parent.parent.text
+                    color: parent.parent.enabled ? ThemeManager.textColor : ThemeManager.secondaryTextColor
+                    font.pixelSize: 12
+                    font.bold: true
+                    Layout.fillWidth: true
+                }
+                // 同步图标
+                IconButton {
+                    text: "\ue8d4"
+                    enabled: parent.parent.enabled
+                }
+            }
+        }
+
         // 多选模式下的操作栏
         MenuSeparator {
             visible: root.categoryMultiSelectMode

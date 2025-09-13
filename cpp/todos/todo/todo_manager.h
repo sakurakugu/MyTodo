@@ -23,8 +23,8 @@
 #include <vector>
 
 #include "../category/category_manager.h" // 类别管理器
-#include "foundation/network_request.h"
 #include "../items/todo_item.h"
+#include "foundation/network_request.h"
 #include "setting.h"
 #include "todo_data_storage.h" // 数据管理器
 #include "todo_filter.h"       // 筛选管理器
@@ -87,13 +87,16 @@ class TodoManager : public QAbstractListModel {
     };
     Q_ENUM(TodoRoles)
 
-    /**
-     * @brief 构造函数
-     *
-     * 创建TodoManager实例，初始化网络管理器、设置对象和本地存储。
-     */
-    explicit TodoManager(TodoSyncServer *syncManager, UserAuth &userAuth, QObject *parent = nullptr);
-    ~TodoManager();
+    // 单例模式
+    static TodoManager &GetInstance() {
+        static TodoManager instance;
+        return instance;
+    }
+    // 禁用拷贝构造和赋值操作
+    TodoManager(const TodoManager &) = delete;
+    TodoManager &operator=(const TodoManager &) = delete;
+    TodoManager(TodoManager &&) = delete;
+    TodoManager &operator=(TodoManager &&) = delete;
 
     // QAbstractListModel 必要的实现方法
     int rowCount(const QModelIndex &parent = QModelIndex()) const override; // 获取模型中的行数（待办事项数量）
@@ -136,6 +139,9 @@ class TodoManager : public QAbstractListModel {
     void onTodosUpdatedFromServer(const QJsonArray &todosArray);                     // 处理从服务器更新的待办事项
 
   private:
+    explicit TodoManager(QObject *parent = nullptr);
+    ~TodoManager();
+
     void updateTodosFromServer(const QJsonArray &todosArray); // 从服务器数据更新待办事项
     void updateSyncManagerData();                             // 更新同步管理器的待办事项数据
     QVariant getItemData(const TodoItem *item, int role) const;

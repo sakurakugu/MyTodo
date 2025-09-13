@@ -63,7 +63,7 @@ class TodoSyncServer : public BaseSyncServer {
      * @brief 构造函数
      * @param parent 父对象
      */
-    explicit TodoSyncServer(NetworkRequest *networkRequest, Setting *setting, QObject *parent = nullptr);
+    explicit TodoSyncServer(QObject *parent = nullptr);
     ~TodoSyncServer();
 
     // 同步操作（重写基类方法）

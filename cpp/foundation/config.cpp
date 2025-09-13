@@ -137,7 +137,6 @@ void Config::save(const QString &key, const QVariant &value) {
 
         // 插入或赋值
         table->insert_or_assign(parts.last().toStdString(), *variantToToml(value));
-        qInfo() << "配置项" << key.toStdString() << ", 值为:" << value;
         m_needsSave = true; // 标记需要保存
     } catch (const std::exception &e) {
         qCritical() << "保存配置项失败:" << key << "错误:" << e.what();

@@ -9,6 +9,8 @@
  * @version 0.4.0
  */
 #include "global_state.h"
+#include "foundation/config.h"
+
 #include <QCoreApplication>
 #include <QDir>
 #include <QGuiApplication>
@@ -17,21 +19,33 @@
 #include <QStandardPaths>
 
 GlobalState::GlobalState(QObject *parent)
-    : QObject(parent),                 // 初始化父对象
-      m_isDarkMode(false),             // 初始化是否为深色模式为false
-      m_isFollowSystemDarkMode(false), // 初始化是否跟随系统深色模式为false
-      m_isDesktopWidget(false),        // 初始化是否为桌面窗口为false
-      m_isNew(false),                  // 初始化是否为新创建的为false
-      m_isShowAddTask(false),          // 初始化是否显示添加任务为false
-      m_isShowTodos(true),             // 初始化是否显示待办事项为true
-      m_isShowSetting(false),          // 初始化是否显示设置为false
-      m_isShowDropdown(false),         // 初始化是否显示下拉菜单为false
-      m_preventDragging(false),        // 初始化是否防止窗口拖动为false
-      m_refreshing(false),             // 初始化是否刷新中为false
-      m_selectedTodo(QVariant()) {     // 初始化选中的待办事项为null
-
+    : QObject(parent),                                                  // 初始化父对象
+      m_config(Config::GetInstance()),                                  // 初始化配置文件
+      m_isDarkMode(m_config.get("setting/isDarkMode", false).toBool()), // 初始化是否为深色模式为false
+      m_isFollowSystemDarkMode(
+          m_config.get("setting/followSystemTheme", false).toBool()),             // 初始化是否跟随系统深色模式为false
+      m_preventDragging(m_config.get("setting/preventDragging", false).toBool()), // 初始化是否防止窗口拖动为false
+      m_isAutoSyncEnabled(m_config.get("setting/autoSyncEnabled", false).toBool()),  // 初始化是否自动同步为false
+      //
+      m_isDesktopWidget(false),  // 初始化是否为桌面窗口为false
+      m_isNew(false),            // 初始化是否为新创建的为false
+      m_isShowAddTask(false),    // 初始化是否显示添加任务为false
+      m_isShowTodos(true),       // 初始化是否显示待办事项为true
+      m_isShowSetting(false),    // 初始化是否显示设置为false
+      m_isShowDropdown(false),   // 初始化是否显示下拉菜单为false
+      m_refreshing(false),       // 初始化是否刷新中为false
+      m_selectedTodo(QVariant()) // 初始化选中的待办事项为null
+{
     // 监听系统主题变化
     connect(QGuiApplication::instance(), SIGNAL(paletteChanged(QPalette)), this, SIGNAL(systemInDarkModeChanged()));
+}
+
+GlobalState::~GlobalState() {
+    // 保存配置
+    m_config.save("setting/isDarkMode", m_isDarkMode);
+    m_config.save("setting/followSystemTheme", m_isFollowSystemDarkMode);
+    m_config.save("setting/preventDragging", m_preventDragging);
+    m_config.save("setting/autoSyncEnabled", m_isAutoSyncEnabled);
 }
 
 bool GlobalState::isDarkMode() const {
@@ -41,6 +55,7 @@ bool GlobalState::isDarkMode() const {
 void GlobalState::setIsDarkMode(bool value) {
     if (m_isDarkMode != value) {
         m_isDarkMode = value;
+        m_config.save("setting/isDarkMode", value);
         emit isDarkModeChanged();
     }
 }
@@ -52,6 +67,7 @@ bool GlobalState::isFollowSystemDarkMode() const {
 void GlobalState::setIsFollowSystemDarkMode(bool value) {
     if (m_isFollowSystemDarkMode != value) {
         m_isFollowSystemDarkMode = value;
+        m_config.save("setting/followSystemTheme", value);
         emit isFollowSystemDarkModeChanged();
     }
 }
@@ -64,6 +80,18 @@ void GlobalState::setIsDesktopWidget(bool value) {
     if (m_isDesktopWidget != value) {
         m_isDesktopWidget = value;
         emit isDesktopWidgetChanged();
+    }
+}
+
+bool GlobalState::isAutoSyncEnabled() const {
+    return m_isAutoSyncEnabled;
+}
+
+void GlobalState::setIsAutoSyncEnabled(bool value) {
+    if (m_isAutoSyncEnabled != value) {
+        m_isAutoSyncEnabled = value;
+        m_config.save("setting/autoSyncEnabled", value);
+        emit isAutoSyncEnabledChanged();
     }
 }
 
@@ -129,6 +157,7 @@ bool GlobalState::preventDragging() const {
 void GlobalState::setPreventDragging(bool value) {
     if (m_preventDragging != value) {
         m_preventDragging = value;
+        m_config.save("setting/preventDragging", value);
         emit preventDraggingChanged();
     }
 }

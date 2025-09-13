@@ -9,9 +9,9 @@
  * @version 0.4.0
  */
 #include "todo_manager.h"
+#include "../category/category_data_storage.h"
 #include "../category/category_manager.h"
 #include "../category/category_sync_server.h"
-#include "../category/category_data_storage.h"
 #include "foundation/network_request.h"
 #include "global_state.h"
 #include "todo_filter.h"
@@ -29,14 +29,14 @@
 #include <QProcess>
 #include <QUuid>
 
-TodoManager::TodoManager( TodoSyncServer *syncManager, UserAuth &userAuth, QObject *parent)
+TodoManager::TodoManager(QObject *parent)
     : QAbstractListModel(parent),                      //
       m_filterCacheDirty(true),                        //
       m_networkRequest(NetworkRequest::GetInstance()), //
       m_setting(Setting::GetInstance()),               //
       m_isAutoSync(false),                             //
-      m_syncManager(syncManager),                      //
-      m_userAuth(userAuth)                             //
+      m_syncManager(new TodoSyncServer(this)),         //
+      m_userAuth(UserAuth::GetInstance())              //
 {
 
     // 初始化默认服务器配置
@@ -75,20 +75,14 @@ TodoManager::TodoManager( TodoSyncServer *syncManager, UserAuth &userAuth, QObje
         syncWithServer();
     });
 
-    // 创建类别同步服务器
-    CategorySyncServer *categorySyncServer = new CategorySyncServer(&m_networkRequest, &m_setting, this);
-    
-    // 创建类别数据存储器
-    CategoryDataStorage *categoryDataStorage = new CategoryDataStorage(m_setting, this);
-    
     // 创建待办事项类别管理器
-    m_categoryManager = new CategoryManager(categorySyncServer, categoryDataStorage, m_setting, m_userAuth, this);
+    m_categoryManager = &CategoryManager::GetInstance();
 
     // 通过数据管理器加载本地数据
     m_dataManager->loadFromLocalStorage(m_todos);
 
     // 初始化在线状态
-    m_isAutoSync = m_setting.get(QStringLiteral("sync/autoSyncEnabled"), false).toBool();
+    m_isAutoSync = m_setting.get(QStringLiteral("setting/autoSyncEnabled"), false).toBool();
     m_syncManager->setAutoSyncEnabled(m_isAutoSync);
 
     // 设置待办事项数据到同步管理器
@@ -404,7 +398,6 @@ TodoItem *TodoManager::getFilteredItem(int index) const {
 void TodoManager::invalidateFilterCache() {
     m_filterCacheDirty = true;
 }
-
 
 int TodoManager::generateUniqueId() {
     int maxId = 0;
@@ -1013,14 +1006,14 @@ void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
         QString uuid = todoObj["uuid"].toString();
         TodoItem *existingItem = nullptr;
 
-        qDebug() << "处理服务器项目，UUID:" << uuid << ", 标题:" << todoObj["title"].toString();
+        // qDebug() << "处理服务器项目，UUID:" << uuid << ", 标题:" << todoObj["title"].toString();
 
         for (const auto &item : m_todos) {
             QString localUuid = item->uuid().toString(QUuid::WithoutBraces); // 去掉花括号
-            qDebug() << "比较本地项目 UUID:" << localUuid << " vs 服务器 UUID:" << uuid;
+            // qDebug() << "比较本地项目 UUID:" << localUuid << " vs 服务器 UUID:" << uuid;
             if (localUuid == uuid && !uuid.isEmpty()) {
                 existingItem = item.get();
-                qDebug() << "找到现有项目，UUID:" << uuid;
+                // qDebug() << "找到现有项目，UUID:" << uuid;
                 break;
             }
         }

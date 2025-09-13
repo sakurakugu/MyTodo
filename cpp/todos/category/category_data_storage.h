@@ -23,6 +23,7 @@
 #include <toml++/toml.hpp>
 #include <vector>
 
+#include "../../foundation/config.h"
 #include "../items/categorie_item.h"
 #include "setting.h"
 
@@ -79,7 +80,7 @@ class CategoryDataStorage : public QObject {
     Q_ENUM(FileFormat)
 
     // 构造函数
-    explicit CategoryDataStorage(Setting &setting, QObject *parent = nullptr);
+    explicit CategoryDataStorage(QObject *parent = nullptr);
     ~CategoryDataStorage();
 
     // 本地存储功能
@@ -132,6 +133,12 @@ class CategoryDataStorage : public QObject {
     bool handleConflict(const std::unique_ptr<CategorieItem> &newCategory,
                         std::vector<std::unique_ptr<CategorieItem>> &categories, ConflictResolution resolution);
 
+    // 配置相关方法
+    bool loadFromConfig(std::vector<std::unique_ptr<CategorieItem>> &categories);
+    bool saveToConfig(const std::vector<std::unique_ptr<CategorieItem>> &categories);
+    QString getCategoryConfigKey() const;
+
     // 成员变量
     Setting &m_setting; ///< 设置对象引用
+    Config &m_config;   ///< 主配置对象引用
 };

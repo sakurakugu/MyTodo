@@ -36,11 +36,10 @@ Logger::Logger(QObject *parent) noexcept
         // 设置日志目录，默认存放在Appdata/Local/应用名/logs
         // 测试时存放在可执行文件所在文件夹中的/logs
 #if defined(QT_DEBUG)
-        m_logDir = std::format("{}/{}/logs", QCoreApplication::applicationDirPath().toStdString(), m_appName);
+        m_logDir = std::format("{}/logs", QCoreApplication::applicationDirPath().toStdString());
 #else
-        m_logDir = std::format("{}/{}/logs",
-                               QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation).toStdString(),
-                               m_appName);
+        m_logDir = std::format("{}/logs",
+                               QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation).toStdString());
 #endif
         m_logFileName = m_appName + ".log";
 

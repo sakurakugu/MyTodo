@@ -65,7 +65,7 @@ class CategorySyncServer : public BaseSyncServer {
      * @brief 构造函数
      * @param parent 父对象
      */
-    explicit CategorySyncServer(NetworkRequest *networkRequest, Setting *setting, QObject *parent = nullptr);
+    explicit CategorySyncServer(QObject *parent = nullptr);
     ~CategorySyncServer();
 
     // 同步操作（重写基类方法）
