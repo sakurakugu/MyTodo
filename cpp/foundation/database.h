@@ -102,5 +102,5 @@ private:
     bool m_initialized;                           ///< 是否已初始化
     
     static constexpr int DATABASE_VERSION = 1;    ///< 当前数据库版本
-    static constexpr const char* CONNECTION_NAME = "MyTodoDatabase"; ///< 数据库连接名称
+    static constexpr const char* CONNECTION_NAME = "MyTodo_Database"; ///< 数据库连接名称
 };

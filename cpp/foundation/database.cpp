@@ -236,6 +236,8 @@ bool Database::createCategoriesTable() {
             name TEXT NOT NULL,
             user_uuid TEXT NOT NULL,
             created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            last_modified_at TEXT NOT NULL,
             synced INTEGER NOT NULL DEFAULT 0
         )
     )";
@@ -274,7 +276,7 @@ bool Database::createTodosTable() {
             user_uuid TEXT NOT NULL,
             title TEXT NOT NULL,
             description TEXT,
-            category TEXT NOT NULL,
+            category TEXT NOT NULL DEFAULT '未分类',
             important INTEGER NOT NULL DEFAULT 0,
             deadline TEXT,
             recurrence_interval INTEGER NOT NULL DEFAULT 0,

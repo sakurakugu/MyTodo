@@ -8,6 +8,7 @@
 服务器文件/
 image/font_icon/
 image/app_icon/
+docs/
 
 # 不排除
 !image/app_icon/icon.rc
