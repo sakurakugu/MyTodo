@@ -66,6 +66,7 @@ set(QT_COMPONENTS
     Quick               # QML 引擎
     Network             # 网络功能
     Concurrent          # 并发处理
+    Sql                 # SQL 数据库支持
     LinguistTools       # 国际化工具
 )
 
@@ -76,6 +77,7 @@ set(PRIVATE_LIBRARIES
     Qt6::Quick
     Qt6::Network
     Qt6::Concurrent
+    Qt6::Sql
     tomlplusplus::tomlplusplus
 )
 
@@ -184,6 +186,8 @@ set(UTILITY_SOURCES
     cpp/foundation/logger.h
     cpp/setting.cpp
     cpp/setting.h
+    cpp/foundation/database_manager.cpp
+    cpp/foundation/database_manager.h
     cpp/default_value.h
 )
 

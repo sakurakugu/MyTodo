@@ -15,6 +15,7 @@
 
 #include <toml++/toml.hpp>
 #include "../items/categorie_item.h"
+#include "../../foundation/database_manager.h"
 
 class Config;
 
@@ -78,6 +79,11 @@ class CategoryDataStorage : public QObject {
     bool loadFromLocalStorage(std::vector<std::unique_ptr<CategorieItem>> &categories);     // 从本地存储加载类别
     bool saveToLocalStorage(const std::vector<std::unique_ptr<CategorieItem>> &categories); // 将类别保存到本地存储
 
+    // CRUD操作
+    bool addCategory(std::vector<std::unique_ptr<CategorieItem>> &categories, const QString &name, const QUuid &userUuid);
+    bool updateCategory(std::vector<std::unique_ptr<CategorieItem>> &categories, int id, const QString &name);
+    bool deleteCategory(std::vector<std::unique_ptr<CategorieItem>> &categories, int id);
+
     // 导入功能
     bool importFromToml(const toml::table &table, std::vector<std::unique_ptr<CategorieItem>> &categories,
                         ConflictResolution resolution); // 从TOML表导入类别（指定冲突解决策略）
@@ -103,4 +109,5 @@ class CategoryDataStorage : public QObject {
 
     // 成员变量
     Config &m_config; ///< 主配置对象引用
+    DatabaseManager &m_databaseManager; ///< 数据库管理器引用
 };

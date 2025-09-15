@@ -12,13 +12,22 @@
  */
 
 #include <QJsonObject>
+#include <QSqlQuery>
+#include <QSqlError>
+#include <QVariant>
+#include <QDebug>
 #include "category_data_storage.h"
 #include "../../foundation/config.h"
 
 CategoryDataStorage::CategoryDataStorage(QObject *parent)
-    : QObject(parent),                // 父对象
-      m_config(Config::GetInstance()) // 配置
+    : QObject(parent),                                    // 父对象
+      m_config(Config::GetInstance()),                    // 配置
+      m_databaseManager(DatabaseManager::GetInstance())   // 数据库管理器
 {
+    // 确保数据库已初始化
+    if (!m_databaseManager.initializeDatabase()) {
+        qCritical() << "CategoryDataStorage: 数据库初始化失败";
+    }
 }
 
 CategoryDataStorage::~CategoryDataStorage() {
@@ -36,54 +45,102 @@ bool CategoryDataStorage::loadFromLocalStorage(std::vector<std::unique_ptr<Categ
         // 清除当前数据
         categories.clear();
 
-        // 从设置中加载数据
-        int count = m_config.get("categories/size", 0).toInt();
-
-        // 获取当前最大的id，用于为没有id的项目分配新id
-        int maxId = 0;
-        for (int i = 0; i < count; ++i) {
-            QString prefix = QString("categories/%1/").arg(i);
-            int currentId = m_config.get(prefix + "id").toInt();
-            if (currentId > maxId) {
-                maxId = currentId;
-            }
+        // 从数据库加载数据
+        QSqlDatabase db = m_databaseManager.getDatabase();
+        if (!db.isOpen()) {
+            qCritical() << "数据库未打开，无法加载类别";
+            return false;
         }
 
-        for (int i = 0; i < count; ++i) {
-            QString prefix = QString("categories/%1/").arg(i);
+        QSqlQuery query(db);
+        const QString queryString = "SELECT id, uuid, name, user_uuid, created_at, synced FROM categories ORDER BY id";
+        
+        if (!query.exec(queryString)) {
+            qCritical() << "加载类别查询失败:" << query.lastError().text();
+            return false;
+        }
 
-            // 验证必要字段
-            if (!m_config.contains(prefix + "uuid")) {
-                QUuid uuid = QUuid::createUuid();
-                m_config.save(prefix + "uuid", uuid.toString());
-            }
-
-            // 获取id，如果没有或为0，则分配一个新的唯一id
-            int itemId = m_config.get(prefix + "id").toInt();
-            if (itemId == 0) {
-                itemId = ++maxId;
-                // 保存新分配的id到设置中
-                m_config.save(prefix + "id", itemId);
-            }
+        while (query.next()) {
+            int id = query.value("id").toInt();
+            QUuid uuid = QUuid::fromString(query.value("uuid").toString());
+            QString name = query.value("name").toString();
+            QUuid userUuid = QUuid::fromString(query.value("user_uuid").toString());
+            QDateTime createdAt = QDateTime::fromString(query.value("created_at").toString(), Qt::ISODate);
+            bool synced = query.value("synced").toBool();
 
             auto item = std::make_unique<CategorieItem>(
-                itemId,                                                          // 唯一标识符
-                QUuid::fromString(m_config.get(prefix + "uuid").toString()),     // 唯一标识符（UUID）
-                m_config.get(prefix + "name").toString(),                        // 分类名称
-                QUuid::fromString(m_config.get(prefix + "userUuid").toString()), // 用户UUID
-                m_config.get(prefix + "createdAt").toDateTime(),                 // 创建时间
-                m_config.get(prefix + "synced").toBool(),                        // 是否已同步
+                id,        // 唯一标识符
+                uuid,      // 唯一标识符（UUID）
+                name,      // 分类名称
+                userUuid,  // 用户UUID
+                createdAt, // 创建时间
+                synced,    // 是否已同步
                 this);
 
             categories.push_back(std::move(item));
         }
 
-        qDebug() << "成功从本地存储加载" << categories.size() << "个分类";
+        qDebug() << "成功从数据库加载" << categories.size() << "个分类";
     } catch (const std::exception &e) {
         qCritical() << "加载本地存储时发生异常:" << e.what();
         success = false;
     } catch (...) {
         qCritical() << "加载本地存储时发生未知异常";
+        success = false;
+    }
+
+    return success;
+}
+
+/**
+ * @brief 删除类别
+ * @param categories 类别列表引用
+ * @param id 类别ID
+ * @return 删除成功返回true，否则返回false
+ */
+bool CategoryDataStorage::deleteCategory(std::vector<std::unique_ptr<CategorieItem>> &categories, int id) {
+    bool success = false;
+
+    try {
+        QSqlDatabase db = m_databaseManager.getDatabase();
+        if (!db.isOpen()) {
+            qCritical() << "数据库未打开，无法删除类别";
+            return false;
+        }
+
+        // 从数据库中删除类别
+        QSqlQuery deleteQuery(db);
+        const QString deleteString = "DELETE FROM categories WHERE id = ?";
+        deleteQuery.prepare(deleteString);
+        deleteQuery.addBindValue(id);
+
+        if (!deleteQuery.exec()) {
+            qCritical() << "从数据库删除类别失败:" << deleteQuery.lastError().text();
+            return false;
+        }
+
+        if (deleteQuery.numRowsAffected() == 0) {
+            qWarning() << "未找到要删除的类别，ID:" << id;
+            return false;
+        }
+
+        // 从内存中删除类别
+        auto it = std::find_if(categories.begin(), categories.end(),
+                               [id](const std::unique_ptr<CategorieItem> &item) {
+                                   return item->id() == id;
+                               });
+
+        if (it != categories.end()) {
+            QString name = (*it)->name();
+            categories.erase(it);
+            success = true;
+            qDebug() << "成功删除类别:" << name;
+        }
+    } catch (const std::exception &e) {
+        qCritical() << "删除类别时发生异常:" << e.what();
+        success = false;
+    } catch (...) {
+        qCritical() << "删除类别时发生未知异常";
         success = false;
     }
 
@@ -99,44 +156,53 @@ bool CategoryDataStorage::saveToLocalStorage(const std::vector<std::unique_ptr<C
     bool success = true;
 
     try {
-        // 如果数量小于原大小，先删除所有现有的分类条目
-        const size_t currentSize = m_config.get("categories/size", 0).toInt();
-        if (categories.size() < currentSize) {
-            // 获取当前存储的分类数量
+        QSqlDatabase db = m_databaseManager.getDatabase();
+        if (!db.isOpen()) {
+            qCritical() << "数据库未打开，无法保存类别";
+            return false;
+        }
 
-            // 删除所有现有的分类条目
-            for (size_t i = 0; i < currentSize; ++i) {
-                QString prefix = QString("categories/%1").arg(i);
+        // 开始事务
+        if (!db.transaction()) {
+            qCritical() << "无法开始数据库事务:" << db.lastError().text();
+            return false;
+        }
 
-                // 删除该分类的所有属性
-                m_config.remove(prefix + "/id");
-                m_config.remove(prefix + "/uuid");
-                m_config.remove(prefix + "/name");
-                m_config.remove(prefix + "/userUuid");
-                m_config.remove(prefix + "/createdAt");
-                m_config.remove(prefix + "/synced");
-                // 删除整个分类条目 (categories/x)
-                m_config.remove(prefix);
+        // 清除现有数据
+        QSqlQuery deleteQuery(db);
+        if (!deleteQuery.exec("DELETE FROM categories")) {
+            qCritical() << "清除类别数据失败:" << deleteQuery.lastError().text();
+            db.rollback();
+            return false;
+        }
+
+        // 插入新数据
+        QSqlQuery insertQuery(db);
+        const QString insertString = "INSERT INTO categories (id, uuid, name, user_uuid, created_at, synced) VALUES (?, ?, ?, ?, ?, ?)";
+        insertQuery.prepare(insertString);
+
+        for (const auto &item : categories) {
+            insertQuery.addBindValue(item->id());
+            insertQuery.addBindValue(item->uuid().toString());
+            insertQuery.addBindValue(item->name());
+            insertQuery.addBindValue(item->userUuid().toString());
+            insertQuery.addBindValue(item->createdAt().toString(Qt::ISODate));
+            insertQuery.addBindValue(item->synced());
+
+            if (!insertQuery.exec()) {
+                qCritical() << "插入类别数据失败:" << insertQuery.lastError().text();
+                db.rollback();
+                return false;
             }
         }
 
-        // 保存分类数量
-        m_config.save("categories/size", static_cast<int>(categories.size()));
-
-        // 保存每个分类
-        for (size_t i = 0; i < categories.size(); ++i) {
-            const CategorieItem *item = categories.at(i).get();
-            QString prefix = QString("categories/%1/").arg(i);
-
-            m_config.save(prefix + "id", item->id());
-            m_config.save(prefix + "uuid", item->uuid());
-            m_config.save(prefix + "name", item->name());
-            m_config.save(prefix + "userUuid", item->userUuid());
-            m_config.save(prefix + "createdAt", item->createdAt());
-            m_config.save(prefix + "synced", item->synced());
+        // 提交事务
+        if (!db.commit()) {
+            qCritical() << "提交数据库事务失败:" << db.lastError().text();
+            return false;
         }
 
-        qDebug() << "已成功保存" << categories.size() << "个分类到本地存储";
+        qDebug() << "已成功保存" << categories.size() << "个分类到数据库";
         success = true;
     } catch (const std::exception &e) {
         qCritical() << "保存到本地存储时发生异常:" << e.what();
@@ -372,6 +438,140 @@ int CategoryDataStorage::getNextAvailableId(const std::vector<std::unique_ptr<Ca
         }
     }
     return maxId + 1;
+}
+
+/**
+ * @brief 添加类别
+ * @param categories 类别列表引用
+ * @param name 类别名称
+ * @param userUuid 用户UUID
+ * @return 添加成功返回true，否则返回false
+ */
+bool CategoryDataStorage::addCategory(std::vector<std::unique_ptr<CategorieItem>> &categories,
+                                      const QString &name,
+                                      const QUuid &userUuid) {
+    bool success = true;
+
+    try {
+        QSqlDatabase db = m_databaseManager.getDatabase();
+        if (!db.isOpen()) {
+            qCritical() << "数据库未打开，无法添加类别";
+            return false;
+        }
+
+        // 获取当前最大的id
+        int maxId = 0;
+        QSqlQuery maxIdQuery(db);
+        if (maxIdQuery.exec("SELECT MAX(id) FROM categories")) {
+            if (maxIdQuery.next()) {
+                maxId = maxIdQuery.value(0).toInt();
+            }
+        }
+
+        // 创建新的类别项
+        int newId = maxId + 1;
+        QUuid newUuid = QUuid::createUuid();
+        QDateTime createdAt = QDateTime::currentDateTime();
+        
+        auto newItem = std::make_unique<CategorieItem>(
+            newId,                    // 新的唯一标识符
+            newUuid,                  // 新的UUID
+            name,                     // 类别名称
+            userUuid,                 // 用户UUID
+            createdAt,                // 当前时间
+            false,                    // 未同步
+            this);
+
+        // 插入到数据库
+        QSqlQuery insertQuery(db);
+        const QString insertString = "INSERT INTO categories (id, uuid, name, user_uuid, created_at, synced) VALUES (?, ?, ?, ?, ?, ?)";
+        insertQuery.prepare(insertString);
+        insertQuery.addBindValue(newId);
+        insertQuery.addBindValue(newUuid.toString());
+        insertQuery.addBindValue(name);
+        insertQuery.addBindValue(userUuid.toString());
+        insertQuery.addBindValue(createdAt.toString(Qt::ISODate));
+        insertQuery.addBindValue(false);
+
+        if (!insertQuery.exec()) {
+            qCritical() << "插入类别到数据库失败:" << insertQuery.lastError().text();
+            return false;
+        }
+
+        // 添加到内存列表
+        categories.push_back(std::move(newItem));
+
+        qDebug() << "成功添加类别:" << name;
+    } catch (const std::exception &e) {
+        qCritical() << "添加类别时发生异常:" << e.what();
+        success = false;
+    } catch (...) {
+        qCritical() << "添加类别时发生未知异常";
+        success = false;
+    }
+
+    return success;
+}
+
+/**
+ * @brief 更新类别
+ * @param categories 类别列表引用
+ * @param id 类别ID
+ * @param name 新的类别名称
+ * @return 更新成功返回true，否则返回false
+ */
+bool CategoryDataStorage::updateCategory(std::vector<std::unique_ptr<CategorieItem>> &categories,
+                                         int id,
+                                         const QString &name) {
+    bool success = false;
+
+    try {
+        QSqlDatabase db = m_databaseManager.getDatabase();
+        if (!db.isOpen()) {
+            qCritical() << "数据库未打开，无法更新类别";
+            return false;
+        }
+
+        // 更新数据库中的类别
+        QSqlQuery updateQuery(db);
+        const QString updateString = "UPDATE categories SET name = ?, synced = ? WHERE id = ?";
+        updateQuery.prepare(updateString);
+        updateQuery.addBindValue(name);
+        updateQuery.addBindValue(false); // 标记为未同步
+        updateQuery.addBindValue(id);
+
+        if (!updateQuery.exec()) {
+            qCritical() << "更新数据库中的类别失败:" << updateQuery.lastError().text();
+            return false;
+        }
+
+        if (updateQuery.numRowsAffected() == 0) {
+            qWarning() << "未找到要更新的类别，ID:" << id;
+            return false;
+        }
+
+        // 更新内存中的类别
+        for (auto &item : categories) {
+            if (item->id() == id) {
+                item->setName(name);
+                item->setSynced(false); // 标记为未同步
+                success = true;
+                break;
+            }
+        }
+
+        if (success) {
+            qDebug() << "成功更新类别:" << name;
+        }
+    } catch (const std::exception &e) {
+        qCritical() << "更新类别时发生异常:" << e.what();
+        success = false;
+    } catch (...) {
+        qCritical() << "更新类别时发生未知异常";
+        success = false;
+    }
+
+    return success;
 }
 
 /**

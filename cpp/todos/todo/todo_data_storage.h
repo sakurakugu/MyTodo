@@ -25,6 +25,7 @@
 
 #include "../items/todo_item.h"
 #include "setting.h"
+#include "../../foundation/database_manager.h"
 
 /**
  * @class TodoDataStorage
@@ -74,6 +75,11 @@ class TodoDataStorage : public QObject {
     bool loadFromLocalStorage(std::vector<std::unique_ptr<TodoItem>> &todos);     // 从本地存储加载待办事项
     bool saveToLocalStorage(const std::vector<std::unique_ptr<TodoItem>> &todos); // 将待办事项保存到本地存储
 
+    // CRUD操作
+    std::unique_ptr<TodoItem> addTodo(const QString &title, const QString &description, const QString &category, bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate);
+    bool updateTodo(int id, const QString &title, const QString &description, const QString &category, bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate);
+    bool deleteTodo(int id);
+
     // 文件导入功能
     bool importFromToml(const toml::table &table,
                         std::vector<std::unique_ptr<TodoItem>> &todos,
@@ -89,4 +95,5 @@ class TodoDataStorage : public QObject {
     
     // 成员变量
     Setting &m_setting; ///< 设置对象引用
+    DatabaseManager &m_databaseManager; ///< 数据库管理器引用
 };
