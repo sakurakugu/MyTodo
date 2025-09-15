@@ -13,19 +13,10 @@
 
 #pragma once
 
-#include <QJsonArray>
-#include <QJsonObject>
-#include <QObject>
-#include <QString>
-#include <QVariantList>
-#include <QVariantMap>
-#include <memory>
 #include <toml++/toml.hpp>
-#include <vector>
-
-#include "../../foundation/config.h"
 #include "../items/categorie_item.h"
-#include "setting.h"
+
+class Config;
 
 /**
  * @class CategoryDataStorage
@@ -87,25 +78,9 @@ class CategoryDataStorage : public QObject {
     bool loadFromLocalStorage(std::vector<std::unique_ptr<CategorieItem>> &categories);     // 从本地存储加载类别
     bool saveToLocalStorage(const std::vector<std::unique_ptr<CategorieItem>> &categories); // 将类别保存到本地存储
 
-    // 文件导入功能
-    bool importFromToml(const QString &filePath,
-                        std::vector<std::unique_ptr<CategorieItem>> &categories); // 从TOML文件导入类别
-    bool importFromToml(const toml::table &table,
-                        std::vector<std::unique_ptr<CategorieItem>> &categories); // 从TOML表导入类别
+    // 导入功能
     bool importFromToml(const toml::table &table, std::vector<std::unique_ptr<CategorieItem>> &categories,
                         ConflictResolution resolution); // 从TOML表导入类别（指定冲突解决策略）
-    bool importFromJson(const QString &filePath,
-                        std::vector<std::unique_ptr<CategorieItem>> &categories); // 从JSON文件导入类别
-
-    // 文件导出功能
-    bool exportToToml(const QString &filePath,
-                      const std::vector<std::unique_ptr<CategorieItem>> &categories); // 导出类别到TOML文件
-    bool exportToToml(const std::vector<std::unique_ptr<CategorieItem>> &categories,
-                      toml::table &table); // 导出类别到TOML表
-    bool exportToJson(const QString &filePath,
-                      const std::vector<std::unique_ptr<CategorieItem>> &categories); // 导出类别到JSON文件
-    bool exportToJson(const std::vector<std::unique_ptr<CategorieItem>> &categories,
-                      QJsonArray &jsonArray); // 导出类别到JSON数组
 
     // 默认类别管理
     void createDefaultCategories(std::vector<std::unique_ptr<CategorieItem>> &categories,
@@ -113,14 +88,7 @@ class CategoryDataStorage : public QObject {
     bool hasDefaultCategory(const std::vector<std::unique_ptr<CategorieItem>> &categories) const; // 检查是否有默认类别
 
     // 数据验证和转换
-    bool validateCategoryData(const QJsonObject &categoryObj) const;                             // 验证类别数据
-    std::unique_ptr<CategorieItem> createCategoryFromJson(const QJsonObject &categoryObj) const; // 从JSON创建类别项目
-    QJsonObject categoryToJson(const CategorieItem &category) const;                             // 将类别转换为JSON
-
-  signals:
-    void dataOperationCompleted(bool success, const QString &message);            // 数据操作完成信号
-    void importCompleted(int importedCount, int skippedCount, int conflictCount); // 导入操作完成信号
-    void exportCompleted(bool success, const QString &message);                   // 导出操作完成信号
+    bool validateCategoryData(const QJsonObject &categoryObj) const; // 验证类别数据
 
   private:
     // 辅助方法
@@ -133,12 +101,6 @@ class CategoryDataStorage : public QObject {
     bool handleConflict(const std::unique_ptr<CategorieItem> &newCategory,
                         std::vector<std::unique_ptr<CategorieItem>> &categories, ConflictResolution resolution);
 
-    // 配置相关方法
-    bool loadFromConfig(std::vector<std::unique_ptr<CategorieItem>> &categories);
-    bool saveToConfig(const std::vector<std::unique_ptr<CategorieItem>> &categories);
-    QString getCategoryConfigKey() const;
-
     // 成员变量
-    Setting &m_setting; ///< 设置对象引用
-    Config &m_config;   ///< 主配置对象引用
+    Config &m_config; ///< 主配置对象引用
 };

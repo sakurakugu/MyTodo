@@ -30,8 +30,7 @@ class Config : public QObject {
     Config &operator=(Config &&) = delete;
 
     void save(const QString &key, const QVariant &value);                 // 保存配置项
-    void set(const QString &key, const QVariant &value);                  // 设置配置项（和上面一样的，只是别名）
-    std::optional<QVariant> get(const QString &key) const;                // 获取配置项
+    QVariant get(const QString &key) const;                // 获取配置项
     QVariant get(const QString &key, const QVariant &defaultValue) const; // 获取配置项（带默认值）
     void remove(const QString &key);                                      // 删除配置项
     const toml::node *find(const QString &key) const noexcept;            // 查找配置项

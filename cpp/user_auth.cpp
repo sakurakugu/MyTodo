@@ -112,16 +112,19 @@ bool UserAuth::isLoggedIn() const {
     if (m_accessToken.isEmpty()) {
         return false;
     }
-    
+
     // 检查令牌是否已过期
     if (m_tokenExpiryTime > 0) {
         qint64 currentTime = QDateTime::currentSecsSinceEpoch();
         if (currentTime >= m_tokenExpiryTime) {
-            qDebug() << "访问令牌已过期，当前时间:" << currentTime << "过期时间:" << m_tokenExpiryTime;
+            QString currentDateTime = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+            QString expiryDateTime = QDateTime::fromSecsSinceEpoch(m_tokenExpiryTime).toString("yyyy-MM-dd hh:mm:ss");
+
+            qDebug() << "访问令牌已过期，当前时间:" << currentDateTime << "过期时间:" << expiryDateTime;
             return false;
         }
     }
-    
+
     return true;
 }
 
@@ -338,7 +341,7 @@ void UserAuth::onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkR
 }
 
 void UserAuth::onAuthTokenExpired() {
-    qWarning() << "认证令牌已过期或无效，当前时间:" << QDateTime::currentSecsSinceEpoch() 
+    qWarning() << "认证令牌已过期或无效，当前时间:" << QDateTime::currentSecsSinceEpoch()
                << "令牌过期时间:" << m_tokenExpiryTime;
 
     // 停止令牌过期检查定时器
@@ -355,7 +358,7 @@ void UserAuth::onAuthTokenExpired() {
             qWarning() << "令牌刷新已在进行中，等待刷新结果";
             return; // 避免重复清理
         }
-        
+
         qWarning() << "无法自动刷新令牌，清理用户状态并要求重新登录";
         clearCredentials();
         emit usernameChanged();

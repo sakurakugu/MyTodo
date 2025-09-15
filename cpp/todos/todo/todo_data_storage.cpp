@@ -26,7 +26,10 @@
 #include <optional>
 #include <unordered_map>
 
-TodoDataStorage::TodoDataStorage(Setting &setting, QObject *parent) : QObject(parent), m_setting(setting) {
+TodoDataStorage::TodoDataStorage(QObject *parent)
+    : QObject(parent),                  // 父对象
+      m_setting(Setting::GetInstance()) // 设置
+{
 }
 
 TodoDataStorage::~TodoDataStorage() {
@@ -102,15 +105,12 @@ bool TodoDataStorage::loadFromLocalStorage(std::vector<std::unique_ptr<TodoItem>
         }
 
         qDebug() << "成功从本地存储加载" << todos.size() << "个待办事项";
-        emit dataOperationCompleted(true, QString("成功加载 %1 个待办事项").arg(todos.size()));
     } catch (const std::exception &e) {
         qCritical() << "加载本地存储时发生异常:" << e.what();
         success = false;
-        emit dataOperationCompleted(false, QString("加载失败: %1").arg(e.what()));
     } catch (...) {
         qCritical() << "加载本地存储时发生未知异常";
         success = false;
-        emit dataOperationCompleted(false, "加载失败: 未知异常");
     }
 
     return success;
@@ -189,16 +189,13 @@ bool TodoDataStorage::saveToLocalStorage(const std::vector<std::unique_ptr<TodoI
         }
 
         qDebug() << "已成功保存" << todos.size() << "个待办事项到本地存储";
-        emit dataOperationCompleted(true, QString("成功保存 %1 个待办事项").arg(todos.size()));
         success = true;
     } catch (const std::exception &e) {
         qCritical() << "保存到本地存储时发生异常:" << e.what();
         success = false;
-        emit dataOperationCompleted(false, QString("保存失败: %1").arg(e.what()));
     } catch (...) {
         qCritical() << "保存到本地存储时发生未知异常";
         success = false;
-        emit dataOperationCompleted(false, "保存失败: 未知异常");
     }
     return success;
 }
@@ -242,8 +239,8 @@ std::unique_ptr<TodoItem> TodoDataStorage::createTodoItemFromToml(const toml::ta
             return defaultValue;
         };
 
-        auto getDateTimeValue = [&todoTable](const char *key,
-                                             const QDateTime &defaultValue = QDateTime::fromString("1970-01-01T00:00:00", Qt::ISODate)) -> QDateTime {
+        auto getDateTimeValue = [&todoTable](const char *key, const QDateTime &defaultValue = QDateTime::fromString(
+                                                                  "1970-01-01T00:00:00", Qt::ISODate)) -> QDateTime {
             auto node = todoTable[key];
             if (node && node.is_string()) {
                 QString dateStr = QString::fromStdString(node.value_or("1970-01-01T00:00:00"));
@@ -253,7 +250,8 @@ std::unique_ptr<TodoItem> TodoDataStorage::createTodoItemFromToml(const toml::ta
             return defaultValue;
         };
 
-        auto getDateValue = [&todoTable](const char *key, const QDate &defaultValue = QDate::fromString("1970-01-01", Qt::ISODate)) -> QDate {
+        auto getDateValue = [&todoTable](const char *key, const QDate &defaultValue =
+                                                              QDate::fromString("1970-01-01", Qt::ISODate)) -> QDate {
             auto node = todoTable[key];
             if (node && node.is_string()) {
                 QString dateStr = QString::fromStdString(node.value_or("1970-01-01"));
@@ -413,15 +411,6 @@ void TodoDataStorage::updateTodoItemFromToml(TodoItem *item, const toml::table &
     }
 }
 
-/**
- * @brief 从TOML表导入待办事项（使用默认冲突解决策略）
- * @param table TOML表引用
- * @param todos 待办事项容器引用
- * @return 导入是否成功
- */
-bool TodoDataStorage::importFromToml(const toml::table &table, std::vector<std::unique_ptr<TodoItem>> &todos) {
-    return importFromToml(table, todos, ConflictResolution::Skip);
-}
 
 /**
  * @brief 从TOML表导入待办事项（指定冲突解决策略）
@@ -442,7 +431,6 @@ bool TodoDataStorage::importFromToml(const toml::table &table, std::vector<std::
         auto todosNode = table["todos"];
         if (!todosNode) {
             qWarning() << "TOML文件中未找到todos节点";
-            emit dataOperationCompleted(false, "TOML文件格式错误：未找到todos节点");
             return false;
         }
 
@@ -450,7 +438,6 @@ bool TodoDataStorage::importFromToml(const toml::table &table, std::vector<std::
         auto sizeNode = todosNode["size"];
         if (!sizeNode || !sizeNode.is_integer()) {
             qWarning() << "TOML文件中todos.size字段无效";
-            emit dataOperationCompleted(false, "TOML文件格式错误：todos.size字段无效");
             return false;
         }
 
@@ -564,19 +551,13 @@ bool TodoDataStorage::importFromToml(const toml::table &table, std::vector<std::
 
         qDebug() << "TOML导入完成 - 导入:" << importedCount << "跳过:" << skippedCount << "冲突:" << conflictCount;
         emit importCompleted(importedCount, skippedCount, conflictCount);
-        emit dataOperationCompleted(true, QString("导入完成：成功导入 %1 个，跳过 %2 个，冲突 %3 个")
-                                              .arg(importedCount)
-                                              .arg(skippedCount)
-                                              .arg(conflictCount));
 
     } catch (const std::exception &e) {
         qCritical() << "从TOML导入时发生异常:" << e.what();
         success = false;
-        emit dataOperationCompleted(false, QString("导入失败: %1").arg(e.what()));
     } catch (...) {
         qCritical() << "从TOML导入时发生未知异常";
         success = false;
-        emit dataOperationCompleted(false, "导入失败: 未知异常");
     }
 
     return success;

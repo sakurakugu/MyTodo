@@ -41,10 +41,7 @@ Config::Config(QObject *parent)
 }
 
 Config::~Config() {
-    // 确保所有设置都已保存
-    if (m_needsSave) {
-        saveToFile();
-    }
+
 }
 
 /**
@@ -146,24 +143,14 @@ void Config::save(const QString &key, const QVariant &value) {
 }
 
 /**
- * @brief 设置配置项
- * @param key 配置项键名
- * @param value 配置项值
- * @return 操作结果或错误信息
- */
-void Config::set(const QString &key, const QVariant &value) {
-    save(key, value);
-}
-
-/**
  * @brief 从配置文件读取设置
  * @param key 设置键名
  * @param defaultValue 默认值（如果设置不存在）
  * @return 设置值或错误信息
  */
-std::optional<QVariant> Config::get(const QString &key) const {
+QVariant Config::get(const QString &key) const {
     if (key.isEmpty()) {
-        return std::nullopt;
+        return QVariant();
     }
 
     std::lock_guard<std::mutex> lock(m_mutex);
@@ -171,29 +158,33 @@ std::optional<QVariant> Config::get(const QString &key) const {
     try {
         QStringList parts = key.split('/', Qt::SkipEmptyParts);
         if (parts.isEmpty()) {
-            return std::nullopt;
+            return QVariant();
         }
 
         const toml::node *node = &m_config;
 
         for (const auto &part : parts) {
             if (!node->is_table())
-                return std::nullopt;
+                return QVariant();
             node = node->as_table()->get(part.toStdString());
             if (!node)
-                return std::nullopt;
+                return QVariant();
+        }
+
+        if (node->is_array()) {
+            return QVariant::fromValue(tomlToVariant(node));
         }
 
         return tomlToVariant(node);
     } catch (const std::exception &e) {
         qWarning() << "获取配置项失败:" << key << "错误:" << e.what();
-        return std::nullopt;
+        return QVariant();
     }
 }
 
 QVariant Config::get(const QString &key, const QVariant &defaultValue) const {
     auto result = get(key);
-    return result.value_or(defaultValue);
+    return result.isValid() ? result : defaultValue;
 }
 
 /**

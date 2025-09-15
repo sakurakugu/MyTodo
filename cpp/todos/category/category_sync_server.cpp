@@ -23,9 +23,9 @@
 
 CategorySyncServer::CategorySyncServer(QObject *parent)
     : BaseSyncServer(parent), //
-      m_currentPushIndex(0),  //
-      m_currentBatchIndex(0), //
-      m_totalBatches(0)       //
+      m_currentPushIndex(0),  // 当前推送索引
+      m_currentBatchIndex(0), // 当前批次索引
+      m_totalBatches(0)       // 总批次数量
 {
 
     // 设置类别特有的API端点
@@ -33,12 +33,9 @@ CategorySyncServer::CategorySyncServer(QObject *parent)
                         .get("server/categoriesApiEndpoint",
                              QString::fromStdString(std::string{DefaultValues::categoriesApiEndpoint}))
                         .toString();
-
-    qDebug() << "CategorySyncServer 已初始化，API端点:" << m_apiEndpoint;
 }
 
 CategorySyncServer::~CategorySyncServer() {
-    qDebug() << "CategorySyncServer 已销毁";
 }
 
 // 属性访问器已在基类中实现

@@ -60,7 +60,7 @@ TodoManager::TodoManager(QObject *parent)
     connect(m_sorter, &TodoSorter::descendingChanged, this, &TodoManager::sortTodos);
 
     // 创建数据管理器
-    m_dataManager = new TodoDataStorage(m_setting, this);
+    m_dataManager = new TodoDataStorage(this);
 
     // 连接同步管理器信号
     connect(m_syncManager, &TodoSyncServer::syncStarted, this, &TodoManager::onSyncStarted);
@@ -1092,6 +1092,10 @@ TodoFilter *TodoManager::filter() const {
 
 TodoSorter *TodoManager::sorter() const {
     return m_sorter;
+}
+
+TodoSyncServer *TodoManager::syncServer() const {
+    return m_syncManager;
 }
 
 // 排序相关实现

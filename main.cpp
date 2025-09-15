@@ -83,9 +83,9 @@ int main(int argc, char *argv[]) {
     app.setWindowIcon(QIcon(":/image/icon.png")); // 设置窗口图标
 
     // 设置应用信息
-    QGuiApplication::setApplicationName("MyTodo"); // 设置应用名称
-    QGuiApplication::setOrganizationName("MyTodo"); // 设置组织名称
-    QGuiApplication::setOrganizationDomain("mytodo.app"); // 设置组织域名
+    QGuiApplication::setApplicationName("MyTodo");                // 设置应用名称
+    QGuiApplication::setOrganizationName("MyTodo");               // 设置组织名称
+    QGuiApplication::setOrganizationDomain("mytodo.app");         // 设置组织域名
     QGuiApplication::setApplicationVersion("APP_VERSION_STRING"); // 设置应用版本
 
     GlobalState &globalState = GlobalState::GetInstance(); // 创建GlobalState实例
@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
     qInfo() << "日志系统初始化完成，日志文件路径:" << setting.getLogFilePath();
 
     CategoryManager &categoryManager = CategoryManager::GetInstance(); // 创建CategoryManager实例
-    TodoManager &todoManager = TodoManager::GetInstance();         // 创建TodoManager实例
+    TodoManager &todoManager = TodoManager::GetInstance();             // 创建TodoManager实例
 
     // 检查是否通过开机自启动启动
     QStringList arguments = app.arguments();
@@ -111,6 +111,9 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("userAuth", &userAuth);
     engine.rootContext()->setContextProperty("categoryManager", &categoryManager);
     engine.rootContext()->setContextProperty("todoManager", &todoManager);
+    engine.rootContext()->setContextProperty("todoFilter", todoManager.filter());
+    engine.rootContext()->setContextProperty("todoSorter", todoManager.sorter());
+    engine.rootContext()->setContextProperty("todoSyncServer", todoManager.syncServer());
     engine.rootContext()->setContextProperty("globalState", &globalState);
 
     QObject::connect(

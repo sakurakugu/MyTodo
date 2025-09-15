@@ -109,6 +109,7 @@ class TodoManager : public QAbstractListModel {
     // 访问器
     Q_INVOKABLE TodoFilter *filter() const;
     Q_INVOKABLE TodoSorter *sorter() const;
+    Q_INVOKABLE TodoSyncServer *syncServer() const;
 
     // CRUD操作
     Q_INVOKABLE void addTodo(const QString &title, const QString &description = QString(),

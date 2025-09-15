@@ -67,7 +67,7 @@ class TodoDataStorage : public QObject {
     Q_ENUM(ConflictResolution)
 
     // 构造函数
-    explicit TodoDataStorage(Setting &setting, QObject *parent = nullptr);
+    explicit TodoDataStorage(QObject *parent = nullptr);
     ~TodoDataStorage();
 
     // 本地存储功能
@@ -76,13 +76,10 @@ class TodoDataStorage : public QObject {
 
     // 文件导入功能
     bool importFromToml(const toml::table &table,
-                        std::vector<std::unique_ptr<TodoItem>> &todos); // 从TOML表导入待办事项
-    bool importFromToml(const toml::table &table,
                         std::vector<std::unique_ptr<TodoItem>> &todos,
                         ConflictResolution resolution); // 从TOML表导入待办事项（指定冲突解决策略）
 
   signals:
-    void dataOperationCompleted(bool success, const QString &message);            // 数据操作完成信号
     void importCompleted(int importedCount, int skippedCount, int conflictCount); // 导入操作完成信号
 
   private:

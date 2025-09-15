@@ -85,8 +85,6 @@ class CategoryManager : public QAbstractListModel {
     CategoryManager(CategoryManager &&) = delete;
     CategoryManager &operator=(CategoryManager &&) = delete;
 
-
-
     // QAbstractListModel 必要的实现方法
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
@@ -107,10 +105,10 @@ class CategoryManager : public QAbstractListModel {
 
     // 属性访问器
     CategorySyncServer *getSyncServer() const {
-        return m_syncServer;
+        return m_syncServer.get();
     } ///< 获取同步服务器实例
     CategoryDataStorage *getDataStorage() const {
-        return m_dataStorage;
+        return m_dataStorage.get();
     } ///< 获取数据存储实例
 
     const std::vector<std::unique_ptr<CategorieItem>> &getCategoryItems() const; ///< 获取类别项目列表
@@ -123,10 +121,9 @@ class CategoryManager : public QAbstractListModel {
     void clearCategories();                                                      ///< 清空所有类别
 
     // 数据存储相关方法
-    void loadCategoriesFromStorage();                                                       ///< 从存储加载类别
-    void saveCategoriesStorage();                                                           ///< 保存类别到存储
-    void importCategories(const QString &filePath, CategoryDataStorage::FileFormat format); ///< 导入类别数据
-    void exportCategories(const QString &filePath, CategoryDataStorage::FileFormat format); ///< 导出类别数据
+    void loadCategories(); ///< 从存储加载类别
+    void saveCategories(); ///< 保存类别
+    void importCategories(const toml::table &table, std::vector<std::unique_ptr<CategorieItem>> &categories); ///< 导入类别数据
 
   signals:
     void categoriesChanged();                 ///< 类别列表变化信号
@@ -140,7 +137,7 @@ class CategoryManager : public QAbstractListModel {
     void onCategoriesUpdatedFromServer(const QJsonArray &categoriesArray); ///< 处理从服务器更新的类别数据
 
   private:
-      explicit CategoryManager(QObject *parent = nullptr);
+    explicit CategoryManager(QObject *parent = nullptr);
     ~CategoryManager();
 
     // 辅助方法
@@ -152,28 +149,17 @@ class CategoryManager : public QAbstractListModel {
     QModelIndex indexFromItem(CategorieItem *categoryItem) const;    ///< 获取指定CategorieItem的模型索引
     CategoryRoles roleFromName(const QString &name) const;           ///< 从名称获取角色
 
-    // 状态管理
-    void emitOperationCompleted(const QString &operation, bool success, const QString &message); ///< 发射操作完成信号
-
     // 性能优化
     void beginModelUpdate(); ///< 开始模型更新
     void endModelUpdate();   ///< 结束模型更新
-
-    // 信号槽连接
-    void setupConnections(); ///< 设置信号槽连接
 
     // 成员变量
     std::vector<std::unique_ptr<CategorieItem>> m_categoryItems; ///< 类别项目列表
     QStringList m_categories;                                    ///< 类别名称列表（缓存）
     QString m_categoriesApiEndpoint;                             ///< 类别API端点
 
-    // 状态变量
-    bool m_isLoading;        ///< 是否正在加载
-    QString m_lastError;     ///< 最后的错误信息
-    QTimer *m_debounceTimer; ///< 防抖定时器
-
-    CategorySyncServer *m_syncServer;   ///< 类别同步服务器对象
-    CategoryDataStorage *m_dataStorage; ///< 类别数据存储对象
-    Setting &m_setting;                 ///< 配置管理
-    UserAuth &m_userAuth;               ///< 用户认证管理
+    std::unique_ptr<CategorySyncServer> m_syncServer;   ///< 类别同步服务器对象
+    std::unique_ptr<CategoryDataStorage> m_dataStorage; ///< 类别数据存储对象
+    Setting &m_setting;                                 ///< 配置管理
+    UserAuth &m_userAuth;                               ///< 用户认证管理
 };

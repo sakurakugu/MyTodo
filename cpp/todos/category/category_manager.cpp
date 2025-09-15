@@ -18,50 +18,22 @@
 #include <algorithm>
 
 CategoryManager::CategoryManager(QObject *parent)
-    : QAbstractListModel(parent),                   //
-      m_debounceTimer(new QTimer(this)),            //
-      m_syncServer(new CategorySyncServer()),   //
-      m_dataStorage(new CategoryDataStorage()), //
-      m_setting(Setting::GetInstance()),            //
-      m_userAuth(UserAuth::GetInstance())           //
+    : QAbstractListModel(parent),                             //
+      m_syncServer(std::make_unique<CategorySyncServer>()),   //
+      m_dataStorage(std::make_unique<CategoryDataStorage>()), //
+      m_setting(Setting::GetInstance()),                      //
+      m_userAuth(UserAuth::GetInstance())                     //
 {
 
     // 连接同步服务器信号
-    connect(m_syncServer, &CategorySyncServer::categoriesUpdatedFromServer, this,
+    connect(m_syncServer.get(), &CategorySyncServer::categoriesUpdatedFromServer, this,
             &CategoryManager::onCategoriesUpdatedFromServer);
 
-    // 连接数据存储信号
-    if (m_dataStorage) {
-        connect(m_dataStorage, &CategoryDataStorage::dataOperationCompleted, this,
-                [this](bool success, const QString &message) {
-                    if (success) {
-                        qDebug() << "数据存储操作成功:" << message;
-                    } else {
-                        qWarning() << "数据存储操作失败:" << message;
-                        emit errorOccurred(message);
-                    }
-                });
-    }
-
-    // 设置防抖定时器
-    m_debounceTimer->setSingleShot(true);
-    m_debounceTimer->setInterval(300);
-
-    // 连接信号槽
-    setupConnections(); // 300ms防抖
-
     // 从存储加载类别数据
-    loadCategoriesFromStorage();
-
-    // 如果没有加载到数据，添加默认类别
-    if (m_categoryItems.empty()) {
-        addDefaultCategories();
-    }
+    loadCategories();
 }
 
 CategoryManager::~CategoryManager() {
-    m_categoryItems.clear();
-    m_categories.clear();
 }
 
 /**
@@ -222,16 +194,6 @@ CategoryManager::CategoryRoles CategoryManager::roleFromName(const QString &name
 }
 
 /**
- * @brief 发射操作完成信号
- * @param operation 操作名称
- * @param success 是否成功
- * @param message 消息
- */
-void CategoryManager::emitOperationCompleted(const QString &operation, bool success, const QString &message) {
-    emit operationCompleted(operation, success, message);
-}
-
-/**
  * @brief 开始模型更新
  */
 void CategoryManager::beginModelUpdate() {
@@ -301,12 +263,6 @@ void CategoryManager::addDefaultCategories() {
     // 使用数据存储创建默认类别
     if (m_dataStorage) {
         m_dataStorage->createDefaultCategories(m_categoryItems, m_userAuth.getUuid());
-    } else {
-        // 备用方案：直接创建
-        m_categoryItems.clear();
-        auto defaultCategory = std::make_unique<CategorieItem>(1, QUuid::createUuid(), "未分类", m_userAuth.getUuid(),
-                                                               QDateTime::currentDateTime(), false);
-        m_categoryItems.push_back(std::move(defaultCategory));
     }
 
     // 更新缓存列表
@@ -319,13 +275,8 @@ void CategoryManager::addDefaultCategories() {
 
     endModelUpdate();
 
-    // 将类别数据传递给同步服务器
-    if (m_syncServer) {
-        m_syncServer->setCategoryItems(m_categoryItems);
-    }
-
     // 保存到存储
-    saveCategoriesStorage();
+    saveCategories();
 }
 
 /**
@@ -342,19 +293,24 @@ void CategoryManager::createCategory(const QString &name) {
     qDebug() << "=== 开始创建类别 ===" << name;
 
     if (!isValidCategoryName(name)) {
-        emitOperationCompleted("createCategory", false, "类别名称不能为空或过长");
+        operationCompleted("createCategory", false, "类别名称不能为空或过长");
         return;
     }
 
     if (categoryExists(name)) {
-        emitOperationCompleted("createCategory", false, "类别名称已存在");
+        operationCompleted("createCategory", false, "类别名称已存在");
         return;
     }
 
     // 创建新的类别项目
-    auto newCategory = std::make_unique<CategorieItem>(m_categoryItems.size() + 1, // 简单的ID分配
-                                                       QUuid::createUuid(), name, m_userAuth.getUuid(),
-                                                       QDateTime::currentDateTime(), false);
+    auto newCategory = std::make_unique<CategorieItem>( //
+        m_categoryItems.size() + 1,                     // 分配ID
+        QUuid::createUuid(),                            // 分配UUID
+        name,                                           // 类别名称
+        m_userAuth.getUuid(),                           // 用户UUID
+        QDateTime::currentDateTime(),                   // 创建时间
+        false                                           // 未同步
+    );
 
     // 添加到列表中
     m_categoryItems.push_back(std::move(newCategory));
@@ -362,49 +318,43 @@ void CategoryManager::createCategory(const QString &name) {
 
     qDebug() << "类别创建成功:" << name;
     emit categoriesChanged();
-    emitOperationCompleted("createCategory", true, "类别创建成功");
+    operationCompleted("createCategory", true, "类别创建成功");
 
     // 保存到本地存储
-    saveCategoriesStorage();
-
-    // 将更新后的类别数据传递给同步服务器
-    if (m_syncServer) {
-        m_syncServer->setCategoryItems(m_categoryItems);
-        m_syncServer->createCategoryWithServer(name);
-    }
+    saveCategories();
 }
 
 void CategoryManager::updateCategory(const QString &name, const QString &newName) {
     qDebug() << "=== 开始更新本地类别 ===" << name << "->" << newName;
 
     if (!isValidCategoryName(newName)) {
-        emitOperationCompleted("updateCategory", false, "新类别名称不能为空或过长");
+        operationCompleted("updateCategory", false, "新类别名称不能为空或过长");
         return;
     }
 
     if (name == "未分类") {
-        emitOperationCompleted("updateCategory", false, "不能更新系统默认类别 \"未分类\"");
+        operationCompleted("updateCategory", false, "不能更新系统默认类别 \"未分类\"");
         return;
     }
 
     // 检查原类别是否存在
-    CategorieItem *existingCategory = findCategoryByName(name);
-    if (!existingCategory) {
-        qWarning() << "要更新的类别不存在:" << name;
-        emitOperationCompleted("updateCategory", false, "要更新的类别不存在");
+    CategorieItem *nowCategory = findCategoryByName(name);
+    if (nowCategory == nullptr) {
+        qWarning() << "待更新的类别不存在:" << name;
+        operationCompleted("updateCategory", false, "待更新的类别不存在");
         return;
     }
 
     // 检查新名称是否与其他类别重复（排除自身）
-    CategorieItem *duplicateCategory = findCategoryByName(newName);
-    if (duplicateCategory && duplicateCategory->id() != existingCategory->id()) {
-        qWarning() << "新类别名称已存在:" << newName;
-        emitOperationCompleted("updateCategory", false, "类别名称已存在");
+    CategorieItem *newCategory = findCategoryByName(newName);
+    if (newCategory != nullptr) {
+        qWarning() << "该类别已存在:" << newName;
+        operationCompleted("updateCategory", false, "该类别已存在");
         return;
     }
 
     // 更新类别名称
-    existingCategory->setName(newName);
+    nowCategory->setName(newName);
 
     // 更新缓存列表
     int index = m_categories.indexOf(name);
@@ -413,24 +363,18 @@ void CategoryManager::updateCategory(const QString &name, const QString &newName
     }
 
     qDebug() << "本地类别更新成功:" << name << "->" << newName;
+    operationCompleted("updateCategory", true, "类别更新成功");
     emit categoriesChanged();
-    emitOperationCompleted("updateCategory", true, "类别更新成功");
 
     // 保存到本地存储
-    saveCategoriesStorage();
-
-    // 将更新后的类别数据传递给同步服务器
-    if (m_syncServer) {
-        m_syncServer->setCategoryItems(m_categoryItems);
-        m_syncServer->updateCategoryWithServer(name, newName);
-    }
+    saveCategories();
 }
 
 void CategoryManager::deleteCategory(const QString &name) {
     qDebug() << "=== 开始本地类别 ===" << name;
 
     if (name == "未分类") {
-        emitOperationCompleted("deleteCategory", false, "不能删除系统默认类别 \"未分类\"");
+        operationCompleted("deleteCategory", false, "不能删除系统默认类别 \"未分类\"");
         return;
     }
 
@@ -438,13 +382,13 @@ void CategoryManager::deleteCategory(const QString &name) {
     CategorieItem *category = findCategoryByName(name);
     if (!category) {
         qWarning() << "要删除的类别不存在:" << name;
-        emitOperationCompleted("deleteCategory", false, "要删除的类别不存在");
+        operationCompleted("deleteCategory", false, "要删除的类别不存在");
         return;
     }
 
     // 检查是否可以删除
     if (!category->canBeDeleted()) {
-        emitOperationCompleted("deleteCategory", false, "不能删除系统默认类别");
+        operationCompleted("deleteCategory", false, "不能删除系统默认类别");
         return;
     }
 
@@ -460,17 +404,11 @@ void CategoryManager::deleteCategory(const QString &name) {
     m_categories.removeAll(name);
 
     qDebug() << "本地类别删除成功:" << name;
+    operationCompleted("deleteCategory", true, "类别删除成功");
     emit categoriesChanged();
-    emitOperationCompleted("deleteCategory", true, "类别删除成功");
 
     // 保存到本地存储
-    saveCategoriesStorage();
-
-    // 将更新后的类别数据传递给同步服务器
-    if (m_syncServer) {
-        m_syncServer->setCategoryItems(m_categoryItems);
-        m_syncServer->deleteCategoryWithServer(name);
-    }
+    saveCategories();
 }
 
 // 同步相关方法实现
@@ -540,10 +478,15 @@ void CategoryManager::updateCategoriesFromJson(const QJsonArray &categoriesArray
 
     // 添加默认的"未分类"选项（如果不存在）
     if (!m_categories.contains("未分类")) {
-        auto defaultCategory = std::make_unique<CategorieItem>(1, QUuid::createUuid(), "未分类", QUuid(),
-                                                               QDateTime::currentDateTime(), true);
+        auto defaultCategory = std::make_unique<CategorieItem>( //
+            1,                                                  //
+            QUuid::createUuid(),                                //
+            "未分类",                                           //
+            m_userAuth.getUuid(),                               //
+            QDateTime::currentDateTime(),                       //
+            false                                               //
+        );
         m_categoryItems.push_back(std::move(defaultCategory));
-        m_categories << "未分类";
     }
 
     endModelUpdate();
@@ -552,22 +495,9 @@ void CategoryManager::updateCategoriesFromJson(const QJsonArray &categoriesArray
 }
 
 /**
- * @brief 设置信号槽连接
- */
-void CategoryManager::setupConnections() {
-    // 连接防抖定时器（如果需要的话）
-    if (m_debounceTimer) {
-        // 防抖定时器暂时不连接到任何槽函数
-        // connect(m_debounceTimer, &QTimer::timeout, this, &CategoryManager::someFunction);
-    }
-
-    qDebug() << "CategoryManager信号槽连接完成";
-}
-
-/**
  * @brief 从存储加载类别
  */
-void CategoryManager::loadCategoriesFromStorage() {
+void CategoryManager::loadCategories() {
     qDebug() << "开始从存储加载类别数据";
 
     if (!m_dataStorage) {
@@ -601,13 +531,18 @@ void CategoryManager::loadCategoriesFromStorage() {
         qWarning() << "从存储加载类别失败";
     }
 
+    // 如果没有加载到数据，添加默认类别
+    if (m_categoryItems.empty()) {
+        addDefaultCategories();
+    }
+
     endModelUpdate();
 }
 
 /**
  * @brief 保存类别到存储
  */
-void CategoryManager::saveCategoriesStorage() {
+void CategoryManager::saveCategories() {
     qDebug() << "开始保存类别数据到存储";
 
     if (!m_dataStorage) {
@@ -622,85 +557,21 @@ void CategoryManager::saveCategoriesStorage() {
     } else {
         qWarning() << "保存类别到存储失败";
     }
-}
 
-/**
- * @brief 导入类别数据
- * @param filePath 文件路径
- * @param format 文件格式
- */
-void CategoryManager::importCategories(const QString &filePath, CategoryDataStorage::FileFormat format) {
-    qDebug() << "开始导入类别数据，文件:" << filePath << "格式:" << static_cast<int>(format);
-
-    if (!m_dataStorage) {
-        qWarning() << "数据存储对象为空，无法导入类别";
-        emitOperationCompleted("importCategories", false, "数据存储对象为空");
-        return;
-    }
-
-    std::vector<std::unique_ptr<CategorieItem>> importedCategories;
-    bool success = false;
-
-    if (format == CategoryDataStorage::FileFormat::TOML) {
-        success = m_dataStorage->importFromToml(filePath, importedCategories);
-    } else if (format == CategoryDataStorage::FileFormat::JSON) {
-        success = m_dataStorage->importFromJson(filePath, importedCategories);
-    }
-
-    if (success && !importedCategories.empty()) {
-        beginModelUpdate();
-
-        // 合并导入的类别（避免重复）
-        for (auto &importedCategory : importedCategories) {
-            if (importedCategory && !m_categories.contains(importedCategory->name())) {
-                m_categories.append(importedCategory->name());
-                m_categoryItems.push_back(std::move(importedCategory));
-            }
-        }
-
-        endModelUpdate();
-
-        // 保存到本地存储
-        saveCategoriesStorage();
-
-        emit categoriesChanged();
-        emitOperationCompleted("importCategories", true, QString("成功导入 %1 个类别").arg(importedCategories.size()));
-        qDebug() << "类别导入成功，共" << importedCategories.size() << "个类别";
-    } else {
-        emitOperationCompleted("importCategories", false, "导入失败");
-        qWarning() << "类别导入失败";
+    // 将更新后的类别数据传递给同步服务器
+    if (m_syncServer) {
+        m_syncServer->setCategoryItems(m_categoryItems);
     }
 }
 
 /**
- * @brief 导出类别数据
- * @param filePath 文件路径
- * @param format 文件格式
+ * @brief 从TOML表导入类别数据
+ * @param table TOML表
+ * @param categories 类别列表
  */
-void CategoryManager::exportCategories(const QString &filePath, CategoryDataStorage::FileFormat format) {
-    qDebug() << "开始导出类别数据，文件:" << filePath << "格式:" << static_cast<int>(format);
-
-    if (!m_dataStorage) {
-        qWarning() << "数据存储对象为空，无法导出类别";
-        emitOperationCompleted("exportCategories", false, "数据存储对象为空");
-        return;
-    }
-
-    bool success = false;
-
-    if (format == CategoryDataStorage::FileFormat::TOML) {
-        success = m_dataStorage->exportToToml(filePath, m_categoryItems);
-    } else if (format == CategoryDataStorage::FileFormat::JSON) {
-        success = m_dataStorage->exportToJson(filePath, m_categoryItems);
-    }
-
-    if (success) {
-        emitOperationCompleted("exportCategories", true, "导出成功");
-        qDebug() << "类别导出成功，共" << m_categoryItems.size() << "个类别";
-    } else {
-        emitOperationCompleted("exportCategories", false, "导出失败");
-        qWarning() << "类别导出失败";
-    }
+void CategoryManager::importCategories(const toml::table &table, std::vector<std::unique_ptr<CategorieItem>> &categories) {
+    qDebug() << "开始从TOML导入类别数据";
+    m_dataStorage->importFromToml(table, categories,CategoryDataStorage::Merge);
 }
 
 /**
