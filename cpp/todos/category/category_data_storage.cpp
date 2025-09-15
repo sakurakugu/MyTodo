@@ -22,10 +22,10 @@
 CategoryDataStorage::CategoryDataStorage(QObject *parent)
     : QObject(parent),                                    // 父对象
       m_config(Config::GetInstance()),                    // 配置
-      m_databaseManager(DatabaseManager::GetInstance())   // 数据库管理器
+      m_database(Database::GetInstance())   // 数据库管理器
 {
     // 确保数据库已初始化
-    if (!m_databaseManager.initializeDatabase()) {
+    if (!m_database.initializeDatabase()) {
         qCritical() << "CategoryDataStorage: 数据库初始化失败";
     }
 }
@@ -46,7 +46,7 @@ bool CategoryDataStorage::loadFromLocalStorage(std::vector<std::unique_ptr<Categ
         categories.clear();
 
         // 从数据库加载数据
-        QSqlDatabase db = m_databaseManager.getDatabase();
+        QSqlDatabase db = m_database.getDatabase();
         if (!db.isOpen()) {
             qCritical() << "数据库未打开，无法加载类别";
             return false;
@@ -102,7 +102,7 @@ bool CategoryDataStorage::deleteCategory(std::vector<std::unique_ptr<CategorieIt
     bool success = false;
 
     try {
-        QSqlDatabase db = m_databaseManager.getDatabase();
+        QSqlDatabase db = m_database.getDatabase();
         if (!db.isOpen()) {
             qCritical() << "数据库未打开，无法删除类别";
             return false;
@@ -156,7 +156,7 @@ bool CategoryDataStorage::saveToLocalStorage(const std::vector<std::unique_ptr<C
     bool success = true;
 
     try {
-        QSqlDatabase db = m_databaseManager.getDatabase();
+        QSqlDatabase db = m_database.getDatabase();
         if (!db.isOpen()) {
             qCritical() << "数据库未打开，无法保存类别";
             return false;
@@ -453,7 +453,7 @@ bool CategoryDataStorage::addCategory(std::vector<std::unique_ptr<CategorieItem>
     bool success = true;
 
     try {
-        QSqlDatabase db = m_databaseManager.getDatabase();
+        QSqlDatabase db = m_database.getDatabase();
         if (!db.isOpen()) {
             qCritical() << "数据库未打开，无法添加类别";
             return false;
@@ -526,7 +526,7 @@ bool CategoryDataStorage::updateCategory(std::vector<std::unique_ptr<CategorieIt
     bool success = false;
 
     try {
-        QSqlDatabase db = m_databaseManager.getDatabase();
+        QSqlDatabase db = m_database.getDatabase();
         if (!db.isOpen()) {
             qCritical() << "数据库未打开，无法更新类别";
             return false;

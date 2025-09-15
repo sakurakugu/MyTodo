@@ -25,7 +25,7 @@
 
 #include "../items/todo_item.h"
 #include "setting.h"
-#include "../../foundation/database_manager.h"
+#include "../../foundation/database.h"
 
 /**
  * @class TodoDataStorage
@@ -95,5 +95,5 @@ class TodoDataStorage : public QObject {
     
     // 成员变量
     Setting &m_setting; ///< 设置对象引用
-    DatabaseManager &m_databaseManager; ///< 数据库管理器引用
+    Database &m_database; ///< 数据库管理器引用
 };

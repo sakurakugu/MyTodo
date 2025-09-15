@@ -15,7 +15,7 @@
 
 #include <toml++/toml.hpp>
 #include "../items/categorie_item.h"
-#include "../../foundation/database_manager.h"
+#include "../../foundation/database.h"
 
 class Config;
 
@@ -109,5 +109,5 @@ class CategoryDataStorage : public QObject {
 
     // 成员变量
     Config &m_config; ///< 主配置对象引用
-    DatabaseManager &m_databaseManager; ///< 数据库管理器引用
+    Database &m_database; ///< 数据库管理器引用
 };

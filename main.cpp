@@ -83,9 +83,8 @@ int main(int argc, char *argv[]) {
     app.setWindowIcon(QIcon(":/image/icon.png")); // 设置窗口图标
 
     // 设置应用信息
-    QGuiApplication::setApplicationName("MyTodo");                // 设置应用名称
-    QGuiApplication::setOrganizationName("MyTodo");               // 设置组织名称
-    QGuiApplication::setOrganizationDomain("mytodo.app");         // 设置组织域名
+    QGuiApplication::setApplicationName("MyTodo");                // 设置应用名称（不设置组织名）
+    // QGuiApplication::setOrganizationDomain("mytodo.app");         // 设置组织域名
     QGuiApplication::setApplicationVersion("APP_VERSION_STRING"); // 设置应用版本
 
     GlobalState &globalState = GlobalState::GetInstance(); // 创建GlobalState实例

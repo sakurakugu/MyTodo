@@ -32,10 +32,10 @@
 TodoDataStorage::TodoDataStorage(QObject *parent)
     : QObject(parent),                                    // 父对象
       m_setting(Setting::GetInstance()),                 // 设置
-      m_databaseManager(DatabaseManager::GetInstance())  // 数据库管理器
+      m_database(Database::GetInstance())  // 数据库管理器
 {
     // 确保数据库已初始化
-    if (!m_databaseManager.initializeDatabase()) {
+    if (!m_database.initializeDatabase()) {
         qCritical() << "TodoDataStorage: 数据库初始化失败";
     }
 }
@@ -56,7 +56,7 @@ bool TodoDataStorage::loadFromLocalStorage(std::vector<std::unique_ptr<TodoItem>
         todos.clear();
 
         // 从数据库加载数据
-        QSqlDatabase db = m_databaseManager.getDatabase();
+        QSqlDatabase db = m_database.getDatabase();
         if (!db.isOpen()) {
             qCritical() << "数据库未打开，无法加载待办事项";
             return false;
@@ -137,7 +137,7 @@ bool TodoDataStorage::saveToLocalStorage(const std::vector<std::unique_ptr<TodoI
     bool success = true;
 
     try {
-        QSqlDatabase db = m_databaseManager.getDatabase();
+        QSqlDatabase db = m_database.getDatabase();
         if (!db.isOpen()) {
             qCritical() << "数据库未打开，无法保存待办事项";
             return false;
@@ -433,7 +433,7 @@ void TodoDataStorage::updateTodoItemFromToml(TodoItem *item, const toml::table &
  * @return 新添加的待办事项指针
  */
 std::unique_ptr<TodoItem> TodoDataStorage::addTodo(const QString &title, const QString &description, const QString &category, bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate) {
-    QSqlDatabase db = m_databaseManager.getDatabase();
+    QSqlDatabase db = m_database.getDatabase();
     if (!db.isOpen()) {
         qCritical() << "数据库未打开，无法添加待办事项";
         return nullptr;
@@ -525,7 +525,7 @@ std::unique_ptr<TodoItem> TodoDataStorage::addTodo(const QString &title, const Q
  * @return 更新是否成功
  */
 bool TodoDataStorage::updateTodo(int id, const QString &title, const QString &description, const QString &category, bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate) {
-    QSqlDatabase db = m_databaseManager.getDatabase();
+    QSqlDatabase db = m_database.getDatabase();
     if (!db.isOpen()) {
         qCritical() << "数据库未打开，无法更新待办事项";
         return false;
@@ -571,7 +571,7 @@ bool TodoDataStorage::updateTodo(int id, const QString &title, const QString &de
  * @return 删除是否成功
  */
 bool TodoDataStorage::deleteTodo(int id) {
-    QSqlDatabase db = m_databaseManager.getDatabase();
+    QSqlDatabase db = m_database.getDatabase();
     if (!db.isOpen()) {
         qCritical() << "数据库未打开，无法删除待办事项";
         return false;

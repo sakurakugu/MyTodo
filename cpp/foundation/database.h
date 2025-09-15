@@ -1,8 +1,8 @@
 /**
- * @file database_manager.h
- * @brief DatabaseManager类的头文件
+ * @file database.h
+ * @brief Database类的头文件
  *
- * 该文件定义了DatabaseManager类，用于管理应用程序的SQLite数据库连接和初始化。
+ * 该文件定义了Database类，用于管理应用程序的SQLite数据库连接和初始化。
  *
  * @author Sakurakugu
  * @date 2025-01-27 00:00:00(UTC+8) 周一
@@ -17,14 +17,14 @@
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QString>
-#include <QMutex>
+#include <mutex>
 #include <memory>
 
 /**
- * @class DatabaseManager
+ * @class Database
  * @brief 数据库管理器，负责SQLite数据库的连接和初始化
  *
- * DatabaseManager类专门处理数据库相关的操作：
+ * Database类专门处理数据库相关的操作：
  *
  * **核心功能：**
  * - SQLite数据库连接管理
@@ -45,20 +45,20 @@
  * @note 该类是线程安全的，使用QMutex保护数据库操作
  * @see CategoryDataStorage, TodoDataStorage
  */
-class DatabaseManager : public QObject {
+class Database : public QObject {
     Q_OBJECT
 
 public:
     // 单例模式
-    static DatabaseManager &GetInstance() {
-        static DatabaseManager instance;
+    static Database &GetInstance() {
+        static Database instance;
         return instance;
     }
     // 禁用拷贝构造和赋值操作
-    DatabaseManager(const DatabaseManager &) = delete;
-    DatabaseManager &operator=(const DatabaseManager &) = delete;
-    DatabaseManager(DatabaseManager &&) = delete;
-    DatabaseManager &operator=(DatabaseManager &&) = delete;
+    Database(const Database &) = delete;
+    Database &operator=(const Database &) = delete;
+    Database(Database &&) = delete;
+    Database &operator=(Database &&) = delete;
 
     // 数据库连接管理
     bool initializeDatabase();                    ///< 初始化数据库连接和表结构
@@ -78,8 +78,8 @@ public:
     int getDatabaseVersion() const;               ///< 获取数据库版本
     
 private:
-    explicit DatabaseManager(QObject *parent = nullptr);
-    ~DatabaseManager();
+    explicit Database(QObject *parent = nullptr);
+    ~Database();
     
     // 数据库初始化相关
     bool createTables();                          ///< 创建数据库表
@@ -92,11 +92,10 @@ private:
     bool updateDatabaseVersion(int version);      ///< 更新数据库版本
     
     // 辅助方法
-    QString getDefaultDatabasePath() const;       ///< 获取默认数据库路径
     bool tableExists(const QString &tableName);   ///< 检查表是否存在
     
     // 成员变量
-    mutable QMutex m_mutex;                       ///< 线程安全保护
+    mutable std::mutex m_mutex;                   ///< 线程安全保护
     QSqlDatabase m_database;                      ///< 数据库连接对象
     QString m_databasePath;                       ///< 数据库文件路径
     QString m_lastError;                          ///< 最后一次错误信息

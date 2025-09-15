@@ -1,5 +1,5 @@
 /**
- * @file database_manager.cpp
+ * @file database.cpp
  * @brief DatabaseManager类的实现
  *
  * 该文件实现了DatabaseManager类，用于管理应用程序的SQLite数据库连接和初始化。
@@ -10,25 +10,25 @@
  * @version 0.4.0
  */
 
-#include "database_manager.h"
+#include "database.h"
 #include "config.h"
+#include "version.h"
 
 #include <QCoreApplication>
+#include <QDebug>
 #include <QDir>
+#include <mutex>
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QStandardPaths>
-#include <QDebug>
-#include <QMutexLocker>
 #include <QVariant>
 
-DatabaseManager::DatabaseManager(QObject *parent)
-    : QObject(parent),
-      m_initialized(false) {
-    m_databasePath = getDefaultDatabasePath();
+Database::Database(QObject *parent) : QObject(parent), m_initialized(false) {
+    m_databasePath =
+        QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)).absoluteFilePath("MyTodo.db");
 }
 
-DatabaseManager::~DatabaseManager() {
+Database::~Database() {
     closeDatabase();
 }
 
@@ -36,13 +36,13 @@ DatabaseManager::~DatabaseManager() {
  * @brief 初始化数据库连接和表结构
  * @return 初始化是否成功
  */
-bool DatabaseManager::initializeDatabase() {
-    QMutexLocker locker(&m_mutex);
-    
+bool Database::initializeDatabase() {
+    std::lock_guard<std::mutex> locker(m_mutex);
+
     if (m_initialized && m_database.isOpen()) {
         return true;
     }
-    
+
     // 确保数据库目录存在
     QFileInfo fileInfo(m_databasePath);
     QDir dir = fileInfo.absoluteDir();
@@ -53,30 +53,30 @@ bool DatabaseManager::initializeDatabase() {
             return false;
         }
     }
-    
+
     // 创建数据库连接
     m_database = QSqlDatabase::addDatabase("QSQLITE", CONNECTION_NAME);
     m_database.setDatabaseName(m_databasePath);
-    
+
     if (!m_database.open()) {
         m_lastError = QString("无法打开数据库: %1").arg(m_database.lastError().text());
         qCritical() << m_lastError;
         return false;
     }
-    
+
     // 启用外键约束
     QSqlQuery query(m_database);
     if (!query.exec("PRAGMA foreign_keys = ON")) {
         qWarning() << "无法启用外键约束:" << query.lastError().text();
     }
-    
+
     // 创建表结构
     if (!createTables()) {
         m_lastError = "创建数据库表失败";
         qCritical() << m_lastError;
         return false;
     }
-    
+
     m_initialized = true;
     qInfo() << "数据库初始化成功:" << m_databasePath;
     return true;
@@ -86,15 +86,15 @@ bool DatabaseManager::initializeDatabase() {
  * @brief 获取数据库连接
  * @return 数据库连接对象
  */
-QSqlDatabase DatabaseManager::getDatabase() {
-    QMutexLocker locker(&m_mutex);
-    
+QSqlDatabase Database::getDatabase() {
+    std::lock_guard<std::mutex> locker(m_mutex);
+
     if (!m_initialized || !m_database.isOpen()) {
         if (!initializeDatabase()) {
             qCritical() << "获取数据库连接失败";
         }
     }
-    
+
     return QSqlDatabase::database(CONNECTION_NAME);
 }
 
@@ -102,26 +102,26 @@ QSqlDatabase DatabaseManager::getDatabase() {
  * @brief 检查数据库是否已打开
  * @return 数据库是否已打开
  */
-bool DatabaseManager::isDatabaseOpen() const {
-    QMutexLocker locker(&m_mutex);
+bool Database::isDatabaseOpen() const {
+    std::lock_guard<std::mutex> locker(m_mutex);
     return m_initialized && m_database.isOpen();
 }
 
 /**
  * @brief 关闭数据库连接
  */
-void DatabaseManager::closeDatabase() {
-    QMutexLocker locker(&m_mutex);
-    
+void Database::closeDatabase() {
+    std::lock_guard<std::mutex> locker(m_mutex);
+
     if (m_database.isOpen()) {
         m_database.close();
         qInfo() << "数据库连接已关闭";
     }
-    
+
     if (QSqlDatabase::contains(CONNECTION_NAME)) {
         QSqlDatabase::removeDatabase(CONNECTION_NAME);
     }
-    
+
     m_initialized = false;
 }
 
@@ -131,21 +131,21 @@ void DatabaseManager::closeDatabase() {
  * @param query 查询对象引用
  * @return 执行是否成功
  */
-bool DatabaseManager::executeQuery(const QString &queryString, QSqlQuery &query) {
-    QMutexLocker locker(&m_mutex);
-    
+bool Database::executeQuery(const QString &queryString, QSqlQuery &query) {
+    std::lock_guard<std::mutex> locker(m_mutex);
+
     if (!isDatabaseOpen()) {
         m_lastError = "数据库未打开";
         return false;
     }
-    
+
     query = QSqlQuery(getDatabase());
     if (!query.exec(queryString)) {
         m_lastError = QString("SQL执行失败: %1 - %2").arg(queryString, query.lastError().text());
         qCritical() << m_lastError;
         return false;
     }
-    
+
     return true;
 }
 
@@ -154,7 +154,7 @@ bool DatabaseManager::executeQuery(const QString &queryString, QSqlQuery &query)
  * @param queryString SQL查询语句
  * @return 执行是否成功
  */
-bool DatabaseManager::executeQuery(const QString &queryString) {
+bool Database::executeQuery(const QString &queryString) {
     QSqlQuery query;
     return executeQuery(queryString, query);
 }
@@ -163,8 +163,8 @@ bool DatabaseManager::executeQuery(const QString &queryString) {
  * @brief 获取最后一次错误信息
  * @return 错误信息
  */
-QString DatabaseManager::getLastError() const {
-    QMutexLocker locker(&m_mutex);
+QString Database::getLastError() const {
+    std::lock_guard<std::mutex> locker(m_mutex);
     return m_lastError;
 }
 
@@ -172,8 +172,8 @@ QString DatabaseManager::getLastError() const {
  * @brief 获取数据库文件路径
  * @return 数据库文件路径
  */
-QString DatabaseManager::getDatabasePath() const {
-    QMutexLocker locker(&m_mutex);
+QString Database::getDatabasePath() const {
+    std::lock_guard<std::mutex> locker(m_mutex);
     return m_databasePath;
 }
 
@@ -181,18 +181,18 @@ QString DatabaseManager::getDatabasePath() const {
  * @brief 获取数据库版本
  * @return 数据库版本号
  */
-int DatabaseManager::getDatabaseVersion() const {
-    QMutexLocker locker(&m_mutex);
-    
+int Database::getDatabaseVersion() const {
+    std::lock_guard<std::mutex> locker(m_mutex);
+
     if (!isDatabaseOpen()) {
         return 0;
     }
-    
+
     QSqlQuery query(m_database);
     if (query.exec("SELECT version FROM database_version LIMIT 1") && query.next()) {
         return query.value(0).toInt();
     }
-    
+
     return 0;
 }
 
@@ -200,27 +200,27 @@ int DatabaseManager::getDatabaseVersion() const {
  * @brief 创建数据库表
  * @return 创建是否成功
  */
-bool DatabaseManager::createTables() {
+bool Database::createTables() {
     // 创建版本信息表
     if (!createVersionTable()) {
         return false;
     }
-    
+
     // 创建categories表
     if (!createCategoriesTable()) {
         return false;
     }
-    
+
     // 创建todos表
     if (!createTodosTable()) {
         return false;
     }
-    
+
     // 设置数据库版本
     if (!updateDatabaseVersion(DATABASE_VERSION)) {
         return false;
     }
-    
+
     return true;
 }
 
@@ -228,7 +228,7 @@ bool DatabaseManager::createTables() {
  * @brief 创建categories表
  * @return 创建是否成功
  */
-bool DatabaseManager::createCategoriesTable() {
+bool Database::createCategoriesTable() {
     const QString createTableQuery = R"(
         CREATE TABLE IF NOT EXISTS categories (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -239,27 +239,25 @@ bool DatabaseManager::createCategoriesTable() {
             synced INTEGER NOT NULL DEFAULT 0
         )
     )";
-    
+
     QSqlQuery query(m_database);
     if (!query.exec(createTableQuery)) {
         m_lastError = QString("创建categories表失败: %1").arg(query.lastError().text());
         qCritical() << m_lastError;
         return false;
     }
-    
+
     // 创建索引
-    const QStringList indexes = {
-        "CREATE INDEX IF NOT EXISTS idx_categories_uuid ON categories(uuid)",
-        "CREATE INDEX IF NOT EXISTS idx_categories_user_uuid ON categories(user_uuid)",
-        "CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name)"
-    };
-    
+    const QStringList indexes = {"CREATE INDEX IF NOT EXISTS idx_categories_uuid ON categories(uuid)",
+                                 "CREATE INDEX IF NOT EXISTS idx_categories_user_uuid ON categories(user_uuid)",
+                                 "CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name)"};
+
     for (const QString &indexQuery : indexes) {
         if (!query.exec(indexQuery)) {
             qWarning() << "创建categories表索引失败:" << query.lastError().text();
         }
     }
-    
+
     qDebug() << "categories表创建成功";
     return true;
 }
@@ -268,7 +266,7 @@ bool DatabaseManager::createCategoriesTable() {
  * @brief 创建todos表
  * @return 创建是否成功
  */
-bool DatabaseManager::createTodosTable() {
+bool Database::createTodosTable() {
     const QString createTableQuery = R"(
         CREATE TABLE IF NOT EXISTS todos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -292,31 +290,29 @@ bool DatabaseManager::createTodosTable() {
             synced INTEGER NOT NULL DEFAULT 0
         )
     )";
-    
+
     QSqlQuery query(m_database);
     if (!query.exec(createTableQuery)) {
         m_lastError = QString("创建todos表失败: %1").arg(query.lastError().text());
         qCritical() << m_lastError;
         return false;
     }
-    
+
     // 创建索引
-    const QStringList indexes = {
-        "CREATE INDEX IF NOT EXISTS idx_todos_uuid ON todos(uuid)",
-        "CREATE INDEX IF NOT EXISTS idx_todos_user_uuid ON todos(user_uuid)",
-        "CREATE INDEX IF NOT EXISTS idx_todos_category ON todos(category)",
-        "CREATE INDEX IF NOT EXISTS idx_todos_deadline ON todos(deadline)",
-        "CREATE INDEX IF NOT EXISTS idx_todos_completed ON todos(is_completed)",
-        "CREATE INDEX IF NOT EXISTS idx_todos_deleted ON todos(is_deleted)",
-        "CREATE INDEX IF NOT EXISTS idx_todos_synced ON todos(synced)"
-    };
-    
+    const QStringList indexes = {"CREATE INDEX IF NOT EXISTS idx_todos_uuid ON todos(uuid)",
+                                 "CREATE INDEX IF NOT EXISTS idx_todos_user_uuid ON todos(user_uuid)",
+                                 "CREATE INDEX IF NOT EXISTS idx_todos_category ON todos(category)",
+                                 "CREATE INDEX IF NOT EXISTS idx_todos_deadline ON todos(deadline)",
+                                 "CREATE INDEX IF NOT EXISTS idx_todos_completed ON todos(is_completed)",
+                                 "CREATE INDEX IF NOT EXISTS idx_todos_deleted ON todos(is_deleted)",
+                                 "CREATE INDEX IF NOT EXISTS idx_todos_synced ON todos(synced)"};
+
     for (const QString &indexQuery : indexes) {
         if (!query.exec(indexQuery)) {
             qWarning() << "创建todos表索引失败:" << query.lastError().text();
         }
     }
-    
+
     qDebug() << "todos表创建成功";
     return true;
 }
@@ -325,20 +321,20 @@ bool DatabaseManager::createTodosTable() {
  * @brief 创建版本信息表
  * @return 创建是否成功
  */
-bool DatabaseManager::createVersionTable() {
+bool Database::createVersionTable() {
     const QString createTableQuery = R"(
         CREATE TABLE IF NOT EXISTS database_version (
             version INTEGER PRIMARY KEY
         )
     )";
-    
+
     QSqlQuery query(m_database);
     if (!query.exec(createTableQuery)) {
         m_lastError = QString("创建database_version表失败: %1").arg(query.lastError().text());
         qCritical() << m_lastError;
         return false;
     }
-    
+
     qDebug() << "database_version表创建成功";
     return true;
 }
@@ -349,12 +345,13 @@ bool DatabaseManager::createVersionTable() {
  * @param toVersion 目标版本
  * @return 迁移是否成功
  */
-bool DatabaseManager::migrateDatabase(int fromVersion, int toVersion) {
+bool Database::migrateDatabase(int fromVersion, int toVersion) {
     qInfo() << QString("开始数据库迁移: %1 -> %2").arg(fromVersion).arg(toVersion);
-    
+
+    // TODO:
     // 目前只有版本1，暂时不需要迁移逻辑
     // 未来版本升级时在这里添加迁移代码
-    
+
     return updateDatabaseVersion(toVersion);
 }
 
@@ -363,46 +360,26 @@ bool DatabaseManager::migrateDatabase(int fromVersion, int toVersion) {
  * @param version 新版本号
  * @return 更新是否成功
  */
-bool DatabaseManager::updateDatabaseVersion(int version) {
+bool Database::updateDatabaseVersion(int version) {
     QSqlQuery query(m_database);
-    
+
     // 先删除旧版本记录
     if (!query.exec("DELETE FROM database_version")) {
         qWarning() << "删除旧版本记录失败:" << query.lastError().text();
     }
-    
+
     // 插入新版本记录
     query.prepare("INSERT INTO database_version (version) VALUES (?)");
     query.addBindValue(version);
-    
+
     if (!query.exec()) {
         m_lastError = QString("更新数据库版本失败: %1").arg(query.lastError().text());
         qCritical() << m_lastError;
         return false;
     }
-    
+
     qInfo() << "数据库版本已更新为:" << version;
     return true;
-}
-
-/**
- * @brief 获取默认数据库路径
- * @return 默认数据库路径
- */
-QString DatabaseManager::getDefaultDatabasePath() const {
-    // 使用Config类的配置位置逻辑
-    Config &config = Config::GetInstance();
-    QString configDir;
-    
-#if defined(QT_DEBUG)
-    // Debug模式下使用应用程序目录
-    configDir = QCoreApplication::applicationDirPath();
-#else
-    // Release模式下使用AppData/Local目录
-    configDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
-#endif
-    
-    return QDir(configDir).absoluteFilePath("MyTodo.db");
 }
 
 /**
@@ -410,14 +387,14 @@ QString DatabaseManager::getDefaultDatabasePath() const {
  * @param tableName 表名
  * @return 表是否存在
  */
-bool DatabaseManager::tableExists(const QString &tableName) {
+bool Database::tableExists(const QString &tableName) {
     QSqlQuery query(m_database);
     query.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?");
     query.addBindValue(tableName);
-    
+
     if (query.exec() && query.next()) {
         return true;
     }
-    
+
     return false;
 }

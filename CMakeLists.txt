@@ -186,8 +186,8 @@ set(UTILITY_SOURCES
     cpp/foundation/logger.h
     cpp/setting.cpp
     cpp/setting.h
-    cpp/foundation/database_manager.cpp
-    cpp/foundation/database_manager.h
+    cpp/foundation/database.cpp
+    cpp/foundation/database.h
     cpp/default_value.h
 )
 
