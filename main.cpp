@@ -27,6 +27,7 @@
 #include <windows.h>
 #endif
 // 自定义头文件
+#include "cpp/foundation/database.h"
 #include "cpp/foundation/logger.h"
 #include "cpp/foundation/network_request.h"
 #include "cpp/global_state.h"
@@ -52,8 +53,10 @@ int main(int argc, char *argv[]) {
 #if defined(Q_OS_WIN) && defined(QT_DEBUG)
     // Windows平台，设置控制台编码
     UINT cp = GetACP();
-    SetConsoleCP(cp);
-    SetConsoleOutputCP(cp);
+    if (cp == 936) {
+        SetConsoleCP(65001);
+        SetConsoleOutputCP(65001);
+    }
 #endif
 
     // printResources();
@@ -118,6 +121,21 @@ int main(int argc, char *argv[]) {
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app, []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
+
+    // 应用退出前保存数据并关闭数据库，避免析构阶段访问 QSqlDatabase
+    QObject::connect(&app, &QCoreApplication::aboutToQuit, &app, [&]() {
+        qInfo() << "应用即将退出，开始保存数据并关闭数据库";
+        // 先让 Manager 显式保存
+        todoManager.saveTodosToLocalStorage();
+        categoryManager.saveCategories();
+        
+        // 给数据库操作一些时间完成
+        QTimer::singleShot(100, [&]() {
+            // 关闭数据库连接
+            Database::GetInstance().closeDatabase();
+            qInfo() << "保存与关闭完成";
+        });
+    });
     engine.loadFromModule("MyTodo", "Main");
 
     return app.exec();

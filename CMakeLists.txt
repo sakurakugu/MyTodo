@@ -121,7 +121,7 @@ set(QML_COMPONENT_FILES
     qml/components/CustomPopup.qml                 # 自定义弹出窗口
     qml/components/ControlRow.qml                   # 自定义控件行
 
-    qml/TestPage.qml # 测试页面
+    # qml/TestPage.qml # 测试页面
 )
 
 # 单例组件

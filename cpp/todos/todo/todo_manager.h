@@ -148,6 +148,10 @@ class TodoManager : public QAbstractListModel {
     explicit TodoManager(QObject *parent = nullptr);
     ~TodoManager();
 
+  public:
+    // 在应用退出前显式保存到本地存储（避免在析构阶段访问 QSqlDatabase）
+    void saveTodosToLocalStorage();
+
     void updateTodosFromServer(const QJsonArray &todosArray); // 从服务器数据更新待办事项
     void updateSyncManagerData();                             // 更新同步管理器的待办事项数据
     QVariant getItemData(const TodoItem *item, int role) const;

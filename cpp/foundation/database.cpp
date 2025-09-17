@@ -29,7 +29,10 @@ Database::Database(QObject *parent) : QObject(parent), m_initialized(false) {
 }
 
 Database::~Database() {
-    closeDatabase();
+    // 注意：QSqlDatabase 依赖 QCoreApplication；在应用销毁后调用将导致警告
+    if (QCoreApplication::instance()) {
+        closeDatabase();
+    }
 }
 
 /**
@@ -113,11 +116,21 @@ bool Database::isDatabaseOpen() const {
 void Database::closeDatabase() {
     std::lock_guard<std::mutex> locker(m_mutex);
 
+    // 在没有 QCoreApplication 的情况下访问 QSqlDatabase 会触发警告
+    if (!QCoreApplication::instance()) {
+        return;
+    }
+
     if (m_database.isOpen()) {
+        // 等待所有查询完成
+        QSqlQuery query(m_database);
+        query.clear(); // 清理任何活跃的查询
+        
         m_database.close();
         qInfo() << "数据库连接已关闭";
     }
 
+    // 确保移除数据库连接前，连接确实已关闭
     if (QSqlDatabase::contains(CONNECTION_NAME)) {
         QSqlDatabase::removeDatabase(CONNECTION_NAME);
     }

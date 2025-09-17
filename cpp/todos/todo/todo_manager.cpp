@@ -103,13 +103,17 @@ TodoManager::TodoManager(QObject *parent)
  * 清理资源，保存未同步的数据到本地存储。
  */
 TodoManager::~TodoManager() {
-    // 通过数据管理器保存数据
-    if (m_dataManager) {
-        m_dataManager->saveToLocalStorage(m_todos);
-    }
-
     m_todos.clear();
     m_filteredTodos.clear();
+}
+
+void TodoManager::saveTodosToLocalStorage() {
+    if (!m_dataManager)
+        return;
+    qInfo() << "应用退出前保存待办事项到本地存储";
+    if (!m_dataManager->saveToLocalStorage(m_todos)) {
+        qWarning() << "保存待办事项失败（saveTodosToLocalStorage）";
+    }
 }
 
 /**
