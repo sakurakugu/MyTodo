@@ -258,7 +258,6 @@ bool CategoryManager::categoryExists(const QString &name) const {
  * @brief 添加默认类别
  */
 void CategoryManager::addDefaultCategories() {
-    beginModelUpdate();
 
     // 使用数据存储创建默认类别
     if (m_dataStorage) {
@@ -272,8 +271,6 @@ void CategoryManager::addDefaultCategories() {
             m_categories << category->name();
         }
     }
-
-    endModelUpdate();
 
     // 保存到存储
     saveCategories();
@@ -569,9 +566,10 @@ void CategoryManager::saveCategories() {
  * @param table TOML表
  * @param categories 类别列表
  */
-void CategoryManager::importCategories(const toml::table &table, std::vector<std::unique_ptr<CategorieItem>> &categories) {
+void CategoryManager::importCategories(const toml::table &table,
+                                       std::vector<std::unique_ptr<CategorieItem>> &categories) {
     qDebug() << "开始从TOML导入类别数据";
-    m_dataStorage->importFromToml(table, categories,CategoryDataStorage::Merge);
+    m_dataStorage->importFromToml(table, categories, CategoryDataStorage::Merge);
 }
 
 /**

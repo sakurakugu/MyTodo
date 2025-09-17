@@ -12,6 +12,7 @@
 
 #include "user_auth.h"
 #include "default_value.h"
+#include "foundation/database.h"
 #include "setting.h"
 
 #include <QDateTime>
@@ -22,6 +23,7 @@ UserAuth::UserAuth(QObject *parent)
     : QObject(parent),                                 //
       m_networkRequest(NetworkRequest::GetInstance()), //
       m_setting(Setting::GetInstance()),               //
+      m_database(Database::GetInstance()),             //
       m_isOnline(false),                               //
       m_tokenExpiryTimer(new QTimer(this)),            //
       m_tokenExpiryTime(0),                            //
@@ -45,7 +47,9 @@ UserAuth::UserAuth(QObject *parent)
     initializeServerConfig();
 
     // 加载存储的凭据
-    loadStoredCredentials();
+    // loadStoredCredentials();
+    // 延迟加载存储的凭据，避免启动时阻塞
+    QTimer::singleShot(1000, this, &UserAuth::loadStoredCredentials);
 }
 
 UserAuth::~UserAuth() {
@@ -451,16 +455,39 @@ void UserAuth::handleTokenRefreshSuccess(const QJsonObject &response) {
 }
 
 void UserAuth::loadStoredCredentials() {
-    // 尝试从设置中加载存储的凭据
-    if (m_setting.contains(QStringLiteral("auth/accessToken"))) {
-        m_accessToken = m_setting.get(QStringLiteral("auth/accessToken")).toString();
-        m_refreshToken = m_setting.get(QStringLiteral("auth/refreshToken")).toString();
-        m_username = m_setting.get(QStringLiteral("user/username")).toString();
-        m_email = m_setting.get(QStringLiteral("user/email")).toString();
-        m_uuid = QUuid::fromString(m_setting.get(QStringLiteral("user/uuid")).toString());
+    // // 尝试从设置中加载存储的凭据
+    // if (m_setting.contains(QStringLiteral("auth/accessToken"))) {
+    //     m_accessToken = m_setting.get(QStringLiteral("auth/accessToken")).toString();
+    //     m_refreshToken = m_setting.get(QStringLiteral("auth/refreshToken")).toString();
+    //     m_username = m_setting.get(QStringLiteral("user/username")).toString();
+    //     m_email = m_setting.get(QStringLiteral("user/email")).toString();
+    //     m_uuid = QUuid::fromString(m_setting.get(QStringLiteral("user/uuid")).toString());
+    //     // 加载令牌过期时间
+    //     m_tokenExpiryTime = m_setting.get(QStringLiteral("auth/tokenExpiryTime"), 0).toLongLong();
 
-        // 加载令牌过期时间
-        m_tokenExpiryTime = m_setting.get(QStringLiteral("auth/tokenExpiryTime"), 0).toLongLong();
+    QSqlDatabase db = m_database.getDatabase();
+    if (!db.isOpen()) {
+        qWarning() << "数据库未打开，无法加载用户凭据";
+        return;
+    }
+
+    QSqlQuery query(db);
+    query.prepare("SELECT uuid, username, email, accessToken, refreshToken, tokenExpiryTime FROM users LIMIT 1");
+
+    if (!query.exec()) {
+        qWarning() << "查询用户凭据失败:" << query.lastError().text();
+        return;
+    }
+
+    if (query.next()) {
+        m_uuid = QUuid::fromString(query.value("uuid").toString());
+        m_username = query.value("username").toString();
+        m_email = query.value("email").toString();
+        m_accessToken = query.value("accessToken").toString();
+        m_refreshToken = query.value("refreshToken").toString();
+        m_tokenExpiryTime = query.value("tokenExpiryTime").toLongLong();
+
+        //
 
         // 设置网络管理器的认证令牌
         if (!m_accessToken.isEmpty()) {
@@ -516,13 +543,43 @@ void UserAuth::validateStoredToken() {
 
 void UserAuth::saveCredentials() {
     // 保存凭据到本地设置
-    if (!m_accessToken.isEmpty()) {
-        m_setting.save(QStringLiteral("auth/accessToken"), m_accessToken);
-        m_setting.save(QStringLiteral("auth/refreshToken"), m_refreshToken);
-        m_setting.save(QStringLiteral("auth/tokenExpiryTime"), m_tokenExpiryTime);
-        m_setting.save(QStringLiteral("user/username"), m_username);
-        m_setting.save(QStringLiteral("user/email"), m_email);
-        m_setting.save(QStringLiteral("user/uuid"), m_uuid);
+    // if (!m_accessToken.isEmpty()) {
+    //     m_setting.save(QStringLiteral("auth/accessToken"), m_accessToken);
+    //     m_setting.save(QStringLiteral("auth/refreshToken"), m_refreshToken);
+    //     m_setting.save(QStringLiteral("auth/tokenExpiryTime"), m_tokenExpiryTime);
+    //     m_setting.save(QStringLiteral("user/username"), m_username);
+    //     m_setting.save(QStringLiteral("user/email"), m_email);
+    //     m_setting.save(QStringLiteral("user/uuid"), m_uuid);
+    // }
+
+    // 保存凭据到数据库
+    if (!m_accessToken.isEmpty() && !m_uuid.isNull()) {
+        QSqlDatabase db = m_database.getDatabase();
+        if (!db.isOpen()) {
+            qWarning() << "数据库未打开，无法保存用户凭据";
+            return;
+        }
+
+        QSqlQuery query(db);
+
+        // 使用REPLACE INTO来插入或更新用户记录
+        query.prepare(R"(
+            REPLACE INTO users (uuid, username, email, accessToken, refreshToken, tokenExpiryTime)
+            VALUES (?, ?, ?, ?, ?, ?)
+        )");
+
+        query.addBindValue(m_uuid.toString());
+        query.addBindValue(m_username);
+        query.addBindValue(m_email);
+        query.addBindValue(m_accessToken);
+        query.addBindValue(m_refreshToken);
+        query.addBindValue(m_tokenExpiryTime);
+
+        if (!query.exec()) {
+            qWarning() << "保存用户凭据到数据库失败:" << query.lastError().text();
+        } else {
+            qDebug() << "用户凭据已保存到数据库，用户:" << m_username;
+        }
     }
 }
 
@@ -544,17 +601,30 @@ void UserAuth::clearCredentials() {
     m_tokenExpiryTime = 0;
 
     // 清除设置中的凭据
-    if (m_setting.contains(QStringLiteral("user"))) {
-        m_setting.remove(QStringLiteral("user"));
-        m_setting.remove(QStringLiteral("user/username"));
-        m_setting.remove(QStringLiteral("user/email"));
-        m_setting.remove(QStringLiteral("user/uuid"));
-    }
-    if (m_setting.contains(QStringLiteral("auth"))) {
-        m_setting.remove(QStringLiteral("auth"));
-        m_setting.remove(QStringLiteral("auth/accessToken"));
-        m_setting.remove(QStringLiteral("auth/refreshToken"));
-        m_setting.remove(QStringLiteral("auth/tokenExpiryTime"));
+    // if (m_setting.contains(QStringLiteral("user"))) {
+    //     m_setting.remove(QStringLiteral("user"));
+    //     m_setting.remove(QStringLiteral("user/username"));
+    //     m_setting.remove(QStringLiteral("user/email"));
+    //     m_setting.remove(QStringLiteral("user/uuid"));
+    // }
+    // if (m_setting.contains(QStringLiteral("auth"))) {
+    //     m_setting.remove(QStringLiteral("auth"));
+    //     m_setting.remove(QStringLiteral("auth/accessToken"));
+    //     m_setting.remove(QStringLiteral("auth/refreshToken"));
+    //     m_setting.remove(QStringLiteral("auth/tokenExpiryTime"));
+    // }
+    QSqlDatabase db = m_database.getDatabase();
+    if (db.isOpen()) {
+        QSqlQuery query(db);
+        query.prepare("DELETE FROM users");
+
+        if (!query.exec()) {
+            qWarning() << "清除数据库中的用户凭据失败:" << query.lastError().text();
+        } else {
+            qDebug() << "数据库中的用户凭据已清除";
+        }
+    } else {
+        qWarning() << "数据库未打开，无法清除用户凭据";
     }
 
     // 清除网络管理器的认证令牌

@@ -74,6 +74,9 @@ TodoManager::TodoManager(QObject *parent)
         // CategorySyncServer 会自动处理类别同步
         syncWithServer();
     });
+    
+    // 连接用户认证的登录状态变化信号
+    connect(&UserAuth::GetInstance(), &UserAuth::isLoggedInChanged, this, &TodoManager::isLoggedInChanged);
 
     // 创建待办事项类别管理器
     m_categoryManager = &CategoryManager::GetInstance();
@@ -1096,6 +1099,10 @@ TodoSorter *TodoManager::sorter() const {
 
 TodoSyncServer *TodoManager::syncServer() const {
     return m_syncManager;
+}
+
+bool TodoManager::isLoggedIn() const {
+    return m_userAuth.isLoggedIn();
 }
 
 // 排序相关实现

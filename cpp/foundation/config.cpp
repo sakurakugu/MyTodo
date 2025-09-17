@@ -41,7 +41,6 @@ Config::Config(QObject *parent)
 }
 
 Config::~Config() {
-
 }
 
 /**
@@ -91,7 +90,6 @@ bool Config::saveToFile() const {
             return false;
         }
 
-        m_needsSave = false;
         qDebug() << "成功保存配置文件:" << m_filePath;
         return true;
     } catch (...) {
@@ -111,35 +109,42 @@ void Config::save(const QString &key, const QVariant &value) {
         return;
     }
 
-    std::lock_guard<std::mutex> lock(m_mutex);
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
 
-    try {
-        // 将键分割为路径
-        QStringList parts = key.split('/', Qt::SkipEmptyParts);
-        if (parts.isEmpty()) {
-            qWarning() << "无效的配置项键名:" << key;
+        try {
+            // 将键分割为路径
+            QStringList parts = key.split('/', Qt::SkipEmptyParts);
+            if (parts.isEmpty()) {
+                qWarning() << "无效的配置项键名:" << key;
+                return;
+            }
+
+            toml::table *table = &m_config; // 指向根表的指针
+
+            // 获取或创建嵌套表
+            for (int i = 0; i < parts.size() - 1; ++i) {
+                const std::string k = parts[i].toStdString();
+                if (!table->contains(k) || !(*table)[k].is_table()) {
+                    (*table).insert(k, toml::table{});
+                }
+                table = (*table)[k].as_table();
+            }
+
+            // 插入或赋值
+            table->insert_or_assign(parts.last().toStdString(), *variantToToml(value));
+
+        } catch (const std::exception &e) {
+            qCritical() << "保存配置项失败:" << key << "错误:" << e.what();
+            return;
+        } catch (...) {
+            qCritical() << "保存配置项失败:" << key << "未知错误";
             return;
         }
+    } // 锁在这里自动释放
 
-        toml::table *table = &m_config; // 指向根表的指针
-
-        // 获取或创建嵌套表
-        for (int i = 0; i < parts.size() - 1; ++i) {
-            const std::string k = parts[i].toStdString();
-            if (!table->contains(k) || !(*table)[k].is_table()) {
-                (*table).insert(k, toml::table{});
-            }
-            table = (*table)[k].as_table();
-        }
-
-        // 插入或赋值
-        table->insert_or_assign(parts.last().toStdString(), *variantToToml(value));
-        m_needsSave = true; // 标记需要保存
-    } catch (const std::exception &e) {
-        qCritical() << "保存配置项失败:" << key << "错误:" << e.what();
-    } catch (...) {
-        qCritical() << "保存配置项失败:" << key << "未知错误";
-    }
+    // 立即保存到文件
+    saveToFile();
 }
 
 /**
@@ -197,36 +202,43 @@ void Config::remove(const QString &key) {
         qWarning() << "配置项键名不能为空";
         return;
     }
+    bool needSave = false;
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
 
-    std::lock_guard<std::mutex> lock(m_mutex);
-
-    try {
-        QStringList parts = key.split('/', Qt::SkipEmptyParts);
-        if (parts.isEmpty()) {
-            qWarning() << "无效的配置项键名:" << key;
-            return;
-        }
-
-        toml::table *table = &m_config;
-
-        for (int i = 0; i < parts.size() - 1; ++i) {
-            auto sub = table->get(parts[i].toStdString());
-            if (!sub || !sub->is_table()) {
-                qDebug() << "配置项不存在:" << key;
+        try {
+            QStringList parts = key.split('/', Qt::SkipEmptyParts);
+            if (parts.isEmpty()) {
+                qWarning() << "无效的配置项键名:" << key;
                 return;
             }
-            table = sub->as_table();
-        }
 
-        if (table->erase(parts.last().toStdString())) {
-            m_needsSave = true;
-            qDebug() << "成功删除配置项:" << key;
-        } else {
-            qDebug() << "配置项不存在:" << key;
-        }
+            toml::table *table = &m_config;
 
-    } catch (const std::exception &e) {
-        qCritical() << "删除配置项失败:" << key << "错误:" << e.what();
+            for (int i = 0; i < parts.size() - 1; ++i) {
+                auto sub = table->get(parts[i].toStdString());
+                if (!sub || !sub->is_table()) {
+                    qDebug() << "配置项不存在:" << key;
+                    return;
+                }
+                table = sub->as_table();
+            }
+
+            if (table->erase(parts.last().toStdString())) {
+                needSave = true;
+                qDebug() << "成功删除配置项:" << key;
+            } else {
+                qDebug() << "配置项不存在:" << key;
+            }
+
+        } catch (const std::exception &e) {
+            qCritical() << "删除配置项失败:" << key << "错误:" << e.what();
+        }
+    } // 锁在这里自动释放
+
+    // 如果有删除操作，立即保存到文件
+    if (needSave) {
+        saveToFile();
     }
 }
 
@@ -278,15 +290,20 @@ bool Config::contains(const QString &key) const noexcept {
  * @return 操作结果或错误信息
  */
 void Config::clear() {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
 
-    try {
-        m_config = toml::table{};
-        m_needsSave = true;
-        qDebug() << "成功清除所有配置项";
-    } catch (const std::exception &e) {
-        qCritical() << "清除所有设置失败:" << e.what();
-    }
+        try {
+            m_config = toml::table{};
+            qDebug() << "成功清除所有配置项";
+        } catch (const std::exception &e) {
+            qCritical() << "清除所有设置失败:" << e.what();
+            return;
+        }
+    } // 锁在这里自动释放
+
+    // 立即保存到文件
+    saveToFile();
 }
 
 /**
@@ -513,48 +530,54 @@ void Config::setBatch(const QVariantMap &values) {
         return;
     }
 
-    std::lock_guard<std::mutex> lock(m_mutex);
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
 
-    try {
-        for (auto it = values.cbegin(); it != values.cend(); ++it) {
-            if (it.key().isEmpty()) {
-                qWarning() << "跳过空键名的配置项";
-                continue;
-            }
-
-            QStringList parts = it.key().split('/', Qt::SkipEmptyParts);
-            if (parts.isEmpty()) {
-                qWarning() << "跳过无效键名:" << it.key();
-                continue;
-            }
-
-            toml::table *table = &m_config;
-
-            // 获取或创建嵌套表
-            for (int i = 0; i < parts.size() - 1; ++i) {
-                const std::string k = parts[i].toStdString();
-                if (!table->contains(k) || !(*table)[k].is_table()) {
-                    (*table).insert(k, toml::table{});
+        try {
+            for (auto it = values.cbegin(); it != values.cend(); ++it) {
+                if (it.key().isEmpty()) {
+                    qWarning() << "跳过空键名的配置项";
+                    continue;
                 }
-                table = (*table)[k].as_table();
+
+                QStringList parts = it.key().split('/', Qt::SkipEmptyParts);
+                if (parts.isEmpty()) {
+                    qWarning() << "跳过无效键名:" << it.key();
+                    continue;
+                }
+
+                toml::table *table = &m_config;
+
+                // 获取或创建嵌套表
+                for (int i = 0; i < parts.size() - 1; ++i) {
+                    const std::string k = parts[i].toStdString();
+                    if (!table->contains(k) || !(*table)[k].is_table()) {
+                        (*table).insert(k, toml::table{});
+                    }
+                    table = (*table)[k].as_table();
+                }
+
+                auto tomlValue = variantToToml(it.value());
+                if (tomlValue) {
+                    table->insert(parts.last().toStdString(), *tomlValue);
+                } else {
+                    qWarning() << "无法转换配置项值:" << it.key();
+                }
             }
 
-            auto tomlValue = variantToToml(it.value());
-            if (tomlValue) {
-                table->insert(parts.last().toStdString(), *tomlValue);
-            } else {
-                qWarning() << "无法转换配置项值:" << it.key();
-            }
+            qDebug() << "批量设置" << values.size() << "个配置项";
+
+        } catch (const std::bad_alloc &e) {
+            qCritical() << "内存不足，批量设置失败:" << e.what();
+            return;
+        } catch (const std::exception &e) {
+            qCritical() << "批量设置配置项失败:" << e.what();
+            return;
         }
+    } // 锁在这里自动释放
 
-        m_needsSave = true;
-        qDebug() << "批量设置" << values.size() << "个配置项";
-
-    } catch (const std::bad_alloc &e) {
-        qCritical() << "内存不足，批量设置失败:" << e.what();
-    } catch (const std::exception &e) {
-        qCritical() << "批量设置配置项失败:" << e.what();
-    }
+    // 立即保存到文件
+    saveToFile();
 }
 
 /**
@@ -562,12 +585,8 @@ void Config::setBatch(const QVariantMap &values) {
  * @param values 配置项映射
  */
 void Config::saveBatch(const QVariantMap &values) {
+    // setBatch 已经会自动保存到文件，所以直接调用即可
     setBatch(values);
-
-    // 立即保存到文件
-    if (m_needsSave) {
-        saveToFile();
-    }
 }
 
 /**
@@ -833,11 +852,6 @@ void Config::setConfigLocation(ConfigLocation location) {
     std::string oldPath = m_filePath;
 
     try {
-        // 保存当前配置到文件
-        if (m_needsSave) {
-            saveToFile();
-        }
-
         // 更新位置和文件路径
         m_configLocation = location;
         std::string newPath = getConfigLocationPath(location);

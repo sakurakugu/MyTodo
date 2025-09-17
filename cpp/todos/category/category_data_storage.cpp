@@ -178,15 +178,18 @@ bool CategoryDataStorage::saveToLocalStorage(const std::vector<std::unique_ptr<C
 
         // 插入新数据
         QSqlQuery insertQuery(db);
-        const QString insertString = "INSERT INTO categories (id, uuid, name, user_uuid, created_at, synced) VALUES (?, ?, ?, ?, ?, ?)";
+        const QString insertString = "INSERT INTO categories (id, uuid, name, user_uuid, created_at, updated_at, last_modified_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         insertQuery.prepare(insertString);
 
         for (const auto &item : categories) {
+            QString currentTime = QDateTime::currentDateTime().toString(Qt::ISODate);
             insertQuery.addBindValue(item->id());
             insertQuery.addBindValue(item->uuid().toString());
             insertQuery.addBindValue(item->name());
             insertQuery.addBindValue(item->userUuid().toString());
             insertQuery.addBindValue(item->createdAt().toString(Qt::ISODate));
+            insertQuery.addBindValue(currentTime); // updated_at
+            insertQuery.addBindValue(currentTime); // last_modified_at
             insertQuery.addBindValue(item->synced());
 
             if (!insertQuery.exec()) {
@@ -484,13 +487,15 @@ bool CategoryDataStorage::addCategory(std::vector<std::unique_ptr<CategorieItem>
 
         // 插入到数据库
         QSqlQuery insertQuery(db);
-        const QString insertString = "INSERT INTO categories (id, uuid, name, user_uuid, created_at, synced) VALUES (?, ?, ?, ?, ?, ?)";
+        const QString insertString = "INSERT INTO categories (id, uuid, name, user_uuid, created_at, updated_at, last_modified_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         insertQuery.prepare(insertString);
         insertQuery.addBindValue(newId);
         insertQuery.addBindValue(newUuid.toString());
         insertQuery.addBindValue(name);
         insertQuery.addBindValue(userUuid.toString());
         insertQuery.addBindValue(createdAt.toString(Qt::ISODate));
+        insertQuery.addBindValue(createdAt.toString(Qt::ISODate)); // updated_at
+        insertQuery.addBindValue(createdAt.toString(Qt::ISODate)); // last_modified_at
         insertQuery.addBindValue(false);
 
         if (!insertQuery.exec()) {
@@ -534,9 +539,12 @@ bool CategoryDataStorage::updateCategory(std::vector<std::unique_ptr<CategorieIt
 
         // 更新数据库中的类别
         QSqlQuery updateQuery(db);
-        const QString updateString = "UPDATE categories SET name = ?, synced = ? WHERE id = ?";
+        const QString updateString = "UPDATE categories SET name = ?, updated_at = ?, last_modified_at = ?, synced = ? WHERE id = ?";
         updateQuery.prepare(updateString);
+        QString currentTime = QDateTime::currentDateTime().toString(Qt::ISODate);
         updateQuery.addBindValue(name);
+        updateQuery.addBindValue(currentTime); // updated_at
+        updateQuery.addBindValue(currentTime); // last_modified_at
         updateQuery.addBindValue(false); // 标记为未同步
         updateQuery.addBindValue(id);
 

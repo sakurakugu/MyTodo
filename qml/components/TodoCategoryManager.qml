@@ -486,7 +486,7 @@ Item {
             if (text.length > 20) {
                 return {
                     valid: false,
-                    message: qsTr("不能超过20个字符")
+                    message: qsTr("种类名称不能超过20个字符")
                 };
             }
             if (text === currentCategoryName) {

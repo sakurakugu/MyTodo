@@ -17,11 +17,11 @@
 #include <QCoreApplication>
 #include <QDebug>
 #include <QDir>
-#include <mutex>
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QStandardPaths>
 #include <QVariant>
+#include <mutex>
 
 Database::Database(QObject *parent) : QObject(parent), m_initialized(false) {
     m_databasePath =
@@ -206,6 +206,11 @@ bool Database::createTables() {
         return false;
     }
 
+    // 创建用户表
+    if (!createUsersTable()) {
+        return false;
+    }
+
     // 创建categories表
     if (!createCategoriesTable()) {
         return false;
@@ -221,6 +226,33 @@ bool Database::createTables() {
         return false;
     }
 
+    return true;
+}
+
+/**
+ * @brief 创建用户表
+ * @return 创建是否成功
+ */
+bool Database::createUsersTable() {
+    const QString createTableQuery = R"(
+        CREATE TABLE IF NOT EXISTS users (
+            uuid TEXT PRIMARY KEY NOT NULL,
+            username TEXT NOT NULL,
+            email TEXT NOT NULL,
+            accessToken TEXT NOT NULL,
+            refreshToken TEXT NOT NULL,
+            tokenExpiryTime INTEGER NOT NULL
+        )
+    )";
+
+    QSqlQuery query(m_database);
+    if (!query.exec(createTableQuery)) {
+        m_lastError = QString("创建用户表失败: %1").arg(query.lastError().text());
+        qCritical() << m_lastError;
+        return false;
+    }
+
+    qDebug() << "用户表创建成功";
     return true;
 }
 
@@ -250,9 +282,10 @@ bool Database::createCategoriesTable() {
     }
 
     // 创建索引
-    const QStringList indexes = {"CREATE INDEX IF NOT EXISTS idx_categories_uuid ON categories(uuid)",
-                                 "CREATE INDEX IF NOT EXISTS idx_categories_user_uuid ON categories(user_uuid)",
-                                 "CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name)"};
+    const QStringList indexes = //
+        {"CREATE INDEX IF NOT EXISTS idx_categories_uuid ON categories(uuid)",
+         "CREATE INDEX IF NOT EXISTS idx_categories_user_uuid ON categories(user_uuid)",
+         "CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name)"};
 
     for (const QString &indexQuery : indexes) {
         if (!query.exec(indexQuery)) {
@@ -301,13 +334,14 @@ bool Database::createTodosTable() {
     }
 
     // 创建索引
-    const QStringList indexes = {"CREATE INDEX IF NOT EXISTS idx_todos_uuid ON todos(uuid)",
-                                 "CREATE INDEX IF NOT EXISTS idx_todos_user_uuid ON todos(user_uuid)",
-                                 "CREATE INDEX IF NOT EXISTS idx_todos_category ON todos(category)",
-                                 "CREATE INDEX IF NOT EXISTS idx_todos_deadline ON todos(deadline)",
-                                 "CREATE INDEX IF NOT EXISTS idx_todos_completed ON todos(is_completed)",
-                                 "CREATE INDEX IF NOT EXISTS idx_todos_deleted ON todos(is_deleted)",
-                                 "CREATE INDEX IF NOT EXISTS idx_todos_synced ON todos(synced)"};
+    const QStringList indexes = //
+        {"CREATE INDEX IF NOT EXISTS idx_todos_uuid ON todos(uuid)",
+         "CREATE INDEX IF NOT EXISTS idx_todos_user_uuid ON todos(user_uuid)",
+         "CREATE INDEX IF NOT EXISTS idx_todos_category ON todos(category)",
+         "CREATE INDEX IF NOT EXISTS idx_todos_deadline ON todos(deadline)",
+         "CREATE INDEX IF NOT EXISTS idx_todos_completed ON todos(is_completed)",
+         "CREATE INDEX IF NOT EXISTS idx_todos_deleted ON todos(is_deleted)",
+         "CREATE INDEX IF NOT EXISTS idx_todos_synced ON todos(synced)"};
 
     for (const QString &indexQuery : indexes) {
         if (!query.exec(indexQuery)) {
@@ -352,7 +386,7 @@ bool Database::migrateDatabase(int fromVersion, int toVersion) {
 
     // TODO:
     // 目前只有版本1，暂时不需要迁移逻辑
-    // 未来版本升级时在这里添加迁移代码
+    // 未来版本升级时再在这里添加迁移代码
 
     return updateDatabaseVersion(toVersion);
 }

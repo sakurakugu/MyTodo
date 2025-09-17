@@ -199,6 +199,8 @@ QString NetworkProxy::getProxyDescription() const noexcept {
             return "HTTP代理";
         case ProxyType::Socks5Proxy:
             return "SOCKS5代理";
+        case ProxyType::HybridProxy:
+            return "混合代理";
         }
         return "未知代理类型";
     };
@@ -231,6 +233,8 @@ QNetworkProxy NetworkProxy::createQNetworkProxy() const noexcept {
     case ProxyType::SystemProxy:
         proxy.setType(QNetworkProxy::DefaultProxy);
         break;
+    case ProxyType::HybridProxy:
+        [[fallthrough]];
     case ProxyType::HttpProxy:
         [[fallthrough]];
     case ProxyType::Socks5Proxy: {

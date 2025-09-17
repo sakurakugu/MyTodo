@@ -30,7 +30,7 @@ class Config : public QObject {
     Config &operator=(Config &&) = delete;
 
     void save(const QString &key, const QVariant &value);                 // 保存配置项
-    QVariant get(const QString &key) const;                // 获取配置项
+    QVariant get(const QString &key) const;                               // 获取配置项
     QVariant get(const QString &key, const QVariant &defaultValue) const; // 获取配置项（带默认值）
     void remove(const QString &key);                                      // 删除配置项
     const toml::node *find(const QString &key) const noexcept;            // 查找配置项
@@ -76,10 +76,9 @@ class Config : public QObject {
     std::unique_ptr<toml::node> variantToToml(const QVariant &value); // QVariant转换为Toml值
     QVariant tomlToVariant(const toml::node *node) const;             // Toml值转换为QVariant
 
-    mutable std::mutex m_mutex;       // 线程安全保护
-    toml::table m_config;             // 配置数据
-    std::string m_filePath;           // 配置文件路径
-    mutable bool m_needsSave = false; // 延迟写入标记
+    mutable std::mutex m_mutex; // 线程安全保护
+    toml::table m_config;       // 配置数据
+    std::string m_filePath;     // 配置文件路径
 #if defined(QT_DEBUG)
     ConfigLocation m_configLocation = ConfigLocation::ApplicationPath;
 #else

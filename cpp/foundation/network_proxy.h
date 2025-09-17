@@ -56,7 +56,8 @@ class NetworkProxy : public QObject {
         NoProxy = 0,     // 不使用代理
         SystemProxy = 1, // 使用系统代理
         HttpProxy = 2,   // HTTP代理
-        Socks5Proxy = 3  // SOCKS5代理
+        Socks5Proxy = 3, // SOCKS5代理
+        HybridProxy = 4  // 混合代理（HTTP和SOCKS5）
     };
     Q_ENUM(ProxyType)
 
@@ -89,7 +90,7 @@ class NetworkProxy : public QObject {
     void saveProxyConfigToSettings() noexcept;   // 保存代理设置到配置
 
     // 代理状态检查
-    QString getProxyDescription() const noexcept;   // 获取代理配置描述
+    QString getProxyDescription() const noexcept; // 获取代理配置描述
 
   signals:
     void proxyConfigChanged(ProxyType type, const QString &host, int port); // 代理配置改变信号

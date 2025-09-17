@@ -17,8 +17,8 @@
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QString>
-#include <mutex>
 #include <memory>
+#include <mutex>
 
 /**
  * @class Database
@@ -48,7 +48,7 @@
 class Database : public QObject {
     Q_OBJECT
 
-public:
+  public:
     // 单例模式
     static Database &GetInstance() {
         static Database instance;
@@ -61,46 +61,47 @@ public:
     Database &operator=(Database &&) = delete;
 
     // 数据库连接管理
-    bool initializeDatabase();                    ///< 初始化数据库连接和表结构
-    QSqlDatabase getDatabase();                   ///< 获取数据库连接
-    bool isDatabaseOpen() const;                  ///< 检查数据库是否已打开
-    void closeDatabase();                         ///< 关闭数据库连接
-    
+    bool initializeDatabase();   ///< 初始化数据库连接和表结构
+    QSqlDatabase getDatabase();  ///< 获取数据库连接
+    bool isDatabaseOpen() const; ///< 检查数据库是否已打开
+    void closeDatabase();        ///< 关闭数据库连接
+
     // 数据库操作
     bool executeQuery(const QString &queryString, QSqlQuery &query); ///< 执行SQL查询
     bool executeQuery(const QString &queryString);                   ///< 执行SQL查询（无返回结果）
-    
+
     // 错误处理
-    QString getLastError() const;                 ///< 获取最后一次错误信息
-    
+    QString getLastError() const; ///< 获取最后一次错误信息
+
     // 数据库信息
-    QString getDatabasePath() const;              ///< 获取数据库文件路径
-    int getDatabaseVersion() const;               ///< 获取数据库版本
-    
-private:
+    QString getDatabasePath() const; ///< 获取数据库文件路径
+    int getDatabaseVersion() const;  ///< 获取数据库版本
+
+  private:
     explicit Database(QObject *parent = nullptr);
     ~Database();
-    
+
     // 数据库初始化相关
-    bool createTables();                          ///< 创建数据库表
-    bool createCategoriesTable();                 ///< 创建categories表
-    bool createTodosTable();                      ///< 创建todos表
-    bool createVersionTable();                    ///< 创建版本信息表
-    
+    bool createTables();          ///< 创建数据库表
+    bool createUsersTable();      ///< 创建users表
+    bool createCategoriesTable(); ///< 创建categories表
+    bool createTodosTable();      ///< 创建todos表
+    bool createVersionTable();    ///< 创建版本信息表
+
     // 数据库迁移
     bool migrateDatabase(int fromVersion, int toVersion); ///< 数据库版本迁移
-    bool updateDatabaseVersion(int version);      ///< 更新数据库版本
-    
+    bool updateDatabaseVersion(int version);              ///< 更新数据库版本
+
     // 辅助方法
-    bool tableExists(const QString &tableName);   ///< 检查表是否存在
-    
+    bool tableExists(const QString &tableName); ///< 检查表是否存在
+
     // 成员变量
-    mutable std::mutex m_mutex;                   ///< 线程安全保护
-    QSqlDatabase m_database;                      ///< 数据库连接对象
-    QString m_databasePath;                       ///< 数据库文件路径
-    QString m_lastError;                          ///< 最后一次错误信息
-    bool m_initialized;                           ///< 是否已初始化
-    
-    static constexpr int DATABASE_VERSION = 1;    ///< 当前数据库版本
-    static constexpr const char* CONNECTION_NAME = "MyTodo_Database"; ///< 数据库连接名称
+    mutable std::mutex m_mutex; ///< 线程安全保护
+    QSqlDatabase m_database;    ///< 数据库连接对象
+    QString m_databasePath;     ///< 数据库文件路径
+    QString m_lastError;        ///< 最后一次错误信息
+    bool m_initialized;         ///< 是否已初始化
+
+    static constexpr int DATABASE_VERSION = 1;                        ///< 当前数据库版本
+    static constexpr const char *CONNECTION_NAME = "MyTodo_Database"; ///< 数据库连接名称
 };
