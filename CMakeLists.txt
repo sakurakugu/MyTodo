@@ -130,16 +130,10 @@ set_source_files_properties(
 )
 
 # 项目源文件配置
-set(ITEM_SOURCES
-    # 数据库条目模块
-    cpp/todos/items/todo_item.cpp
-    cpp/todos/items/todo_item.h
-    cpp/todos/items/categorie_item.cpp
-    cpp/todos/items/categorie_item.h
-)
-
-set(CORE_SOURCES
-    # 核心数据模型
+set(TODO_SOURCES
+    # 待办事项
+    cpp/todos/todo/todo_item.cpp
+    cpp/todos/todo/todo_item.h
     cpp/todos/todo/todo_manager.cpp
     cpp/todos/todo/todo_manager.h
     cpp/todos/todo/todo_sync_server.cpp
@@ -150,7 +144,12 @@ set(CORE_SOURCES
     cpp/todos/todo/todo_sorter.h
     cpp/todos/todo/todo_filter.cpp
     cpp/todos/todo/todo_filter.h
+)
 
+set(CATEGORY_SOURCES
+    # 待办事项分类
+    cpp/todos/category/categorie_item.cpp
+    cpp/todos/category/categorie_item.h
     cpp/todos/category/category_manager.h
     cpp/todos/category/category_manager.cpp
     cpp/todos/category/category_sync_server.cpp
@@ -158,6 +157,10 @@ set(CORE_SOURCES
     cpp/todos/category/category_data_storage.cpp
     cpp/todos/category/category_data_storage.h
 
+)
+
+set(CORE_SOURCES
+    # 其他代码
     cpp/todos/base_sync_server.cpp
     cpp/todos/base_sync_server.h
 )
@@ -193,7 +196,8 @@ set(UTILITY_SOURCES
 
 # 合并所有源文件
 set(PROJECT_SOURCES
-    ${ITEM_SOURCES}
+    ${TODO_SOURCES}
+    ${CATEGORY_SOURCES}
     ${CORE_SOURCES}
     ${NETWORK_SOURCES}
     ${UI_SOURCES}

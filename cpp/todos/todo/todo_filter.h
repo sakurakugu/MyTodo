@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include "../items/todo_item.h"
+#include "todo_item.h"
 #include <QDate>
 #include <QList>
 #include <QObject>

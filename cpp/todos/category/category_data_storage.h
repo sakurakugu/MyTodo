@@ -14,7 +14,7 @@
 #pragma once
 
 #include <toml++/toml.hpp>
-#include "../items/categorie_item.h"
+#include "categorie_item.h"
 #include "../../foundation/database.h"
 
 class Config;
@@ -60,16 +60,6 @@ class CategoryDataStorage : public QObject {
         Merge = 2      // 合并（保留较新的版本）
     };
     Q_ENUM(ConflictResolution)
-
-    /**
-     * @enum FileFormat
-     * @brief 定义文件格式类型
-     */
-    enum FileFormat {
-        TOML = 0, // TOML格式
-        JSON = 1  // JSON格式
-    };
-    Q_ENUM(FileFormat)
 
     // 构造函数
     explicit CategoryDataStorage(QObject *parent = nullptr);

@@ -52,11 +52,13 @@ void printResources(const QString &path = ":/") {
 int main(int argc, char *argv[]) {
 #if defined(Q_OS_WIN) && defined(QT_DEBUG)
     // Windows平台，设置控制台编码
-    UINT cp = GetACP();
-    if (cp == 936) {
-        SetConsoleCP(65001);
-        SetConsoleOutputCP(65001);
-    }
+    // UINT cp = GetACP();
+    // qInfo()<<"当前控制台编码:"<<cp;
+    // if (cp == 936) {
+    SetConsoleCP(65001);
+    SetConsoleOutputCP(65001);
+    // }
+    // qInfo()<<"当前控制台编码:"<<cp;
 #endif
 
     // printResources();
@@ -128,7 +130,7 @@ int main(int argc, char *argv[]) {
         // 先让 Manager 显式保存
         todoManager.saveTodosToLocalStorage();
         categoryManager.saveCategories();
-        
+
         // 给数据库操作一些时间完成
         QTimer::singleShot(100, [&]() {
             // 关闭数据库连接

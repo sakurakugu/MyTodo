@@ -23,7 +23,7 @@
 #include <toml++/toml.hpp>
 #include <vector>
 
-#include "../items/todo_item.h"
+#include "todo_item.h"
 #include "setting.h"
 #include "../../foundation/database.h"
 

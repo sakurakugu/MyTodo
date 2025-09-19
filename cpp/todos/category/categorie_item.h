@@ -12,9 +12,9 @@
 
 #pragma once
 
+#include <QDateTime>
 #include <QObject>
 #include <QString>
-#include <QDateTime>
 #include <QUuid>
 
 /**
@@ -39,24 +39,28 @@ class CategorieItem : public QObject {
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
     Q_PROPERTY(QUuid userUuid READ userUuid WRITE setUserUuid NOTIFY userUuidChanged)
     Q_PROPERTY(QDateTime createdAt READ createdAt WRITE setCreatedAt NOTIFY createdAtChanged)
+    Q_PROPERTY(QDateTime updatedAt READ updatedAt WRITE setUpdatedAt NOTIFY updatedAtChanged)
+    Q_PROPERTY(QDateTime lastModifiedAt READ lastModifiedAt WRITE setLastModifiedAt NOTIFY lastModifiedAtChanged)
     Q_PROPERTY(bool synced READ synced WRITE setSynced NOTIFY syncedChanged)
 
   public:
     CategorieItem(const CategorieItem &) = delete;
     CategorieItem &operator=(const CategorieItem &) = delete;
     explicit CategorieItem(QObject *parent = nullptr);
-    CategorieItem(int id,                     ///< 分类唯一标识符
-                  const QUuid &uuid,          ///< 分类唯一标识符（UUID）
-                  const QString &name,        ///< 分类名称
-                  const QUuid &userUuid,      ///< 用户UUID
-                  const QDateTime &createdAt, ///< 创建时间
-                  bool synced,                ///< 是否已与服务器同步（是否要上传）
+    CategorieItem(int id,                          ///< 分类唯一标识符
+                  const QUuid &uuid,               ///< 分类唯一标识符（UUID）
+                  const QString &name,             ///< 分类名称
+                  const QUuid &userUuid,           ///< 用户UUID
+                  const QDateTime &createdAt,      ///< 创建时间
+                  const QDateTime &updatedAt,      ///< 更新时间
+                  const QDateTime &lastModifiedAt, ///< 最后修改时间
+                  bool synced,                     ///< 是否已与服务器同步（是否要上传）
                   QObject *parent = nullptr);
 
     int id() const noexcept { return m_id; } // 获取ID
     void setId(int id);                      // 设置ID
 
-    QUuid uuid() const { return m_uuid; }       // 获取UUID
+    QUuid uuid() const { return m_uuid; }    // 获取UUID
     void setUuid(const QUuid &uuid);         // 设置UUID
 
     QString name() const noexcept { return m_name; } // 获取分类名称
@@ -68,14 +72,20 @@ class CategorieItem : public QObject {
     QDateTime createdAt() const noexcept { return m_createdAt; } // 获取创建时间
     void setCreatedAt(const QDateTime &createdAt);               // 设置创建时间
 
+    QDateTime updatedAt() const noexcept { return m_updatedAt; } // 获取更新时间
+    void setUpdatedAt(const QDateTime &updatedAt);               // 设置更新时间
+
+    QDateTime lastModifiedAt() const noexcept { return m_lastModifiedAt; } // 获取最后修改时间
+    void setLastModifiedAt(const QDateTime &lastModifiedAt);               // 设置最后修改时间
+
     bool synced() const noexcept { return m_synced; } // 获取是否已同步
     void setSynced(bool synced);                      // 设置是否已同步
 
     // 便利方法
-    bool isValidName() const noexcept;                                    // 检查分类名称是否有效
-    bool isSystemDefault() const noexcept;                                // 检查是否为系统默认分类
-    QString displayName() const noexcept;                                 // 获取显示名称
-    bool canBeDeleted() const noexcept;                                   // 检查是否可以被删除
+    bool isValidName() const noexcept;     // 检查分类名称是否有效
+    bool isSystemDefault() const noexcept; // 检查是否为系统默认分类
+    QString displayName() const noexcept;  // 获取显示名称
+    bool canBeDeleted() const noexcept;    // 检查是否可以被删除
 
     // 比较操作符
     bool operator==(const CategorieItem &other) const;
@@ -87,6 +97,8 @@ class CategorieItem : public QObject {
     void nameChanged();      ///< 分类名称改变信号
     void userUuidChanged();  ///< 用户UUID改变信号
     void createdAtChanged(); ///< 创建时间改变信号
+    void updatedAtChanged(); ///< 更新时间改变信号
+    void lastModifiedAtChanged(); ///< 最后修改时间改变信号
     void syncedChanged();    ///< 同步状态改变信号
 
   private:
@@ -97,8 +109,7 @@ class CategorieItem : public QObject {
      * @param value 新值
      * @param signal 信号指针
      */
-    template <typename T>
-    constexpr void setProperty(T& member, const T& value, void (CategorieItem::*signal)()) {
+    template <typename T> constexpr void setProperty(T &member, const T &value, void (CategorieItem::*signal)()) {
         if (member != value) {
             member = value;
             emit(this->*signal)();
@@ -106,10 +117,12 @@ class CategorieItem : public QObject {
     }
 
     // 成员变量
-    int m_id;                // 分类ID
-    QUuid m_uuid;            // 分类UUID
-    QString m_name;          // 分类名称
-    QUuid m_userUuid;        // 用户UUID
-    QDateTime m_createdAt;   // 分类创建时间
-    bool m_synced;           // 分类是否已同步
+    int m_id;                   // 分类ID
+    QUuid m_uuid;               // 分类UUID
+    QString m_name;             // 分类名称
+    QUuid m_userUuid;           // 用户UUID
+    QDateTime m_createdAt;      // 分类创建时间
+    QDateTime m_updatedAt;      // 分类更新时间
+    QDateTime m_lastModifiedAt; // 分类最后修改时间
+    bool m_synced;              // 分类是否已同步
 };

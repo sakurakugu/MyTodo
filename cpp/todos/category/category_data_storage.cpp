@@ -11,18 +11,18 @@
  * @version 0.4.0
  */
 
-#include <QJsonObject>
-#include <QSqlQuery>
-#include <QSqlError>
-#include <QVariant>
-#include <QDebug>
 #include "category_data_storage.h"
 #include "../../foundation/config.h"
+#include <QDebug>
+#include <QJsonObject>
+#include <QSqlError>
+#include <QSqlQuery>
+#include <QVariant>
 
 CategoryDataStorage::CategoryDataStorage(QObject *parent)
-    : QObject(parent),                                    // 父对象
-      m_config(Config::GetInstance()),                    // 配置
-      m_database(Database::GetInstance())   // 数据库管理器
+    : QObject(parent),                    // 父对象
+      m_config(Config::GetInstance()),    // 配置
+      m_database(Database::GetInstance()) // 数据库管理器
 {
     // 确保数据库已初始化
     if (!m_database.initializeDatabase()) {
@@ -53,8 +53,9 @@ bool CategoryDataStorage::loadFromLocalStorage(std::vector<std::unique_ptr<Categ
         }
 
         QSqlQuery query(db);
-        const QString queryString = "SELECT id, uuid, name, user_uuid, created_at, synced FROM categories ORDER BY id";
-        
+        const QString queryString = "SELECT id, uuid, name, user_uuid, created_at, updated_at, last_modified_at, "
+                                    "synced FROM categories ORDER BY id";
+
         if (!query.exec(queryString)) {
             qCritical() << "加载类别查询失败:" << query.lastError().text();
             return false;
@@ -66,16 +67,19 @@ bool CategoryDataStorage::loadFromLocalStorage(std::vector<std::unique_ptr<Categ
             QString name = query.value("name").toString();
             QUuid userUuid = QUuid::fromString(query.value("user_uuid").toString());
             QDateTime createdAt = QDateTime::fromString(query.value("created_at").toString(), Qt::ISODate);
+            QDateTime updatedAt = QDateTime::fromString(query.value("updated_at").toString(), Qt::ISODate);
+            QDateTime lastModifiedAt = QDateTime::fromString(query.value("last_modified_at").toString(), Qt::ISODate);
             bool synced = query.value("synced").toBool();
 
-            auto item = std::make_unique<CategorieItem>(
-                id,        // 唯一标识符
-                uuid,      // 唯一标识符（UUID）
-                name,      // 分类名称
-                userUuid,  // 用户UUID
-                createdAt, // 创建时间
-                synced,    // 是否已同步
-                this);
+            auto item = std::make_unique<CategorieItem>(id,             // 唯一标识符
+                                                        uuid,           // 唯一标识符（UUID）
+                                                        name,           // 分类名称
+                                                        userUuid,       // 用户UUID
+                                                        createdAt,      // 创建时间
+                                                        updatedAt,      // 更新时间
+                                                        lastModifiedAt, // 最后修改时间
+                                                        synced,         // 是否已同步
+                                                        this);
 
             categories.push_back(std::move(item));
         }
@@ -126,9 +130,7 @@ bool CategoryDataStorage::deleteCategory(std::vector<std::unique_ptr<CategorieIt
 
         // 从内存中删除类别
         auto it = std::find_if(categories.begin(), categories.end(),
-                               [id](const std::unique_ptr<CategorieItem> &item) {
-                                   return item->id() == id;
-                               });
+                               [id](const std::unique_ptr<CategorieItem> &item) { return item->id() == id; });
 
         if (it != categories.end()) {
             QString name = (*it)->name();
@@ -178,7 +180,8 @@ bool CategoryDataStorage::saveToLocalStorage(const std::vector<std::unique_ptr<C
 
         // 插入新数据
         QSqlQuery insertQuery(db);
-        const QString insertString = "INSERT INTO categories (id, uuid, name, user_uuid, created_at, updated_at, last_modified_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        const QString insertString = "INSERT INTO categories (id, uuid, name, user_uuid, created_at, updated_at, "
+                                     "last_modified_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         insertQuery.prepare(insertString);
 
         for (const auto &item : categories) {
@@ -188,8 +191,8 @@ bool CategoryDataStorage::saveToLocalStorage(const std::vector<std::unique_ptr<C
             insertQuery.addBindValue(item->name());
             insertQuery.addBindValue(item->userUuid().toString());
             insertQuery.addBindValue(item->createdAt().toString(Qt::ISODate));
-            insertQuery.addBindValue(currentTime); // updated_at
-            insertQuery.addBindValue(currentTime); // last_modified_at
+            insertQuery.addBindValue(currentTime);
+            insertQuery.addBindValue(currentTime);
             insertQuery.addBindValue(item->synced());
 
             if (!insertQuery.exec()) {
@@ -309,6 +312,8 @@ void CategoryDataStorage::createDefaultCategories(std::vector<std::unique_ptr<Ca
         "未分类",                                           //
         userUuid,                                           //
         QDateTime::currentDateTime(),                       //
+        QDateTime::currentDateTime(),                       //
+        QDateTime::currentDateTime(),                       //
         false                                               //
     );
     categories.push_back(std::move(defaultCategory));
@@ -375,14 +380,20 @@ std::unique_ptr<CategorieItem> CategoryDataStorage::createCategoryItemFromToml(c
         QString uuidStr = QString::fromStdString(categoryTable["uuid"].value_or(""));
         QString userUuidStr = QString::fromStdString(categoryTable["user_uuid"].value_or(""));
         QString createdAtStr = QString::fromStdString(categoryTable["created_at"].value_or(""));
+        QString updatedAtStr = QString::fromStdString(categoryTable["updated_at"].value_or(""));
+        QString lastModifiedAtStr = QString::fromStdString(categoryTable["last_modified_at"].value_or(""));
         bool synced = categoryTable["synced"].value_or(false);
 
         QUuid uuid = uuidStr.isEmpty() ? QUuid::createUuid() : QUuid::fromString(uuidStr);
         QUuid userUuid = QUuid::fromString(userUuidStr);
         QDateTime createdAt =
             createdAtStr.isEmpty() ? QDateTime::currentDateTime() : QDateTime::fromString(createdAtStr, Qt::ISODate);
+        QDateTime updatedAt =
+            updatedAtStr.isEmpty() ? QDateTime::currentDateTime() : QDateTime::fromString(updatedAtStr, Qt::ISODate);
+        QDateTime lastModifiedAt = lastModifiedAtStr.isEmpty() ? QDateTime::currentDateTime()
+                                                               : QDateTime::fromString(lastModifiedAtStr, Qt::ISODate);
 
-        return std::make_unique<CategorieItem>(id, uuid, name, userUuid, createdAt, synced);
+        return std::make_unique<CategorieItem>(id, uuid, name, userUuid, createdAt, updatedAt, lastModifiedAt, synced);
 
     } catch (const std::exception &e) {
         qWarning() << "从TOML创建类别项目时发生异常:" << e.what();
@@ -450,8 +461,7 @@ int CategoryDataStorage::getNextAvailableId(const std::vector<std::unique_ptr<Ca
  * @param userUuid 用户UUID
  * @return 添加成功返回true，否则返回false
  */
-bool CategoryDataStorage::addCategory(std::vector<std::unique_ptr<CategorieItem>> &categories,
-                                      const QString &name,
+bool CategoryDataStorage::addCategory(std::vector<std::unique_ptr<CategorieItem>> &categories, const QString &name,
                                       const QUuid &userUuid) {
     bool success = true;
 
@@ -475,27 +485,29 @@ bool CategoryDataStorage::addCategory(std::vector<std::unique_ptr<CategorieItem>
         int newId = maxId + 1;
         QUuid newUuid = QUuid::createUuid();
         QDateTime createdAt = QDateTime::currentDateTime();
-        
-        auto newItem = std::make_unique<CategorieItem>(
-            newId,                    // 新的唯一标识符
-            newUuid,                  // 新的UUID
-            name,                     // 类别名称
-            userUuid,                 // 用户UUID
-            createdAt,                // 当前时间
-            false,                    // 未同步
-            this);
+
+        auto newItem = std::make_unique<CategorieItem>(newId,     // 新的唯一标识符
+                                                       newUuid,   // 新的UUID
+                                                       name,      // 类别名称
+                                                       userUuid,  // 用户UUID
+                                                       createdAt, // 当前时间
+                                                       createdAt, // 更新时间
+                                                       createdAt, // 最后修改时间
+                                                       false,     // 未同步
+                                                       this);
 
         // 插入到数据库
         QSqlQuery insertQuery(db);
-        const QString insertString = "INSERT INTO categories (id, uuid, name, user_uuid, created_at, updated_at, last_modified_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        const QString insertString = "INSERT INTO categories (id, uuid, name, user_uuid, created_at, updated_at, "
+                                     "last_modified_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         insertQuery.prepare(insertString);
         insertQuery.addBindValue(newId);
         insertQuery.addBindValue(newUuid.toString());
         insertQuery.addBindValue(name);
         insertQuery.addBindValue(userUuid.toString());
         insertQuery.addBindValue(createdAt.toString(Qt::ISODate));
-        insertQuery.addBindValue(createdAt.toString(Qt::ISODate)); // updated_at
-        insertQuery.addBindValue(createdAt.toString(Qt::ISODate)); // last_modified_at
+        insertQuery.addBindValue(createdAt.toString(Qt::ISODate));
+        insertQuery.addBindValue(createdAt.toString(Qt::ISODate));
         insertQuery.addBindValue(false);
 
         if (!insertQuery.exec()) {
@@ -525,8 +537,7 @@ bool CategoryDataStorage::addCategory(std::vector<std::unique_ptr<CategorieItem>
  * @param name 新的类别名称
  * @return 更新成功返回true，否则返回false
  */
-bool CategoryDataStorage::updateCategory(std::vector<std::unique_ptr<CategorieItem>> &categories,
-                                         int id,
+bool CategoryDataStorage::updateCategory(std::vector<std::unique_ptr<CategorieItem>> &categories, int id,
                                          const QString &name) {
     bool success = false;
 
@@ -539,13 +550,14 @@ bool CategoryDataStorage::updateCategory(std::vector<std::unique_ptr<CategorieIt
 
         // 更新数据库中的类别
         QSqlQuery updateQuery(db);
-        const QString updateString = "UPDATE categories SET name = ?, updated_at = ?, last_modified_at = ?, synced = ? WHERE id = ?";
+        const QString updateString =
+            "UPDATE categories SET name = ?, updated_at = ?, last_modified_at = ?, synced = ? WHERE id = ?";
         updateQuery.prepare(updateString);
         QString currentTime = QDateTime::currentDateTime().toString(Qt::ISODate);
         updateQuery.addBindValue(name);
         updateQuery.addBindValue(currentTime); // updated_at
         updateQuery.addBindValue(currentTime); // last_modified_at
-        updateQuery.addBindValue(false); // 标记为未同步
+        updateQuery.addBindValue(false);       // 标记为未同步
         updateQuery.addBindValue(id);
 
         if (!updateQuery.exec()) {

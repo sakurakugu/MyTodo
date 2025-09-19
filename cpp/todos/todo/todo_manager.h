@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "../category/category_manager.h" // 类别管理器
-#include "../items/todo_item.h"
+#include "todo_item.h"
 #include "foundation/network_request.h"
 #include "setting.h"
 #include "todo_data_storage.h" // 数据管理器

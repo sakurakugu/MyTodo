@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "../base_sync_server.h"
-#include "../items/categorie_item.h"
+#include "categorie_item.h"
 
 /**
  * @class CategorySyncServer

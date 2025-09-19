@@ -437,6 +437,8 @@ void CategorySyncServer::pushBatchToServer(const std::vector<CategorieItem *> &b
             obj["user_uuid"] = item->userUuid().toString(QUuid::WithoutBraces);
             obj["name"] = item->name();
             obj["created_at"] = item->createdAt().toString(Qt::ISODate);
+            obj["updated_at"] = item->updatedAt().toString(Qt::ISODate);
+            obj["last_modified_at"] = item->lastModifiedAt().toString(Qt::ISODate);
 
             jsonArray.append(obj);
         }

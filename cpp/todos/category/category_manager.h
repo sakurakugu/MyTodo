@@ -21,7 +21,7 @@
 #include <memory>
 #include <vector>
 
-#include "../items/categorie_item.h"
+#include "categorie_item.h"
 #include "category_data_storage.h"
 #include "category_sync_server.h"
 #include "setting.h"
@@ -70,6 +70,8 @@ class CategoryManager : public QAbstractListModel {
         NameRole,                  // 类别名称
         UserUuidRole,              // 用户UUID
         CreatedAtRole,             // 创建时间
+        UpdatedAtRole,             // 更新时间
+        LastModifiedAtRole,        // 最后修改时间
         SyncedRole,                // 是否已同步
     };
     Q_ENUM(CategoryRoles)

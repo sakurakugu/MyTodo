@@ -41,14 +41,9 @@ class Config : public QObject {
     void setBatch(const QVariantMap &values);  // 批量设置配置项
     void saveBatch(const QVariantMap &values); // 批量保存配置项
 
-    // JSON 导出功能
-    std::string exportToJson(const QStringList &excludeKeys = QStringList()) const;
-    bool exportToJsonFile(const std::string &filePath,
-                          const QStringList &excludeKeys = QStringList()) const; // 导出到JSON文件
-
-    // JSON 转换为 TOML
+    // JSON 相关功能
+    std::string exportToJson(const QStringList &excludeKeys = QStringList()) const; // 导出配置到JSON字符串
     bool JsonToToml(const std::string &jsonContent, toml::table *table);  // JSON字符串 转换为 TOML
-    bool JsonFileToToml(const std::string &filePath, toml::table *table); // JSON文件 转换为 TOML
 
     // 配置文件位置切换
     enum class ConfigLocation {

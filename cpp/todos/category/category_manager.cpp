@@ -71,6 +71,8 @@ QHash<int, QByteArray> CategoryManager::roleNames() const {
     roles[NameRole] = "name";
     roles[UserUuidRole] = "userUuid";
     roles[CreatedAtRole] = "createdAt";
+    roles[UpdatedAtRole] = "updatedAt";
+    roles[LastModifiedAtRole] = "lastModifiedAt";
     roles[SyncedRole] = "synced";
     return roles;
 }
@@ -148,6 +150,10 @@ QVariant CategoryManager::getItemData(const CategorieItem *item, int role) const
         return item->userUuid();
     case CreatedAtRole:
         return item->createdAt();
+    case UpdatedAtRole:
+        return item->updatedAt();
+    case LastModifiedAtRole:
+        return item->lastModifiedAt();
     case SyncedRole:
         return item->synced();
     default:
@@ -188,6 +194,10 @@ CategoryManager::CategoryRoles CategoryManager::roleFromName(const QString &name
         return UserUuidRole;
     if (name == "createdAt")
         return CreatedAtRole;
+    if (name == "updatedAt")
+        return UpdatedAtRole;
+    if (name == "lastModifiedAt")
+        return LastModifiedAtRole;
     if (name == "synced")
         return SyncedRole;
     return IdRole; // 默认返回IdRole
@@ -306,6 +316,8 @@ void CategoryManager::createCategory(const QString &name) {
         name,                                           // 类别名称
         m_userAuth.getUuid(),                           // 用户UUID
         QDateTime::currentDateTime(),                   // 创建时间
+        QDateTime::currentDateTime(),                   // 更新时间
+        QDateTime::currentDateTime(),                   // 最后修改时间
         false                                           // 未同步
     );
 
@@ -463,11 +475,16 @@ void CategoryManager::updateCategoriesFromJson(const QJsonArray &categoriesArray
         QString name = categoryObj["name"].toString();
         QString userUuid = categoryObj["user_uuid"].toString();
         QString createdAtStr = categoryObj["created_at"].toString();
+        QString updatedAtStr = categoryObj["updated_at"].toString();
+        QString lastModifiedAtStr = categoryObj["last_modified_at"].toString();
         QDateTime createdAt = QDateTime::fromString(createdAtStr, Qt::ISODate);
+        QDateTime updatedAt = QDateTime::fromString(updatedAtStr, Qt::ISODate);
+        QDateTime lastModifiedAt = QDateTime::fromString(lastModifiedAtStr, Qt::ISODate);
 
         if (!name.isEmpty() && !uuidStr.isEmpty()) {
-            auto categoryItem = std::make_unique<CategorieItem>(id, QUuid::fromString(uuidStr), name,
-                                                                QUuid::fromString(userUuid), createdAt, true);
+            auto categoryItem =
+                std::make_unique<CategorieItem>(id, QUuid::fromString(uuidStr), name, QUuid::fromString(userUuid),
+                                                createdAt, updatedAt, lastModifiedAt, true);
             m_categoryItems.push_back(std::move(categoryItem));
             m_categories << name;
         }
@@ -480,6 +497,8 @@ void CategoryManager::updateCategoriesFromJson(const QJsonArray &categoriesArray
             QUuid::createUuid(),                                //
             "未分类",                                           //
             m_userAuth.getUuid(),                               //
+            QDateTime::currentDateTime(),                       //
+            QDateTime::currentDateTime(),                       //
             QDateTime::currentDateTime(),                       //
             false                                               //
         );

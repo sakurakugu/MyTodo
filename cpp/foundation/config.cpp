@@ -652,39 +652,6 @@ std::string Config::exportToJson(const QStringList &excludeKeys) const {
 }
 
 /**
- * @brief 导出配置到JSON文件
- * @param filePath 文件路径
- * @param excludeKeys 要排除的键列表
- * @return 操作是否成功
- */
-bool Config::exportToJsonFile(const std::string &filePath, const QStringList &excludeKeys) const {
-    try {
-        std::string jsonContent = exportToJson(excludeKeys);
-
-        std::ofstream file(filePath);
-        if (!file.is_open()) {
-            qCritical() << "无法打开文件进行写入:" << filePath;
-            return false;
-        }
-
-        file << jsonContent;
-        file.close();
-
-        if (file.fail()) {
-            qCritical() << "写入JSON文件失败:" << filePath;
-            return false;
-        }
-
-        qInfo() << "成功导出配置到JSON文件:" << filePath;
-        return true;
-
-    } catch (const std::exception &e) {
-        qCritical() << "导出JSON文件失败:" << e.what();
-        return false;
-    }
-}
-
-/**
  * @brief JSON字符串 转换为 TOML
  * @param jsonContent JSON字符串内容
  * @param table 导出的table表
@@ -787,52 +754,6 @@ bool Config::JsonToToml(const std::string &jsonContent, toml::table *table) {
 
     } catch (const std::exception &e) {
         qCritical() << "将JSON字符串转化为Toml格式失败:" << e.what();
-        return false;
-    }
-}
-
-/**
- * @brief JSON文件 转换为 TOML
- * @param filePath JSON文件路径
- * @param table 导出的table表
- * @return 操作是否成功
- */
-bool Config::JsonFileToToml(const std::string &filePath, toml::table *table) {
-    try {
-        if (filePath.empty()) {
-            qWarning() << "文件路径为空";
-            return false;
-        }
-
-        if (!std::filesystem::exists(filePath)) {
-            qCritical() << "JSON文件不存在:" << filePath;
-            return false;
-        }
-
-        // 读取文件内容
-        std::ifstream file(filePath);
-        if (!file.is_open()) {
-            qCritical() << "无法打开JSON文件:" << filePath;
-            return false;
-        }
-
-        std::string jsonContent((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-        file.close();
-
-        if (jsonContent.empty()) {
-            qWarning() << "JSON文件内容为空:" << filePath;
-            return false;
-        }
-
-        // 调用字符串导入方法
-        bool result = JsonToToml(jsonContent, table);
-        if (result) {
-            qInfo() << "成功将JSON文件转化为Toml格式:" << filePath;
-        }
-        return result;
-
-    } catch (const std::exception &e) {
-        qCritical() << "从JSON文件转化为Toml格式失败:" << e.what();
         return false;
     }
 }

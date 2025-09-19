@@ -67,7 +67,7 @@ QString Setting::getConfigFilePath() const {
 void Setting::exportToJsonFile(const QString &filePath) {
     QStringList excludeKeys;
     excludeKeys << "proxy" << "auth";
-    m_config.exportToJsonFile(filePath.toStdString(), excludeKeys);
+    // m_config.exportToJsonFile(filePath.toStdString(), excludeKeys);
 }
 
 // 日志配置相关方法实现
