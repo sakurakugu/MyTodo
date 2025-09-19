@@ -95,18 +95,18 @@ void BaseSyncServer::setAutoSyncInterval(int minutes) {
 }
 
 // 默认的同步操作实现
-void BaseSyncServer::cancelSync() {
+void BaseSyncServer::重置同步状态() {
+    m_isSyncing = false;
+    m_currentSyncDirection = Bidirectional;
+    emit syncingChanged();
+}
+
+void BaseSyncServer::取消同步() {
     if (m_isSyncing) {
         m_isSyncing = false;
         emit syncingChanged();
         emit syncCompleted(UnknownError, "同步已取消");
     }
-}
-
-void BaseSyncServer::resetSyncState() {
-    m_isSyncing = false;
-    m_currentSyncDirection = Bidirectional;
-    emit syncingChanged();
 }
 
 // 配置管理实现
@@ -165,7 +165,7 @@ void BaseSyncServer::onNetworkRequestFailed(NetworkRequest::RequestType type, Ne
 
 void BaseSyncServer::onAutoSyncTimer() {
     if (canPerformSync()) {
-        syncWithServer();
+        与服务器同步();
     }
 }
 

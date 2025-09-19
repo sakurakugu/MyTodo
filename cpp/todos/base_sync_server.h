@@ -99,9 +99,9 @@ class BaseSyncServer : public QObject {
     void setAutoSyncInterval(int minutes);             // 设置自动同步间隔
 
     // 同步操作（纯虚函数，由子类实现）
-    Q_INVOKABLE virtual void syncWithServer(SyncDirection direction = Bidirectional) = 0; // 与服务器同步
-    Q_INVOKABLE virtual void cancelSync();                                                 // 取消当前同步操作
-    Q_INVOKABLE virtual void resetSyncState();                                             // 重置同步状态
+    virtual void 与服务器同步(SyncDirection direction = Bidirectional) = 0;
+    virtual void 重置同步状态();
+    virtual void 取消同步();
 
     // 配置管理
     void updateServerConfig(const QString &baseUrl, const QString &apiEndpoint); // 更新服务器配置
@@ -123,15 +123,16 @@ class BaseSyncServer : public QObject {
     void serverConfigChanged();     // 服务器配置变化
 
   protected slots:
-    virtual void onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response); // 网络请求完成
+    virtual void onNetworkRequestCompleted(NetworkRequest::RequestType type,
+                                           const QJsonObject &response); // 网络请求完成
     virtual void onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
-                                         const QString &message); // 网络请求失败
-    void onAutoSyncTimer();                                       // 自动同步定时器触发
-    void onBaseUrlChanged(const QString &newBaseUrl);             // 服务器URL变化
+                                        const QString &message); // 网络请求失败
+    void onAutoSyncTimer();                                      // 自动同步定时器触发
+    void onBaseUrlChanged(const QString &newBaseUrl);            // 服务器URL变化
 
   protected:
     // 同步操作实现（由子类重写）
-    virtual void performSync(SyncDirection direction) = 0; // 执行同步操作
+    virtual void 执行同步(SyncDirection direction) = 0; // 执行同步操作
 
     // 辅助方法
     void initializeServerConfig(); // 初始化服务器配置
@@ -146,7 +147,7 @@ class BaseSyncServer : public QObject {
     QTimer *m_autoSyncTimer;          ///< 自动同步定时器
 
     // 同步状态
-    
+
     bool m_isSyncing;                     ///< 当前是否正在同步
     QString m_lastSyncTime;               ///< 最后同步时间
     int m_autoSyncInterval;               ///< 自动同步间隔（分钟）

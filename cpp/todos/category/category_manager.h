@@ -100,10 +100,8 @@ class CategoryManager : public QAbstractListModel {
     Q_INVOKABLE void deleteCategory(const QString &name);                         ///< 删除类别
 
     // 同步相关方法
-    Q_INVOKABLE void syncWithServer();            ///< 与服务器同步类别
-    Q_INVOKABLE void fetchCategoriesFromServer(); ///< 从服务器获取类别
-    Q_INVOKABLE void pushCategoriesToServer();    ///< 推送类别到服务器
-    Q_INVOKABLE bool isSyncing() const;           ///< 检查是否正在同步
+    Q_INVOKABLE void syncWithServer();  ///< 与服务器同步类别
+    Q_INVOKABLE bool isSyncing() const; ///< 检查是否正在同步
 
     // 属性访问器
     CategorySyncServer *getSyncServer() const {
@@ -120,31 +118,26 @@ class CategoryManager : public QAbstractListModel {
     Q_INVOKABLE bool categoryExists(const QString &name) const;                  ///< 检查类别名称是否已存在
     Q_INVOKABLE CategorieItem *getCategoryAt(int index) const;                   ///< 根据索引获取类别项目
     void 添加默认类别();
-    void clearCategories();                                                      ///< 清空所有类别
+    void clearCategories(); ///< 清空所有类别
 
     // 数据存储相关方法
     void loadCategories(); ///< 从存储加载类别
-    void saveCategories(); ///< 保存类别
-    void importCategories(const toml::table &table, std::vector<std::unique_ptr<CategorieItem>> &categories); ///< 导入类别数据
 
   signals:
     void categoriesChanged();                 ///< 类别列表变化信号
     void loadingStateChanged();               ///< 加载状态变化信号
     void errorOccurred(const QString &error); ///< 错误发生信号
 
-    // 统一的操作完成信号
-    void operationCompleted(const QString &operation, bool success, const QString &message); ///< 操作完成信号
-
   public slots:
-    void onCategoriesUpdatedFromServer(const QJsonArray &categoriesArray); ///< 处理从服务器更新的类别数据
-
+    void onCategoriesUpdatedFromServer(const QJsonArray &categoriesArray);            ///< 处理从服务器更新的类别数据
+    void onLocalChangesUploaded(const std::vector<CategorieItem *> &m_unsyncedItems); ///< 处理本地更改已上传
   private:
     explicit CategoryManager(QObject *parent = nullptr);
     ~CategoryManager();
 
     // 辅助方法
     void updateCategoriesFromJson(const QJsonArray &categoriesArray); ///< 从JSON数组更新类别列表
-    bool isValidCategoryName(const QString &name) const;              ///< 验证类别名称
+    bool 是否是有效名称(const QString &name) const;                   ///< 验证类别名称
 
     // 模型相关辅助方法
     QVariant getItemData(const CategorieItem *item, int role) const; ///< 根据角色获取项目数据
@@ -157,7 +150,7 @@ class CategoryManager : public QAbstractListModel {
 
     // 成员变量
     std::vector<std::unique_ptr<CategorieItem>> m_categoryItems; ///< 类别项目列表
-    QStringList m_categories;                                    ///< 类别名称列表（缓存）
+    QStringList m_categories;                                    ///< 类别名称列表（让QML快速访问）
     QString m_categoriesApiEndpoint;                             ///< 类别API端点
 
     std::unique_ptr<CategorySyncServer> m_syncServer;   ///< 类别同步服务器对象

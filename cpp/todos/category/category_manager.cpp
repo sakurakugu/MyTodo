@@ -270,20 +270,11 @@ bool CategoryManager::categoryExists(const QString &name) const {
 void CategoryManager::添加默认类别() {
 
     // 使用数据存储创建默认类别
-    if (m_dataStorage) {
-        m_dataStorage->创建默认类别(m_categoryItems, m_userAuth.getUuid());
-    }
+    m_dataStorage->创建默认类别(m_categoryItems, m_userAuth.getUuid());
 
     // 更新缓存列表
     m_categories.clear();
-    for (const auto &category : m_categoryItems) {
-        if (category) {
-            m_categories << category->name();
-        }
-    }
-
-    // 保存到本地存储
-    saveCategories();
+    m_categories << "未分类";
 }
 
 /**
@@ -299,50 +290,32 @@ void CategoryManager::clearCategories() {
 void CategoryManager::createCategory(const QString &name) {
     qDebug() << "=== 开始创建类别 ===" << name;
 
-    if (!isValidCategoryName(name)) {
-        operationCompleted("createCategory", false, "类别名称不能为空或过长");
+    if (!是否是有效名称(name)) {
         return;
     }
 
     if (categoryExists(name)) {
-        operationCompleted("createCategory", false, "类别名称已存在");
         return;
     }
 
-    // 创建新的类别项目
-    auto newCategory = std::make_unique<CategorieItem>( //
-        m_categoryItems.size() + 1,                     // 分配ID
-        QUuid::createUuid(),                            // 分配UUID
-        name,                                           // 类别名称
-        m_userAuth.getUuid(),                           // 用户UUID
-        QDateTime::currentDateTime(),                   // 创建时间
-        QDateTime::currentDateTime(),                   // 更新时间
-        QDateTime::currentDateTime(),                   // 最后修改时间
-        false                                           // 未同步
-    );
-
-    // 添加到列表中
-    m_categoryItems.push_back(std::move(newCategory));
+    m_dataStorage->新增类别(m_categoryItems, name, m_userAuth.getUuid());
     m_categories << name;
+
+    m_syncServer->设置未同步的对象(m_categoryItems);
+    m_syncServer->与服务器同步(BaseSyncServer::UploadOnly);
 
     qDebug() << "类别创建成功:" << name;
     emit categoriesChanged();
-    operationCompleted("createCategory", true, "类别创建成功");
-
-    // 保存到本地存储
-    saveCategories();
 }
 
 void CategoryManager::updateCategory(const QString &name, const QString &newName) {
     qDebug() << "=== 开始更新本地类别 ===" << name << "->" << newName;
 
-    if (!isValidCategoryName(newName)) {
-        operationCompleted("updateCategory", false, "新类别名称不能为空或过长");
+    if (!是否是有效名称(newName)) {
         return;
     }
 
     if (name == "未分类") {
-        operationCompleted("updateCategory", false, "不能更新系统默认类别 \"未分类\"");
         return;
     }
 
@@ -350,7 +323,6 @@ void CategoryManager::updateCategory(const QString &name, const QString &newName
     CategorieItem *nowCategory = findCategoryByName(name);
     if (nowCategory == nullptr) {
         qWarning() << "待更新的类别不存在:" << name;
-        operationCompleted("updateCategory", false, "待更新的类别不存在");
         return;
     }
 
@@ -358,12 +330,11 @@ void CategoryManager::updateCategory(const QString &name, const QString &newName
     CategorieItem *newCategory = findCategoryByName(newName);
     if (newCategory != nullptr) {
         qWarning() << "该类别已存在:" << newName;
-        operationCompleted("updateCategory", false, "该类别已存在");
         return;
     }
 
     // 更新类别名称
-    nowCategory->setName(newName);
+    m_dataStorage->更新类别(m_categoryItems, name, newName);
 
     // 更新缓存列表
     int index = m_categories.indexOf(name);
@@ -371,19 +342,17 @@ void CategoryManager::updateCategory(const QString &name, const QString &newName
         m_categories[index] = newName;
     }
 
-    qDebug() << "本地类别更新成功:" << name << "->" << newName;
-    operationCompleted("updateCategory", true, "类别更新成功");
-    emit categoriesChanged();
+    m_syncServer->设置未同步的对象(m_categoryItems);
+    m_syncServer->与服务器同步(BaseSyncServer::UploadOnly);
 
-    // 保存到本地存储
-    saveCategories();
+    qDebug() << "本地类别更新成功:" << name << "->" << newName;
+    emit categoriesChanged();
 }
 
 void CategoryManager::deleteCategory(const QString &name) {
     qDebug() << "=== 开始本地类别 ===" << name;
 
     if (name == "未分类") {
-        operationCompleted("deleteCategory", false, "不能删除系统默认类别 \"未分类\"");
         return;
     }
 
@@ -391,54 +360,32 @@ void CategoryManager::deleteCategory(const QString &name) {
     CategorieItem *category = findCategoryByName(name);
     if (!category) {
         qWarning() << "要删除的类别不存在:" << name;
-        operationCompleted("deleteCategory", false, "要删除的类别不存在");
         return;
     }
 
     // 检查是否可以删除
     if (!category->canBeDeleted()) {
-        operationCompleted("deleteCategory", false, "不能删除系统默认类别");
         return;
     }
 
     // 从列表中移除
-    auto it = std::find_if(m_categoryItems.begin(), m_categoryItems.end(),
-                           [&name](const std::unique_ptr<CategorieItem> &item) { return item->name() == name; });
-
-    if (it != m_categoryItems.end()) {
-        m_categoryItems.erase(it);
-    }
+    m_dataStorage->软删除类别(m_categoryItems, name);
 
     // 从缓存列表中移除
     m_categories.removeAll(name);
 
-    qDebug() << "本地类别删除成功:" << name;
-    operationCompleted("deleteCategory", true, "类别删除成功");
-    emit categoriesChanged();
+    m_syncServer->设置未同步的对象(m_categoryItems);
+    m_syncServer->与服务器同步(BaseSyncServer::UploadOnly);
 
-    // 保存到本地存储
-    saveCategories();
+    qDebug() << "本地类别删除成功:" << name;
+    emit categoriesChanged();
 }
 
 // 同步相关方法实现
 void CategoryManager::syncWithServer() {
     if (m_syncServer) {
-        m_syncServer->setCategoryItems(m_categoryItems);
-        m_syncServer->syncWithServer(BaseSyncServer::Bidirectional);
-    }
-}
-
-void CategoryManager::fetchCategoriesFromServer() {
-    if (m_syncServer) {
-        m_syncServer->setCategoryItems(m_categoryItems);
-        m_syncServer->fetchCategories();
-    }
-}
-
-void CategoryManager::pushCategoriesToServer() {
-    if (m_syncServer) {
-        m_syncServer->setCategoryItems(m_categoryItems);
-        m_syncServer->pushCategories();
+        m_syncServer->设置未同步的对象(m_categoryItems);
+        m_syncServer->与服务器同步(BaseSyncServer::Bidirectional);
     }
 }
 
@@ -453,6 +400,16 @@ bool CategoryManager::isSyncing() const {
 void CategoryManager::onCategoriesUpdatedFromServer(const QJsonArray &categoriesArray) {
     qDebug() << "从同步服务器接收到类别更新:" << categoriesArray.size() << "个类别";
     updateCategoriesFromJson(categoriesArray);
+}
+
+void CategoryManager::onLocalChangesUploaded(const std::vector<CategorieItem *> &m_unsyncedItems) {
+    for (CategorieItem *item : m_unsyncedItems) {
+        if (item->synced() != 2) { // 保留已删除状态
+            m_dataStorage->更新同步状态(m_categoryItems, item->uuid());
+        } else {
+            m_dataStorage->删除类别(m_categoryItems, item->name());
+        }
+    }
 }
 
 /**
@@ -500,7 +457,7 @@ void CategoryManager::updateCategoriesFromJson(const QJsonArray &categoriesArray
             QDateTime::currentDateTime(),                       //
             QDateTime::currentDateTime(),                       //
             QDateTime::currentDateTime(),                       //
-            false                                               //
+            0                                                   //
         );
         m_categoryItems.push_back(std::move(defaultCategory));
     }
@@ -533,14 +490,14 @@ void CategoryManager::loadCategories() {
     if (success) {
         // 更新缓存列表
         for (const auto &category : m_categoryItems) {
-            if (category) {
+            if (category && category->synced() != 2) { // 只缓存未删除的类别
                 m_categories << category->name();
             }
         }
 
         // 将类别数据传递给同步服务器
         if (m_syncServer) {
-            m_syncServer->setCategoryItems(m_categoryItems);
+            m_syncServer->设置未同步的对象(m_categoryItems);
         }
     } else {
         qWarning() << "从存储加载类别失败";
@@ -555,47 +512,11 @@ void CategoryManager::loadCategories() {
 }
 
 /**
- * @brief 保存类别到存储
- */
-void CategoryManager::saveCategories() {
-    qDebug() << "开始保存类别数据到存储";
-
-    if (!m_dataStorage) {
-        qWarning() << "数据存储对象为空，无法保存类别";
-        return;
-    }
-
-    bool success = m_dataStorage->保存类别(m_categoryItems);
-
-    if (success) {
-        qDebug() << "保存类别到存储成功，共" << m_categoryItems.size() << "个类别";
-    } else {
-        qWarning() << "保存类别到存储失败";
-    }
-
-    // 将更新后的类别数据传递给同步服务器
-    if (m_syncServer) {
-        m_syncServer->setCategoryItems(m_categoryItems);
-    }
-}
-
-/**
- * @brief 从TOML表导入类别数据
- * @param table TOML表
- * @param categories 类别列表
- */
-void CategoryManager::importCategories(const toml::table &table,
-                                       std::vector<std::unique_ptr<CategorieItem>> &categories) {
-    qDebug() << "开始从TOML导入类别数据";
-    m_dataStorage->导入类别从TOML表(table, categories);
-}
-
-/**
  * @brief 验证类别名称
  * @param name 类别名称
  * @return 如果有效返回true，否则返回false
  */
-bool CategoryManager::isValidCategoryName(const QString &name) const {
+bool CategoryManager::是否是有效名称(const QString &name) const {
     QString trimmedName = name.trimmed();
     return !trimmedName.isEmpty() && trimmedName.length() <= 50;
 }

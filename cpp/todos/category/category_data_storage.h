@@ -67,29 +67,24 @@ class CategoryDataStorage : public QObject {
 
     // 本地存储功能
     bool 加载类别(std::vector<std::unique_ptr<CategorieItem>> &categories);
-    bool 保存类别(const std::vector<std::unique_ptr<CategorieItem>> &categories);
 
     // CRUD操作
-    bool 添加类别(std::vector<std::unique_ptr<CategorieItem>> &categories, const QString &name, const QUuid &userUuid);
-    bool 更新类别(std::vector<std::unique_ptr<CategorieItem>> &categories, int id, const QString &name);
-    bool 删除类别(std::vector<std::unique_ptr<CategorieItem>> &categories, int id);
-
-    // 导入功能
-    bool 导入类别从TOML表(const toml::table &table, std::vector<std::unique_ptr<CategorieItem>> &categories,
-                          ConflictResolution resolution = Merge);
+    bool 新增类别(std::vector<std::unique_ptr<CategorieItem>> &categories, const QString &name, const QUuid &userUuid);
+    bool 更新类别(std::vector<std::unique_ptr<CategorieItem>> &categories, const QString &name, const QString &newName);
+    bool 删除类别(std::vector<std::unique_ptr<CategorieItem>> &categories, const QString &name);
+    bool 软删除类别(std::vector<std::unique_ptr<CategorieItem>> &categories, const QString &name);
+    bool 更新同步状态(std::vector<std::unique_ptr<CategorieItem>> &categories, const QUuid &uuid, int synced = 0);
 
     // 默认类别管理
-    void 创建默认类别(std::vector<std::unique_ptr<CategorieItem>> &categories, const QUuid &userUuid);
+    bool 创建默认类别(std::vector<std::unique_ptr<CategorieItem>> &categories, const QUuid &userUuid);
 
   private:
     // 辅助方法
-    std::unique_ptr<CategorieItem> 创建类别对象从TOML表(const toml::table &categoryTable, int newId);
-    bool 是否是有效名称(const QString &name) const;
     int 获取下一个可用ID(const std::vector<std::unique_ptr<CategorieItem>> &categories) const;
 
     // 冲突处理
     bool 处理冲突(const std::unique_ptr<CategorieItem> &newCategory,
-                        std::vector<std::unique_ptr<CategorieItem>> &categories, ConflictResolution resolution);
+                  std::vector<std::unique_ptr<CategorieItem>> &categories, ConflictResolution resolution);
 
     // 成员变量
     Database &m_database; ///< 数据库管理器引用

@@ -67,9 +67,9 @@ class TodoSyncServer : public BaseSyncServer {
     ~TodoSyncServer();
 
     // 同步操作（重写基类方法）
-    Q_INVOKABLE void syncWithServer(SyncDirection direction = Bidirectional) override; // 与服务器同步
-    Q_INVOKABLE void cancelSync() override;                                            // 取消当前同步操作
-    Q_INVOKABLE void resetSyncState() override;                                        // 重置同步状态
+    void 与服务器同步(SyncDirection direction = Bidirectional) override; // 与服务器同步
+    void 重置同步状态() override;
+    void 取消同步() override;  
 
     // 数据操作接口
     void setTodoItems(const QList<TodoItem *> &items); // 设置待同步的待办事项列表
@@ -91,7 +91,7 @@ class TodoSyncServer : public BaseSyncServer {
 
   protected:
     // 同步操作实现（重写基类方法）
-    void performSync(SyncDirection direction) override;         // 执行同步操作
+    void 执行同步(SyncDirection direction) override;         // 执行同步操作
     void fetchTodosFromServer();                                // 从服务器获取待办事项
     void pushLocalChangesToServer();                            // 推送本地更改到服务器
     void pushSingleItem(TodoItem *item);                        // 推送单个待办事项

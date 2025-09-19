@@ -129,7 +129,6 @@ int main(int argc, char *argv[]) {
         qInfo() << "应用即将退出，开始保存数据并关闭数据库";
         // 先让 Manager 显式保存
         todoManager.saveTodosToLocalStorage();
-        categoryManager.saveCategories();
 
         // 给数据库操作一些时间完成
         QTimer::singleShot(100, [&]() {

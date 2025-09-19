@@ -41,80 +41,43 @@ CategorySyncServer::~CategorySyncServer() {
 // 属性访问器已在基类中实现
 
 // 同步操作实现
-void CategorySyncServer::syncWithServer(SyncDirection direction) {
-    qDebug() << "CategorySyncServer::syncWithServer 开始，当前同步状态:" << m_isSyncing;
-
+void CategorySyncServer::与服务器同步(SyncDirection direction) {
     if (m_isSyncing) {
         qDebug() << "类别同步操作正在进行中，忽略新的同步请求";
         return;
     }
 
-    qDebug() << "调用 canPerformSync() 检查...";
+    qDebug() << "与服务器同步开始，当前同步状态:" << m_isSyncing;
+
     if (!canPerformSync()) {
-        qDebug() << "canPerformSync() 检查失败";
         // 发出同步完成信号，通知UI重置状态
         emit syncCompleted(AuthError, "无法同步：未登录");
         return;
     }
 
-    qDebug() << "canPerformSync() 检查通过，开始执行同步";
     m_currentSyncDirection = direction;
-    performSync(direction);
+    执行同步(direction);
 }
 
-void CategorySyncServer::fetchCategories() {
-    if (m_isSyncing) {
-        qDebug() << "类别同步操作正在进行中，忽略获取请求";
-        return;
-    }
-
-    syncWithServer(DownloadOnly);
+void CategorySyncServer::重置同步状态() {
+    BaseSyncServer::重置同步状态();
+    m_unsyncedItems.clear();
 }
 
-void CategorySyncServer::pushCategories() {
-    if (m_isSyncing) {
-        qDebug() << "类别同步操作正在进行中，忽略推送请求";
-        return;
-    }
-
-    syncWithServer(UploadOnly);
-}
-
-void CategorySyncServer::cancelSync() {
-    if (!m_isSyncing) {
-        qDebug() << "没有正在进行的类别同步操作可以取消";
-        return;
-    }
-
-    qDebug() << "取消类别同步操作";
-
-    // 调用基类方法
-    BaseSyncServer::cancelSync();
-
-    // 清理类别特有的状态
-    m_pendingUnsyncedItems.clear();
-}
-
-void CategorySyncServer::resetSyncState() {
-    BaseSyncServer::resetSyncState();
-    m_pendingUnsyncedItems.clear();
-    qDebug() << "类别同步状态已重置";
+void CategorySyncServer::取消同步() {
+    BaseSyncServer::取消同步();
+    m_unsyncedItems.clear();
 }
 
 // 类别操作接口实现
-void CategorySyncServer::createCategoryWithServer(const QString &name) {
+void CategorySyncServer::新增类别(const QString &name) {
     if (!canPerformSync()) {
-        emit categoryCreated(name, false, "无法创建类别：未登录");
-        return;
-    }
-
-    if (!isValidCategoryName(name)) {
-        emit categoryCreated(name, false, "类别名称无效");
+        emit categoryCreated(name, false, "无法新增类别：未登录");
         return;
     }
 
     m_currentOperationName = name;
-    qDebug() << "创建类别到服务器:" << name;
+    qDebug() << "新增类别到服务器:" << name;
 
     try {
         NetworkRequest::RequestConfig config;
@@ -125,19 +88,14 @@ void CategorySyncServer::createCategoryWithServer(const QString &name) {
 
         m_networkRequest.sendRequest(NetworkRequest::RequestType::CreateCategory, config);
     } catch (const std::exception &e) {
-        qCritical() << "创建类别时发生异常:" << e.what();
-        emit categoryCreated(name, false, QString("创建类别失败: %1").arg(e.what()));
+        qCritical() << "新增类别时发生异常:" << e.what();
+        emit categoryCreated(name, false, QString("新增类别失败: %1").arg(e.what()));
     }
 }
 
-void CategorySyncServer::updateCategoryWithServer(const QString &name, const QString &newName) {
+void CategorySyncServer::更新类别(const QString &name, const QString &newName) {
     if (!canPerformSync()) {
         emit categoryUpdated(name, newName, false, "无法更新类别：未登录");
-        return;
-    }
-
-    if (!isValidCategoryName(newName)) {
-        emit categoryUpdated(name, newName, false, "新类别名称无效");
         return;
     }
 
@@ -160,7 +118,7 @@ void CategorySyncServer::updateCategoryWithServer(const QString &name, const QSt
     }
 }
 
-void CategorySyncServer::deleteCategoryWithServer(const QString &name) {
+void CategorySyncServer::删除类别(const QString &name) {
     if (!canPerformSync()) {
         emit categoryDeleted(name, false, "无法删除类别：未登录");
         return;
@@ -184,23 +142,15 @@ void CategorySyncServer::deleteCategoryWithServer(const QString &name) {
 }
 
 // 数据操作接口实现
-void CategorySyncServer::setCategoryItems(const std::vector<std::unique_ptr<CategorieItem>> &items) {
-    m_categoryItems.clear();
-    for (const auto &item : items) {
-        m_categoryItems.push_back(item.get());
-    }
-    qDebug() << "已设置" << m_categoryItems.size() << "个类别用于同步";
-}
-
-std::vector<CategorieItem *> CategorySyncServer::getUnsyncedItems() const {
-    std::vector<CategorieItem *> unsyncedItems;
+void CategorySyncServer::设置未同步的对象(const std::vector<std::unique_ptr<CategorieItem>> &categoryItems) {
+    m_unsyncedItems.clear();
     int totalItems = 0;
     int syncedItems = 0;
 
-    for (CategorieItem *item : m_categoryItems) {
+    for (const auto &item : categoryItems) {
         totalItems++;
-        if (!item->synced()) {
-            unsyncedItems.push_back(item);
+        if (item->synced() > 0) {
+            m_unsyncedItems.push_back(item.get());
         } else {
             syncedItems++;
         }
@@ -209,21 +159,7 @@ std::vector<CategorieItem *> CategorySyncServer::getUnsyncedItems() const {
     qDebug() << QString("类别同步状态检查: 总计=%1, 已同步=%2, 未同步=%3")
                     .arg(totalItems)
                     .arg(syncedItems)
-                    .arg(unsyncedItems.size());
-
-    return unsyncedItems;
-}
-
-void CategorySyncServer::markItemAsSynced(CategorieItem *item) {
-    if (item) {
-        item->setSynced(true);
-    }
-}
-
-void CategorySyncServer::markItemAsUnsynced(CategorieItem *item) {
-    if (item) {
-        item->setSynced(false);
-    }
+                    .arg(m_unsyncedItems.size());
 }
 
 // 网络请求回调处理
@@ -255,10 +191,10 @@ void CategorySyncServer::onNetworkRequestFailed(NetworkRequest::RequestType type
 
     switch (type) {
     case NetworkRequest::RequestType::FetchCategories:
-        typeStr = "获取类别";
+        typeStr = "拉取类别";
         break;
     case NetworkRequest::RequestType::CreateCategory:
-        typeStr = "创建类别";
+        typeStr = "新建类别";
         qInfo() << "类别创建失败！错误类型:" << static_cast<int>(error);
         qInfo() << "失败详情:" << message;
         emit categoryCreated(m_currentOperationName, false, message);
@@ -306,10 +242,8 @@ void CategorySyncServer::onNetworkRequestFailed(NetworkRequest::RequestType type
     qDebug() << "错误处理完成，同步结果:" << static_cast<int>(result);
 }
 
-// 自动同步定时器和URL变化处理已在基类中实现
-
 // 同步操作实现
-void CategorySyncServer::performSync(SyncDirection direction) {
+void CategorySyncServer::执行同步(SyncDirection direction) {
     qDebug() << "开始同步类别，方向:" << direction;
 
     m_isSyncing = true;
@@ -320,21 +254,20 @@ void CategorySyncServer::performSync(SyncDirection direction) {
     switch (direction) {
     case Bidirectional:
         // 双向同步：先获取服务器数据，然后在handleFetchCategoriesSuccess中推送本地更改
-        fetchCategoriesFromServer();
+        拉取类别();
         break;
     case UploadOnly:
         // 仅上传：只推送本地更改
-        pushLocalChangesToServer();
+        推送类别();
         break;
     case DownloadOnly:
         // 仅下载：只获取服务器数据
-        fetchCategoriesFromServer();
+        拉取类别();
         break;
     }
 }
 
-void CategorySyncServer::fetchCategoriesFromServer() {
-    // 注意：此方法被performSync调用时，m_isSyncing已经为true，所以不需要再次检查
+void CategorySyncServer::拉取类别() {
     // 只检查用户认证状态即可
     if (m_serverBaseUrl.isEmpty() || m_apiEndpoint.isEmpty()) {
         qDebug() << "同步检查失败：服务器配置为空";
@@ -377,10 +310,9 @@ void CategorySyncServer::fetchCategoriesFromServer() {
     }
 }
 
-void CategorySyncServer::pushLocalChangesToServer() {
+void CategorySyncServer::推送类别() {
     qInfo() << "开始推送本地类别更改到服务器...";
 
-    // 注意：此方法被performSync调用时，m_isSyncing已经为true，所以不需要再次检查
     // 只检查用户认证状态即可
     if (m_serverBaseUrl.isEmpty() || m_apiEndpoint.isEmpty()) {
         qDebug() << "同步检查失败：服务器配置为空";
@@ -400,11 +332,7 @@ void CategorySyncServer::pushLocalChangesToServer() {
         return;
     }
 
-    // 找出所有未同步的类别
-    std::vector<CategorieItem *> unsyncedItems = getUnsyncedItems();
-    qInfo() << "检测到" << unsyncedItems.size() << "个未同步的类别";
-
-    if (unsyncedItems.empty()) {
+    if (m_unsyncedItems.empty()) {
         qInfo() << "没有需要同步的类别，上传流程完成";
 
         // 如果是双向同步且没有本地更改，直接完成
@@ -417,28 +345,20 @@ void CategorySyncServer::pushLocalChangesToServer() {
         return;
     }
 
-    qInfo() << "开始推送" << unsyncedItems.size() << "个类别到服务器";
-
-    // 类别数量通常较少，直接推送所有类别
-    m_pendingUnsyncedItems = unsyncedItems;
-    pushBatchToServer(unsyncedItems);
-}
-
-void CategorySyncServer::pushBatchToServer(const std::vector<CategorieItem *> &batch) {
-    emit syncProgress(75, QString("正在推送 %1 个类别更改到服务器...").arg(batch.size()));
+    qInfo() << "开始推送" << m_unsyncedItems.size() << "个类别到服务器";
+    emit syncProgress(75, QString("正在推送 %1 个类别更改到服务器...").arg(m_unsyncedItems.size()));
 
     try {
         // 创建一个包含当前批次类别的JSON数组
         QJsonArray jsonArray;
-        for (CategorieItem *item : batch) {
+        for (CategorieItem *item : m_unsyncedItems) {
             QJsonObject obj;
-            obj["id"] = item->id();
             obj["uuid"] = item->uuid().toString(QUuid::WithoutBraces);
-            obj["user_uuid"] = item->userUuid().toString(QUuid::WithoutBraces);
             obj["name"] = item->name();
             obj["created_at"] = item->createdAt().toString(Qt::ISODate);
             obj["updated_at"] = item->updatedAt().toString(Qt::ISODate);
             obj["last_modified_at"] = item->lastModifiedAt().toString(Qt::ISODate);
+            obj["synced"] = item->synced();
 
             jsonArray.append(obj);
         }
@@ -476,7 +396,7 @@ void CategorySyncServer::handleFetchCategoriesSuccess(const QJsonObject &respons
 
     // 如果是双向同步，成功获取数据后推送本地更改
     if (m_currentSyncDirection == Bidirectional) {
-        pushLocalChangesToServer();
+        推送类别();
     } else {
         // 仅下载模式，直接完成同步
         m_isSyncing = false;
@@ -521,17 +441,14 @@ void CategorySyncServer::handlePushChangesSuccess(const QJsonObject &response) {
 
     // 只有在验证通过时才标记当前批次的类别为已同步
     if (shouldMarkAsSynced) {
-        for (CategorieItem *item : m_pendingUnsyncedItems) {
-            item->setSynced(true);
-        }
         // 发出本地更改已上传信号
-        emit localChangesUploaded(m_pendingUnsyncedItems);
+        emit localChangesUploaded(m_unsyncedItems);
     }
 
     emit syncProgress(100, "类别更改推送完成");
 
     // 清空待同步类别列表
-    m_pendingUnsyncedItems.clear();
+    m_unsyncedItems.clear();
 
     m_isSyncing = false;
     emit syncingChanged();
@@ -548,7 +465,6 @@ void CategorySyncServer::handleCreateCategorySuccess(const QJsonObject &response
     }
 
     emit categoryCreated(m_currentOperationName, true, message);
-    emitOperationCompleted("创建类别", true, message);
 }
 
 void CategorySyncServer::handleUpdateCategorySuccess(const QJsonObject &response) {
@@ -560,7 +476,6 @@ void CategorySyncServer::handleUpdateCategorySuccess(const QJsonObject &response
     }
 
     emit categoryUpdated(m_currentOperationName, m_currentOperationNewName, true, message);
-    emitOperationCompleted("更新类别", true, message);
 }
 
 void CategorySyncServer::handleDeleteCategorySuccess(const QJsonObject &response) {
@@ -572,15 +487,4 @@ void CategorySyncServer::handleDeleteCategorySuccess(const QJsonObject &response
     }
 
     emit categoryDeleted(m_currentOperationName, true, message);
-    emitOperationCompleted("删除类别", true, message);
-}
-
-// 辅助方法实现（大部分已在基类中实现）
-
-bool CategorySyncServer::isValidCategoryName(const QString &name) const {
-    return !name.trimmed().isEmpty() && name.length() <= 50;
-}
-
-void CategorySyncServer::emitOperationCompleted(const QString &operation, bool success, const QString &message) {
-    emit operationCompleted(operation, success, message);
 }

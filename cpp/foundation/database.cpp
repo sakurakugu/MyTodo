@@ -282,7 +282,7 @@ bool Database::createCategoriesTable() {
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
             last_modified_at TEXT NOT NULL,
-            synced INTEGER NOT NULL DEFAULT 0
+            synced INTEGER NOT NULL DEFAULT 1
         )
     )";
 
@@ -333,7 +333,7 @@ bool Database::createTodosTable() {
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
             last_modified_at TEXT NOT NULL,
-            synced INTEGER NOT NULL DEFAULT 0
+            synced INTEGER NOT NULL DEFAULT 1
         )
     )";
 

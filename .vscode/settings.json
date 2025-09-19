@@ -106,7 +106,8 @@
         "shared_mutex": "cpp",
         "text_encoding": "cpp",
         "qnetworkaccessmanager": "cpp",
-        "*.in": "cpp"
+        "*.in": "cpp",
+        "cinttypes": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "search.useIgnoreFiles": false, // 禁用git忽略文件

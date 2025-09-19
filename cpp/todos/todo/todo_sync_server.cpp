@@ -39,7 +39,7 @@ TodoSyncServer::~TodoSyncServer() {
 }
 
 // 同步操作实现 - 重写基类方法
-void TodoSyncServer::syncWithServer(SyncDirection direction) {
+void TodoSyncServer::与服务器同步(SyncDirection direction) {
     qDebug() << "开始同步待办事项，方向:" << direction;
     qDebug() << "同步请求前状态检查: m_isSyncing =" << m_isSyncing;
 
@@ -75,10 +75,10 @@ void TodoSyncServer::syncWithServer(SyncDirection direction) {
     emit syncingChanged();
     emit syncStarted();
 
-    performSync(direction);
+    执行同步(direction);
 }
 
-void TodoSyncServer::cancelSync() {
+void TodoSyncServer::取消同步() {
     if (!m_isSyncing) {
         qDebug() << "没有正在进行的同步操作可以取消";
         return;
@@ -87,7 +87,7 @@ void TodoSyncServer::cancelSync() {
     qDebug() << "取消待办事项同步操作";
 
     // 调用基类方法
-    BaseSyncServer::cancelSync();
+    BaseSyncServer::取消同步();
 
     // 清理待办事项特有的状态
     m_pendingUnsyncedItems.clear();
@@ -97,9 +97,9 @@ void TodoSyncServer::cancelSync() {
     m_totalBatches = 0;
 }
 
-void TodoSyncServer::resetSyncState() {
+void TodoSyncServer::重置同步状态() {
     // 调用基类方法
-    BaseSyncServer::resetSyncState();
+    BaseSyncServer::重置同步状态();
 
     // 清理待办事项特有的状态
     m_pendingUnsyncedItems.clear();
@@ -188,7 +188,7 @@ void TodoSyncServer::onNetworkRequestFailed(NetworkRequest::RequestType type, Ne
 }
 
 // 同步操作实现 - 重写基类虚函数
-void TodoSyncServer::performSync(SyncDirection direction) {
+void TodoSyncServer::执行同步(SyncDirection direction) {
     qDebug() << "开始同步待办事项，方向:" << direction;
 
     // 根据同步方向执行不同的操作

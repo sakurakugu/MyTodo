@@ -74,7 +74,7 @@ TodoManager::TodoManager(QObject *parent)
         // CategorySyncServer 会自动处理类别同步
         syncWithServer();
     });
-    
+
     // 连接用户认证的登录状态变化信号
     connect(&UserAuth::GetInstance(), &UserAuth::isLoggedInChanged, this, &TodoManager::isLoggedInChanged);
 
@@ -975,7 +975,7 @@ void TodoManager::syncWithServer() {
     updateSyncManagerData();
 
     // 委托给同步管理器处理
-    m_syncManager->syncWithServer(TodoSyncServer::Bidirectional);
+    m_syncManager->与服务器同步();
 }
 
 // 同步管理器信号处理槽函数
