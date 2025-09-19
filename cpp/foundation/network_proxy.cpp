@@ -57,7 +57,7 @@ void NetworkProxy::applyProxyToManager(QNetworkAccessManager *manager) noexcept 
     try {
         QNetworkProxy proxy = createQNetworkProxy();
         manager->setProxy(proxy);
-        qDebug() << "代理配置已应用" << getProxyDescription();
+        qInfo() << "代理配置为" << getProxyDescription();
     } catch (const std::exception &e) {
         qWarning() << "应用代理配置时发生异常" << ": " << e.what();
     } catch (...) {
@@ -186,7 +186,7 @@ void NetworkProxy::saveProxyConfigToSettings() noexcept {
  */
 QString NetworkProxy::getProxyDescription() const noexcept {
     if (!m_proxyEnabled) {
-        return QStringLiteral("未启用代理");
+        return QStringLiteral("未启用");
     }
 
     constexpr auto getTypeString = [](ProxyType type) -> std::string_view {

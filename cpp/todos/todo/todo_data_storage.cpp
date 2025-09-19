@@ -44,7 +44,7 @@ TodoDataStorage::~TodoDataStorage() {
 }
 
 /**
- * @brief 从本地存储加载待办事项
+ * @brief 加载类别待办事项
  * @param todos 待办事项容器引用
  * @return 加载是否成功
  */

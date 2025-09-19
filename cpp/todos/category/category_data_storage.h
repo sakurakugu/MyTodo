@@ -13,9 +13,9 @@
 
 #pragma once
 
-#include <toml++/toml.hpp>
-#include "categorie_item.h"
 #include "../../foundation/database.h"
+#include "categorie_item.h"
+#include <toml++/toml.hpp>
 
 class Config;
 
@@ -66,38 +66,31 @@ class CategoryDataStorage : public QObject {
     ~CategoryDataStorage();
 
     // 本地存储功能
-    bool loadFromLocalStorage(std::vector<std::unique_ptr<CategorieItem>> &categories);     // 从本地存储加载类别
-    bool saveToLocalStorage(const std::vector<std::unique_ptr<CategorieItem>> &categories); // 将类别保存到本地存储
+    bool 加载类别(std::vector<std::unique_ptr<CategorieItem>> &categories);
+    bool 保存类别(const std::vector<std::unique_ptr<CategorieItem>> &categories);
 
     // CRUD操作
-    bool addCategory(std::vector<std::unique_ptr<CategorieItem>> &categories, const QString &name, const QUuid &userUuid);
-    bool updateCategory(std::vector<std::unique_ptr<CategorieItem>> &categories, int id, const QString &name);
-    bool deleteCategory(std::vector<std::unique_ptr<CategorieItem>> &categories, int id);
+    bool 添加类别(std::vector<std::unique_ptr<CategorieItem>> &categories, const QString &name, const QUuid &userUuid);
+    bool 更新类别(std::vector<std::unique_ptr<CategorieItem>> &categories, int id, const QString &name);
+    bool 删除类别(std::vector<std::unique_ptr<CategorieItem>> &categories, int id);
 
     // 导入功能
-    bool importFromToml(const toml::table &table, std::vector<std::unique_ptr<CategorieItem>> &categories,
-                        ConflictResolution resolution); // 从TOML表导入类别（指定冲突解决策略）
+    bool 导入类别从TOML表(const toml::table &table, std::vector<std::unique_ptr<CategorieItem>> &categories,
+                          ConflictResolution resolution = Merge);
 
     // 默认类别管理
-    void createDefaultCategories(std::vector<std::unique_ptr<CategorieItem>> &categories,
-                                 const QUuid &userUuid);                                          // 创建默认类别
-    bool hasDefaultCategory(const std::vector<std::unique_ptr<CategorieItem>> &categories) const; // 检查是否有默认类别
-
-    // 数据验证和转换
-    bool validateCategoryData(const QJsonObject &categoryObj) const; // 验证类别数据
+    void 创建默认类别(std::vector<std::unique_ptr<CategorieItem>> &categories, const QUuid &userUuid);
 
   private:
     // 辅助方法
-    std::unique_ptr<CategorieItem> createCategoryItemFromToml(const toml::table &categoryTable, int newId);
-    void updateCategoryItemFromToml(CategorieItem *item, const toml::table &categoryTable);
-    bool isValidCategoryName(const QString &name) const;
-    int getNextAvailableId(const std::vector<std::unique_ptr<CategorieItem>> &categories) const;
+    std::unique_ptr<CategorieItem> 创建类别对象从TOML表(const toml::table &categoryTable, int newId);
+    bool 是否是有效名称(const QString &name) const;
+    int 获取下一个可用ID(const std::vector<std::unique_ptr<CategorieItem>> &categories) const;
 
     // 冲突处理
-    bool handleConflict(const std::unique_ptr<CategorieItem> &newCategory,
+    bool 处理冲突(const std::unique_ptr<CategorieItem> &newCategory,
                         std::vector<std::unique_ptr<CategorieItem>> &categories, ConflictResolution resolution);
 
     // 成员变量
-    Config &m_config; ///< 主配置对象引用
     Database &m_database; ///< 数据库管理器引用
 };

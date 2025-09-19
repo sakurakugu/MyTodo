@@ -72,7 +72,7 @@ class TodoDataStorage : public QObject {
     ~TodoDataStorage();
 
     // 本地存储功能
-    bool loadFromLocalStorage(std::vector<std::unique_ptr<TodoItem>> &todos);     // 从本地存储加载待办事项
+    bool loadFromLocalStorage(std::vector<std::unique_ptr<TodoItem>> &todos);     // 加载类别待办事项
     bool saveToLocalStorage(const std::vector<std::unique_ptr<TodoItem>> &todos); // 将待办事项保存到本地存储
 
     // CRUD操作

@@ -81,7 +81,7 @@ bool Database::initializeDatabase() {
     }
 
     m_initialized = true;
-    qInfo() << "数据库初始化成功:" << m_databasePath;
+    qInfo() << "数据库初始化成功:" << m_databasePath << "版本:" << DATABASE_VERSION;
     return true;
 }
 
@@ -125,7 +125,7 @@ void Database::closeDatabase() {
         // 等待所有查询完成
         QSqlQuery query(m_database);
         query.clear(); // 清理任何活跃的查询
-        
+
         m_database.close();
         qInfo() << "数据库连接已关闭";
     }
@@ -265,7 +265,6 @@ bool Database::createUsersTable() {
         return false;
     }
 
-    qDebug() << "用户表创建成功";
     return true;
 }
 
@@ -306,7 +305,6 @@ bool Database::createCategoriesTable() {
         }
     }
 
-    qDebug() << "categories表创建成功";
     return true;
 }
 
@@ -362,7 +360,6 @@ bool Database::createTodosTable() {
         }
     }
 
-    qDebug() << "todos表创建成功";
     return true;
 }
 
@@ -384,7 +381,6 @@ bool Database::createVersionTable() {
         return false;
     }
 
-    qDebug() << "database_version表创建成功";
     return true;
 }
 
@@ -427,7 +423,6 @@ bool Database::updateDatabaseVersion(int version) {
         return false;
     }
 
-    qInfo() << "数据库版本已更新为:" << version;
     return true;
 }
 

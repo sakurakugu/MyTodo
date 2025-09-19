@@ -359,7 +359,6 @@ void Config::findExistingConfigFile() {
         std::string configPath = getConfigLocationPath(location);
         if (std::filesystem::exists(configPath)) {
             m_configLocation = location;
-            qDebug() << "找到现有配置文件:" << configPath;
             return;
         }
     }
@@ -855,6 +854,12 @@ std::string Config::getConfigLocationPath(ConfigLocation location) const {
         break;
     }
 
-    std::filesystem::path configPath = std::filesystem::path(basePath.toStdString()) / "config.toml";
-    return configPath.string();
+    // 使用QDir来确保路径分隔符正确
+    QDir baseDir(basePath);
+    QString configPath = baseDir.absoluteFilePath("config.toml");
+
+    // 将路径分隔符统一为正斜杠
+    configPath = QDir::fromNativeSeparators(configPath);
+    
+    return configPath.toStdString();
 }

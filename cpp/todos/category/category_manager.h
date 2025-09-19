@@ -119,7 +119,7 @@ class CategoryManager : public QAbstractListModel {
     CategorieItem *findCategoryByUuid(const QUuid &uuid) const;                  ///< 根据UUID查找类别项目
     Q_INVOKABLE bool categoryExists(const QString &name) const;                  ///< 检查类别名称是否已存在
     Q_INVOKABLE CategorieItem *getCategoryAt(int index) const;                   ///< 根据索引获取类别项目
-    void addDefaultCategories();                                                 ///< 添加默认类别
+    void 添加默认类别();
     void clearCategories();                                                      ///< 清空所有类别
 
     // 数据存储相关方法

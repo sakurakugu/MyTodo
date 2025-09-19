@@ -267,11 +267,11 @@ bool CategoryManager::categoryExists(const QString &name) const {
 /**
  * @brief 添加默认类别
  */
-void CategoryManager::addDefaultCategories() {
+void CategoryManager::添加默认类别() {
 
     // 使用数据存储创建默认类别
     if (m_dataStorage) {
-        m_dataStorage->createDefaultCategories(m_categoryItems, m_userAuth.getUuid());
+        m_dataStorage->创建默认类别(m_categoryItems, m_userAuth.getUuid());
     }
 
     // 更新缓存列表
@@ -282,7 +282,7 @@ void CategoryManager::addDefaultCategories() {
         }
     }
 
-    // 保存到存储
+    // 保存到本地存储
     saveCategories();
 }
 
@@ -528,7 +528,7 @@ void CategoryManager::loadCategories() {
     m_categories.clear();
 
     // 从存储加载
-    bool success = m_dataStorage->loadFromLocalStorage(m_categoryItems);
+    bool success = m_dataStorage->加载类别(m_categoryItems);
 
     if (success) {
         // 更新缓存列表
@@ -537,7 +537,6 @@ void CategoryManager::loadCategories() {
                 m_categories << category->name();
             }
         }
-        qDebug() << "从存储加载类别成功，共" << m_categoryItems.size() << "个类别";
 
         // 将类别数据传递给同步服务器
         if (m_syncServer) {
@@ -549,7 +548,7 @@ void CategoryManager::loadCategories() {
 
     // 如果没有加载到数据，添加默认类别
     if (m_categoryItems.empty()) {
-        addDefaultCategories();
+        添加默认类别();
     }
 
     endModelUpdate();
@@ -566,7 +565,7 @@ void CategoryManager::saveCategories() {
         return;
     }
 
-    bool success = m_dataStorage->saveToLocalStorage(m_categoryItems);
+    bool success = m_dataStorage->保存类别(m_categoryItems);
 
     if (success) {
         qDebug() << "保存类别到存储成功，共" << m_categoryItems.size() << "个类别";
@@ -588,7 +587,7 @@ void CategoryManager::saveCategories() {
 void CategoryManager::importCategories(const toml::table &table,
                                        std::vector<std::unique_ptr<CategorieItem>> &categories) {
     qDebug() << "开始从TOML导入类别数据";
-    m_dataStorage->importFromToml(table, categories, CategoryDataStorage::Merge);
+    m_dataStorage->导入类别从TOML表(table, categories);
 }
 
 /**
