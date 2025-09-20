@@ -91,7 +91,7 @@ class TodoSyncServer : public BaseSyncServer {
 
   protected:
     // 同步操作实现（重写基类方法）
-    void 执行同步(SyncDirection direction) override;         // 执行同步操作
+    void 执行同步 (SyncDirection direction) override;         // 执行同步操作
     void fetchTodosFromServer();                                // 从服务器获取待办事项
     void pushLocalChangesToServer();                            // 推送本地更改到服务器
     void pushSingleItem(TodoItem *item);                        // 推送单个待办事项

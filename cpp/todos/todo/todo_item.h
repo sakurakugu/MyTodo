@@ -54,7 +54,7 @@ class TodoItem : public QObject {
     Q_PROPERTY(QDateTime createdAt READ createdAt WRITE setCreatedAt NOTIFY createdAtChanged)
     Q_PROPERTY(QDateTime updatedAt READ updatedAt WRITE setUpdatedAt NOTIFY updatedAtChanged)
     Q_PROPERTY(QDateTime lastModifiedAt READ lastModifiedAt WRITE setLastModifiedAt NOTIFY lastModifiedAtChanged)
-    Q_PROPERTY(bool synced READ synced WRITE setSynced NOTIFY syncedChanged)
+    Q_PROPERTY(int synced READ synced WRITE setSynced NOTIFY syncedChanged)
 
   public:
     TodoItem(const TodoItem &) = delete;
@@ -78,7 +78,7 @@ class TodoItem : public QObject {
              const QDateTime &createdAt,       ///< 创建时间
              const QDateTime &updatedAt,       ///< 最后更新时间（整个对象最后更新时间，用于同步）
              const QDateTime &lastModifiedAt,  ///< 最后修改时间（标题、描述、分类等）
-             bool synced,                      ///< 是否已与服务器同步（是否要上传）
+             int synced,                       ///< 是否已与服务器同步（是否要上传）
              QObject *parent = nullptr);
 
     int id() const noexcept { return m_id; } // 获取ID
@@ -135,8 +135,8 @@ class TodoItem : public QObject {
     QDateTime lastModifiedAt() const noexcept { return m_lastModifiedAt; } // 获取最后修改时间
     void setLastModifiedAt(const QDateTime &lastModifiedAt);               // 设置最后修改时间
 
-    bool synced() const noexcept { return m_synced; } // 获取是否已同步
-    void setSynced(bool synced);                      // 设置是否已同步
+    int synced() const noexcept { return m_synced; } // 获取是否已同步
+    void setSynced(int synced);                      // 设置是否已同步
 
     // 便利方法
     bool isOverdue() const noexcept;                                                         // 检查是否已过期
@@ -205,5 +205,5 @@ class TodoItem : public QObject {
     QDateTime m_createdAt;       // 任务创建时间
     QDateTime m_updatedAt;       // 任务更新时间
     QDateTime m_lastModifiedAt;  // 任务最后修改时间
-    bool m_synced;               // 任务是否已同步
+    int m_synced;               // 任务是否已同步
 };

@@ -103,13 +103,13 @@ class CategorySyncServer : public BaseSyncServer {
     void 执行同步(SyncDirection direction) override;
     void 拉取类别();
     void 推送类别();
-    void handleFetchCategoriesSuccess(const QJsonObject &response); // 处理获取类别成功
-    void handlePushChangesSuccess(const QJsonObject &response);     // 处理推送更改成功
+    void 处理获取类别成功(const QJsonObject &response); // 处理获取类别成功
+    void 处理推送更改成功(const QJsonObject &response); // 处理推送更改成功
 
     // 类别操作实现
-    void handleCreateCategorySuccess(const QJsonObject &response); // 处理创建类别成功
-    void handleUpdateCategorySuccess(const QJsonObject &response); // 处理更新类别成功
-    void handleDeleteCategorySuccess(const QJsonObject &response); // 处理删除类别成功
+    void 处理创建类别成功(const QJsonObject &response); // 处理创建类别成功
+    void 处理更新类别成功(const QJsonObject &response); // 处理更新类别成功
+    void 处理删除类别成功(const QJsonObject &response); // 处理删除类别成功
 
     // 辅助方法
 

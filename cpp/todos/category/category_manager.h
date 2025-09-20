@@ -137,7 +137,7 @@ class CategoryManager : public QAbstractListModel {
 
     // 辅助方法
     void updateCategoriesFromJson(const QJsonArray &categoriesArray); ///< 从JSON数组更新类别列表
-    bool 是否是有效名称(const QString &name) const;                   ///< 验证类别名称
+    bool 是否是有效名称(const QString &name) const;
 
     // 模型相关辅助方法
     QVariant getItemData(const CategorieItem *item, int role) const; ///< 根据角色获取项目数据
@@ -151,7 +151,6 @@ class CategoryManager : public QAbstractListModel {
     // 成员变量
     std::vector<std::unique_ptr<CategorieItem>> m_categoryItems; ///< 类别项目列表
     QStringList m_categories;                                    ///< 类别名称列表（让QML快速访问）
-    QString m_categoriesApiEndpoint;                             ///< 类别API端点
 
     std::unique_ptr<CategorySyncServer> m_syncServer;   ///< 类别同步服务器对象
     std::unique_ptr<CategoryDataStorage> m_dataStorage; ///< 类别数据存储对象

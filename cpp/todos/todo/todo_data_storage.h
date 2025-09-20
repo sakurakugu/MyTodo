@@ -72,13 +72,14 @@ class TodoDataStorage : public QObject {
     ~TodoDataStorage();
 
     // 本地存储功能
-    bool loadFromLocalStorage(std::vector<std::unique_ptr<TodoItem>> &todos);     // 加载类别待办事项
+    bool 加载待办事项(std::vector<std::unique_ptr<TodoItem>> &todos);     // 加载类别待办事项
     bool saveToLocalStorage(const std::vector<std::unique_ptr<TodoItem>> &todos); // 将待办事项保存到本地存储
 
     // CRUD操作
-    std::unique_ptr<TodoItem> addTodo(const QString &title, const QString &description, const QString &category, bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate);
-    bool updateTodo(int id, const QString &title, const QString &description, const QString &category, bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate);
-    bool deleteTodo(int id);
+    std::unique_ptr<TodoItem> 新增待办(std::vector<std::unique_ptr<TodoItem>> &todos, const QString &title, const QString &description, const QString &category, bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate);
+    bool 更新待办(std::vector<std::unique_ptr<TodoItem>> &todos, int id, const QString &title, const QString &description, const QString &category, bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate);
+    bool 回收待办(std::vector<std::unique_ptr<TodoItem>> &todos, int id);
+    bool 删除待办(std::vector<std::unique_ptr<TodoItem>> &todos, int id);
 
     // 文件导入功能
     bool importFromToml(const toml::table &table,
@@ -92,6 +93,7 @@ class TodoDataStorage : public QObject {
     // 辅助方法
     std::unique_ptr<TodoItem> createTodoItemFromToml(const toml::table &todoTable, int newId);
     void updateTodoItemFromToml(TodoItem *item, const toml::table &todoTable);
+    int 获取下一个可用ID(const std::vector<std::unique_ptr<TodoItem>> &todos) const;
     
     // 成员变量
     Setting &m_setting; ///< 设置对象引用

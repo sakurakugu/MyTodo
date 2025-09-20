@@ -166,16 +166,16 @@ void CategorySyncServer::设置未同步的对象(const std::vector<std::unique_
 void CategorySyncServer::onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response) {
     switch (type) {
     case NetworkRequest::RequestType::FetchCategories:
-        handleFetchCategoriesSuccess(response);
+        处理获取类别成功(response);
         break;
     case NetworkRequest::RequestType::CreateCategory:
-        handleCreateCategorySuccess(response);
+        处理创建类别成功(response);
         break;
     case NetworkRequest::RequestType::UpdateCategory:
-        handleUpdateCategorySuccess(response);
+        处理更新类别成功(response);
         break;
     case NetworkRequest::RequestType::DeleteCategory:
-        handleDeleteCategorySuccess(response);
+        处理删除类别成功(response);
         break;
     default:
         // 调用基类处理其他类型的请求
@@ -253,7 +253,7 @@ void CategorySyncServer::执行同步(SyncDirection direction) {
     // 根据同步方向执行不同的操作
     switch (direction) {
     case Bidirectional:
-        // 双向同步：先获取服务器数据，然后在handleFetchCategoriesSuccess中推送本地更改
+        // 双向同步：先获取服务器数据，然后在 处理获取类别成功() 中推送本地更改
         拉取类别();
         break;
     case UploadOnly:
@@ -385,7 +385,7 @@ void CategorySyncServer::推送类别() {
     }
 }
 
-void CategorySyncServer::handleFetchCategoriesSuccess(const QJsonObject &response) {
+void CategorySyncServer::处理获取类别成功(const QJsonObject &response) {
     qDebug() << "获取类别成功";
     emit syncProgress(50, "类别数据获取完成，正在处理...");
 
@@ -406,7 +406,7 @@ void CategorySyncServer::handleFetchCategoriesSuccess(const QJsonObject &respons
     }
 }
 
-void CategorySyncServer::handlePushChangesSuccess(const QJsonObject &response) {
+void CategorySyncServer::处理推送更改成功(const QJsonObject &response) {
     qDebug() << "推送类别更改成功";
 
     // 验证服务器响应
@@ -456,7 +456,7 @@ void CategorySyncServer::handlePushChangesSuccess(const QJsonObject &response) {
     emit syncCompleted(Success, "类别更改推送完成");
 }
 
-void CategorySyncServer::handleCreateCategorySuccess(const QJsonObject &response) {
+void CategorySyncServer::处理创建类别成功(const QJsonObject &response) {
     qDebug() << "创建类别成功:" << m_currentOperationName;
 
     QString message = "类别创建成功";
@@ -467,7 +467,7 @@ void CategorySyncServer::handleCreateCategorySuccess(const QJsonObject &response
     emit categoryCreated(m_currentOperationName, true, message);
 }
 
-void CategorySyncServer::handleUpdateCategorySuccess(const QJsonObject &response) {
+void CategorySyncServer::处理更新类别成功(const QJsonObject &response) {
     qDebug() << "更新类别成功:" << m_currentOperationName << "->" << m_currentOperationNewName;
 
     QString message = "类别更新成功";
@@ -478,7 +478,7 @@ void CategorySyncServer::handleUpdateCategorySuccess(const QJsonObject &response
     emit categoryUpdated(m_currentOperationName, m_currentOperationNewName, true, message);
 }
 
-void CategorySyncServer::handleDeleteCategorySuccess(const QJsonObject &response) {
+void CategorySyncServer::处理删除类别成功(const QJsonObject &response) {
     qDebug() << "删除类别成功:" << m_currentOperationName;
 
     QString message = "类别删除成功";

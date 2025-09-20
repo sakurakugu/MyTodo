@@ -35,7 +35,7 @@ TodoItem::TodoItem(QObject *parent)
       m_createdAt(QDateTime::currentDateTime()),      // 初始化创建时间为当前时间
       m_updatedAt(QDateTime::currentDateTime()),      // 初始化更新时间为当前时间
       m_lastModifiedAt(QDateTime::currentDateTime()), // 初始化最后修改时间为当前时间
-      m_synced(false)                                 // 初始化是否已同步为false
+      m_synced(1)                                     // 初始化是否已同步为false
 {
 }
 
@@ -63,7 +63,7 @@ TodoItem::TodoItem(int id,                           ///< 待办事项唯一标�
                    const QDateTime &createdAt,       ///< 创建时间
                    const QDateTime &updatedAt,       ///< 最后更新时间
                    const QDateTime &lastModifiedAt,  ///< 最后修改时间
-                   bool synced,                      ///< 是否已与服务器同步
+                   int synced,                       ///< 是否已与服务器同步
                    QObject *parent)                  ///< 父对象指针
                                                      //
     : QObject(parent),                               ///< 初始化父对象
@@ -256,7 +256,7 @@ void TodoItem::setLastModifiedAt(const QDateTime &lastModifiedAt) {
  * @brief 设置待办事项同步状态
  * @param synced 新的同步状态
  */
-void TodoItem::setSynced(bool synced) {
+void TodoItem::setSynced(int synced) {
     setProperty(m_synced, synced, &TodoItem::syncedChanged);
 }
 

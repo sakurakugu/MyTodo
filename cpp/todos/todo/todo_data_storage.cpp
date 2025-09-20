@@ -11,6 +11,7 @@
  */
 
 #include "todo_data_storage.h"
+#include "user_auth.h"
 
 #include "foundation/config.h"
 #include <QDateTime>
@@ -21,18 +22,18 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QSqlQuery>
 #include <QSqlError>
-#include <QVariant>
+#include <QSqlQuery>
 #include <QUuid>
+#include <QVariant>
 #include <algorithm>
 #include <optional>
 #include <unordered_map>
 
 TodoDataStorage::TodoDataStorage(QObject *parent)
-    : QObject(parent),                                    // 父对象
-      m_setting(Setting::GetInstance()),                 // 设置
-      m_database(Database::GetInstance())  // 数据库管理器
+    : QObject(parent),                    // 父对象
+      m_setting(Setting::GetInstance()),  // 设置
+      m_database(Database::GetInstance()) // 数据库管理器
 {
     // 确保数据库已初始化
     if (!m_database.initializeDatabase()) {
@@ -44,11 +45,11 @@ TodoDataStorage::~TodoDataStorage() {
 }
 
 /**
- * @brief 加载类别待办事项
+ * @brief 加载待办事项
  * @param todos 待办事项容器引用
  * @return 加载是否成功
  */
-bool TodoDataStorage::loadFromLocalStorage(std::vector<std::unique_ptr<TodoItem>> &todos) {
+bool TodoDataStorage::加载待办事项(std::vector<std::unique_ptr<TodoItem>> &todos) {
     bool success = true;
 
     try {
@@ -63,8 +64,11 @@ bool TodoDataStorage::loadFromLocalStorage(std::vector<std::unique_ptr<TodoItem>
         }
 
         QSqlQuery query(db);
-        const QString queryString = "SELECT id, uuid, user_uuid, title, description, category, important, deadline, recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, is_deleted, deleted_at, created_at, updated_at, last_modified_at, synced FROM todos ORDER BY id";
-        
+        const QString queryString =
+            "SELECT id, uuid, user_uuid, title, description, category, important, deadline, recurrence_interval, "
+            "recurrence_count, recurrence_start_date, is_completed, completed_at, is_deleted, deleted_at, created_at, "
+            "updated_at, last_modified_at, synced FROM todos ORDER BY id";
+
         if (!query.exec(queryString)) {
             qCritical() << "加载待办事项查询失败:" << query.lastError().text();
             return false;
@@ -89,28 +93,28 @@ bool TodoDataStorage::loadFromLocalStorage(std::vector<std::unique_ptr<TodoItem>
             QDateTime createdAt = QDateTime::fromString(query.value("created_at").toString(), Qt::ISODate);
             QDateTime updatedAt = QDateTime::fromString(query.value("updated_at").toString(), Qt::ISODate);
             QDateTime lastModifiedAt = QDateTime::fromString(query.value("last_modified_at").toString(), Qt::ISODate);
-            bool synced = query.value("synced").toBool();
+            int synced = query.value("synced").toInt();
 
-            auto item = std::make_unique<TodoItem>(
-                id,                   // 唯一标识符
-                uuid,                 // 唯一标识符（UUID）
-                userUuid,             // 用户UUID
-                title,                // 待办事项标题
-                description,          // 待办事项详细描述
-                category,             // 待办事项分类
-                important,            // 重要程度
-                deadline,             // 截止日期
-                recurrenceInterval,   // 重复间隔
-                recurrenceCount,      // 重复次数
-                recurrenceStartDate,  // 重复开始日期
-                isCompleted,          // 是否已完成
-                completedAt,          // 完成时间
-                isDeleted,            // 是否已删除
-                deletedAt,            // 删除时间
-                createdAt,            // 创建时间
-                updatedAt,            // 更新时间
-                lastModifiedAt,       // 最后修改时间
-                synced,               // 是否已同步
+            auto item = std::make_unique<TodoItem>( //
+                id,                                 // 唯一标识符
+                uuid,                               // 唯一标识符（UUID）
+                userUuid,                           // 用户UUID
+                title,                              // 待办事项标题
+                description,                        // 待办事项详细描述
+                category,                           // 待办事项分类
+                important,                          // 重要程度
+                deadline,                           // 截止日期
+                recurrenceInterval,                 // 重复间隔
+                recurrenceCount,                    // 重复次数
+                recurrenceStartDate,                // 重复开始日期
+                isCompleted,                        // 是否已完成
+                completedAt,                        // 完成时间
+                isDeleted,                          // 是否已删除
+                deletedAt,                          // 删除时间
+                createdAt,                          // 创建时间
+                updatedAt,                          // 更新时间
+                lastModifiedAt,                     // 最后修改时间
+                synced,                             // 是否已同步
                 this);
 
             todos.push_back(std::move(item));
@@ -159,7 +163,11 @@ bool TodoDataStorage::saveToLocalStorage(const std::vector<std::unique_ptr<TodoI
 
         // 插入新数据
         QSqlQuery insertQuery(db);
-        const QString insertString = "INSERT INTO todos (id, uuid, user_uuid, title, description, category, important, deadline, recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, is_deleted, deleted_at, created_at, updated_at, last_modified_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        const QString insertString =
+            "INSERT INTO todos (id, uuid, user_uuid, title, description, category, important, deadline, "
+            "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, is_deleted, "
+            "deleted_at, created_at, updated_at, last_modified_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
+            "?, ?, ?, ?, ?, ?, ?)";
         insertQuery.prepare(insertString);
 
         for (const auto &item : todos) {
@@ -209,219 +217,8 @@ bool TodoDataStorage::saveToLocalStorage(const std::vector<std::unique_ptr<TodoI
 }
 
 /**
- * @brief 从TOML表创建新的TodoItem
- * @param todoTable TOML表引用
- * @param newId 新分配的ID
- * @return 创建的TodoItem智能指针，失败时返回nullptr
- */
-std::unique_ptr<TodoItem> TodoDataStorage::createTodoItemFromToml(const toml::table &todoTable, int newId) {
-    try {
-        // 解析必要字段
-        auto uuidNode = todoTable["uuid"];
-        if (!uuidNode || !uuidNode.is_string()) {
-            return nullptr;
-        }
-
-        QString uuidStr = QString::fromStdString(uuidNode.value_or(""));
-        QUuid itemUuid = QUuid::fromString(uuidStr);
-        if (itemUuid.isNull()) {
-            return nullptr;
-        }
-
-        // 解析其他字段，提供默认值
-        auto getStringValue = [&todoTable](const char *key, const QString &defaultValue = QString()) -> QString {
-            auto node = todoTable[key];
-            return node && node.is_string() ? QString::fromStdString(node.value_or("")) : defaultValue;
-        };
-
-        auto getBoolValue = [&todoTable](const char *key, bool defaultValue = false) -> bool {
-            auto node = todoTable[key];
-            return node && node.is_boolean() ? node.value_or(defaultValue) : defaultValue;
-        };
-
-        auto getIntValue = [&todoTable](const char *key, int defaultValue = 0) -> int {
-            auto node = todoTable[key];
-            if (node && node.is_integer()) {
-                return static_cast<int>(node.value_or(defaultValue));
-            }
-            return defaultValue;
-        };
-
-        auto getDateTimeValue = [&todoTable](const char *key, const QDateTime &defaultValue = QDateTime::fromString(
-                                                                  "1970-01-01T00:00:00", Qt::ISODate)) -> QDateTime {
-            auto node = todoTable[key];
-            if (node && node.is_string()) {
-                QString dateStr = QString::fromStdString(node.value_or("1970-01-01T00:00:00"));
-                QDateTime result = QDateTime::fromString(dateStr, Qt::ISODate);
-                return result.isValid() ? result : defaultValue;
-            }
-            return defaultValue;
-        };
-
-        auto getDateValue = [&todoTable](const char *key, const QDate &defaultValue =
-                                                              QDate::fromString("1970-01-01", Qt::ISODate)) -> QDate {
-            auto node = todoTable[key];
-            if (node && node.is_string()) {
-                QString dateStr = QString::fromStdString(node.value_or("1970-01-01"));
-                QDate result = QDate::fromString(dateStr, Qt::ISODate);
-                return result.isValid() ? result : defaultValue;
-            }
-            return defaultValue;
-        };
-
-        // 创建TodoItem
-        auto item = std::make_unique<TodoItem>(
-            newId,                                                            // id
-            itemUuid,                                                         // uuid
-            QUuid::fromString(getStringValue("userUuid")),                    // userUuid
-            getStringValue("title"),                                          // title
-            getStringValue("description"),                                    // description
-            getStringValue("category", "未分类"),                             // category
-            getBoolValue("important"),                                        // important
-            getDateTimeValue("deadline"),                                     // deadline
-            getIntValue("recurrenceInterval"),                                // recurrenceInterval
-            getIntValue("recurrenceCount", -1),                               // recurrenceCount
-            getDateValue("recurrenceStartDate"),                              // recurrenceStartDate
-            getBoolValue("isCompleted"),                                      // isCompleted
-            getDateTimeValue("completedAt"),                                  // completedAt
-            getBoolValue("isDeleted"),                                        // isDeleted
-            getDateTimeValue("deletedAt"),                                    // deletedAt
-            getDateTimeValue("createdAt", QDateTime::currentDateTime()),      // createdAt
-            getDateTimeValue("updatedAt", QDateTime::currentDateTime()),      // updatedAt
-            getDateTimeValue("lastModifiedAt", QDateTime::currentDateTime()), // lastModifiedAt
-            getBoolValue("synced"),                                           // synced
-            this                                                              // parent
-        );
-
-        return item;
-    } catch (const std::exception &e) {
-        qWarning() << "创建TodoItem时发生异常:" << e.what();
-        return nullptr;
-    }
-}
-
-/**
- * @brief 从TOML表更新现有的TodoItem
- * @param item 要更新的TodoItem指针
- * @param todoTable TOML表引用
- */
-void TodoDataStorage::updateTodoItemFromToml(TodoItem *item, const toml::table &todoTable) {
-    if (!item) {
-        return;
-    }
-
-    try {
-        // 辅助函数
-        auto getStringValue = [&todoTable](const char *key) -> std::optional<QString> {
-            auto node = todoTable[key];
-            if (node && node.is_string()) {
-                return QString::fromStdString(node.value_or(""));
-            }
-            return std::nullopt;
-        };
-
-        auto getBoolValue = [&todoTable](const char *key) -> std::optional<bool> {
-            auto node = todoTable[key];
-            if (node && node.is_boolean()) {
-                return node.value_or(false);
-            }
-            return std::nullopt;
-        };
-
-        auto getIntValue = [&todoTable](const char *key) -> std::optional<int> {
-            auto node = todoTable[key];
-            if (node && node.is_integer()) {
-                return static_cast<int>(node.value_or(0));
-            }
-            return std::nullopt;
-        };
-
-        auto getDateTimeValue = [&todoTable](const char *key) -> std::optional<QDateTime> {
-            auto node = todoTable[key];
-            if (node && node.is_date_time()) {
-                QDateTime result = QDateTime::fromString(node.value_or("1970-01-01T00:00:00"), Qt::ISODate);
-                if (result.isValid()) {
-                    return result;
-                }
-            }
-            return std::nullopt;
-        };
-
-        auto getDateValue = [&todoTable](const char *key) -> std::optional<QDate> {
-            auto node = todoTable[key];
-            if (node && node.is_date()) {
-                QDate result = QDate::fromString(node.value_or("1970-01-01"), "yyyy-MM-dd");
-                if (result.isValid()) {
-                    return result;
-                }
-            }
-            return std::nullopt;
-        };
-
-        // 更新字段（只更新存在的字段）
-        if (auto value = getStringValue("title")) {
-            item->setTitle(*value);
-        }
-        if (auto value = getStringValue("description")) {
-            item->setDescription(*value);
-        }
-        if (auto value = getStringValue("category")) {
-            item->setCategory(*value);
-        }
-        if (auto value = getBoolValue("important")) {
-            item->setImportant(*value);
-        }
-        if (auto value = getDateTimeValue("deadline")) {
-            item->setDeadline(*value);
-        }
-        if (auto value = getIntValue("recurrenceInterval")) {
-            item->setRecurrenceInterval(*value);
-        }
-        if (auto value = getIntValue("recurrenceCount")) {
-            item->setRecurrenceCount(*value);
-        }
-        if (auto value = getDateValue("recurrenceStartDate")) {
-            item->setRecurrenceStartDate(*value);
-        }
-        if (auto value = getBoolValue("isCompleted")) {
-            item->setIsCompleted(*value);
-        }
-        if (auto value = getDateTimeValue("completedAt")) {
-            item->setCompletedAt(*value);
-        }
-        if (auto value = getBoolValue("isDeleted")) {
-            item->setIsDeleted(*value);
-        }
-        if (auto value = getDateTimeValue("deletedAt")) {
-            item->setDeletedAt(*value);
-        }
-        if (auto value = getDateTimeValue("createdAt")) {
-            item->setCreatedAt(*value);
-        }
-        if (auto value = getDateTimeValue("updatedAt")) {
-            item->setUpdatedAt(*value);
-        }
-        if (auto value = getDateTimeValue("lastModifiedAt")) {
-            item->setLastModifiedAt(*value);
-        }
-        if (auto value = getBoolValue("synced")) {
-            item->setSynced(*value);
-        }
-        if (auto value = getStringValue("userUuid")) {
-            QUuid userUuid = QUuid::fromString(*value);
-            if (!userUuid.isNull()) {
-                item->setUserUuid(userUuid);
-            }
-        }
-
-    } catch (const std::exception &e) {
-        qWarning() << "更新TodoItem时发生异常:" << e.what();
-    }
-}
-
-
-/**
  * @brief 添加新的待办事项
+ * @param todos 待办事项容器引用
  * @param title 标题
  * @param description 描述
  * @param category 分类
@@ -432,7 +229,10 @@ void TodoDataStorage::updateTodoItemFromToml(TodoItem *item, const toml::table &
  * @param recurrenceStartDate 重复开始日期
  * @return 新添加的待办事项指针
  */
-std::unique_ptr<TodoItem> TodoDataStorage::addTodo(const QString &title, const QString &description, const QString &category, bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate) {
+std::unique_ptr<TodoItem> TodoDataStorage::新增待办(std::vector<std::unique_ptr<TodoItem>> &todos, const QString &title, const QString &description,
+                                                    const QString &category, bool important, const QDateTime &deadline,
+                                                    int recurrenceInterval, int recurrenceCount,
+                                                    const QDate &recurrenceStartDate) {
     QSqlDatabase db = m_database.getDatabase();
     if (!db.isOpen()) {
         qCritical() << "数据库未打开，无法添加待办事项";
@@ -448,40 +248,45 @@ std::unique_ptr<TodoItem> TodoDataStorage::addTodo(const QString &title, const Q
         }
     }
 
+    int newId = maxId + 1;
     QDateTime now = QDateTime::currentDateTime();
     QUuid newUuid = QUuid::createUuid();
-    QUuid userUuid = QUuid::createUuid(); // 这里应该设置为当前用户的UUID
-    int newId = maxId + 1;
+    QUuid userUuid = UserAuth::GetInstance().getUuid();
+    QDateTime nullTime = QDateTime::fromString("1970-01-01T00:00:00", Qt::ISODate);
 
     // 创建新的待办事项
-    auto newTodo = std::make_unique<TodoItem>(
-        newId,                                                            // id
-        newUuid,                                                          // uuid
-        userUuid,                                                         // userUuid
-        title,                                                            // title
-        description,                                                      // description
-        category,                                                         // category
-        important,                                                        // important
-        deadline,                                                         // deadline
-        recurrenceInterval,                                               // recurrenceInterval
-        recurrenceCount,                                                  // recurrenceCount
-        recurrenceStartDate,                                              // recurrenceStartDate
-        false,                                                            // isCompleted
-        QDateTime::fromString("1970-01-01T00:00:00", Qt::ISODate),       // completedAt
-        false,                                                            // isDeleted
-        QDateTime::fromString("1970-01-01T00:00:00", Qt::ISODate),       // deletedAt
-        now,                                                              // createdAt
-        now,                                                              // updatedAt
-        now,                                                              // lastModifiedAt
-        false,                                                            // synced
-        this                                                              // parent
+    auto newTodo = std::make_unique<TodoItem>( //
+        newId,                                 // id
+        newUuid,                               // uuid
+        userUuid,                              // userUuid
+        title,                                 // title
+        description,                           // description
+        category,                              // category
+        important,                             // important
+        deadline,                              // deadline
+        recurrenceInterval,                    // recurrenceInterval
+        recurrenceCount,                       // recurrenceCount
+        recurrenceStartDate,                   // recurrenceStartDate
+        false,                                 // isCompleted
+        nullTime,                              // completedAt
+        false,                                 // isDeleted
+        nullTime,                              // deletedAt
+        now,                                   // createdAt
+        now,                                   // updatedAt
+        now,                                   // lastModifiedAt
+        1,                                     // synced
+        this                                   // parent
     );
 
     // 插入到数据库
     QSqlQuery insertQuery(db);
-    const QString insertString = "INSERT INTO todos (id, uuid, user_uuid, title, description, category, important, deadline, recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, is_deleted, deleted_at, created_at, updated_at, last_modified_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    const QString insertString =
+        "INSERT INTO todos (id, uuid, user_uuid, title, description, category, important, deadline, "
+        "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, is_deleted, "
+        "deleted_at, created_at, updated_at, last_modified_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
+        "?, ?, ?, ?, ?, ?)";
     insertQuery.prepare(insertString);
-    
+
     insertQuery.addBindValue(newTodo->id());
     insertQuery.addBindValue(newTodo->uuid().toString());
     insertQuery.addBindValue(newTodo->userUuid().toString());
@@ -507,12 +312,15 @@ std::unique_ptr<TodoItem> TodoDataStorage::addTodo(const QString &title, const Q
         return nullptr;
     }
 
+    todos.push_back(std::move(newTodo));
+
     qDebug() << "成功添加待办事项到数据库，ID:" << newId;
     return newTodo;
 }
 
 /**
  * @brief 更新待办事项
+ * @param todos 待办事项容器引用
  * @param id 待办事项ID
  * @param title 新标题
  * @param description 新描述
@@ -524,7 +332,9 @@ std::unique_ptr<TodoItem> TodoDataStorage::addTodo(const QString &title, const Q
  * @param recurrenceStartDate 重复开始日期
  * @return 更新是否成功
  */
-bool TodoDataStorage::updateTodo(int id, const QString &title, const QString &description, const QString &category, bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate) {
+bool TodoDataStorage::更新待办(std::vector<std::unique_ptr<TodoItem>> &todos, int id, const QString &title, const QString &description, const QString &category,
+                               bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount,
+                               const QDate &recurrenceStartDate) {
     QSqlDatabase db = m_database.getDatabase();
     if (!db.isOpen()) {
         qCritical() << "数据库未打开，无法更新待办事项";
@@ -535,9 +345,10 @@ bool TodoDataStorage::updateTodo(int id, const QString &title, const QString &de
 
     // 更新数据库中的待办事项
     QSqlQuery updateQuery(db);
-    const QString updateString = "UPDATE todos SET title = ?, description = ?, category = ?, important = ?, deadline = ?, recurrence_interval = ?, recurrence_count = ?, recurrence_start_date = ?, updated_at = ?, last_modified_at = ?, synced = ? WHERE id = ?";
+    const QString updateString = "UPDATE todos SET title = ?, description = ?, category = ?, important = ?, deadline = "
+                                 "?, recurrence_interval = ?, recurrence_count = ?, recurrence_start_date = ?, "
+                                 "updated_at = ?, last_modified_at = ?, synced = ? WHERE id = ?";
     updateQuery.prepare(updateString);
-    
     updateQuery.addBindValue(title);
     updateQuery.addBindValue(description);
     updateQuery.addBindValue(category);
@@ -548,7 +359,7 @@ bool TodoDataStorage::updateTodo(int id, const QString &title, const QString &de
     updateQuery.addBindValue(recurrenceStartDate.toString(Qt::ISODate));
     updateQuery.addBindValue(now.toString(Qt::ISODate));
     updateQuery.addBindValue(now.toString(Qt::ISODate));
-    updateQuery.addBindValue(false); // synced
+    updateQuery.addBindValue(2); // synced
     updateQuery.addBindValue(id);
 
     if (!updateQuery.exec()) {
@@ -566,11 +377,12 @@ bool TodoDataStorage::updateTodo(int id, const QString &title, const QString &de
 }
 
 /**
- * @brief 删除待办事项
+ * @brief 回收待办事项
+ * @param todos 待办事项容器引用
  * @param id 待办事项ID
- * @return 删除是否成功
+ * @return 回收是否成功
  */
-bool TodoDataStorage::deleteTodo(int id) {
+bool TodoDataStorage::回收待办(std::vector<std::unique_ptr<TodoItem>> &todos, int id) {
     QSqlDatabase db = m_database.getDatabase();
     if (!db.isOpen()) {
         qCritical() << "数据库未打开，无法删除待办事项";
@@ -581,13 +393,14 @@ bool TodoDataStorage::deleteTodo(int id) {
 
     // 更新数据库中的待办事项（标记为已删除）
     QSqlQuery updateQuery(db);
-    const QString updateString = "UPDATE todos SET is_deleted = ?, deleted_at = ?, last_modified_at = ?, synced = ? WHERE id = ?";
+    const QString updateString =
+        "UPDATE todos SET is_deleted = ?, deleted_at = ?, last_modified_at = ?, synced = ? WHERE id = ?";
     updateQuery.prepare(updateString);
-    
+
     updateQuery.addBindValue(true);
     updateQuery.addBindValue(now.toString(Qt::ISODate));
     updateQuery.addBindValue(now.toString(Qt::ISODate));
-    updateQuery.addBindValue(false); // synced
+    updateQuery.addBindValue(2); // synced
     updateQuery.addBindValue(id);
 
     if (!updateQuery.exec()) {
@@ -605,152 +418,59 @@ bool TodoDataStorage::deleteTodo(int id) {
 }
 
 /**
- * @brief 从TOML表导入待办事项（指定冲突解决策略）
- * @param table TOML表引用
+ * @brief 永久删除待办事项
  * @param todos 待办事项容器引用
- * @param resolution 冲突解决策略
- * @return 导入是否成功
+ * @param id 待办事项ID
  */
-bool TodoDataStorage::importFromToml(const toml::table &table, std::vector<std::unique_ptr<TodoItem>> &todos,
-                                     ConflictResolution resolution) {
-    bool success = true;
-    int importedCount = 0;
-    int skippedCount = 0;
-    int conflictCount = 0;
-
+bool TodoDataStorage::删除待办(std::vector<std::unique_ptr<TodoItem>> &todos, int id) {
+    bool success = false;
     try {
-        // 检查TOML表中是否包含todos节点
-        auto todosNode = table["todos"];
-        if (!todosNode) {
-            qWarning() << "TOML文件中未找到todos节点";
+        QSqlDatabase db = m_database.getDatabase();
+        if (!db.isOpen()) {
+            qCritical() << "数据库未打开，无法永久删除待办事项";
             return false;
         }
 
-        // 获取待办事项数量
-        auto sizeNode = todosNode["size"];
-        if (!sizeNode || !sizeNode.is_integer()) {
-            qWarning() << "TOML文件中todos.size字段无效";
+        // 从数据库中永久删除待办事项
+        QSqlQuery deleteQuery(db);
+        const QString deleteString = "DELETE FROM todos WHERE id = ?";
+        deleteQuery.prepare(deleteString);
+        deleteQuery.addBindValue(id);
+
+        if (!deleteQuery.exec()) {
+            qCritical() << "永久删除待办事项失败:" << deleteQuery.lastError().text();
             return false;
         }
 
-        int todoCount = sizeNode.value_or(0);
-        if (todoCount <= 0) {
-            qDebug() << "TOML文件中没有待办事项需要导入";
-            emit importCompleted(0, 0, 0);
-            return true;
+        if (deleteQuery.numRowsAffected() == 0) {
+            qWarning() << "未找到ID为" << id << "的待办事项，无法删除";
+            return false;
         }
 
-        // 获取当前最大ID，用于分配新ID
-        int maxId = 0;
-        for (const auto &item : todos) {
-            if (item->id() > maxId) {
-                maxId = item->id();
-            }
-        }
-
-        // 创建UUID到现有项目的映射，用于冲突检测
-        std::unordered_map<QString, TodoItem *> existingUuids;
-        for (const auto &item : todos) {
-            existingUuids[item->uuid().toString()] = item.get();
-        }
-
-        // 逐个导入待办事项
-        for (int i = 0; i < todoCount; ++i) {
-            auto todoNode = todosNode[std::to_string(i)];
-            if (!todoNode || !todoNode.is_table()) {
-                qWarning() << "跳过无效的待办事项记录（索引" << i << "）：不是有效的表格";
-                skippedCount++;
-                continue;
-            }
-
-            auto todoTable = *todoNode.as_table();
-
-            // 验证必要字段
-            auto uuidNode = todoTable["uuid"];
-            if (!uuidNode || !uuidNode.is_string()) {
-                qWarning() << "跳过无效的待办事项记录（索引" << i << "）：缺少有效的uuid字段";
-                skippedCount++;
-                continue;
-            }
-
-            QString uuidStr = QString::fromStdString(uuidNode.value_or(""));
-            QUuid itemUuid = QUuid::fromString(uuidStr);
-            if (itemUuid.isNull()) {
-                qWarning() << "跳过无效的待办事项记录（索引" << i << "）：uuid格式无效";
-                skippedCount++;
-                continue;
-            }
-
-            // 检查冲突
-            auto existingItem = existingUuids.find(uuidStr);
-            if (existingItem != existingUuids.end()) {
-                conflictCount++;
-
-                switch (resolution) {
-                case ConflictResolution::Skip:
-                    qDebug() << "跳过冲突的待办事项（UUID:" << uuidStr << "）";
-                    skippedCount++;
-                    continue;
-
-                case ConflictResolution::Overwrite: {
-                    // 更新现有项目的数据
-                    TodoItem *existing = existingItem->second;
-                    updateTodoItemFromToml(existing, todoTable);
-                    qDebug() << "覆盖现有待办事项（UUID:" << uuidStr << "）";
-                    importedCount++;
-                    continue;
-                }
-
-                case ConflictResolution::Merge: {
-                    // 比较时间戳，保留较新的版本
-                    auto updatedAtNode = todoTable["updatedAt"];
-                    if (updatedAtNode && updatedAtNode.is_string()) {
-                        QDateTime importUpdatedAt =
-                            QDateTime::fromString(QString::fromStdString(updatedAtNode.value_or("")), Qt::ISODate);
-
-                        TodoItem *existing = existingItem->second;
-                        if (importUpdatedAt > existing->updatedAt()) {
-                            updateTodoItemFromToml(existing, todoTable);
-                            qDebug() << "合并更新待办事项（UUID:" << uuidStr << "）";
-                            importedCount++;
-                        } else {
-                            qDebug() << "保留现有待办事项（UUID:" << uuidStr << "）";
-                            skippedCount++;
-                        }
-                    } else {
-                        skippedCount++;
-                    }
-                    continue;
-                }
-                }
-            }
-
-            // 创建新的待办事项
-            try {
-                auto newItem = createTodoItemFromToml(todoTable, ++maxId);
-                if (newItem) {
-                    existingUuids[uuidStr] = newItem.get();
-                    todos.push_back(std::move(newItem));
-                    importedCount++;
-                } else {
-                    skippedCount++;
-                }
-            } catch (const std::exception &e) {
-                qWarning() << "创建待办事项时发生异常（索引" << i << "）:" << e.what();
-                skippedCount++;
-            }
-        }
-
-        qDebug() << "TOML导入完成 - 导入:" << importedCount << "跳过:" << skippedCount << "冲突:" << conflictCount;
-        emit importCompleted(importedCount, skippedCount, conflictCount);
-
+        qDebug() << "成功永久删除待办事项，ID:" << id;
+        return true;
     } catch (const std::exception &e) {
-        qCritical() << "从TOML导入时发生异常:" << e.what();
+        qCritical() << "删除待办事项时发生异常:" << e.what();
         success = false;
     } catch (...) {
-        qCritical() << "从TOML导入时发生未知异常";
+        qCritical() << "删除待办事项时发生未知异常";
         success = false;
     }
 
     return success;
+}
+
+/**
+ * @brief 获取下一个可用ID
+ * @param categories 类别列表
+ * @return 下一个可用ID
+ */
+int TodoDataStorage::获取下一个可用ID(const std::vector<std::unique_ptr<TodoItem>> &todos) const {
+    int maxId = 0;
+    for (const auto &todo : todos) {
+        if (todo && todo->id() > maxId) {
+            maxId = todo->id();
+        }
+    }
+    return maxId + 1;
 }

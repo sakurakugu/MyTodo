@@ -82,7 +82,7 @@ TodoManager::TodoManager(QObject *parent)
     m_categoryManager = &CategoryManager::GetInstance();
 
     // 通过数据管理器加载本地数据
-    m_dataManager->loadFromLocalStorage(m_todos);
+    m_dataManager->加载待办事项(m_todos);
 
     // 初始化在线状态
     m_isAutoSync = m_setting.get(QStringLiteral("setting/autoSyncEnabled"), false).toBool();
@@ -364,7 +364,7 @@ bool TodoManager::setData(const QModelIndex &index, const QVariant &value, int r
 
     if (changed) {
         item->setUpdatedAt(QDateTime::currentDateTime());
-        item->setSynced(false);
+        item->setSynced(2);
         invalidateFilterCache();
         emit dataChanged(index, index, QVector<int>() << role);
         m_dataManager->saveToLocalStorage(m_todos);
@@ -406,16 +406,6 @@ void TodoManager::invalidateFilterCache() {
     m_filterCacheDirty = true;
 }
 
-int TodoManager::generateUniqueId() {
-    int maxId = 0;
-    for (const auto &todo : m_todos) {
-        if (todo->id() > maxId) {
-            maxId = todo->id();
-        }
-    }
-    return maxId + 1;
-}
-
 /**
  * @brief 添加新的待办事项
  * @param title 任务标题（必填）
@@ -427,35 +417,12 @@ void TodoManager::addTodo(const QString &title, const QString &description, cons
                           const QString &deadline) {
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
 
-    auto newItem = std::make_unique<TodoItem>(        //
-        generateUniqueId(),                           // id (auto-generated unique)
-        QUuid::createUuid(),                          // uuid
-        UserAuth::GetInstance().getUuid(),            // userUuid
-        title,                                        // title
-        description,                                  // description
-        category,                                     // category
-        important,                                    // important
-        QDateTime::fromString(deadline, Qt::ISODate), // deadline
-        0,                                            // recurrenceInterval
-        -1,                                           // recurrenceCount
-        QDate(),                                      // recurrenceStartDate
-        false,                                        // isCompleted
-        QDateTime(),                                  // completedAt
-        false,                                        // isDeleted
-        QDateTime(),                                  // deletedAt
-        QDateTime::currentDateTime(),                 // createdAt
-        QDateTime::currentDateTime(),                 // updatedAt
-        QDateTime::currentDateTime(),                 // lastModifiedAt
-        false,                                        // synced
-        this                                          //
-    );
+    m_dataManager->新增待办(m_todos, title, description, category, important,
+                            QDateTime::fromString(deadline, Qt::ISODate), 0, -1, QDate());
 
-    m_todos.push_back(std::move(newItem));
     invalidateFilterCache();
 
     endInsertRows();
-
-    m_dataManager->saveToLocalStorage(m_todos);
 
     // 更新同步管理器的数据
     updateSyncManagerData();
@@ -582,13 +549,12 @@ bool TodoManager::updateTodo(int index, const QVariantMap &todoData) {
                 anyUpdated = true;
             }
         }
-        // qInfo() << "modelIndex.row(): " << modelIndex.row() << "标题: " << todoItem->title();
         endResetModel();
 
         // 如果有任何更新，则触发一次dataChanged信号并保存
         if (anyUpdated) {
             item->setUpdatedAt(QDateTime::currentDateTime());
-            item->setSynced(false);
+            item->setSynced(2);
             invalidateFilterCache();
 
             // 只触发一次dataChanged信号
@@ -659,7 +625,7 @@ bool TodoManager::removeTodo(int index) {
         auto todoItem = m_filteredTodos[index];
         todoItem->setIsDeleted(true);
         todoItem->setDeletedAt(QDateTime::currentDateTime());
-        todoItem->setSynced(false); // 标记为未同步，确保删除操作会推送到服务器
+        todoItem->setSynced(2); // 标记为未同步，放到到回收站
 
         // 使筛选缓存失效，以便重新筛选
         invalidateFilterCache();
@@ -710,7 +676,7 @@ bool TodoManager::restoreTodo(int index) {
         // 恢复任务：设置isDeleted为false，清除deletedAt时间戳
         todoItem->setIsDeleted(false);
         todoItem->setDeletedAt(QDateTime());
-        todoItem->setSynced(false);
+        todoItem->setSynced(2);
 
         // 通知视图数据已更改
         QModelIndex modelIndex = createIndex(index, 0);
@@ -868,7 +834,7 @@ bool TodoManager::updateAllTodosUserUuid() {
             if (todoItem->userUuid() != newUserUuid) {
                 todoItem->setUserUuid(newUserUuid);
                 todoItem->setLastModifiedAt(QDateTime::currentDateTime());
-                todoItem->setSynced(false); // 标记为未同步
+                todoItem->setSynced(2); // 标记为未同步
                 hasChanges = true;
             }
         }
@@ -1042,7 +1008,7 @@ void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
             existingItem->setDeletedAt(QDateTime::fromString(todoObj["deleted_at"].toString(), Qt::ISODate));
             existingItem->setUpdatedAt(QDateTime::fromString(todoObj["updated_at"].toString(), Qt::ISODate));
             existingItem->setLastModifiedAt(QDateTime::fromString(todoObj["last_modified_at"].toString(), Qt::ISODate));
-            existingItem->setSynced(true);
+            existingItem->setSynced(0);
         } else {
             // 创建新项目
             qDebug() << "未找到现有项目，创建新项目，UUID:" << uuid;
@@ -1065,7 +1031,7 @@ void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
             newItem->setCreatedAt(QDateTime::fromString(todoObj["created_at"].toString(), Qt::ISODate));
             newItem->setUpdatedAt(QDateTime::fromString(todoObj["updated_at"].toString(), Qt::ISODate));
             newItem->setLastModifiedAt(QDateTime::fromString(todoObj["last_modified_at"].toString(), Qt::ISODate));
-            newItem->setSynced(true);
+            newItem->setSynced(0);
 
             m_todos.push_back(std::move(newItem));
         }

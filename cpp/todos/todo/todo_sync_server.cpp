@@ -122,7 +122,7 @@ QList<TodoItem *> TodoSyncServer::getUnsyncedItems() const {
 
     for (TodoItem *item : m_todoItems) {
         totalItems++;
-        if (!item->synced()) {
+        if (item->synced() > 0) {
             unsyncedItems.append(item);
         } else {
             syncedItems++;

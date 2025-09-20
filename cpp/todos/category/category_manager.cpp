@@ -404,7 +404,7 @@ void CategoryManager::onCategoriesUpdatedFromServer(const QJsonArray &categories
 
 void CategoryManager::onLocalChangesUploaded(const std::vector<CategorieItem *> &m_unsyncedItems) {
     for (CategorieItem *item : m_unsyncedItems) {
-        if (item->synced() != 2) { // 保留已删除状态
+        if (item->synced() != 3) { // 保留已删除状态
             m_dataStorage->更新同步状态(m_categoryItems, item->uuid());
         } else {
             m_dataStorage->删除类别(m_categoryItems, item->name());
@@ -490,7 +490,7 @@ void CategoryManager::loadCategories() {
     if (success) {
         // 更新缓存列表
         for (const auto &category : m_categoryItems) {
-            if (category && category->synced() != 2) { // 只缓存未删除的类别
+            if (category && category->synced() != 3) { // 只缓存未删除的类别
                 m_categories << category->name();
             }
         }

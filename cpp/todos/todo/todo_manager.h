@@ -165,7 +165,7 @@ class TodoManager : public QAbstractListModel {
 
     // 成员变量
     std::vector<std::unique_ptr<TodoItem>> m_todos; ///< 待办事项列表（使用智能指针）
-    QList<TodoItem *> m_filteredTodos;              ///< 过滤后的待办事项列表（缓存）
+    QList<TodoItem *> m_filteredTodos;              ///< 过滤后的待办事项列表（让QML快速访问的缓存）
     bool m_filterCacheDirty;                        ///< 过滤缓存是否需要更新
     NetworkRequest &m_networkRequest;               ///< 网络管理器
     Setting &m_setting;                             ///< 应用设置
