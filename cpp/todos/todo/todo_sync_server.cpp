@@ -22,11 +22,11 @@
 #include <QTimer>
 #include <QUuid>
 
-TodoSyncServer::TodoSyncServer(QObject *parent)
-    : BaseSyncServer(parent), //
-      m_currentPushIndex(0),  //
-      m_currentBatchIndex(0), //
-      m_totalBatches(0)       //
+TodoSyncServer::TodoSyncServer(UserAuth &userAuth, QObject *parent)
+    : BaseSyncServer(userAuth, parent), //
+      m_currentPushIndex(0),            //
+      m_currentBatchIndex(0),           //
+      m_totalBatches(0)                 //
 {
     // 设置待办事项特有的API端点
     m_apiEndpoint = m_setting
@@ -43,32 +43,7 @@ void TodoSyncServer::与服务器同步(SyncDirection direction) {
     qDebug() << "开始同步待办事项，方向:" << direction;
     qDebug() << "同步请求前状态检查: m_isSyncing =" << m_isSyncing;
 
-    // 防止并发同步请求 - 优先检查
-    if (m_isSyncing) {
-        qWarning() << "同步已在进行中，忽略重复请求";
-        emit syncCompleted(UnknownError, "同步已在进行中");
-        return;
-    }
-
-    // 检查基本同步条件（不包括 m_isSyncing 状态）
-    if (m_serverBaseUrl.isEmpty()) {
-        qDebug() << "同步检查失败：服务器基础URL为空";
-        emit syncCompleted(UnknownError, "服务器配置错误");
-        return;
-    }
-
-    if (m_apiEndpoint.isEmpty()) {
-        qDebug() << "同步检查失败：API端点为空";
-        emit syncCompleted(UnknownError, "服务器配置错误");
-        return;
-    }
-
-    // 检查用户登录状态
-    if (!UserAuth::GetInstance().isLoggedIn()) {
-        qDebug() << "同步检查失败：用户未登录或令牌已过期";
-        emit syncCompleted(AuthError, "无法同步：未登录");
-        return;
-    }
+    BaseSyncServer::检查同步前置条件();
 
     m_isSyncing = true;
     m_currentSyncDirection = direction;

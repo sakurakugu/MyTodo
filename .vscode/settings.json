@@ -107,7 +107,8 @@
         "text_encoding": "cpp",
         "qnetworkaccessmanager": "cpp",
         "*.in": "cpp",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "qsqlerror": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "search.useIgnoreFiles": false, // 禁用git忽略文件

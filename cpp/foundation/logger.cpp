@@ -28,8 +28,8 @@ Logger::Logger(QObject *parent) noexcept
       m_appName(DefaultValues::appName)   // 初始化应用程序名称
 {
     // 编译时检查应用名
-    static_assert(!DefaultValues::appName.empty(), "应用名不能为空");
-    static_assert(DefaultValues::appName.size() > 0, "应用名长度必须大于0");
+    static_assert(std::string_view(DefaultValues::appName).empty() == false, "应用名不能为空");
+    static_assert(std::string_view(DefaultValues::appName).size() > 0, "应用名长度必须大于0");
 
     // 设置日志目录
     try {

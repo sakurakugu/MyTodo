@@ -27,8 +27,13 @@ UserAuth::UserAuth(QObject *parent)
       m_isOnline(false),                               //
       m_tokenExpiryTimer(new QTimer(this)),            //
       m_tokenExpiryTime(0),                            //
-      m_isRefreshing(false) {                          //
-
+      m_isRefreshing(false)                            //
+{
+    // 确保数据库已初始化
+    if (!m_database.initializeDatabase()) {
+        qCritical() << "数据库未初始化";
+    }
+    
     // 连接网络请求信号
     connect(&m_networkRequest, &NetworkRequest::requestCompleted, this, &UserAuth::onNetworkRequestCompleted);
     connect(&m_networkRequest, &NetworkRequest::requestFailed, this, &UserAuth::onNetworkRequestFailed);
@@ -225,7 +230,7 @@ void UserAuth::setIsOnline(bool online) {
         NetworkRequest::RequestConfig config;
         config.url = getApiUrl(m_authApiEndpoint);
         config.method = "GET"; // 明确指定GET方法
-        config.requiresAuth = UserAuth::GetInstance().isLoggedIn();
+        config.requiresAuth = isLoggedIn();
         config.timeout = 5000; // 5秒超时
 
         // 发送测试请求

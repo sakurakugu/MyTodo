@@ -233,13 +233,13 @@ Item {
 
         MenuItem {
             text: qsTr("同步种类")
-            enabled: todoManager.isLoggedIn && !categoryManager.isSyncing()
+            enabled: userAuth.isLoggedIn && !categoryManager.isSyncing()
             onTriggered: {
                 categoryManager.syncWithServer();
                 root.close();  // 开始同步后关闭菜单
             }
             height: visible ? implicitHeight : 0
-            visible: !root.categoryMultiSelectMode
+            visible: !root.categoryMultiSelectMode && userAuth.isLoggedIn
             contentItem: RowLayout {
                 spacing: 8
                 Text {

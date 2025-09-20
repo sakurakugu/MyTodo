@@ -76,16 +76,8 @@ class CategoryManager : public QAbstractListModel {
     };
     Q_ENUM(CategoryRoles)
 
-    // 单例模式
-    static CategoryManager &GetInstance() {
-        static CategoryManager instance;
-        return instance;
-    }
-    // 禁用拷贝构造和赋值操作
-    CategoryManager(const CategoryManager &) = delete;
-    CategoryManager &operator=(const CategoryManager &) = delete;
-    CategoryManager(CategoryManager &&) = delete;
-    CategoryManager &operator=(CategoryManager &&) = delete;
+    explicit CategoryManager(UserAuth &userAuth, QObject *parent = nullptr);
+    ~CategoryManager();
 
     // QAbstractListModel 必要的实现方法
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -112,16 +104,15 @@ class CategoryManager : public QAbstractListModel {
     } ///< 获取数据存储实例
 
     const std::vector<std::unique_ptr<CategorieItem>> &getCategoryItems() const; ///< 获取类别项目列表
-    Q_INVOKABLE CategorieItem *findCategoryByName(const QString &name) const;    ///< 根据名称查找类别项目
-    CategorieItem *findCategoryById(int id) const;                               ///< 根据ID查找类别项目
-    CategorieItem *findCategoryByUuid(const QUuid &uuid) const;                  ///< 根据UUID查找类别项目
-    Q_INVOKABLE bool categoryExists(const QString &name) const;                  ///< 检查类别名称是否已存在
-    Q_INVOKABLE CategorieItem *getCategoryAt(int index) const;                   ///< 根据索引获取类别项目
+    CategorieItem *寻找类别(const QString &name) const;
+    CategorieItem *寻找类别(int id) const;
+    CategorieItem *寻找类别(const QUuid &uuid) const;
+    Q_INVOKABLE bool categoryExists(const QString &name) const; ///< 检查类别名称是否已存在
+
     void 添加默认类别();
-    void clearCategories(); ///< 清空所有类别
 
     // 数据存储相关方法
-    void loadCategories(); ///< 从存储加载类别
+    void 加载类别();
 
   signals:
     void categoriesChanged();                 ///< 类别列表变化信号
@@ -132,25 +123,19 @@ class CategoryManager : public QAbstractListModel {
     void onCategoriesUpdatedFromServer(const QJsonArray &categoriesArray);            ///< 处理从服务器更新的类别数据
     void onLocalChangesUploaded(const std::vector<CategorieItem *> &m_unsyncedItems); ///< 处理本地更改已上传
   private:
-    explicit CategoryManager(QObject *parent = nullptr);
-    ~CategoryManager();
-
     // 辅助方法
-    void updateCategoriesFromJson(const QJsonArray &categoriesArray); ///< 从JSON数组更新类别列表
+    void 更新类别从JSON(const QJsonArray &categoriesArray); ///< 从JSON数组更新类别列表
     bool 是否是有效名称(const QString &name) const;
 
     // 模型相关辅助方法
     QVariant getItemData(const CategorieItem *item, int role) const; ///< 根据角色获取项目数据
-    QModelIndex indexFromItem(CategorieItem *categoryItem) const;    ///< 获取指定CategorieItem的模型索引
-    CategoryRoles roleFromName(const QString &name) const;           ///< 从名称获取角色
 
     // 性能优化
-    void beginModelUpdate(); ///< 开始模型更新
-    void endModelUpdate();   ///< 结束模型更新
+    void 开始更新模型(); ///< 开始模型更新
+    void 结束更新模型(); ///< 结束模型更新
 
     // 成员变量
     std::vector<std::unique_ptr<CategorieItem>> m_categoryItems; ///< 类别项目列表
-    QStringList m_categories;                                    ///< 类别名称列表（让QML快速访问）
 
     std::unique_ptr<CategorySyncServer> m_syncServer;   ///< 类别同步服务器对象
     std::unique_ptr<CategoryDataStorage> m_dataStorage; ///< 类别数据存储对象

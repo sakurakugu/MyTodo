@@ -237,7 +237,7 @@ Item {
             }
 
             ControlRow {
-                text: todoManager.isLoggedIn ? qsTr("自动同步") : qsTr("自动同步（未登录）")
+                text: userAuth.isLoggedIn ? qsTr("自动同步") : qsTr("自动同步（未登录）")
                 checked: todoSyncServer.isAutoSyncEnabled
                 leftMargin: 10
                 controlType: ControlRow.ControlType.Switch
@@ -245,7 +245,7 @@ Item {
                 onCheckedChanged: {
                     if (checked) {
                         // 如果未登录，显示提示并重置开关
-                        if (!todoManager.isLoggedIn) {
+                        if (!userAuth.isLoggedIn) {
                             toggle();
                             settingPage.loginStatusDialogs.showLoginRequired();
                         } else {

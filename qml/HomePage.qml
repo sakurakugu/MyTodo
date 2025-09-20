@@ -1154,7 +1154,7 @@ Page {
                     onCheckedChanged: {
                         if (checked) {
                             // 如果未登录，显示提示并重置开关
-                            if (!todoManager.isLoggedIn) {
+                            if (!userAuth.isLoggedIn) {
                                 toggle();
                                 homePage.loginStatusDialogs.showLoginRequired();
                             } else {

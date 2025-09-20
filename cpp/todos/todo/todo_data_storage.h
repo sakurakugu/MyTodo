@@ -76,7 +76,7 @@ class TodoDataStorage : public QObject {
     bool saveToLocalStorage(const std::vector<std::unique_ptr<TodoItem>> &todos); // 将待办事项保存到本地存储
 
     // CRUD操作
-    std::unique_ptr<TodoItem> 新增待办(std::vector<std::unique_ptr<TodoItem>> &todos, const QString &title, const QString &description, const QString &category, bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate);
+    std::unique_ptr<TodoItem> 新增待办(std::vector<std::unique_ptr<TodoItem>> &todos, const QString &title, const QString &description, const QString &category, bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate,QUuid userUuid);
     bool 更新待办(std::vector<std::unique_ptr<TodoItem>> &todos, int id, const QString &title, const QString &description, const QString &category, bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate);
     bool 回收待办(std::vector<std::unique_ptr<TodoItem>> &todos, int id);
     bool 删除待办(std::vector<std::unique_ptr<TodoItem>> &todos, int id);

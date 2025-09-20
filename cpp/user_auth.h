@@ -57,18 +57,7 @@ class UserAuth : public QObject {
     Q_PROPERTY(bool isLoggedIn READ isLoggedIn NOTIFY isLoggedInChanged)
 
   public:
-    /**
-     * @brief 获取UserAuth单例实例
-     * @return UserAuth实例引用
-     */
-    static UserAuth &GetInstance() noexcept {
-        static UserAuth instance;
-        return instance;
-    }
-
-    /**
-     * @brief 析构函数
-     */
+    explicit UserAuth(QObject *parent = nullptr);
     ~UserAuth();
 
     // 认证操作
@@ -119,22 +108,10 @@ class UserAuth : public QObject {
     void onAuthTokenExpired();                           // 处理认证令牌过期
 
   private slots:
-    void onTokenExpiryCheck(); // 定时检查令牌过期
+    void onTokenExpiryCheck();                        // 定时检查令牌过期
     void onBaseUrlChanged(const QString &newBaseUrl); // 服务器基础URL变化槽
 
   private:
-    /**
-     * @brief 私有构造函数（单例模式）
-     * @param parent 父对象
-     */
-    explicit UserAuth(QObject *parent = nullptr);
-
-    // 禁用拷贝构造和赋值操作
-    UserAuth(const UserAuth &) = delete;
-    UserAuth &operator=(const UserAuth &) = delete;
-    UserAuth(UserAuth &&) = delete;
-    UserAuth &operator=(UserAuth &&) = delete;
-
     // 私有方法
     void handleLoginSuccess(const QJsonObject &response);        // 处理登录成功
     void handleTokenRefreshSuccess(const QJsonObject &response); // 处理令牌刷新成功

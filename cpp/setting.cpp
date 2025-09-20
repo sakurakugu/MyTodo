@@ -71,7 +71,7 @@ void Setting::exportToJsonFile(const QString &filePath) {
 }
 
 // 日志配置相关方法实现
-void Setting::setLogLevel(Logger::LogLevel logLevel) {
+void Setting::setLogLevel(LogLevel logLevel) {
     m_config.save("log/level", static_cast<int>(logLevel));
     auto result = m_logger.setLogLevel(logLevel);
     if (!result) {
@@ -79,9 +79,9 @@ void Setting::setLogLevel(Logger::LogLevel logLevel) {
     }
 }
 
-Logger::LogLevel Setting::getLogLevel() const {
-    auto result = m_config.get("log/level", static_cast<int>(Logger::LogLevel::Info));
-    return static_cast<Logger::LogLevel>(result.toInt());
+LogLevel Setting::getLogLevel() const {
+    auto result = m_config.get("log/level", static_cast<int>(LogLevel::Info));
+    return static_cast<LogLevel>(result.toInt());
 }
 
 void Setting::setLogToFile(bool enabled) {

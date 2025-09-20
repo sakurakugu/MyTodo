@@ -39,6 +39,7 @@
 #include "cpp/todos/todo/todo_manager.h"
 #include "cpp/todos/todo/todo_sorter.h"
 #include "cpp/user_auth.h"
+#include "version.h"
 
 #include <QDebug>
 #include <QDirIterator>
@@ -52,13 +53,8 @@ void printResources(const QString &path = ":/") {
 int main(int argc, char *argv[]) {
 #if defined(Q_OS_WIN) && defined(QT_DEBUG)
     // Windows平台，设置控制台编码
-    // UINT cp = GetACP();
-    // qInfo()<<"当前控制台编码:"<<cp;
-    // if (cp == 936) {
-    SetConsoleCP(65001);
-    SetConsoleOutputCP(65001);
-    // }
-    // qInfo()<<"当前控制台编码:"<<cp;
+    SetConsoleCP(CP_UTF8);
+    SetConsoleOutputCP(CP_UTF8);
 #endif
 
     // printResources();
@@ -69,9 +65,9 @@ int main(int argc, char *argv[]) {
     qInstallMessageHandler(Logger::messageHandler);
 // 应用日志设置
 #if defined(QT_DEBUG)
-    Logger::GetInstance().setLogLevel(Logger::LogLevel::Debug);
+    Logger::GetInstance().setLogLevel(LogLevel::Debug);
 #else
-    Logger::GetInstance().setLogLevel(Logger::LogLevel::Info);
+    Logger::GetInstance().setLogLevel(LogLevel::Info);
 #endif
 
     // 记录应用启动
@@ -89,17 +85,14 @@ int main(int argc, char *argv[]) {
 
     // 设置应用信息
     QGuiApplication::setApplicationName("MyTodo"); // 设置应用名称（不设置组织名）
-    // QGuiApplication::setOrganizationDomain("mytodo.app");         // 设置组织域名
-    QGuiApplication::setApplicationVersion("APP_VERSION_STRING"); // 设置应用版本
+    QGuiApplication::setApplicationVersion(APP_VERSION_STRING); // 设置应用版本
 
     GlobalState &globalState = GlobalState::GetInstance(); // 创建GlobalState实例
     Setting &setting = Setting::GetInstance();             // 创建Setting实例
-    UserAuth &userAuth = UserAuth::GetInstance();          // 获取UserAuth实例
 
-    qInfo() << "日志系统初始化完成，日志文件路径:" << setting.getLogFilePath();
-
-    CategoryManager &categoryManager = CategoryManager::GetInstance(); // 创建CategoryManager实例
-    TodoManager &todoManager = TodoManager::GetInstance();             // 创建TodoManager实例
+    UserAuth userAuth;                                  // 获取UserAuth实例
+    CategoryManager categoryManager(userAuth);          // 创建CategoryManager实例
+    TodoManager todoManager(userAuth, categoryManager); // 创建TodoManager实例
 
     // 检查是否通过开机自启动启动
     QStringList arguments = app.arguments();

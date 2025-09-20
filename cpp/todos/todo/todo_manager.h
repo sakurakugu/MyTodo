@@ -23,13 +23,13 @@
 #include <vector>
 
 #include "../category/category_manager.h" // 类别管理器
-#include "todo_item.h"
 #include "foundation/network_request.h"
 #include "setting.h"
 #include "todo_data_storage.h" // 数据管理器
 #include "todo_filter.h"       // 筛选管理器
-#include "todo_sorter.h"       // 排序管理器
-#include "todo_sync_server.h"  // 服务器同步管理器
+#include "todo_item.h"
+#include "todo_sorter.h"      // 排序管理器
+#include "todo_sync_server.h" // 服务器同步管理器
 
 class GlobalState; // 前向声明
 
@@ -88,16 +88,8 @@ class TodoManager : public QAbstractListModel {
     };
     Q_ENUM(TodoRoles)
 
-    // 单例模式
-    static TodoManager &GetInstance() {
-        static TodoManager instance;
-        return instance;
-    }
-    // 禁用拷贝构造和赋值操作
-    TodoManager(const TodoManager &) = delete;
-    TodoManager &operator=(const TodoManager &) = delete;
-    TodoManager(TodoManager &&) = delete;
-    TodoManager &operator=(TodoManager &&) = delete;
+    explicit TodoManager(UserAuth &userAuth, CategoryManager &categoryManager,QObject *parent = nullptr);
+    ~TodoManager();
 
     // QAbstractListModel 必要的实现方法
     int rowCount(const QModelIndex &parent = QModelIndex()) const override; // 获取模型中的行数（待办事项数量）
@@ -111,7 +103,7 @@ class TodoManager : public QAbstractListModel {
     Q_INVOKABLE TodoFilter *filter() const;
     Q_INVOKABLE TodoSorter *sorter() const;
     Q_INVOKABLE TodoSyncServer *syncServer() const;
-    
+
     // 属性访问器
     bool isLoggedIn() const;
 
@@ -145,9 +137,6 @@ class TodoManager : public QAbstractListModel {
     void onTodosUpdatedFromServer(const QJsonArray &todosArray);                     // 处理从服务器更新的待办事项
 
   private:
-    explicit TodoManager(QObject *parent = nullptr);
-    ~TodoManager();
-
   public:
     // 在应用退出前显式保存到本地存储（避免在析构阶段访问 QSqlDatabase）
     void saveTodosToLocalStorage();

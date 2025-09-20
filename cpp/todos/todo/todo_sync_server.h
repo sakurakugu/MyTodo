@@ -20,6 +20,8 @@
 #include "../base_sync_server.h"
 #include "todo_item.h"
 
+class UserAuth;
+
 /**
  * @class TodoSyncServer
  * @brief 待办事项同步管理器，负责与服务器的数据同步
@@ -63,13 +65,13 @@ class TodoSyncServer : public BaseSyncServer {
      * @brief 构造函数
      * @param parent 父对象
      */
-    explicit TodoSyncServer(QObject *parent = nullptr);
+    explicit TodoSyncServer(UserAuth &userAuth, QObject *parent = nullptr);
     ~TodoSyncServer();
 
     // 同步操作（重写基类方法）
     void 与服务器同步(SyncDirection direction = Bidirectional) override; // 与服务器同步
     void 重置同步状态() override;
-    void 取消同步() override;  
+    void 取消同步() override;
 
     // 数据操作接口
     void setTodoItems(const QList<TodoItem *> &items); // 设置待同步的待办事项列表
@@ -91,7 +93,7 @@ class TodoSyncServer : public BaseSyncServer {
 
   protected:
     // 同步操作实现（重写基类方法）
-    void 执行同步 (SyncDirection direction) override;         // 执行同步操作
+    void 执行同步(SyncDirection direction) override;            // 执行同步操作
     void fetchTodosFromServer();                                // 从服务器获取待办事项
     void pushLocalChangesToServer();                            // 推送本地更改到服务器
     void pushSingleItem(TodoItem *item);                        // 推送单个待办事项
@@ -104,9 +106,6 @@ class TodoSyncServer : public BaseSyncServer {
     void pushNextBatch();                                       // 推送下一个批次
 
   private:
-    // 服务器配置（待办事项特有）
-    QString m_todoApiEndpoint; ///< 待办事项API端点
-
     // 数据管理
     QList<TodoItem *> m_todoItems;            ///< 待同步的待办事项列表
     QList<TodoItem *> m_pendingUnsyncedItems; ///< 等待推送的未同步项目

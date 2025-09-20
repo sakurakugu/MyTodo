@@ -15,10 +15,11 @@
 #include <QDateTime>
 #include <QDebug>
 
-BaseSyncServer::BaseSyncServer(QObject *parent)
+BaseSyncServer::BaseSyncServer(UserAuth &userAuth, QObject *parent)
     : QObject(parent),                                 // 父对象
       m_networkRequest(NetworkRequest::GetInstance()), // 网络请求对象
       m_setting(Setting::GetInstance()),               // 设置对象
+      m_userAuth(userAuth),             // 用户认证对象
       m_autoSyncTimer(new QTimer(this)),               // 自动同步定时器
       m_isSyncing(false),                              // 是否正在同步
       m_autoSyncInterval(30),                          // 自动同步间隔
@@ -205,7 +206,7 @@ bool BaseSyncServer::canPerformSync() const {
     }
 
     // 检查用户登录状态
-    if (!UserAuth::GetInstance().isLoggedIn()) {
+    if (!m_userAuth.isLoggedIn()) {
         qDebug() << "同步检查失败：用户未登录或令牌已过期";
         return false;
     }
@@ -222,5 +223,33 @@ void BaseSyncServer::startAutoSyncTimer() {
 void BaseSyncServer::stopAutoSyncTimer() {
     if (m_autoSyncTimer) {
         m_autoSyncTimer->stop();
+    }
+}
+
+void BaseSyncServer::检查同步前置条件() {
+    if (m_isSyncing) {
+        qDebug() << "同步检查失败：正在进行同步操作，当前同步状态:" << m_isSyncing;
+        qDebug() << "提示：如果同步状态异常，请调用resetSyncState()方法重置";
+        emit syncCompleted(UnknownError, "无法同步：已有同步操作进行中");
+        return;
+    }
+
+    if (m_serverBaseUrl.isEmpty()) {
+        qDebug() << "同步检查失败：服务器基础URL为空";
+        emit syncCompleted(UnknownError, "无法同步：服务器基础URL未配置");
+        return;
+    }
+
+    if (m_apiEndpoint.isEmpty()) {
+        qDebug() << "同步检查失败：API端点为空";
+        emit syncCompleted(UnknownError, "无法同步：API端点未配置");
+        return;
+    }
+
+    // 检查用户登录状态
+    if (!m_userAuth.isLoggedIn()) {
+        qDebug() << "同步检查失败：用户未登录或令牌已过期";
+        emit syncCompleted(AuthError, "无法同步：未登录");
+        return;
     }
 }

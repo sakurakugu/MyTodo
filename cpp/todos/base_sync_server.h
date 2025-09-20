@@ -20,6 +20,7 @@
 
 class NetworkRequest;
 class Setting;
+class UserAuth;
 
 #include "foundation/network_request.h"
 #include "setting.h"
@@ -87,7 +88,7 @@ class BaseSyncServer : public QObject {
      * @brief 构造函数
      * @param parent 父对象
      */
-    explicit BaseSyncServer(QObject *parent = nullptr);
+    explicit BaseSyncServer(UserAuth &userAuth, QObject *parent = nullptr);
     virtual ~BaseSyncServer();
 
     // 属性访问器
@@ -140,10 +141,12 @@ class BaseSyncServer : public QObject {
     bool canPerformSync() const;   // 检查是否可以执行同步
     void startAutoSyncTimer();     // 启动自动同步定时器
     void stopAutoSyncTimer();      // 停止自动同步定时器
+    void 检查同步前置条件();
 
     // 成员变量
     NetworkRequest &m_networkRequest; ///< 网络请求管理器
     Setting &m_setting;               ///< 应用设置
+    UserAuth &m_userAuth;             ///< 用户认证管理器
     QTimer *m_autoSyncTimer;          ///< 自动同步定时器
 
     // 同步状态

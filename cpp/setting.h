@@ -68,8 +68,8 @@ class Setting : public QObject {
                                     const QString &password); ///< 设置代理配置
 
     // 日志配置相关方法
-    Q_INVOKABLE void setLogLevel(Logger::LogLevel logLevel); ///< 设置日志级别
-    Q_INVOKABLE Logger::LogLevel getLogLevel() const;        ///< 获取日志级别
+    Q_INVOKABLE void setLogLevel(LogLevel logLevel); ///< 设置日志级别
+    Q_INVOKABLE LogLevel getLogLevel() const;        ///< 获取日志级别
     Q_INVOKABLE void setLogToFile(bool enabled);             ///< 设置是否记录到文件
     Q_INVOKABLE bool getLogToFile() const;                   ///< 获取是否记录到文件
     Q_INVOKABLE void setLogToConsole(bool enabled);          ///< 设置是否输出到控制台

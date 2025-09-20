@@ -5,10 +5,10 @@
 # ----------------------------------------------------------------------------
 
 # 临时
-服务器文件/
 image/font_icon/
 image/app_icon/
 docs/
+server/
 
 # 不排除
 !image/app_icon/icon.rc
@@ -48,6 +48,7 @@ Thumbs.db
 /.qmake.cache
 /.qmake.stash
 .cache
+bin/
 
 # QtCreator 生成文件
 *.pro.user*
@@ -105,4 +106,5 @@ CMakeLists.txt.user*
 replacements.txt
 my-test/
 Test*Page.qml
+.env
 

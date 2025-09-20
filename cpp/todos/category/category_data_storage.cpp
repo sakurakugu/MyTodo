@@ -14,7 +14,9 @@
 #include "category_data_storage.h"
 #include "../../foundation/config.h"
 #include <QDebug>
+#include <QJsonArray>
 #include <QJsonObject>
+#include <QJsonValue>
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QVariant>
@@ -37,7 +39,7 @@ CategoryDataStorage::~CategoryDataStorage() {
  * @param categories 类别列表引用
  * @return 加载成功返回true，否则返回false
  */
-bool CategoryDataStorage::加载类别(std::vector<std::unique_ptr<CategorieItem>> &categories) {
+bool CategoryDataStorage::加载类别(CategorieList &categories) {
     bool success = true;
 
     try {
@@ -104,8 +106,7 @@ bool CategoryDataStorage::加载类别(std::vector<std::unique_ptr<CategorieItem
  * @param userUuid 用户UUID
  * @return 添加成功返回true，否则返回false
  */
-bool CategoryDataStorage::新增类别(std::vector<std::unique_ptr<CategorieItem>> &categories, const QString &name,
-                                   const QUuid &userUuid) {
+bool CategoryDataStorage::新增类别(CategorieList &categories, const QString &name, const QUuid &userUuid) {
     bool success = true;
 
     try {
@@ -182,8 +183,7 @@ bool CategoryDataStorage::新增类别(std::vector<std::unique_ptr<CategorieItem
  * @param newName 新的类别名称
  * @return 更新成功返回true，否则返回false
  */
-bool CategoryDataStorage::更新类别(std::vector<std::unique_ptr<CategorieItem>> &categories, const QString &name,
-                                   const QString &newName) {
+bool CategoryDataStorage::更新类别(CategorieList &categories, const QString &name, const QString &newName) {
     bool success = false;
 
     try {
@@ -252,7 +252,7 @@ bool CategoryDataStorage::更新类别(std::vector<std::unique_ptr<CategorieItem
  * @param name 类别名称
  * @return 删除成功返回true，否则返回false
  */
-bool CategoryDataStorage::删除类别(std::vector<std::unique_ptr<CategorieItem>> &categories, const QString &name) {
+bool CategoryDataStorage::删除类别(CategorieList &categories, const QString &name) {
     bool success = false;
 
     try {
@@ -303,7 +303,7 @@ bool CategoryDataStorage::删除类别(std::vector<std::unique_ptr<CategorieItem
  * @param categories 类别列表引用
  * @param name 类别名称
  */
-bool CategoryDataStorage::软删除类别(std::vector<std::unique_ptr<CategorieItem>> &categories, const QString &name) {
+bool CategoryDataStorage::软删除类别(CategorieList &categories, const QString &name) {
     bool success = false;
 
     try {
@@ -368,8 +368,7 @@ bool CategoryDataStorage::软删除类别(std::vector<std::unique_ptr<CategorieI
  * @param synced 同步状态（0：已同步，1：未同步插入，2：未同步更新，3：未同步删除）
  * @return 更新成功返回true，否则返回false
  */
-bool CategoryDataStorage::更新同步状态(std::vector<std::unique_ptr<CategorieItem>> &categories, const QUuid &uuid,
-                                       int synced) {
+bool CategoryDataStorage::更新同步状态(CategorieList &categories, const QUuid &uuid, int synced) {
     bool success = false;
 
     try {
@@ -431,12 +430,12 @@ bool CategoryDataStorage::更新同步状态(std::vector<std::unique_ptr<Categor
  * @param categories 类别列表引用
  * @param userUuid 用户UUID
  */
-bool CategoryDataStorage::创建默认类别(std::vector<std::unique_ptr<CategorieItem>> &categories, const QUuid &userUuid) {
+bool CategoryDataStorage::创建默认类别(CategorieList &categories, const QUuid &userUuid) {
 
     bool success = true;
+    QSqlDatabase db = m_database.getDatabase();
 
     try {
-        QSqlDatabase db = m_database.getDatabase();
         if (!db.isOpen()) {
             qCritical() << "数据库未打开，无法创建默认类别";
             return false;
@@ -489,6 +488,13 @@ bool CategoryDataStorage::创建默认类别(std::vector<std::unique_ptr<Categor
 
         if (!insertQuery.exec()) {
             qCritical() << "插入类别到数据库失败:" << insertQuery.lastError().text();
+            db.rollback();
+            return false;
+        }
+
+        // 提交事务
+        if (!db.commit()) {
+            qCritical() << "提交数据库事务失败:" << db.lastError().text();
             return false;
         }
 
@@ -498,9 +504,77 @@ bool CategoryDataStorage::创建默认类别(std::vector<std::unique_ptr<Categor
         qDebug() << "成功添加默认类别";
     } catch (const std::exception &e) {
         qCritical() << "添加默认类别时发生异常:" << e.what();
+        db.rollback();
         success = false;
     } catch (...) {
         qCritical() << "添加默认类别时发生未知异常";
+        db.rollback();
+        success = false;
+    }
+
+    return success;
+}
+
+/**
+ * @brief 导入类别从JSON
+ * @param categories 类别列表引用
+ * @param categoriesArray JSON类别数组
+ * @param resolution 冲突解决策略
+ */
+bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const QJsonArray &categoriesArray,
+                                         ConflictResolution resolution) {
+    bool success = true;
+
+    try {
+        for (const QJsonValue &value : categoriesArray) {
+            if (!value.isObject()) {
+                qWarning() << "跳过无效的类别项（非对象）";
+                continue;
+            }
+
+            QJsonObject obj = value.toObject();
+            if (!obj.contains("name") || !obj.contains("user_uuid")) {
+                qWarning() << "跳过无效的类别项（缺少必要字段）";
+                continue;
+            }
+
+            QString name = obj.value("name").toString();
+            QUuid userUuid = QUuid::fromString(obj.value("user_uuid").toString());
+            QUuid uuid = obj.contains("uuid") ? QUuid::fromString(obj.value("uuid").toString()) : QUuid::createUuid();
+            QDateTime createdAt = obj.contains("created_at")
+                                      ? QDateTime::fromString(obj.value("created_at").toString(), Qt::ISODate)
+                                      : QDateTime::currentDateTime();
+            QDateTime updatedAt = obj.contains("updated_at")
+                                      ? QDateTime::fromString(obj.value("updated_at").toString(), Qt::ISODate)
+                                      : createdAt;
+            QDateTime lastModifiedAt =
+                obj.contains("last_modified_at")
+                    ? QDateTime::fromString(obj.value("last_modified_at").toString(), Qt::ISODate)
+                    : createdAt;
+
+            auto newItem = std::make_unique<CategorieItem>( //
+                获取下一个可用ID(categories),               // 唯一标识符
+                uuid,                                       // 唯一标识符（UUID）
+                name,                                       // 分类名称
+                userUuid,                                   // 用户UUID
+                createdAt,                                  // 创建时间
+                updatedAt,                                  // 更新时间
+                lastModifiedAt,                             // 最后修改时间
+                1,                                          // 未同步，插入
+                this);
+
+            if (!处理冲突(categories, newItem, resolution)) {
+                // 如果没合并成功，说明不存在内部，直接添加
+                categories.push_back(std::move(newItem)); 
+            }
+        }
+
+        qDebug() << "成功从JSON导入类别，当前总数:" << categories.size();
+    } catch (const std::exception &e) {
+        qCritical() << "从JSON导入类别时发生异常:" << e.what();
+        success = false;
+    } catch (...) {
+        qCritical() << "从JSON导入类别时发生未知异常";
         success = false;
     }
 
@@ -514,7 +588,7 @@ bool CategoryDataStorage::创建默认类别(std::vector<std::unique_ptr<Categor
  * @param categories 类别列表
  * @return 下一个可用ID
  */
-int CategoryDataStorage::获取下一个可用ID(const std::vector<std::unique_ptr<CategorieItem>> &categories) const {
+int CategoryDataStorage::获取下一个可用ID(const CategorieList &categories) const {
     int maxId = 0;
     for (const auto &category : categories) {
         if (category && category->id() > maxId) {
@@ -526,13 +600,12 @@ int CategoryDataStorage::获取下一个可用ID(const std::vector<std::unique_p
 
 /**
  * @brief 处理冲突
- * @param newCategory 新类别
  * @param categories 类别列表
+ * @param newCategory 新类别
  * @param resolution 冲突解决策略
  * @return 处理成功返回true，否则返回false
  */
-bool CategoryDataStorage::处理冲突(const std::unique_ptr<CategorieItem> &newCategory,
-                                   std::vector<std::unique_ptr<CategorieItem>> &categories,
+bool CategoryDataStorage::处理冲突(CategorieList &categories, const std::unique_ptr<CategorieItem> &newCategory,
                                    ConflictResolution resolution) {
     if (!newCategory)
         return false;

@@ -55,19 +55,19 @@ enum class LogError : std::uint8_t {
     RotationFailed = 5,        // 轮转日志失败
 };
 
+enum class LogLevel : std::uint8_t {
+    Debug = 0,
+    Info = 1,
+    Warning = 2,
+    Critical = 3,
+    Fatal = 4
+};
+
 class Logger : public QObject {
     Q_OBJECT
 
   public:
-    enum class LogLevel : std::uint8_t {
-        Debug = 0,
-        Info = 1,
-        Warning = 2,
-        Critical = 3,
-        Fatal = 4
-    };
-
-    // 枚举比较概念
+        // 枚举比较概念
     template <LogLevelType T> static constexpr bool isValidLevel(T level) noexcept {
         constexpr auto min_level = static_cast<std::underlying_type_t<T>>(LogLevel::Debug);
         constexpr auto max_level = static_cast<std::underlying_type_t<T>>(LogLevel::Fatal);

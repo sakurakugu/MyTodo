@@ -13,6 +13,7 @@
 #include "database.h"
 #include "config.h"
 #include "version.h"
+#include "default_value.h"
 
 #include <QCoreApplication>
 #include <QDebug>
@@ -25,7 +26,12 @@
 
 Database::Database(QObject *parent) : QObject(parent), m_initialized(false) {
     m_databasePath =
-        QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)).absoluteFilePath("MyTodo.db");
+        QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)).absoluteFilePath(QString(DefaultValues::appName) + ".db");
+
+    // 初始化数据库
+    if (!initializeDatabase()) {
+        qCritical() << "数据库初始化失败";
+    }
 }
 
 Database::~Database() {

@@ -232,7 +232,7 @@ bool TodoDataStorage::saveToLocalStorage(const std::vector<std::unique_ptr<TodoI
 std::unique_ptr<TodoItem> TodoDataStorage::新增待办(std::vector<std::unique_ptr<TodoItem>> &todos, const QString &title, const QString &description,
                                                     const QString &category, bool important, const QDateTime &deadline,
                                                     int recurrenceInterval, int recurrenceCount,
-                                                    const QDate &recurrenceStartDate) {
+                                                    const QDate &recurrenceStartDate,QUuid userUuid) {
     QSqlDatabase db = m_database.getDatabase();
     if (!db.isOpen()) {
         qCritical() << "数据库未打开，无法添加待办事项";
@@ -251,7 +251,6 @@ std::unique_ptr<TodoItem> TodoDataStorage::新增待办(std::vector<std::unique_
     int newId = maxId + 1;
     QDateTime now = QDateTime::currentDateTime();
     QUuid newUuid = QUuid::createUuid();
-    QUuid userUuid = UserAuth::GetInstance().getUuid();
     QDateTime nullTime = QDateTime::fromString("1970-01-01T00:00:00", Qt::ISODate);
 
     // 创建新的待办事项

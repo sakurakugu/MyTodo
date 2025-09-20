@@ -64,7 +64,7 @@ class CategorySyncServer : public BaseSyncServer {
      * @brief 构造函数
      * @param parent 父对象
      */
-    explicit CategorySyncServer(QObject *parent = nullptr);
+    explicit CategorySyncServer(UserAuth &userAuth, QObject *parent = nullptr);
     ~CategorySyncServer();
 
     // 同步操作（重写基类方法）
@@ -114,17 +114,8 @@ class CategorySyncServer : public BaseSyncServer {
     // 辅助方法
 
   private:
-    // 服务器配置（类别特有）
-    QString m_categoriesApiEndpoint; ///< 类别API端点
-
     // 数据管理
-    std::vector<CategorieItem *> m_unsyncedItems;        ///< 待同步的类别列表
-    std::vector<CategorieItem *> m_pendingUnsyncedItems; ///< 等待推送的未同步项目
-    std::vector<CategorieItem *> m_allUnsyncedItems;     ///< 存储所有待同步项目
-    int m_currentPushIndex;                              ///< 当前推送的项目索引
-    int m_currentBatchIndex;                             ///< 当前批次索引
-    int m_totalBatches;                                  ///< 总批次数
-    static const int m_maxBatchSize = 50;                ///< 最大批次大小（类别数量相对较少）
+    std::vector<CategorieItem *> m_unsyncedItems; ///< 待同步的类别列表
 
     // 当前操作状态
     QString m_currentOperationName;    ///< 当前操作的对象的名称（用于类别CRUD操作）

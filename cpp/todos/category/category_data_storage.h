@@ -46,14 +46,14 @@ class Config;
  * @note 该类是线程安全的，所有文件操作都有异常处理
  * @see CategorieItem, Setting
  */
+
 class CategoryDataStorage : public QObject {
     Q_OBJECT
 
   public:
-    /**
-     * @enum ConflictResolution
-     * @brief 定义导入冲突的解决策略
-     */
+    using CategorieList = std::vector<std::unique_ptr<CategorieItem>>;
+
+    // 定义导入冲突的解决策略
     enum ConflictResolution {
         Skip = 0,      // 跳过冲突项目
         Overwrite = 1, // 覆盖现有项目
@@ -66,25 +66,24 @@ class CategoryDataStorage : public QObject {
     ~CategoryDataStorage();
 
     // 本地存储功能
-    bool 加载类别(std::vector<std::unique_ptr<CategorieItem>> &categories);
+    bool 加载类别(CategorieList &categorieList);
 
     // CRUD操作
-    bool 新增类别(std::vector<std::unique_ptr<CategorieItem>> &categories, const QString &name, const QUuid &userUuid);
-    bool 更新类别(std::vector<std::unique_ptr<CategorieItem>> &categories, const QString &name, const QString &newName);
-    bool 删除类别(std::vector<std::unique_ptr<CategorieItem>> &categories, const QString &name);
-    bool 软删除类别(std::vector<std::unique_ptr<CategorieItem>> &categories, const QString &name);
-    bool 更新同步状态(std::vector<std::unique_ptr<CategorieItem>> &categories, const QUuid &uuid, int synced = 0);
+    bool 新增类别(CategorieList &categories, const QString &name, const QUuid &userUuid);
+    bool 更新类别(CategorieList &categories, const QString &name, const QString &newName);
+    bool 删除类别(CategorieList &categories, const QString &name);
+    bool 软删除类别(CategorieList &categories, const QString &name);
+    bool 更新同步状态(CategorieList &categories, const QUuid &uuid, int synced = 0);
 
-    // 默认类别管理
-    bool 创建默认类别(std::vector<std::unique_ptr<CategorieItem>> &categories, const QUuid &userUuid);
+    bool 创建默认类别(CategorieList &categories, const QUuid &userUuid);
+    bool 导入类别从JSON(CategorieList &categories, const QJsonArray &categoriesArray,
+                        ConflictResolution resolution = ConflictResolution::Merge);
 
   private:
     // 辅助方法
-    int 获取下一个可用ID(const std::vector<std::unique_ptr<CategorieItem>> &categories) const;
-
-    // 冲突处理
-    bool 处理冲突(const std::unique_ptr<CategorieItem> &newCategory,
-                  std::vector<std::unique_ptr<CategorieItem>> &categories, ConflictResolution resolution);
+    int 获取下一个可用ID(const CategorieList &categories) const;
+    bool 处理冲突(CategorieList &categories, const std::unique_ptr<CategorieItem> &newCategory,
+                  ConflictResolution resolution);
 
     // 成员变量
     Database &m_database; ///< 数据库管理器引用

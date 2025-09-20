@@ -17,12 +17,12 @@
 #include <QJsonDocument>
 #include <algorithm>
 
-CategoryManager::CategoryManager(QObject *parent)
-    : QAbstractListModel(parent),                             //
-      m_syncServer(std::make_unique<CategorySyncServer>()),   //
-      m_dataStorage(std::make_unique<CategoryDataStorage>()), //
-      m_setting(Setting::GetInstance()),                      //
-      m_userAuth(UserAuth::GetInstance())                     //
+CategoryManager::CategoryManager(UserAuth &userAuth, QObject *parent)
+    : QAbstractListModel(parent),                                   //
+      m_syncServer(std::make_unique<CategorySyncServer>(userAuth)), //
+      m_dataStorage(std::make_unique<CategoryDataStorage>()),       //
+      m_setting(Setting::GetInstance()),                            //
+      m_userAuth(userAuth)                                          //
 {
 
     // 连接同步服务器信号
@@ -30,7 +30,7 @@ CategoryManager::CategoryManager(QObject *parent)
             &CategoryManager::onCategoriesUpdatedFromServer);
 
     // 从存储加载类别数据
-    loadCategories();
+    加载类别();
 }
 
 CategoryManager::~CategoryManager() {
@@ -115,18 +115,12 @@ bool CategoryManager::setData(const QModelIndex &index, const QVariant &value, i
  * @return 类别项目的智能指针向量
  */
 QStringList CategoryManager::getCategories() const {
-    return m_categories;
-}
-
-/**
- * @brief 根据索引获取类别项目
- * @param index 索引
- * @return 类别项目指针，如果索引无效返回nullptr
- */
-CategorieItem *CategoryManager::getCategoryAt(int index) const {
-    if (index < 0 || static_cast<size_t>(index) >= m_categoryItems.size())
-        return nullptr;
-    return m_categoryItems[index].get();
+    QStringList categories;
+    for (const auto &item : m_categoryItems) {
+        if (item && item->synced() != 3) // 只返回未删除的类别
+            categories << item->name();
+    }
+    return categories;
 }
 
 /**
@@ -162,58 +156,16 @@ QVariant CategoryManager::getItemData(const CategorieItem *item, int role) const
 }
 
 /**
- * @brief 获取指定CategorieItem的模型索引
- * @param categoryItem 类别项目指针
- * @return 模型索引
- */
-QModelIndex CategoryManager::indexFromItem(CategorieItem *categoryItem) const {
-    if (!categoryItem)
-        return QModelIndex();
-
-    for (size_t i = 0; i < m_categoryItems.size(); ++i) {
-        if (m_categoryItems[i].get() == categoryItem) {
-            return createIndex(static_cast<int>(i), 0);
-        }
-    }
-    return QModelIndex();
-}
-
-/**
- * @brief 从名称获取角色
- * @param name 角色名称
- * @return 对应的角色枚举值
- */
-CategoryManager::CategoryRoles CategoryManager::roleFromName(const QString &name) const {
-    if (name == "id")
-        return IdRole;
-    if (name == "uuid")
-        return UuidRole;
-    if (name == "name")
-        return NameRole;
-    if (name == "userUuid")
-        return UserUuidRole;
-    if (name == "createdAt")
-        return CreatedAtRole;
-    if (name == "updatedAt")
-        return UpdatedAtRole;
-    if (name == "lastModifiedAt")
-        return LastModifiedAtRole;
-    if (name == "synced")
-        return SyncedRole;
-    return IdRole; // 默认返回IdRole
-}
-
-/**
  * @brief 开始模型更新
  */
-void CategoryManager::beginModelUpdate() {
+void CategoryManager::开始更新模型() {
     beginResetModel();
 }
 
 /**
  * @brief 结束模型更新
  */
-void CategoryManager::endModelUpdate() {
+void CategoryManager::结束更新模型() {
     endResetModel();
     emit categoriesChanged();
 }
@@ -227,7 +179,7 @@ const std::vector<std::unique_ptr<CategorieItem>> &CategoryManager::getCategoryI
  * @param name 类别名称
  * @return 类别项目指针，如果未找到返回nullptr
  */
-CategorieItem *CategoryManager::findCategoryByName(const QString &name) const {
+CategorieItem *CategoryManager::寻找类别(const QString &name) const {
     auto it = std::find_if(m_categoryItems.begin(), m_categoryItems.end(),
                            [&name](const std::unique_ptr<CategorieItem> &item) { return item->name() == name; });
     return (it != m_categoryItems.end()) ? it->get() : nullptr;
@@ -238,7 +190,7 @@ CategorieItem *CategoryManager::findCategoryByName(const QString &name) const {
  * @param id 类别ID
  * @return 类别项目指针，如果未找到返回nullptr
  */
-CategorieItem *CategoryManager::findCategoryById(int id) const {
+CategorieItem *CategoryManager::寻找类别(int id) const {
     auto it = std::find_if(m_categoryItems.begin(), m_categoryItems.end(),
                            [id](const std::unique_ptr<CategorieItem> &item) { return item->id() == id; });
     return (it != m_categoryItems.end()) ? it->get() : nullptr;
@@ -249,7 +201,7 @@ CategorieItem *CategoryManager::findCategoryById(int id) const {
  * @param uuid 类别UUID
  * @return 找到的类别项目指针，如果未找到则返回nullptr
  */
-CategorieItem *CategoryManager::findCategoryByUuid(const QUuid &uuid) const {
+CategorieItem *CategoryManager::寻找类别(const QUuid &uuid) const {
     auto it = std::find_if(m_categoryItems.begin(), m_categoryItems.end(),
                            [uuid](const std::unique_ptr<CategorieItem> &item) { return item->uuid() == uuid; });
     return (it != m_categoryItems.end()) ? it->get() : nullptr;
@@ -261,30 +213,15 @@ CategorieItem *CategoryManager::findCategoryByUuid(const QUuid &uuid) const {
  * @return 如果存在返回true，否则返回false
  */
 bool CategoryManager::categoryExists(const QString &name) const {
-    return findCategoryByName(name) != nullptr;
+    return 寻找类别(name) != nullptr;
 }
 
 /**
  * @brief 添加默认类别
  */
 void CategoryManager::添加默认类别() {
-
     // 使用数据存储创建默认类别
     m_dataStorage->创建默认类别(m_categoryItems, m_userAuth.getUuid());
-
-    // 更新缓存列表
-    m_categories.clear();
-    m_categories << "未分类";
-}
-
-/**
- * @brief 清空所有类别
- */
-void CategoryManager::clearCategories() {
-    beginModelUpdate();
-    m_categoryItems.clear();
-    m_categories.clear();
-    endModelUpdate();
 }
 
 void CategoryManager::createCategory(const QString &name) {
@@ -298,14 +235,14 @@ void CategoryManager::createCategory(const QString &name) {
         return;
     }
 
+    开始更新模型();
     m_dataStorage->新增类别(m_categoryItems, name, m_userAuth.getUuid());
-    m_categories << name;
 
     m_syncServer->设置未同步的对象(m_categoryItems);
     m_syncServer->与服务器同步(BaseSyncServer::UploadOnly);
 
     qDebug() << "类别创建成功:" << name;
-    emit categoriesChanged();
+    结束更新模型();
 }
 
 void CategoryManager::updateCategory(const QString &name, const QString &newName) {
@@ -320,33 +257,28 @@ void CategoryManager::updateCategory(const QString &name, const QString &newName
     }
 
     // 检查原类别是否存在
-    CategorieItem *nowCategory = findCategoryByName(name);
+    CategorieItem *nowCategory = 寻找类别(name);
     if (nowCategory == nullptr) {
         qWarning() << "待更新的类别不存在:" << name;
         return;
     }
 
     // 检查新名称是否与其他类别重复（排除自身）
-    CategorieItem *newCategory = findCategoryByName(newName);
+    CategorieItem *newCategory = 寻找类别(newName);
     if (newCategory != nullptr) {
         qWarning() << "该类别已存在:" << newName;
         return;
     }
 
+    开始更新模型();
     // 更新类别名称
     m_dataStorage->更新类别(m_categoryItems, name, newName);
-
-    // 更新缓存列表
-    int index = m_categories.indexOf(name);
-    if (index != -1) {
-        m_categories[index] = newName;
-    }
 
     m_syncServer->设置未同步的对象(m_categoryItems);
     m_syncServer->与服务器同步(BaseSyncServer::UploadOnly);
 
     qDebug() << "本地类别更新成功:" << name << "->" << newName;
-    emit categoriesChanged();
+    结束更新模型();
 }
 
 void CategoryManager::deleteCategory(const QString &name) {
@@ -357,7 +289,7 @@ void CategoryManager::deleteCategory(const QString &name) {
     }
 
     // 查找要删除的类别
-    CategorieItem *category = findCategoryByName(name);
+    CategorieItem *category = 寻找类别(name);
     if (!category) {
         qWarning() << "要删除的类别不存在:" << name;
         return;
@@ -368,17 +300,15 @@ void CategoryManager::deleteCategory(const QString &name) {
         return;
     }
 
+    开始更新模型();
     // 从列表中移除
     m_dataStorage->软删除类别(m_categoryItems, name);
-
-    // 从缓存列表中移除
-    m_categories.removeAll(name);
 
     m_syncServer->设置未同步的对象(m_categoryItems);
     m_syncServer->与服务器同步(BaseSyncServer::UploadOnly);
 
     qDebug() << "本地类别删除成功:" << name;
-    emit categoriesChanged();
+    结束更新模型();
 }
 
 // 同步相关方法实现
@@ -399,7 +329,9 @@ bool CategoryManager::isSyncing() const {
  */
 void CategoryManager::onCategoriesUpdatedFromServer(const QJsonArray &categoriesArray) {
     qDebug() << "从同步服务器接收到类别更新:" << categoriesArray.size() << "个类别";
-    updateCategoriesFromJson(categoriesArray);
+    开始更新模型();
+    m_dataStorage->导入类别从JSON(m_categoryItems, categoriesArray);
+    结束更新模型();
 }
 
 void CategoryManager::onLocalChangesUploaded(const std::vector<CategorieItem *> &m_unsyncedItems) {
@@ -413,64 +345,9 @@ void CategoryManager::onLocalChangesUploaded(const std::vector<CategorieItem *> 
 }
 
 /**
- * @brief 从JSON数组更新类别列表
- * @param categoriesArray JSON类别数组
- */
-void CategoryManager::updateCategoriesFromJson(const QJsonArray &categoriesArray) {
-    beginModelUpdate();
-
-    // 清空现有的类别项目（保留默认类别）
-    m_categoryItems.clear();
-    m_categories.clear();
-
-    // 添加从服务器获取的类别
-    for (const QJsonValue &value : categoriesArray) {
-        QJsonObject categoryObj = value.toObject();
-
-        int id = categoryObj["id"].toInt();
-        QString uuidStr = categoryObj["uuid"].toString();
-        QString name = categoryObj["name"].toString();
-        QString userUuid = categoryObj["user_uuid"].toString();
-        QString createdAtStr = categoryObj["created_at"].toString();
-        QString updatedAtStr = categoryObj["updated_at"].toString();
-        QString lastModifiedAtStr = categoryObj["last_modified_at"].toString();
-        QDateTime createdAt = QDateTime::fromString(createdAtStr, Qt::ISODate);
-        QDateTime updatedAt = QDateTime::fromString(updatedAtStr, Qt::ISODate);
-        QDateTime lastModifiedAt = QDateTime::fromString(lastModifiedAtStr, Qt::ISODate);
-
-        if (!name.isEmpty() && !uuidStr.isEmpty()) {
-            auto categoryItem =
-                std::make_unique<CategorieItem>(id, QUuid::fromString(uuidStr), name, QUuid::fromString(userUuid),
-                                                createdAt, updatedAt, lastModifiedAt, true);
-            m_categoryItems.push_back(std::move(categoryItem));
-            m_categories << name;
-        }
-    }
-
-    // 添加默认的"未分类"选项（如果不存在）
-    if (!m_categories.contains("未分类")) {
-        auto defaultCategory = std::make_unique<CategorieItem>( //
-            1,                                                  //
-            QUuid::createUuid(),                                //
-            "未分类",                                           //
-            m_userAuth.getUuid(),                               //
-            QDateTime::currentDateTime(),                       //
-            QDateTime::currentDateTime(),                       //
-            QDateTime::currentDateTime(),                       //
-            0                                                   //
-        );
-        m_categoryItems.push_back(std::move(defaultCategory));
-    }
-
-    endModelUpdate();
-
-    qDebug() << "更新类别列表完成，当前类别:" << m_categories;
-}
-
-/**
  * @brief 从存储加载类别
  */
-void CategoryManager::loadCategories() {
+void CategoryManager::加载类别() {
     qDebug() << "开始从存储加载类别数据";
 
     if (!m_dataStorage) {
@@ -478,23 +355,15 @@ void CategoryManager::loadCategories() {
         return;
     }
 
-    beginModelUpdate();
+    开始更新模型();
 
     // 清空现有数据
     m_categoryItems.clear();
-    m_categories.clear();
 
     // 从存储加载
     bool success = m_dataStorage->加载类别(m_categoryItems);
 
     if (success) {
-        // 更新缓存列表
-        for (const auto &category : m_categoryItems) {
-            if (category && category->synced() != 3) { // 只缓存未删除的类别
-                m_categories << category->name();
-            }
-        }
-
         // 将类别数据传递给同步服务器
         if (m_syncServer) {
             m_syncServer->设置未同步的对象(m_categoryItems);
@@ -508,7 +377,7 @@ void CategoryManager::loadCategories() {
         添加默认类别();
     }
 
-    endModelUpdate();
+    结束更新模型();
 }
 
 /**
