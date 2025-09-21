@@ -53,11 +53,7 @@ class UserAuth;
  */
 class BaseSyncServer : public QObject {
     Q_OBJECT
-    Q_PROPERTY(bool isAutoSyncEnabled READ isAutoSyncEnabled WRITE setAutoSyncEnabled NOTIFY autoSyncEnabledChanged)
     Q_PROPERTY(bool isSyncing READ isSyncing NOTIFY syncingChanged)
-    Q_PROPERTY(QString lastSyncTime READ lastSyncTime NOTIFY lastSyncTimeChanged)
-    Q_PROPERTY(int autoSyncInterval READ autoSyncInterval WRITE setAutoSyncInterval NOTIFY autoSyncIntervalChanged)
-
   public:
     /**
      * @enum SyncResult
@@ -91,12 +87,7 @@ class BaseSyncServer : public QObject {
     virtual ~BaseSyncServer();
 
     // 属性访问器
-    Q_INVOKABLE bool isAutoSyncEnabled() const;        // 获取自动同步是否启用
-    Q_INVOKABLE void setAutoSyncEnabled(bool enabled); // 设置自动同步启用状态
-    Q_INVOKABLE bool isSyncing() const;                // 获取当前是否正在同步
-    QString lastSyncTime() const;                      // 获取最后同步时间
-    int autoSyncInterval() const;                      // 获取自动同步间隔（分钟）
-    void setAutoSyncInterval(int minutes);             // 设置自动同步间隔
+    Q_INVOKABLE bool isSyncing() const; // 获取当前是否正在同步
 
     // 同步操作（纯虚函数，由子类实现）
     virtual void 与服务器同步(SyncDirection direction = Bidirectional) = 0;
@@ -112,7 +103,6 @@ class BaseSyncServer : public QObject {
 
     // 配置和状态信号
     void autoSyncEnabledChanged();  // 自动同步启用状态变化
-    void lastSyncTimeChanged();     // 最后同步时间变化
     void autoSyncIntervalChanged(); // 自动同步间隔变化
 
   protected slots:
@@ -121,16 +111,17 @@ class BaseSyncServer : public QObject {
     virtual void onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
                                         const QString &message); // 网络请求失败
     void onAutoSyncTimer();                                      // 自动同步定时器触发
+    void onAutoSyncSettingChanged();                             // 自动同步设置变化
 
   protected:
     // 同步操作实现（由子类重写）
     virtual void 执行同步(SyncDirection direction) = 0; // 执行同步操作
 
     // 辅助方法
-    void updateLastSyncTime();   // 更新最后同步时间
-    bool canPerformSync() const; // 检查是否可以执行同步
-    void startAutoSyncTimer();   // 启动自动同步定时器
-    void stopAutoSyncTimer();    // 停止自动同步定时器
+    void 更新最后同步时间();
+    bool 是否可以执行同步() const;
+    void 开启自动同步计时器();
+    void 停止自动同步计时器();
     void 检查同步前置条件();
 
     // 成员变量

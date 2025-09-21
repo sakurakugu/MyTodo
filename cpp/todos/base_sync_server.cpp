@@ -34,59 +34,27 @@ BaseSyncServer::BaseSyncServer(UserAuth &userAuth, QObject *parent)
 
     // 从设置中加载自动同步配置
     m_autoSyncInterval = m_config.get("sync/autoSyncInterval", 30).toInt();
-    m_lastSyncTime = m_config.get("sync/lastSyncTime", QString()).toString();
+    m_lastSyncTime = QString("1970-01-01 00:00:00");
 
     // 如果启用了自动同步，启动定时器
-    if (isAutoSyncEnabled()) {
-        startAutoSyncTimer();
+    if (GlobalState::GetInstance().isAutoSyncEnabled()) {
+        开启自动同步计时器();
     }
 }
 
 BaseSyncServer::~BaseSyncServer() {
 }
 
-bool BaseSyncServer::isAutoSyncEnabled() const {
-    return GlobalState::GetInstance().isAutoSyncEnabled();
-}
-
-void BaseSyncServer::setAutoSyncEnabled(bool enabled) {
-    if (isAutoSyncEnabled() != enabled) {
-        GlobalState::GetInstance().setIsAutoSyncEnabled(enabled);
-
-        if (enabled) {
-            startAutoSyncTimer();
-        } else {
-            stopAutoSyncTimer();
-        }
-
-        emit autoSyncEnabledChanged();
+void BaseSyncServer::onAutoSyncSettingChanged() {
+    if (GlobalState::GetInstance().isAutoSyncEnabled()) {
+        开启自动同步计时器();
+    } else {
+        停止自动同步计时器();
     }
 }
 
 bool BaseSyncServer::isSyncing() const {
     return m_isSyncing;
-}
-
-QString BaseSyncServer::lastSyncTime() const {
-    return m_lastSyncTime;
-}
-
-int BaseSyncServer::autoSyncInterval() const {
-    return m_autoSyncInterval;
-}
-
-void BaseSyncServer::setAutoSyncInterval(int minutes) {
-    if (m_autoSyncInterval != minutes && minutes > 0) {
-        m_autoSyncInterval = minutes;
-        m_config.save("sync/autoSyncInterval", minutes);
-
-        // 如果自动同步已启用，重新启动定时器
-        if (GlobalState::GetInstance().isAutoSyncEnabled()) {
-            startAutoSyncTimer();
-        }
-
-        emit autoSyncIntervalChanged();
-    }
 }
 
 // 默认的同步操作实现
@@ -129,18 +97,16 @@ void BaseSyncServer::onNetworkRequestFailed(NetworkRequest::RequestType type, Ne
 }
 
 void BaseSyncServer::onAutoSyncTimer() {
-    if (canPerformSync()) {
+    if (是否可以执行同步()) {
         与服务器同步();
     }
 }
 
-void BaseSyncServer::updateLastSyncTime() {
+void BaseSyncServer::更新最后同步时间() {
     m_lastSyncTime = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
-    m_config.save("sync/lastSyncTime", m_lastSyncTime);
-    emit lastSyncTimeChanged();
 }
 
-bool BaseSyncServer::canPerformSync() const {
+bool BaseSyncServer::是否可以执行同步() const {
     // 检查是否可以执行同步
     if (m_isSyncing) {
         qDebug() << "同步检查失败：正在进行同步操作，当前同步状态:" << m_isSyncing;
@@ -167,13 +133,13 @@ bool BaseSyncServer::canPerformSync() const {
     return true;
 }
 
-void BaseSyncServer::startAutoSyncTimer() {
+void BaseSyncServer::开启自动同步计时器() {
     if (m_autoSyncTimer && m_autoSyncInterval > 0) {
         m_autoSyncTimer->start(m_autoSyncInterval * 60 * 1000); // 转换为毫秒
     }
 }
 
-void BaseSyncServer::stopAutoSyncTimer() {
+void BaseSyncServer::停止自动同步计时器() {
     if (m_autoSyncTimer) {
         m_autoSyncTimer->stop();
     }

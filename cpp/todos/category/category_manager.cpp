@@ -19,14 +19,13 @@
 
 CategoryManager::CategoryManager(UserAuth &userAuth, QObject *parent)
     : QAbstractListModel(parent),                                   //
-      m_syncServer(std::make_unique<CategorySyncServer>(userAuth)), //
-      m_dataStorage(std::make_unique<CategoryDataStorage>()),       //
-      m_setting(Setting::GetInstance()),                            //
+      m_syncServer(new CategorySyncServer(userAuth,this)), //
+      m_dataStorage(new CategoryDataStorage(this)),       //
       m_userAuth(userAuth)                                          //
 {
 
     // 连接同步服务器信号
-    connect(m_syncServer.get(), &CategorySyncServer::categoriesUpdatedFromServer, this,
+    connect(m_syncServer, &CategorySyncServer::categoriesUpdatedFromServer, this,
             &CategoryManager::onCategoriesUpdatedFromServer);
 
     // 从存储加载类别数据

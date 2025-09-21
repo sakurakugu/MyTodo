@@ -49,7 +49,7 @@ TodoDataStorage::~TodoDataStorage() {
  * @param todos 待办事项容器引用
  * @return 加载是否成功
  */
-bool TodoDataStorage::加载待办事项(std::vector<std::unique_ptr<TodoItem>> &todos) {
+bool TodoDataStorage::加载待办事项(TodoList &todos) {
     bool success = true;
 
     try {
@@ -137,7 +137,7 @@ bool TodoDataStorage::加载待办事项(std::vector<std::unique_ptr<TodoItem>> 
  * @param todos 待办事项容器引用
  * @return 保存是否成功
  */
-bool TodoDataStorage::saveToLocalStorage(const std::vector<std::unique_ptr<TodoItem>> &todos) {
+bool TodoDataStorage::saveToLocalStorage(const TodoList &todos) {
     bool success = true;
 
     try {
@@ -229,7 +229,7 @@ bool TodoDataStorage::saveToLocalStorage(const std::vector<std::unique_ptr<TodoI
  * @param recurrenceStartDate 重复开始日期
  * @return 新添加的待办事项指针
  */
-std::unique_ptr<TodoItem> TodoDataStorage::新增待办(std::vector<std::unique_ptr<TodoItem>> &todos, const QString &title, const QString &description,
+std::unique_ptr<TodoItem> TodoDataStorage::新增待办(TodoList &todos, const QString &title, const QString &description,
                                                     const QString &category, bool important, const QDateTime &deadline,
                                                     int recurrenceInterval, int recurrenceCount,
                                                     const QDate &recurrenceStartDate,QUuid userUuid) {
@@ -331,7 +331,7 @@ std::unique_ptr<TodoItem> TodoDataStorage::新增待办(std::vector<std::unique_
  * @param recurrenceStartDate 重复开始日期
  * @return 更新是否成功
  */
-bool TodoDataStorage::更新待办(std::vector<std::unique_ptr<TodoItem>> &todos, int id, const QString &title, const QString &description, const QString &category,
+bool TodoDataStorage::更新待办(TodoList &todos, int id, const QString &title, const QString &description, const QString &category,
                                bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount,
                                const QDate &recurrenceStartDate) {
     QSqlDatabase db = m_database.getDatabase();
@@ -381,7 +381,7 @@ bool TodoDataStorage::更新待办(std::vector<std::unique_ptr<TodoItem>> &todos
  * @param id 待办事项ID
  * @return 回收是否成功
  */
-bool TodoDataStorage::回收待办(std::vector<std::unique_ptr<TodoItem>> &todos, int id) {
+bool TodoDataStorage::回收待办(TodoList &todos, int id) {
     QSqlDatabase db = m_database.getDatabase();
     if (!db.isOpen()) {
         qCritical() << "数据库未打开，无法删除待办事项";
@@ -421,7 +421,7 @@ bool TodoDataStorage::回收待办(std::vector<std::unique_ptr<TodoItem>> &todos
  * @param todos 待办事项容器引用
  * @param id 待办事项ID
  */
-bool TodoDataStorage::删除待办(std::vector<std::unique_ptr<TodoItem>> &todos, int id) {
+bool TodoDataStorage::删除待办(TodoList &todos, int id) {
     bool success = false;
     try {
         QSqlDatabase db = m_database.getDatabase();
@@ -464,7 +464,7 @@ bool TodoDataStorage::删除待办(std::vector<std::unique_ptr<TodoItem>> &todos
  * @param categories 类别列表
  * @return 下一个可用ID
  */
-int TodoDataStorage::获取下一个可用ID(const std::vector<std::unique_ptr<TodoItem>> &todos) const {
+int TodoDataStorage::获取下一个可用ID(const TodoList &todos) const {
     int maxId = 0;
     for (const auto &todo : todos) {
         if (todo && todo->id() > maxId) {

@@ -30,22 +30,17 @@
 #include <QUuid>
 
 TodoManager::TodoManager(UserAuth &userAuth, CategoryManager &categoryManager, QObject *parent)
-    : QAbstractListModel(parent),                      //
-      m_filterCacheDirty(true),                        //
-      m_networkRequest(NetworkRequest::GetInstance()), //
-      m_setting(Setting::GetInstance()),               //
-      m_isAutoSync(false),                             //
-      m_syncManager(new TodoSyncServer(userAuth)),     //
-      m_dataManager(new TodoDataStorage),              //
-      m_categoryManager(&categoryManager),             //
-      m_filter(new TodoFilter),                        //
-      m_sorter(new TodoSorter),                        //
-      m_userAuth(userAuth)                             //
+    : QAbstractListModel(parent),                        //
+      m_filterCacheDirty(true),                          //
+      m_networkRequest(NetworkRequest::GetInstance()),   //
+      m_userAuth(userAuth),                              //
+      m_globalState(GlobalState::GetInstance()),         //
+      m_syncManager(new TodoSyncServer(userAuth, this)), //
+      m_dataManager(new TodoDataStorage(this)),          //
+      m_categoryManager(&categoryManager),               //
+      m_filter(new TodoFilter(this)),                    //
+      m_sorter(new TodoSorter(this))                     //
 {
-
-    // 初始化默认服务器配置
-    m_setting.initializeDefaultServerConfig();
-
     // 连接筛选器信号，当筛选条件变化时更新缓存
     connect(m_filter, &TodoFilter::filtersChanged, this, [this]() {
         beginResetModel();
@@ -65,17 +60,11 @@ TodoManager::TodoManager(UserAuth &userAuth, CategoryManager &categoryManager, Q
     // 连接用户认证信号，登录成功后触发同步
     connect(&m_userAuth, &UserAuth::loginSuccessful, this, [this](const QString &username) {
         Q_UNUSED(username)
-        // 登录成功后立即获取类别列表
-        // CategorySyncServer 会自动处理类别同步
         syncWithServer();
     });
 
     // 通过数据管理器加载本地数据
     m_dataManager->加载待办事项(m_todos);
-
-    // 初始化在线状态
-    m_isAutoSync = m_setting.get("setting/autoSyncEnabled", false).toBool();
-    m_syncManager->setAutoSyncEnabled(m_isAutoSync);
 
     // 设置待办事项数据到同步管理器
     updateSyncManagerData();
@@ -416,8 +405,8 @@ void TodoManager::addTodo(const QString &title, const QString &description, cons
     // 更新同步管理器的数据
     updateSyncManagerData();
 
-    if (m_isAutoSync && m_userAuth.isLoggedIn()) {
-        // 如果在线且已登录，立即尝试同步到服务器
+    if (m_globalState.isAutoSyncEnabled() && m_userAuth.isLoggedIn()) {
+        // 如果开启自动同步且已登录，立即尝试同步到服务器
         syncWithServer();
     }
 }
@@ -556,7 +545,7 @@ bool TodoManager::updateTodo(int index, const QVariantMap &todoData) {
             // 更新同步管理器的数据
             updateSyncManagerData();
 
-            if (m_isAutoSync && m_userAuth.isLoggedIn()) {
+            if (m_globalState.isAutoSyncEnabled() && m_userAuth.isLoggedIn()) {
                 syncWithServer();
             }
 
@@ -626,7 +615,7 @@ bool TodoManager::removeTodo(int index) {
             qWarning() << "软删除待办事项后无法保存到本地存储";
         }
 
-        if (m_isAutoSync && m_userAuth.isLoggedIn()) {
+        if (m_globalState.isAutoSyncEnabled() && m_userAuth.isLoggedIn()) {
             syncWithServer();
         }
 
@@ -678,7 +667,7 @@ bool TodoManager::restoreTodo(int index) {
             qWarning() << "恢复待办事项后无法保存到本地存储";
         }
 
-        if (m_isAutoSync && m_userAuth.isLoggedIn()) {
+        if (m_globalState.isAutoSyncEnabled() && m_userAuth.isLoggedIn()) {
             syncWithServer();
         }
 
@@ -736,7 +725,7 @@ bool TodoManager::permanentlyDeleteTodo(int index) {
             qWarning() << "永久删除待办事项后无法保存到本地存储";
         }
 
-        if (m_isAutoSync && m_userAuth.isLoggedIn()) {
+        if (m_globalState.isAutoSyncEnabled() && m_userAuth.isLoggedIn()) {
             syncWithServer();
         }
 
@@ -788,8 +777,8 @@ void TodoManager::deleteAllTodos(bool deleteLocal) {
             qWarning() << "删除所有待办事项后无法保存到本地存储";
         }
 
-        // 如果在线且已登录，同步到服务器
-        if (m_isAutoSync && m_userAuth.isLoggedIn()) {
+        // 如果开启自动同步且已登录，同步到服务器
+        if (m_globalState.isAutoSyncEnabled() && m_userAuth.isLoggedIn()) {
             syncWithServer();
         }
 
@@ -843,7 +832,7 @@ bool TodoManager::updateAllTodosUserUuid() {
             updateSyncManagerData();
 
             // 如果在线且已登录，同步到服务器
-            if (m_isAutoSync && m_userAuth.isLoggedIn()) {
+            if (m_globalState.isAutoSyncEnabled() && m_userAuth.isLoggedIn()) {
                 syncWithServer();
             }
 
@@ -899,7 +888,7 @@ bool TodoManager::markAsDoneOrTodo(int index) {
         //         << (todoItem->isCompleted()? "已完成" : "未完成");
 
         if (success) {
-            if (m_isAutoSync && m_userAuth.isLoggedIn()) {
+            if (m_globalState.isAutoSyncEnabled() && m_userAuth.isLoggedIn()) {
                 syncWithServer();
             }
             qDebug() << "成功将索引" << index << "处的待办事项标记为已完成";

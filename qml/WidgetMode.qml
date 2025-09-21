@@ -238,7 +238,7 @@ Item {
 
             ControlRow {
                 text: userAuth.isLoggedIn ? qsTr("自动同步") : qsTr("自动同步（未登录）")
-                checked: todoSyncServer.isAutoSyncEnabled
+                checked: globalState.isAutoSyncEnabled
                 leftMargin: 10
                 controlType: ControlRow.ControlType.Switch
 

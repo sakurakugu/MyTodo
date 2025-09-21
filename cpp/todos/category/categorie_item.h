@@ -59,44 +59,28 @@ class CategorieItem : public QObject {
                   QObject *parent = nullptr        //
     );
 
-    int id() const noexcept {
-        return m_id;
-    } // 获取ID
+    int id() const noexcept { return m_id; } // 获取ID
     void setId(int id); // 设置ID
 
-    QUuid uuid() const {
-        return m_uuid;
-    } // 获取UUID
+    QUuid uuid() const { return m_uuid; } // 获取UUID
     void setUuid(const QUuid &uuid); // 设置UUID
 
-    QString name() const noexcept {
-        return m_name;
-    } // 获取分类名称
+    QString name() const noexcept { return m_name; } // 获取分类名称
     void setName(const QString &name); // 设置分类名称
 
-    QUuid userUuid() const noexcept {
-        return m_userUuid;
-    } // 获取用户UUID
+    QUuid userUuid() const noexcept { return m_userUuid; } // 获取用户UUID
     void setUserUuid(const QUuid &userUuid); // 设置用户UUID
 
-    QDateTime createdAt() const noexcept {
-        return m_createdAt;
-    } // 获取创建时间
+    QDateTime createdAt() const noexcept { return m_createdAt; } // 获取创建时间
     void setCreatedAt(const QDateTime &createdAt); // 设置创建时间
 
-    QDateTime updatedAt() const noexcept {
-        return m_updatedAt;
-    } // 获取更新时间
+    QDateTime updatedAt() const noexcept { return m_updatedAt; } // 获取更新时间
     void setUpdatedAt(const QDateTime &updatedAt); // 设置更新时间
 
-    QDateTime lastModifiedAt() const noexcept {
-        return m_lastModifiedAt;
-    } // 获取最后修改时间
+    QDateTime lastModifiedAt() const noexcept { return m_lastModifiedAt; } // 获取最后修改时间
     void setLastModifiedAt(const QDateTime &lastModifiedAt); // 设置最后修改时间
 
-    int synced() const noexcept {
-        return m_synced;
-    } // 获取是否已同步
+    int synced() const noexcept { return m_synced; } // 获取是否已同步
     void setSynced(int synced); // 设置是否已同步
 
     // 便利方法

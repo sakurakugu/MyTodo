@@ -41,7 +41,7 @@ void CategorySyncServer::与服务器同步(SyncDirection direction) {
 
     qDebug() << "与服务器同步开始，当前同步状态:" << m_isSyncing;
 
-    if (!canPerformSync()) {
+    if (!是否可以执行同步()) {
         // 发出同步完成信号，通知UI重置状态
         emit syncCompleted(AuthError, "无法同步：未登录");
         return;
@@ -63,7 +63,7 @@ void CategorySyncServer::取消同步() {
 
 // 类别操作接口实现
 void CategorySyncServer::新增类别(const QString &name) {
-    if (!canPerformSync()) {
+    if (!是否可以执行同步()) {
         emit categoryCreated(name, false, "无法新增类别：未登录");
         return;
     }
@@ -86,7 +86,7 @@ void CategorySyncServer::新增类别(const QString &name) {
 }
 
 void CategorySyncServer::更新类别(const QString &name, const QString &newName) {
-    if (!canPerformSync()) {
+    if (!是否可以执行同步()) {
         emit categoryUpdated(name, newName, false, "无法更新类别：未登录");
         return;
     }
@@ -111,7 +111,7 @@ void CategorySyncServer::更新类别(const QString &name, const QString &newNam
 }
 
 void CategorySyncServer::删除类别(const QString &name) {
-    if (!canPerformSync()) {
+    if (!是否可以执行同步()) {
         emit categoryDeleted(name, false, "无法删除类别：未登录");
         return;
     }
@@ -299,7 +299,7 @@ void CategorySyncServer::推送类别() {
         if (m_currentSyncDirection == Bidirectional || m_currentSyncDirection == UploadOnly) {
             m_isSyncing = false;
             emit syncingChanged();
-            updateLastSyncTime();
+            更新最后同步时间();
             emit syncCompleted(Success, "类别同步完成");
         }
         return;
@@ -361,7 +361,7 @@ void CategorySyncServer::处理获取类别成功(const QJsonObject &response) {
         // 仅下载模式，直接完成同步
         m_isSyncing = false;
         emit syncingChanged();
-        updateLastSyncTime();
+        更新最后同步时间();
         emit syncCompleted(Success, "类别数据获取完成");
     }
 }
@@ -412,7 +412,7 @@ void CategorySyncServer::处理推送更改成功(const QJsonObject &response) {
 
     m_isSyncing = false;
     emit syncingChanged();
-    updateLastSyncTime();
+    更新最后同步时间();
     emit syncCompleted(Success, "类别更改推送完成");
 }
 

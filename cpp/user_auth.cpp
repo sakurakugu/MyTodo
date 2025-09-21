@@ -11,7 +11,6 @@
  */
 
 #include "user_auth.h"
-#include "default_value.h"
 #include "foundation/database.h"
 #include "setting.h"
 

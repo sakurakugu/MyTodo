@@ -21,6 +21,7 @@
 #include <memory>
 
 #include "./foundation/network_request.h"
+#include "default_value.h"
 
 // 前向声明
 class Setting;
@@ -119,10 +120,11 @@ class UserAuth : public QObject {
     QUuid m_uuid;           ///< 用户UUID
 
     // 令牌管理
-    QTimer *m_tokenExpiryTimer;                      ///< 令牌过期检查定时器
-    qint64 m_tokenExpiryTime;                        ///< 令牌过期时间戳
-    bool m_isRefreshing;                             ///< 是否正在刷新令牌
-    static const int TOKEN_REFRESH_THRESHOLD = 3600; ///< 令牌刷新阈值（秒）
+    QTimer *m_tokenExpiryTimer; ///< 令牌过期检查定时器
+    qint64 m_tokenExpiryTime;   ///< 令牌过期时间戳
+    bool m_isRefreshing;        ///< 是否正在刷新令牌
+
+    static const int TOKEN_REFRESH_THRESHOLD = DefaultValues::token_refresh_threshold; ///< 令牌刷新阈值（秒）
 
     // 服务器配置
     QString m_authApiEndpoint; ///< 认证API端点

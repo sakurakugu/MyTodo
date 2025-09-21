@@ -23,9 +23,9 @@
 #include <toml++/toml.hpp>
 #include <vector>
 
-#include "todo_item.h"
-#include "setting.h"
 #include "../../foundation/database.h"
+#include "setting.h"
+#include "todo_item.h"
 
 /**
  * @class TodoDataStorage
@@ -56,10 +56,9 @@ class TodoDataStorage : public QObject {
     Q_OBJECT
 
   public:
-    /**
-     * @enum ConflictResolution
-     * @brief 定义导入冲突的解决策略
-     */
+    using TodoList = std::vector<std::unique_ptr<TodoItem>>;
+
+    // 定义导入冲突的解决策略
     enum ConflictResolution {
         Skip = 0,      // 跳过冲突项目
         Overwrite = 1, // 覆盖现有项目
@@ -72,30 +71,26 @@ class TodoDataStorage : public QObject {
     ~TodoDataStorage();
 
     // 本地存储功能
-    bool 加载待办事项(std::vector<std::unique_ptr<TodoItem>> &todos);     // 加载类别待办事项
-    bool saveToLocalStorage(const std::vector<std::unique_ptr<TodoItem>> &todos); // 将待办事项保存到本地存储
+    bool 加载待办事项(TodoList &todos);             // 加载类别待办事项
+    bool saveToLocalStorage(const TodoList &todos); // 将待办事项保存到本地存储
 
     // CRUD操作
-    std::unique_ptr<TodoItem> 新增待办(std::vector<std::unique_ptr<TodoItem>> &todos, const QString &title, const QString &description, const QString &category, bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate,QUuid userUuid);
-    bool 更新待办(std::vector<std::unique_ptr<TodoItem>> &todos, int id, const QString &title, const QString &description, const QString &category, bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate);
-    bool 回收待办(std::vector<std::unique_ptr<TodoItem>> &todos, int id);
-    bool 删除待办(std::vector<std::unique_ptr<TodoItem>> &todos, int id);
-
-    // 文件导入功能
-    bool importFromToml(const toml::table &table,
-                        std::vector<std::unique_ptr<TodoItem>> &todos,
-                        ConflictResolution resolution); // 从TOML表导入待办事项（指定冲突解决策略）
-
-  signals:
-    void importCompleted(int importedCount, int skippedCount, int conflictCount); // 导入操作完成信号
+    std::unique_ptr<TodoItem> 新增待办(TodoList &todos, const QString &title, const QString &description,
+                                       const QString &category, bool important, const QDateTime &deadline,
+                                       int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate,
+                                       QUuid userUuid);
+    bool 更新待办(TodoList &todos, int id, const QString &title, const QString &description, const QString &category,
+                  bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount,
+                  const QDate &recurrenceStartDate);
+    bool 回收待办(TodoList &todos, int id);
+    bool 删除待办(TodoList &todos, int id);
+    bool 软删除待办(TodoList &todos, int id);
 
   private:
     // 辅助方法
-    std::unique_ptr<TodoItem> createTodoItemFromToml(const toml::table &todoTable, int newId);
-    void updateTodoItemFromToml(TodoItem *item, const toml::table &todoTable);
-    int 获取下一个可用ID(const std::vector<std::unique_ptr<TodoItem>> &todos) const;
-    
+    int 获取下一个可用ID(const TodoList &todos) const;
+
     // 成员变量
-    Setting &m_setting; ///< 设置对象引用
+    Setting &m_setting;   ///< 设置对象引用
     Database &m_database; ///< 数据库管理器引用
 };

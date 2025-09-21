@@ -219,7 +219,7 @@ void TodoSyncServer::pushLocalChangesToServer() {
         if (m_currentSyncDirection == Bidirectional || m_currentSyncDirection == UploadOnly) {
             m_isSyncing = false;
             emit syncingChanged();
-            updateLastSyncTime();
+            更新最后同步时间();
             emit syncCompleted(Success, "同步完成");
         }
         return;
@@ -314,7 +314,7 @@ void TodoSyncServer::pushNextBatch() {
         qDebug() << "所有批次推送完成";
         m_isSyncing = false;
         emit syncingChanged();
-        updateLastSyncTime();
+        更新最后同步时间();
         emit syncCompleted(Success, QString("分批同步完成，共推送 %1 个项目").arg(m_allUnsyncedItems.size()));
 
         // 清理临时数据
@@ -349,7 +349,7 @@ void TodoSyncServer::handleSyncSuccess(const QJsonObject &response) {
 
     m_isSyncing = false;
     emit syncingChanged();
-    updateLastSyncTime();
+    更新最后同步时间();
     emit syncCompleted(Success, "同步完成");
 }
 
@@ -371,7 +371,7 @@ void TodoSyncServer::handleFetchTodosSuccess(const QJsonObject &response) {
             qInfo() << "双向同步：没有本地更改需要推送，同步完成";
             m_isSyncing = false;
             emit syncingChanged();
-            updateLastSyncTime();
+            更新最后同步时间();
             emit syncCompleted(Success, "双向同步完成");
         } else {
             // 有本地更改需要推送
@@ -382,7 +382,7 @@ void TodoSyncServer::handleFetchTodosSuccess(const QJsonObject &response) {
         // 仅下载模式，直接完成同步
         m_isSyncing = false;
         emit syncingChanged();
-        updateLastSyncTime();
+        更新最后同步时间();
         emit syncCompleted(Success, "数据获取完成");
     }
 }
@@ -460,7 +460,7 @@ void TodoSyncServer::handlePushChangesSuccess(const QJsonObject &response) {
 
         m_isSyncing = false;
         emit syncingChanged();
-        updateLastSyncTime();
+        更新最后同步时间();
         emit syncCompleted(Success, "更改推送完成");
     }
 }
@@ -556,7 +556,7 @@ void TodoSyncServer::pushNextItem() {
 
         m_isSyncing = false;
         emit syncingChanged();
-        updateLastSyncTime();
+        更新最后同步时间();
         emit syncCompleted(Success, "同步完成");
 
         // 清理临时数据

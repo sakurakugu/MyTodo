@@ -52,8 +52,9 @@
  * - 支持在线/离线模式切换
  *
  * @note 该类是线程安全的，所有网络操作都在后台线程执行
- * @see CategorieItem, NetworkRequest, TodoSyncServer
+ * @see CategorieItem, NetworkRequest, CategorySyncServer
  */
+// TODO: 继承QAbstractListModel属于过度设计?,到时候要不要删除掉，但是设计的很完善了，到时候再看
 class CategoryManager : public QAbstractListModel {
     Q_OBJECT
     Q_PROPERTY(QStringList categories READ getCategories NOTIFY categoriesChanged)
@@ -86,7 +87,7 @@ class CategoryManager : public QAbstractListModel {
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
 
     // 类别管理相关方法
-    Q_INVOKABLE QStringList getCategories() const;                                ///< 获取类别列表
+    QStringList getCategories() const;                                            ///< 获取类别列表
     Q_INVOKABLE void createCategory(const QString &name);                         ///< 创建新类别
     Q_INVOKABLE void updateCategory(const QString &name, const QString &newName); ///< 更新类别名称
     Q_INVOKABLE void deleteCategory(const QString &name);                         ///< 删除类别
@@ -96,12 +97,12 @@ class CategoryManager : public QAbstractListModel {
     Q_INVOKABLE bool isSyncing() const; ///< 检查是否正在同步
 
     // 属性访问器
-    CategorySyncServer *getSyncServer() const {
-        return m_syncServer.get();
-    } ///< 获取同步服务器实例
-    CategoryDataStorage *getDataStorage() const {
-        return m_dataStorage.get();
-    } ///< 获取数据存储实例
+    // CategorySyncServer *getSyncServer() const {
+    //     return m_syncServer;
+    // } ///< 获取同步服务器实例
+    // CategoryDataStorage *getDataStorage() const {
+    //     return m_dataStorage;
+    // } ///< 获取数据存储实例
 
     const std::vector<std::unique_ptr<CategorieItem>> &getCategoryItems() const; ///< 获取类别项目列表
     CategorieItem *寻找类别(const QString &name) const;
@@ -136,8 +137,7 @@ class CategoryManager : public QAbstractListModel {
     // 成员变量
     std::vector<std::unique_ptr<CategorieItem>> m_categoryItems; ///< 类别项目列表
 
-    std::unique_ptr<CategorySyncServer> m_syncServer;   ///< 类别同步服务器对象
-    std::unique_ptr<CategoryDataStorage> m_dataStorage; ///< 类别数据存储对象
-    Setting &m_setting;                                 ///< 配置管理
+    CategorySyncServer *m_syncServer;   ///< 类别同步服务器对象
+    CategoryDataStorage *m_dataStorage; ///< 类别数据存储对象
     UserAuth &m_userAuth;                               ///< 用户认证管理
 };

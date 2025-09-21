@@ -132,7 +132,6 @@ class TodoManager : public QAbstractListModel {
     void onTodosUpdatedFromServer(const QJsonArray &todosArray);                     // 处理从服务器更新的待办事项
 
   private:
-  public:
     // 在应用退出前显式保存到本地存储（避免在析构阶段访问 QSqlDatabase）
     void saveTodosToLocalStorage();
 
@@ -148,20 +147,20 @@ class TodoManager : public QAbstractListModel {
     void invalidateFilterCache();               // 使过滤缓存失效
 
     // 成员变量
-    std::vector<std::unique_ptr<TodoItem>> m_todos; ///< 待办事项列表（使用智能指针）
-    QList<TodoItem *> m_filteredTodos;              ///< 过滤后的待办事项列表（让QML快速访问的缓存）
+    std::vector<std::unique_ptr<TodoItem>> m_todos; ///< 待办事项列表
+    QList<TodoItem *> m_filteredTodos;              ///< 过滤后的待办事项列表
     bool m_filterCacheDirty;                        ///< 过滤缓存是否需要更新
     NetworkRequest &m_networkRequest;               ///< 网络管理器
-    Setting &m_setting;                             ///< 应用设置
-    bool m_isAutoSync;                              ///< 是否自动同步
 
     // 管理器
+    UserAuth &m_userAuth;       ///< 用户认证管理器
+    GlobalState &m_globalState; ///< 全局状态管理器
+
     TodoSyncServer *m_syncManager;      ///< 同步管理器 - 负责所有服务器同步相关功能
     TodoDataStorage *m_dataManager;     ///< 数据管理器 - 负责本地存储和文件导入导出
     CategoryManager *m_categoryManager; ///< 类别管理器 - 负责类别相关操作
     TodoFilter *m_filter;               ///< 筛选管理器 - 负责所有筛选相关功能
     TodoSorter *m_sorter;               ///< 排序管理器 - 负责所有排序相关功能
-    UserAuth &m_userAuth;               ///< 用户认证管理器
 
     // 辅助方法
     int generateUniqueId(); ///< 生成唯一的待办事项ID
