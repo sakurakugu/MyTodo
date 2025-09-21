@@ -11,15 +11,13 @@
  */
 #pragma once
 
-#include <string_view>
-
 namespace DefaultValues {
 
-constexpr std::string_view baseUrl{"https://api.example.com"};                // 基础 API URL
-constexpr std::string_view todoApiEndpoint{"/todo/todo_api"};             // 待办事项 API 端点
-constexpr std::string_view userAuthApiEndpoint{"/auth_api"};              // 用户认证 API 端点
-constexpr std::string_view categoriesApiEndpoint{"/todo/categories_api"}; // 分类 API 端点
+constexpr const char *baseUrl{"https://api.example.com"};            // 基础 API URL
+constexpr const char *todoApiEndpoint{"/todo/todo_api"};             // 待办事项 API 端点
+constexpr const char *userAuthApiEndpoint{"/auth_api"};              // 用户认证 API 端点
+constexpr const char *categoriesApiEndpoint{"/todo/categories_api"}; // 分类 API 端点
 
-constexpr const char *appName = "MyTodo"; // 应用程序名称
+constexpr const char *appName{"MyTodo"}; // 应用程序名称
 
 } // namespace DefaultValues

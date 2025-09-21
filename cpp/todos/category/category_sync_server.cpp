@@ -24,10 +24,8 @@
 CategorySyncServer::CategorySyncServer(UserAuth &userAuth, QObject *parent) : BaseSyncServer(userAuth, parent) {
 
     // 设置类别特有的API端点
-    m_apiEndpoint = m_setting
-                        .get("server/categoriesApiEndpoint",
-                             QString::fromStdString(std::string{DefaultValues::categoriesApiEndpoint}))
-                        .toString();
+    m_apiEndpoint =
+        m_setting.get("server/categoriesApiEndpoint", QString(DefaultValues::categoriesApiEndpoint)).toString();
 }
 
 CategorySyncServer::~CategorySyncServer() {

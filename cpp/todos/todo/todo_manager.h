@@ -58,7 +58,6 @@ class GlobalState; // 前向声明
  */
 class TodoManager : public QAbstractListModel {
     Q_OBJECT
-    Q_PROPERTY(bool isLoggedIn READ isLoggedIn NOTIFY isLoggedInChanged)
 
   public:
     /**
@@ -88,7 +87,7 @@ class TodoManager : public QAbstractListModel {
     };
     Q_ENUM(TodoRoles)
 
-    explicit TodoManager(UserAuth &userAuth, CategoryManager &categoryManager,QObject *parent = nullptr);
+    explicit TodoManager(UserAuth &userAuth, CategoryManager &categoryManager, QObject *parent = nullptr);
     ~TodoManager();
 
     // QAbstractListModel 必要的实现方法
@@ -103,9 +102,6 @@ class TodoManager : public QAbstractListModel {
     Q_INVOKABLE TodoFilter *filter() const;
     Q_INVOKABLE TodoSorter *sorter() const;
     Q_INVOKABLE TodoSyncServer *syncServer() const;
-
-    // 属性访问器
-    bool isLoggedIn() const;
 
     // CRUD操作
     Q_INVOKABLE void addTodo(const QString &title, const QString &description = QString(),
@@ -129,7 +125,6 @@ class TodoManager : public QAbstractListModel {
   signals:
     void syncStarted();                                                        // 同步操作开始信号
     void syncCompleted(bool success, const QString &errorMessage = QString()); // 同步操作完成信号
-    void isLoggedInChanged();                                                  // 登录状态改变信号
 
   private slots:
     void onSyncStarted();                                                            // 处理同步开始

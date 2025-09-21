@@ -124,7 +124,6 @@ class CategoryManager : public QAbstractListModel {
     void onLocalChangesUploaded(const std::vector<CategorieItem *> &m_unsyncedItems); ///< 处理本地更改已上传
   private:
     // 辅助方法
-    void 更新类别从JSON(const QJsonArray &categoriesArray); ///< 从JSON数组更新类别列表
     bool 是否是有效名称(const QString &name) const;
 
     // 模型相关辅助方法

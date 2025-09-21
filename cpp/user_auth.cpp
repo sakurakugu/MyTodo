@@ -33,7 +33,7 @@ UserAuth::UserAuth(QObject *parent)
     if (!m_database.initializeDatabase()) {
         qCritical() << "数据库未初始化";
     }
-    
+
     // 连接网络请求信号
     connect(&m_networkRequest, &NetworkRequest::requestCompleted, this, &UserAuth::onNetworkRequestCompleted);
     connect(&m_networkRequest, &NetworkRequest::requestFailed, this, &UserAuth::onNetworkRequestFailed);
@@ -239,14 +239,10 @@ void UserAuth::setIsOnline(bool online) {
         // TODO: 暂时设置为在线状态，实际状态将在请求回调中确定
         m_isOnline = online;
         emit isOnlineChanged();
-        // 保存到设置，保持与autoSync一致
-        // m_setting.save(QStringLiteral("setting/autoSyncEnabled"), m_isOnline);
     } else {
         // 切换到离线模式不需要验证，直接更新状态
         m_isOnline = online;
         emit isOnlineChanged();
-        // 保存到设置，保持与autoSync一致
-        // m_setting.save(QStringLiteral("setting/autoSyncEnabled"), m_isOnline);
     }
 }
 
@@ -460,16 +456,7 @@ void UserAuth::handleTokenRefreshSuccess(const QJsonObject &response) {
 }
 
 void UserAuth::loadStoredCredentials() {
-    // // 尝试从设置中加载存储的凭据
-    // if (m_setting.contains(QStringLiteral("auth/accessToken"))) {
-    //     m_accessToken = m_setting.get(QStringLiteral("auth/accessToken")).toString();
-    //     m_refreshToken = m_setting.get(QStringLiteral("auth/refreshToken")).toString();
-    //     m_username = m_setting.get(QStringLiteral("user/username")).toString();
-    //     m_email = m_setting.get(QStringLiteral("user/email")).toString();
-    //     m_uuid = QUuid::fromString(m_setting.get(QStringLiteral("user/uuid")).toString());
-    //     // 加载令牌过期时间
-    //     m_tokenExpiryTime = m_setting.get(QStringLiteral("auth/tokenExpiryTime"), 0).toLongLong();
-
+    // 尝试从设置中加载存储的凭据
     QSqlDatabase db = m_database.getDatabase();
     if (!db.isOpen()) {
         qWarning() << "数据库未打开，无法加载用户凭据";
@@ -547,16 +534,6 @@ void UserAuth::validateStoredToken() {
 }
 
 void UserAuth::saveCredentials() {
-    // 保存凭据到本地设置
-    // if (!m_accessToken.isEmpty()) {
-    //     m_setting.save(QStringLiteral("auth/accessToken"), m_accessToken);
-    //     m_setting.save(QStringLiteral("auth/refreshToken"), m_refreshToken);
-    //     m_setting.save(QStringLiteral("auth/tokenExpiryTime"), m_tokenExpiryTime);
-    //     m_setting.save(QStringLiteral("user/username"), m_username);
-    //     m_setting.save(QStringLiteral("user/email"), m_email);
-    //     m_setting.save(QStringLiteral("user/uuid"), m_uuid);
-    // }
-
     // 保存凭据到数据库
     if (!m_accessToken.isEmpty() && !m_uuid.isNull()) {
         QSqlDatabase db = m_database.getDatabase();
@@ -606,18 +583,6 @@ void UserAuth::clearCredentials() {
     m_tokenExpiryTime = 0;
 
     // 清除设置中的凭据
-    // if (m_setting.contains(QStringLiteral("user"))) {
-    //     m_setting.remove(QStringLiteral("user"));
-    //     m_setting.remove(QStringLiteral("user/username"));
-    //     m_setting.remove(QStringLiteral("user/email"));
-    //     m_setting.remove(QStringLiteral("user/uuid"));
-    // }
-    // if (m_setting.contains(QStringLiteral("auth"))) {
-    //     m_setting.remove(QStringLiteral("auth"));
-    //     m_setting.remove(QStringLiteral("auth/accessToken"));
-    //     m_setting.remove(QStringLiteral("auth/refreshToken"));
-    //     m_setting.remove(QStringLiteral("auth/tokenExpiryTime"));
-    // }
     QSqlDatabase db = m_database.getDatabase();
     if (db.isOpen()) {
         QSqlQuery query(db);

@@ -129,7 +129,7 @@ class GlobalState : public QObject {
     bool m_preventDragging;        // 防止窗口拖动
     bool m_isAutoSyncEnabled;      ///< 自动同步是否启用
 
-    // qml变量
+    // 只在qml使用的变量
     bool m_isDesktopWidget;  // 小工具模式
     bool m_isNew;            // 小工具模式--是否是新创建的
     bool m_isShowAddTask;    // 小工具模式--添加任务弹窗可见性

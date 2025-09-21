@@ -31,7 +31,7 @@ TodoSyncServer::TodoSyncServer(UserAuth &userAuth, QObject *parent)
     // 设置待办事项特有的API端点
     m_apiEndpoint = m_setting
                         .get(QStringLiteral("server/todoApiEndpoint"),
-                             QString::fromStdString(std::string{DefaultValues::todoApiEndpoint}))
+                             QString(DefaultValues::todoApiEndpoint))
                         .toString();
 }
 

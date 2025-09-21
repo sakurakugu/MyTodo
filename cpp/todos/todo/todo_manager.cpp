@@ -70,9 +70,6 @@ TodoManager::TodoManager(UserAuth &userAuth, CategoryManager &categoryManager, Q
         syncWithServer();
     });
 
-    // 连接用户认证的登录状态变化信号
-    connect(&m_userAuth, &UserAuth::isLoggedInChanged, this, &TodoManager::isLoggedInChanged);
-
     // 通过数据管理器加载本地数据
     m_dataManager->加载待办事项(m_todos);
 
@@ -1061,10 +1058,6 @@ TodoSorter *TodoManager::sorter() const {
 
 TodoSyncServer *TodoManager::syncServer() const {
     return m_syncManager;
-}
-
-bool TodoManager::isLoggedIn() const {
-    return m_userAuth.isLoggedIn();
 }
 
 // 排序相关实现

@@ -156,24 +156,22 @@ void Setting::clearLogs() {
 void Setting::initializeDefaultServerConfig() {
     // 检查并设置默认的服务器基础URL
     if (!m_config.contains("server/baseUrl")) {
-        m_config.save("server/baseUrl", QString::fromStdString(std::string{DefaultValues::baseUrl}));
+        m_config.save("server/baseUrl", QString(DefaultValues::baseUrl));
     }
 
     // 检查并设置默认的待办事项API端点
     if (!m_config.contains("server/todoApiEndpoint")) {
-        m_config.save("server/todoApiEndpoint", QString::fromStdString(std::string{DefaultValues::todoApiEndpoint}));
+        m_config.save("server/todoApiEndpoint", QString(DefaultValues::todoApiEndpoint));
     }
 
     // 检查并设置默认的认证API端点
     if (!m_config.contains("server/authApiEndpoint")) {
-        m_config.save("server/authApiEndpoint",
-                      QString::fromStdString(std::string{DefaultValues::userAuthApiEndpoint}));
+        m_config.save("server/authApiEndpoint", QString(DefaultValues::userAuthApiEndpoint));
     }
 
     // 检查并设置默认的分类API端点
     if (!m_config.contains("server/categoriesApiEndpoint")) {
-        m_config.save("server/categoriesApiEndpoint",
-                      QString::fromStdString(std::string{DefaultValues::categoriesApiEndpoint}));
+        m_config.save("server/categoriesApiEndpoint", QString(DefaultValues::categoriesApiEndpoint));
     }
 }
 
