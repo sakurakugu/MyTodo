@@ -20,8 +20,6 @@
 #include "../base_sync_server.h"
 #include "todo_item.h"
 
-class UserAuth;
-
 /**
  * @class TodoSyncServer
  * @brief 待办事项同步管理器，负责与服务器的数据同步

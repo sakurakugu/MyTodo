@@ -348,29 +348,6 @@ Page {
                 }
             }
 
-            // 在线状态显示（只读）
-            Row {
-                spacing: 10
-                Layout.leftMargin: 20
-                Label {
-                    text: qsTr("连接状态:")
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: ThemeManager.textColor
-                }
-                Rectangle {
-                    width: 12
-                    height: 12
-                    radius: 6
-                    color: todoManager.isOnline ? "#4CAF50" : "#F44336"
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-                Label {
-                    text: todoManager.isOnline ? qsTr("在线") : qsTr("离线")
-                    color: todoManager.isOnline ? "#4CAF50" : "#F44336"
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
-
             Divider {}
 
             Label {
@@ -568,9 +545,9 @@ Page {
                 // 使用新的自动解决方法：先导入无冲突项目，返回冲突项目列表
                 var conflicts = todoManager.importTodosFromJson(filePath);
 
-                if (conflicts.length > 0) {
-                    // 有冲突，显示冲突处理对话框
-                } else {
+                if (conflicts.length > 0)
+                // 有冲突，显示冲突处理对话框
+                {} else {
                     // 没有冲突，所有项目已自动导入
                     modalDialog.showInfo(qsTr("导入成功"), qsTr("待办事项已成功导入！"));
                 }

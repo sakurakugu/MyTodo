@@ -129,17 +129,11 @@ void NetworkProxy::loadProxyConfigFromSettings() noexcept {
         }
 
         // 获取代理配置
-        auto typeResult = config.get("proxy/type", 0);
-        auto hostResult = config.get("proxy/host", QString());
-        auto portResult = config.get("proxy/port", 8080);
-        auto usernameResult = config.get("proxy/username", QString());
-        auto passwordResult = config.get("proxy/password", QString());
-
-        ProxyType type = static_cast<ProxyType>(typeResult.isValid() ? typeResult.toInt() : 0);
-        QString host = hostResult.isValid() ? hostResult.toString() : QString();
-        int port = portResult.isValid() ? portResult.toInt() : 8080;
-        QString username = usernameResult.isValid() ? usernameResult.toString() : QString();
-        QString password = passwordResult.isValid() ? passwordResult.toString() : QString();
+        auto type = static_cast<ProxyType>(config.get("proxy/type", 0).toInt());
+        auto host = config.get("proxy/host", QString()).toString();
+        auto port = config.get("proxy/port", 7897).toInt();
+        auto username = config.get("proxy/username", QString()).toString();
+        auto password = config.get("proxy/password", QString()).toString();
 
         // 应用代理配置
         updateProxyConfig(type, host, port, username, password);
@@ -186,7 +180,7 @@ void NetworkProxy::saveProxyConfigToSettings() noexcept {
  */
 QString NetworkProxy::getProxyDescription() const noexcept {
     if (!m_proxyEnabled) {
-        return QStringLiteral("未启用");
+        return "未启用";
     }
 
     constexpr auto getTypeString = [](ProxyType type) -> std::string_view {

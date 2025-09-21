@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
     app.setWindowIcon(QIcon(":/image/icon.png")); // 设置窗口图标
 
     // 设置应用信息
-    QGuiApplication::setApplicationName("MyTodo"); // 设置应用名称（不设置组织名）
+    QGuiApplication::setApplicationName("MyTodo");              // 设置应用名称（不设置组织名）
     QGuiApplication::setApplicationVersion(APP_VERSION_STRING); // 设置应用版本
 
     GlobalState &globalState = GlobalState::GetInstance(); // 创建GlobalState实例
@@ -117,19 +117,6 @@ int main(int argc, char *argv[]) {
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app, []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
 
-    // 应用退出前保存数据并关闭数据库，避免析构阶段访问 QSqlDatabase
-    QObject::connect(&app, &QCoreApplication::aboutToQuit, &app, [&]() {
-        qInfo() << "应用即将退出，开始保存数据并关闭数据库";
-        // 先让 Manager 显式保存
-        todoManager.saveTodosToLocalStorage();
-
-        // 给数据库操作一些时间完成
-        QTimer::singleShot(100, [&]() {
-            // 关闭数据库连接
-            Database::GetInstance().closeDatabase();
-            qInfo() << "保存与关闭完成";
-        });
-    });
     engine.loadFromModule("MyTodo", "Main");
 
     return app.exec();

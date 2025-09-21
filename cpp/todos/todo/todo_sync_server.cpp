@@ -12,7 +12,6 @@
 
 #include "todo_sync_server.h"
 #include "default_value.h"
-#include "user_auth.h"
 
 #include <QDateTime>
 #include <QDebug>
@@ -29,10 +28,7 @@ TodoSyncServer::TodoSyncServer(UserAuth &userAuth, QObject *parent)
       m_totalBatches(0)                 //
 {
     // 设置待办事项特有的API端点
-    m_apiEndpoint = m_setting
-                        .get(QStringLiteral("server/todoApiEndpoint"),
-                             QString(DefaultValues::todoApiEndpoint))
-                        .toString();
+    m_apiEndpoint = m_config.get("server/todoApiEndpoint", QString(DefaultValues::todoApiEndpoint)).toString();
 }
 
 TodoSyncServer::~TodoSyncServer() {
@@ -43,7 +39,7 @@ void TodoSyncServer::与服务器同步(SyncDirection direction) {
     qDebug() << "开始同步待办事项，方向:" << direction;
     qDebug() << "同步请求前状态检查: m_isSyncing =" << m_isSyncing;
 
-    BaseSyncServer::检查同步前置条件();
+    检查同步前置条件();
 
     m_isSyncing = true;
     m_currentSyncDirection = direction;
@@ -189,7 +185,7 @@ void TodoSyncServer::fetchTodosFromServer() {
 
     try {
         NetworkRequest::RequestConfig config;
-        config.url = getApiUrl(m_apiEndpoint);
+        config.url = m_networkRequest.getApiUrl(m_apiEndpoint);
         config.method = "GET"; // 明确指定使用GET方法
         config.requiresAuth = true;
 
@@ -284,7 +280,7 @@ void TodoSyncServer::pushBatchToServer(const QList<TodoItem *> &batch) {
         }
 
         NetworkRequest::RequestConfig config;
-        config.url = getApiUrl(m_apiEndpoint);
+        config.url = m_networkRequest.getApiUrl(m_apiEndpoint);
         config.method = "POST"; // 批量推送使用POST方法
         config.requiresAuth = true;
         config.data["todos"] = jsonArray;
@@ -469,8 +465,6 @@ void TodoSyncServer::handlePushChangesSuccess(const QJsonObject &response) {
     }
 }
 
-// 辅助方法已在基类BaseSyncServer中实现
-
 void TodoSyncServer::pushSingleItem(TodoItem *item) {
     if (!item) {
         // 如果项目无效，跳到下一个
@@ -482,7 +476,7 @@ void TodoSyncServer::pushSingleItem(TodoItem *item) {
     qInfo() << "开始推送项目到服务器:" << item->title() << "(ID:" << item->id() << ")";
 
     NetworkRequest::RequestConfig config;
-    config.url = getApiUrl(m_apiEndpoint);
+    config.url = m_networkRequest.getApiUrl(m_apiEndpoint);
     config.requiresAuth = true;
 
     // 准备项目数据

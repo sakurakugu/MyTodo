@@ -74,7 +74,7 @@ TodoManager::TodoManager(UserAuth &userAuth, CategoryManager &categoryManager, Q
     m_dataManager->加载待办事项(m_todos);
 
     // 初始化在线状态
-    m_isAutoSync = m_setting.get(QStringLiteral("setting/autoSyncEnabled"), false).toBool();
+    m_isAutoSync = m_setting.get("setting/autoSyncEnabled", false).toBool();
     m_syncManager->setAutoSyncEnabled(m_isAutoSync);
 
     // 设置待办事项数据到同步管理器

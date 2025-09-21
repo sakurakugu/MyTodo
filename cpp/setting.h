@@ -14,10 +14,11 @@
 
 #include "foundation/logger.h"
 
-#include <QObject>
 #include <QJsonValue>
+#include <QObject>
 
 class Config;
+
 class Setting : public QObject {
     Q_OBJECT
   public:
@@ -68,22 +69,22 @@ class Setting : public QObject {
                                     const QString &password); ///< 设置代理配置
 
     // 日志配置相关方法
-    Q_INVOKABLE void setLogLevel(LogLevel logLevel); ///< 设置日志级别
-    Q_INVOKABLE LogLevel getLogLevel() const;        ///< 获取日志级别
-    Q_INVOKABLE void setLogToFile(bool enabled);             ///< 设置是否记录到文件
-    Q_INVOKABLE bool getLogToFile() const;                   ///< 获取是否记录到文件
-    Q_INVOKABLE void setLogToConsole(bool enabled);          ///< 设置是否输出到控制台
-    Q_INVOKABLE bool getLogToConsole() const;                ///< 获取是否输出到控制台
-    Q_INVOKABLE void setMaxLogFileSize(qint64 maxSize);      ///< 设置最大日志文件大小
-    Q_INVOKABLE qint64 getMaxLogFileSize() const;            ///< 获取最大日志文件大小
-    Q_INVOKABLE void setMaxLogFiles(int maxFiles);           ///< 设置最大日志文件数量
-    Q_INVOKABLE int getMaxLogFiles() const;                  ///< 获取最大日志文件数量
-    Q_INVOKABLE QString getLogFilePath() const;              ///< 获取日志文件路径
-    Q_INVOKABLE void clearLogs();                            ///< 清除所有日志文件
-    Q_INVOKABLE void initializeDefaultServerConfig();        ///< 初始化默认服务器配置
+    Q_INVOKABLE void setLogLevel(LogLevel logLevel);    ///< 设置日志级别
+    Q_INVOKABLE LogLevel getLogLevel() const;           ///< 获取日志级别
+    Q_INVOKABLE void setLogToFile(bool enabled);        ///< 设置是否记录到文件
+    Q_INVOKABLE bool getLogToFile() const;              ///< 获取是否记录到文件
+    Q_INVOKABLE void setLogToConsole(bool enabled);     ///< 设置是否输出到控制台
+    Q_INVOKABLE bool getLogToConsole() const;           ///< 获取是否输出到控制台
+    Q_INVOKABLE void setMaxLogFileSize(qint64 maxSize); ///< 设置最大日志文件大小
+    Q_INVOKABLE qint64 getMaxLogFileSize() const;       ///< 获取最大日志文件大小
+    Q_INVOKABLE void setMaxLogFiles(int maxFiles);      ///< 设置最大日志文件数量
+    Q_INVOKABLE int getMaxLogFiles() const;             ///< 获取最大日志文件数量
+    Q_INVOKABLE QString getLogFilePath() const;         ///< 获取日志文件路径
+    Q_INVOKABLE void clearLogs();                       ///< 清除所有日志文件
+    Q_INVOKABLE void initializeDefaultServerConfig();   ///< 初始化默认服务器配置
 
   signals:
-    void baseUrlChanged(const QString &newBaseUrl); // 服务器基础URL变化信号
+    void baseUrlChanged(); // 服务器基础URL变化信号
 
   private:
     explicit Setting(QObject *parent = nullptr);

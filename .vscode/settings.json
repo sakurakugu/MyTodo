@@ -108,7 +108,8 @@
         "qnetworkaccessmanager": "cpp",
         "*.in": "cpp",
         "cinttypes": "cpp",
-        "qsqlerror": "cpp"
+        "qsqlerror": "cpp",
+        "qdatetime": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "search.useIgnoreFiles": false, // 禁用git忽略文件

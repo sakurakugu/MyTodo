@@ -12,8 +12,13 @@
 #include "default_value.h"
 #include "foundation/config.h"
 #include "foundation/network_proxy.h"
+#include "foundation/network_request.h"
 
-Setting::Setting(QObject *parent) : QObject(parent), m_logger(Logger::GetInstance()), m_config(Config::GetInstance()) {
+Setting::Setting(QObject *parent)
+    : QObject(parent),                 //
+      m_logger(Logger::GetInstance()), //
+      m_config(Config::GetInstance())  //
+{
     initializeDefaultServerConfig();
 }
 
@@ -249,14 +254,14 @@ void Setting::updateServerConfig(const QString &baseUrl) {
         return;
     }
 
-    // 保存到设置中
-    m_config.save(QStringLiteral("server/baseUrl"), baseUrl);
+    NetworkRequest::GetInstance().setServerConfig(baseUrl);
+    m_config.save("server/baseUrl", baseUrl);
 
     qDebug() << "服务器配置已更新:" << baseUrl;
     qDebug() << "HTTPS状态:" << (isHttpsUrl(baseUrl) ? "安全" : "不安全");
 
     // 发出信号通知其他组件
-    emit baseUrlChanged(baseUrl);
+    emit baseUrlChanged();
 }
 
 void Setting::setProxyConfig(bool enableProxy, int type, const QString &host, int port, const QString &username,

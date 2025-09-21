@@ -11,15 +11,15 @@
 
 #include "base_sync_server.h"
 #include "global_state.h"
-#include "user_auth.h"
+
 #include <QDateTime>
 #include <QDebug>
 
 BaseSyncServer::BaseSyncServer(UserAuth &userAuth, QObject *parent)
     : QObject(parent),                                 // 父对象
       m_networkRequest(NetworkRequest::GetInstance()), // 网络请求对象
-      m_setting(Setting::GetInstance()),               // 设置对象
-      m_userAuth(userAuth),             // 用户认证对象
+      m_config(Config::GetInstance()),                 // 设置对象
+      m_userAuth(userAuth),                            // 用户认证对象
       m_autoSyncTimer(new QTimer(this)),               // 自动同步定时器
       m_isSyncing(false),                              // 是否正在同步
       m_autoSyncInterval(30),                          // 自动同步间隔
@@ -32,15 +32,9 @@ BaseSyncServer::BaseSyncServer(UserAuth &userAuth, QObject *parent)
     // 连接自动同步定时器
     connect(m_autoSyncTimer, &QTimer::timeout, this, &BaseSyncServer::onAutoSyncTimer);
 
-    // 连接设置变化信号
-    connect(&m_setting, &Setting::baseUrlChanged, this, &BaseSyncServer::onBaseUrlChanged);
-
-    // 初始化服务器配置
-    initializeServerConfig();
-
     // 从设置中加载自动同步配置
-    m_autoSyncInterval = m_setting.get("sync/autoSyncInterval", 30).toInt();
-    m_lastSyncTime = m_setting.get("sync/lastSyncTime", QString()).toString();
+    m_autoSyncInterval = m_config.get("sync/autoSyncInterval", 30).toInt();
+    m_lastSyncTime = m_config.get("sync/lastSyncTime", QString()).toString();
 
     // 如果启用了自动同步，启动定时器
     if (isAutoSyncEnabled()) {
@@ -84,7 +78,7 @@ int BaseSyncServer::autoSyncInterval() const {
 void BaseSyncServer::setAutoSyncInterval(int minutes) {
     if (m_autoSyncInterval != minutes && minutes > 0) {
         m_autoSyncInterval = minutes;
-        m_setting.save("sync/autoSyncInterval", minutes);
+        m_config.save("sync/autoSyncInterval", minutes);
 
         // 如果自动同步已启用，重新启动定时器
         if (GlobalState::GetInstance().isAutoSyncEnabled()) {
@@ -108,36 +102,6 @@ void BaseSyncServer::取消同步() {
         emit syncingChanged();
         emit syncCompleted(UnknownError, "同步已取消");
     }
-}
-
-// 配置管理实现
-void BaseSyncServer::updateServerConfig(const QString &baseUrl, const QString &apiEndpoint) {
-    m_serverBaseUrl = baseUrl;
-    m_apiEndpoint = apiEndpoint;
-    emit serverConfigChanged();
-}
-
-QString BaseSyncServer::getServerBaseUrl() const {
-    return m_serverBaseUrl;
-}
-
-QString BaseSyncServer::getApiEndpoint() const {
-    return m_apiEndpoint;
-}
-
-QString BaseSyncServer::getApiUrl(const QString &endpoint) const {
-    QString url = m_serverBaseUrl;
-    if (!url.endsWith('/')) {
-        url += '/';
-    }
-    url += m_apiEndpoint;
-    if (!endpoint.isEmpty()) {
-        if (!url.endsWith('/')) {
-            url += '/';
-        }
-        url += endpoint;
-    }
-    return url;
 }
 
 // 网络请求处理（默认实现）
@@ -170,20 +134,9 @@ void BaseSyncServer::onAutoSyncTimer() {
     }
 }
 
-void BaseSyncServer::onBaseUrlChanged(const QString &newBaseUrl) {
-    m_serverBaseUrl = newBaseUrl;
-    emit serverConfigChanged();
-}
-
-// 辅助方法实现
-void BaseSyncServer::initializeServerConfig() {
-    m_serverBaseUrl = m_setting.get("server/baseUrl", QString()).toString();
-    // m_apiEndpoint 由子类设置
-}
-
 void BaseSyncServer::updateLastSyncTime() {
     m_lastSyncTime = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
-    m_setting.save("sync/lastSyncTime", m_lastSyncTime);
+    m_config.save("sync/lastSyncTime", m_lastSyncTime);
     emit lastSyncTimeChanged();
 }
 
@@ -195,7 +148,7 @@ bool BaseSyncServer::canPerformSync() const {
         return false;
     }
 
-    if (m_serverBaseUrl.isEmpty()) {
+    if (m_networkRequest.getServerBaseUrl().isEmpty()) {
         qDebug() << "同步检查失败：服务器基础URL为空";
         return false;
     }
@@ -234,7 +187,7 @@ void BaseSyncServer::检查同步前置条件() {
         return;
     }
 
-    if (m_serverBaseUrl.isEmpty()) {
+    if (m_networkRequest.getServerBaseUrl().isEmpty()) {
         qDebug() << "同步检查失败：服务器基础URL为空";
         emit syncCompleted(UnknownError, "无法同步：服务器基础URL未配置");
         return;

@@ -87,6 +87,14 @@ void NetworkRequest::setServerConfig(const QString &baseUrl, const QString &apiV
 }
 
 /**
+ * @brief 获取服务器地址
+ * @return 服务器基础URL
+ */
+QString NetworkRequest::getServerBaseUrl() const {
+    return m_serverBaseUrl;
+}
+
+/**
  * @brief 获取完整的API URL
  * @param endpoint API端点路径
  * @return 完整的API URL

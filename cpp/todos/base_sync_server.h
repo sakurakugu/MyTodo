@@ -18,12 +18,11 @@
 #include <QString>
 #include <QTimer>
 
-class NetworkRequest;
-class Setting;
-class UserAuth;
-
+#include "foundation/config.h"
 #include "foundation/network_request.h"
-#include "setting.h"
+#include "user_auth.h"
+
+class UserAuth;
 
 /**
  * @class BaseSyncServer
@@ -50,7 +49,7 @@ class UserAuth;
  * - 统一同步行为和接口
  *
  * @note 该类是抽象基类，不能直接实例化
- * @see CategorySyncServer, TodoSyncServer, NetworkRequest, Setting
+ * @see CategorySyncServer, TodoSyncServer, NetworkRequest, config, UserAuth
  */
 class BaseSyncServer : public QObject {
     Q_OBJECT
@@ -104,12 +103,6 @@ class BaseSyncServer : public QObject {
     virtual void 重置同步状态();
     virtual void 取消同步();
 
-    // 配置管理
-    void updateServerConfig(const QString &baseUrl, const QString &apiEndpoint); // 更新服务器配置
-    QString getServerBaseUrl() const;                                            // 获取服务器基础URL
-    QString getApiEndpoint() const;                                              // 获取API端点
-    QString getApiUrl(const QString &endpoint) const;                            // 获取完整API URL
-
   signals:
     // 同步状态信号
     void syncStarted();                                                        // 同步开始
@@ -121,7 +114,6 @@ class BaseSyncServer : public QObject {
     void autoSyncEnabledChanged();  // 自动同步启用状态变化
     void lastSyncTimeChanged();     // 最后同步时间变化
     void autoSyncIntervalChanged(); // 自动同步间隔变化
-    void serverConfigChanged();     // 服务器配置变化
 
   protected slots:
     virtual void onNetworkRequestCompleted(NetworkRequest::RequestType type,
@@ -129,23 +121,21 @@ class BaseSyncServer : public QObject {
     virtual void onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
                                         const QString &message); // 网络请求失败
     void onAutoSyncTimer();                                      // 自动同步定时器触发
-    void onBaseUrlChanged(const QString &newBaseUrl);            // 服务器URL变化
 
   protected:
     // 同步操作实现（由子类重写）
     virtual void 执行同步(SyncDirection direction) = 0; // 执行同步操作
 
     // 辅助方法
-    void initializeServerConfig(); // 初始化服务器配置
-    void updateLastSyncTime();     // 更新最后同步时间
-    bool canPerformSync() const;   // 检查是否可以执行同步
-    void startAutoSyncTimer();     // 启动自动同步定时器
-    void stopAutoSyncTimer();      // 停止自动同步定时器
+    void updateLastSyncTime();   // 更新最后同步时间
+    bool canPerformSync() const; // 检查是否可以执行同步
+    void startAutoSyncTimer();   // 启动自动同步定时器
+    void stopAutoSyncTimer();    // 停止自动同步定时器
     void 检查同步前置条件();
 
     // 成员变量
     NetworkRequest &m_networkRequest; ///< 网络请求管理器
-    Setting &m_setting;               ///< 应用设置
+    Config &m_config;                 ///< 应用配置管理器
     UserAuth &m_userAuth;             ///< 用户认证管理器
     QTimer *m_autoSyncTimer;          ///< 自动同步定时器
 
@@ -157,6 +147,5 @@ class BaseSyncServer : public QObject {
     SyncDirection m_currentSyncDirection; ///< 当前同步方向
 
     // 服务器配置
-    QString m_serverBaseUrl; ///< 服务器基础URL
-    QString m_apiEndpoint;   ///< API端点
+    QString m_apiEndpoint; ///< API端点
 };

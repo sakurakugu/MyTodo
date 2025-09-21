@@ -11,7 +11,6 @@
 
 #include "category_sync_server.h"
 #include "default_value.h"
-#include "user_auth.h"
 
 #include <QDateTime>
 #include <QDebug>
@@ -25,7 +24,7 @@ CategorySyncServer::CategorySyncServer(UserAuth &userAuth, QObject *parent) : Ba
 
     // 设置类别特有的API端点
     m_apiEndpoint =
-        m_setting.get("server/categoriesApiEndpoint", QString(DefaultValues::categoriesApiEndpoint)).toString();
+        m_config.get("server/categoriesApiEndpoint", QString(DefaultValues::categoriesApiEndpoint)).toString();
 }
 
 CategorySyncServer::~CategorySyncServer() {
@@ -74,7 +73,7 @@ void CategorySyncServer::新增类别(const QString &name) {
 
     try {
         NetworkRequest::RequestConfig config;
-        config.url = getApiUrl(m_apiEndpoint);
+        config.url = m_networkRequest.getApiUrl(m_apiEndpoint);
         config.method = "POST";
         config.requiresAuth = true;
         config.data["name"] = name;
@@ -98,7 +97,7 @@ void CategorySyncServer::更新类别(const QString &name, const QString &newNam
 
     try {
         NetworkRequest::RequestConfig config;
-        config.url = getApiUrl(m_apiEndpoint);
+        config.url = m_networkRequest.getApiUrl(m_apiEndpoint);
         config.method = "PATCH";
         config.requiresAuth = true;
         config.data["old_name"] = name;
@@ -122,7 +121,7 @@ void CategorySyncServer::删除类别(const QString &name) {
 
     try {
         NetworkRequest::RequestConfig config;
-        config.url = getApiUrl(m_apiEndpoint);
+        config.url = m_networkRequest.getApiUrl(m_apiEndpoint);
         config.method = "DELETE";
         config.requiresAuth = true;
         config.data["name"] = name;
@@ -261,7 +260,7 @@ void CategorySyncServer::执行同步(SyncDirection direction) {
 }
 
 void CategorySyncServer::拉取类别() {
-    BaseSyncServer::检查同步前置条件();
+    检查同步前置条件();
     m_isSyncing = true;
 
     qDebug() << "从服务器获取类别...";
@@ -269,7 +268,7 @@ void CategorySyncServer::拉取类别() {
 
     try {
         NetworkRequest::RequestConfig config;
-        config.url = getApiUrl(m_apiEndpoint);
+        config.url = m_networkRequest.getApiUrl(m_apiEndpoint);
         config.method = "GET";
         config.requiresAuth = true;
 
@@ -290,7 +289,7 @@ void CategorySyncServer::拉取类别() {
 }
 
 void CategorySyncServer::推送类别() {
-    BaseSyncServer::检查同步前置条件();
+    检查同步前置条件();
     m_isSyncing = true;
 
     if (m_unsyncedItems.empty()) {
@@ -325,7 +324,7 @@ void CategorySyncServer::推送类别() {
         }
 
         NetworkRequest::RequestConfig config;
-        config.url = getApiUrl(m_apiEndpoint);
+        config.url = m_networkRequest.getApiUrl(m_apiEndpoint);
         config.method = "POST"; // 批量推送使用POST方法
         config.requiresAuth = true;
         config.data["categories"] = jsonArray;

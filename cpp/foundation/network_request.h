@@ -114,8 +114,9 @@ class NetworkRequest : public QObject {
     bool hasValidAuth() const;               // 检查是否有有效的认证信息
 
     // 服务器配置
-    void setServerConfig(const QString &baseUrl, const QString &apiVersion = "v1"); // 设置服务器地址与api版本
-    QString getApiUrl(const QString &endpoint) const;                               // 获取完整的API URL
+    void setServerConfig(const QString &baseUrl, const QString &apiVersion = ""); // 设置服务器地址与api版本
+    QString getServerBaseUrl() const;                                             // 获取服务器基础URL
+    QString getApiUrl(const QString &endpoint) const;                             // 获取完整的API URL
 
     // 网络请求方法
     void sendRequest(RequestType type, const RequestConfig &config); // 发送网络请求
@@ -125,7 +126,6 @@ class NetworkRequest : public QObject {
   signals:
     void requestCompleted(RequestType type, const QJsonObject &response);             // 请求完成信号
     void requestFailed(RequestType type, NetworkError error, const QString &message); // 请求失败信号
-    void networkStatusChanged(bool isOnline);                                         // 网络状态改变信号
     void authTokenExpired();                                                          // 认证令牌过期信号
 
   private slots:
