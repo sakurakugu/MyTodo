@@ -28,14 +28,17 @@ TodoItem::TodoItem(QObject *parent)
       m_uuid(QUuid::createUuid()),               // 初始化UUID
       m_userUuid(""),                            // 初始化用户UUID为空字符串
       m_important(false),                        // 初始化重要程度为false
+      m_deadline(QDateTime()),                   // 初始化截止日期为空
       m_recurrenceInterval(0),                   // 初始化循环间隔为0
       m_recurrenceCount(0),                      // 初始化循环次数为0
+      m_recurrenceStartDate(QDate()),            // 初始化重复开始日期为空
       m_isCompleted(false),                      // 初始化是否已完成为false
       m_isDeleted(false),                        // 初始化是否已删除为false
       m_createdAt(QDateTime::currentDateTime()), // 初始化创建时间为当前时间
       m_updatedAt(QDateTime::currentDateTime()), // 初始化更新时间为当前时间
       m_synced(1)                                // 初始化是否已同步为false
-{}
+{
+}
 
 /**
  * @brief 带参数的构造函数
@@ -82,7 +85,8 @@ TodoItem::TodoItem(int id,                           ///< 待办事项唯一标�
       m_createdAt(createdAt),                        ///< 初始化待办事项创建时间
       m_updatedAt(updatedAt),                        ///< 初始化待办事项更新时间
       m_synced(synced)                               ///< 初始化待办事项同步状态
-{}
+{
+}
 
 /**
  * @brief 设置待办事项的唯一标识符

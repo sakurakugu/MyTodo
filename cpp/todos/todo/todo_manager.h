@@ -20,6 +20,7 @@
 #include <QSortFilterProxyModel>
 #include <QVariantMap>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include "../category/category_manager.h" // 类别管理器
@@ -105,7 +106,8 @@ class TodoManager : public QAbstractListModel {
     // CRUD操作
     Q_INVOKABLE void addTodo(const QString &title, const QString &description = QString(),
                              const QString &category = "未分类", bool important = false,
-                             const QString &deadline = QString());                          // 添加新的待办事项
+                             const QString &deadline = QString(), int recurrenceInterval = 0, int recurrenceCount = 0,
+                             const QDate &recurrenceStartDate = QDate());                   // 添加新的待办事项
     Q_INVOKABLE bool updateTodo(int index, const QVariantMap &todoData);                    // 更新现有待办事项
     Q_INVOKABLE bool updateTodo(int index, const QString &roleName, const QVariant &value); // 更新现有待办事项
     Q_INVOKABLE bool removeTodo(int index);
@@ -147,6 +149,7 @@ class TodoManager : public QAbstractListModel {
     QList<TodoItem *> m_filteredTodos;              ///< 过滤后的待办事项列表
     bool m_filterCacheDirty;                        ///< 过滤缓存是否需要更新
     NetworkRequest &m_networkRequest;               ///< 网络管理器
+    std::unordered_map<int, TodoItem *> m_idIndex;  ///< id -> TodoItem* 快速索引
 
     // 管理器
     UserAuth &m_userAuth;       ///< 用户认证管理器
@@ -160,4 +163,7 @@ class TodoManager : public QAbstractListModel {
 
     // 辅助方法
     int generateUniqueId(); ///< 生成唯一的待办事项ID
+    void rebuildIdIndex();  ///< 重建 id 索引
+    void addToIndex(TodoItem *item);
+    void removeFromIndex(int id);
 };

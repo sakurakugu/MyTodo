@@ -63,6 +63,7 @@ TodoManager::TodoManager(UserAuth &userAuth, CategoryManager &categoryManager,
 
     // 通过数据管理器加载本地数据
     m_dataManager->加载待办事项(m_todos);
+    rebuildIdIndex();
 
     // 设置待办事项数据到同步管理器
     更新同步管理器的数据();
@@ -81,6 +82,7 @@ TodoManager::TodoManager(UserAuth &userAuth, CategoryManager &categoryManager,
 TodoManager::~TodoManager() {
     m_todos.clear();
     m_filteredTodos.clear();
+    m_idIndex.clear();
 }
 
 /**
@@ -350,8 +352,25 @@ void TodoManager::更新过滤后的待办() {
 
     m_filteredTodos.clear();
 
-    // 使用新的筛选器进行筛选
-    m_filteredTodos = m_filter->filterTodos(m_todos);
+    // 组装查询参数（数据库端过滤 + 排序）
+    TodoDataStorage::QueryOptions opt{
+        .category = m_filter->currentCategory(),            //
+        .statusFilter = m_filter->currentFilter(),          //
+        .searchText = m_filter->searchText(),               //
+        .dateFilterEnabled = m_filter->dateFilterEnabled(), //
+        .dateStart = m_filter->dateFilterStart(),           //
+        .dateEnd = m_filter->dateFilterEnd(),               //
+        .sortType = m_sorter->sortType(),                   //
+        .descending = m_sorter->descending()                //
+    }; // 暂不分页，后续可加入 opt.limit/offset
+
+    QList<int> ids = m_dataManager->查询待办ID列表(opt);
+    for (int id : ids) {
+        auto it = m_idIndex.find(id);
+        if (it != m_idIndex.end()) {
+            m_filteredTodos.append(it->second);
+        }
+    }
 
     m_filterCacheDirty = false;
 }
@@ -378,11 +397,16 @@ void TodoManager::清除过滤后的待办() {
  * @param important 重要程度（默认为false）
  */
 void TodoManager::addTodo(const QString &title, const QString &description, const QString &category, bool important,
-                          const QString &deadline) {
+                          const QString &deadline, int recurrenceInterval, int recurrenceCount,
+                          const QDate &recurrenceStartDate) {
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
 
     m_dataManager->新增待办(m_todos, title, description, category, important,
-                            QDateTime::fromString(deadline, Qt::ISODate), 0, -1, QDate(), m_userAuth.getUuid());
+                            QDateTime::fromString(deadline, Qt::ISODate), recurrenceInterval, recurrenceCount,
+                            recurrenceStartDate, m_userAuth.getUuid());
+    if (!m_todos.empty()) {
+        addToIndex(m_todos.back().get());
+    }
 
     清除过滤后的待办();
 
@@ -427,8 +451,6 @@ bool TodoManager::updateTodo(int index, const QVariantMap &todoData) {
 
     try {
         beginResetModel();
-        // qInfo() << "modelIndex.row(): " << modelIndex.row() << "标题: " <<
-        // todoItem->title(); 直接更新TodoItem对象，避免多次触发dataChanged信号
         if (todoData.contains("title")) {
             QString newTitle = todoData["title"].toString();
             if (item->title() != newTitle) {
@@ -524,8 +546,9 @@ bool TodoManager::updateTodo(int index, const QVariantMap &todoData) {
             // 只触发一次dataChanged信号
             emit dataChanged(modelIndex, modelIndex, changedRoles);
 
-            if (!m_dataManager->saveToLocalStorage(m_todos)) {
-                qWarning() << "更新待办事项后无法保存到本地存储";
+            // 使用数据存储更新数据库而不是整表保存
+            if (!m_dataManager->更新待办(m_todos, *item)) {
+                qWarning() << "更新待办事项后无法更新到数据库";
             }
 
             // 更新同步管理器的数据
@@ -587,6 +610,9 @@ bool TodoManager::removeTodo(int index) {
 
         // 软删除
         auto todoItem = m_filteredTodos[index];
+        // 先持久化到数据库
+        m_dataManager->回收待办(m_todos, todoItem->id());
+        // 再更新内存模型状态
         todoItem->setIsDeleted(true);
         todoItem->setDeletedAt(QDateTime::currentDateTime());
         todoItem->setSynced(2); // 标记为未同步，放到到回收站
@@ -596,10 +622,6 @@ bool TodoManager::removeTodo(int index) {
 
         // 通知视图删除完成
         endRemoveRows();
-
-        if (!m_dataManager->saveToLocalStorage(m_todos)) {
-            qWarning() << "软删除待办事项后无法保存到本地存储";
-        }
 
         if (m_globalState.isAutoSyncEnabled() && m_userAuth.isLoggedIn()) {
             syncWithServer();
@@ -649,8 +671,9 @@ bool TodoManager::restoreTodo(int index) {
         // 使筛选缓存失效，以便重新筛选
         清除过滤后的待办();
 
-        if (!m_dataManager->saveToLocalStorage(m_todos)) {
-            qWarning() << "恢复待办事项后无法保存到本地存储";
+        // 使用数据存储更新数据库
+        if (!m_dataManager->更新待办(m_todos, *todoItem)) {
+            qWarning() << "恢复待办事项后无法更新到数据库";
         }
 
         if (m_globalState.isAutoSyncEnabled() && m_userAuth.isLoggedIn()) {
@@ -701,15 +724,18 @@ bool TodoManager::permanentlyDeleteTodo(int index) {
             return false;
         }
 
+        // 先删除数据库中的记录
+        if (!m_dataManager->删除待办(m_todos, todoItem->id())) {
+            qWarning() << "永久删除待办事项时数据库操作失败";
+            return false;
+        }
+
         // 永久删除：从列表中物理移除
         beginRemoveRows(QModelIndex(), index, index);
         m_todos.erase(it);
         清除过滤后的待办();
         endRemoveRows();
-
-        if (!m_dataManager->saveToLocalStorage(m_todos)) {
-            qWarning() << "永久删除待办事项后无法保存到本地存储";
-        }
+        rebuildIdIndex();
 
         if (m_globalState.isAutoSyncEnabled() && m_userAuth.isLoggedIn()) {
             syncWithServer();
@@ -751,6 +777,7 @@ void TodoManager::deleteAllTodos(bool deleteLocal) {
 
         // 清空所有待办事项
         m_todos.clear();
+        m_idIndex.clear();
 
         // 使筛选缓存失效
         清除过滤后的待办();
@@ -916,7 +943,7 @@ void TodoManager::onSyncStarted() {
 
 void TodoManager::onSyncCompleted(TodoSyncServer::SyncResult result, const QString &message) {
     bool success = (result == TodoSyncServer::Success);
-    emit syncCompleted(success, message);
+    emit syncCompleted(success, message); // TODO:触发了两次
 
     // 如果同步成功，保存到本地存储
     if (success) {
@@ -1004,6 +1031,7 @@ void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
 
     endResetModel();
     清除过滤后的待办();
+    rebuildIdIndex();
 
     // 保存到本地存储
     if (!m_dataManager->saveToLocalStorage(m_todos)) {
@@ -1038,20 +1066,39 @@ TodoSyncServer *TodoManager::syncServer() const {
 
 // 排序相关实现
 void TodoManager::sortTodos() {
-    if (m_todos.empty()) {
-        return;
-    }
-
+    // 现在排序在数据库端完成，只需标记缓存失效并刷新视图
     beginResetModel();
-
-    // 委托给排序器进行排序
-    m_sorter->sortTodos(m_todos);
-
-    // 排序后需要更新过滤缓存
     清除过滤后的待办();
-
     endResetModel();
+}
 
-    // 保存到本地存储
-    m_dataManager->saveToLocalStorage(m_todos);
+// ===================== 索引维护实现 =====================
+/**
+ * @brief 重建ID索引映射
+ * 该方法会清空现有的ID索引映射，并重新遍历m_todos列表，构建新的映射。
+ * 适用于在批量修改m_todos后需要重新生成索引的场景。
+ */
+void TodoManager::rebuildIdIndex() {
+    m_idIndex.clear();
+    for (auto &ptr : m_todos) {
+        if (ptr) {
+            m_idIndex[ptr->id()] = ptr.get();
+        }
+    }
+}
+
+/**
+ * @brief 向ID索引映射中添加一个新的待办事项
+ */
+void TodoManager::addToIndex(TodoItem *item) {
+    if (item) {
+        m_idIndex[item->id()] = item;
+    }
+}
+
+/**
+ * @brief 从ID索引映射中移除一个待办事项
+ */
+void TodoManager::removeFromIndex(int id) {
+    m_idIndex.erase(id);
 }

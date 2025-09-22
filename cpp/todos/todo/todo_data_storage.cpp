@@ -267,7 +267,7 @@ std::unique_ptr<TodoItem> TodoDataStorage::新增待办(TodoList &todos, const Q
     const QString insertString =
         "INSERT INTO todos (uuid, user_uuid, title, description, category, important, deadline, "
         "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, is_deleted, "
-        "deleted_at, created_at, updated_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        "deleted_at, created_at, updated_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     insertQuery.prepare(insertString);
     insertQuery.addBindValue(newTodo->uuid().toString());
     insertQuery.addBindValue(newTodo->userUuid().toString());
@@ -322,17 +322,15 @@ bool TodoDataStorage::新增待办(TodoList &todos, std::unique_ptr<TodoItem> it
         qCritical() << "数据库未打开，无法添加待办事项";
         return false;
     }
-    item->setId(-1); // 占位，稍后获取真正ID
 
     // 插入到数据库
     QSqlQuery insertQuery(db);
     const QString insertString =
         "INSERT INTO todos (uuid, user_uuid, title, description, category, important, deadline, "
         "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, is_deleted, "
-        "deleted_at, created_at, updated_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        "deleted_at, created_at, updated_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     insertQuery.prepare(insertString);
-    // 不绑定id
     insertQuery.addBindValue(item->uuid().toString());
     insertQuery.addBindValue(item->userUuid().toString());
     insertQuery.addBindValue(item->title());
@@ -357,16 +355,7 @@ bool TodoDataStorage::新增待办(TodoList &todos, std::unique_ptr<TodoItem> it
     }
 
     // 获取自增ID
-    QSqlQuery idQuery(db);
-    int newId = -1;
-    if (idQuery.exec("SELECT last_insert_rowid()")) {
-        if (idQuery.next()) {
-            newId = idQuery.value(0).toInt();
-        }
-    }
-    if (newId <= 0) {
-        qWarning() << "获取自增ID失败，使用临时ID -1";
-    }
+    int newId = 获取最后插入行ID(db);
     item->setId(newId);
 
     todos.push_back(std::move(item));
@@ -600,4 +589,163 @@ bool TodoDataStorage::软删除待办(TodoList &todos, int id) {
 
     qDebug() << "成功软删除待办事项，ID:" << id;
     return true;
+}
+
+/**
+ * @brief 获取最后插入行ID
+ * @param db 数据库连接引用
+ * @return 最后插入行ID，失败返回-1
+ */
+int TodoDataStorage::获取最后插入行ID(QSqlDatabase &db) const {
+    if (!db.isOpen())
+        return -1;
+    QSqlQuery idQuery(db);
+    if (!idQuery.exec("SELECT last_insert_rowid()")) {
+        qWarning() << "执行 last_insert_rowid 查询失败:" << idQuery.lastError().text();
+        return -1;
+    }
+    if (idQuery.next()) {
+        return idQuery.value(0).toInt();
+    }
+    return -1;
+}
+
+/**
+ * @brief 根据排序类型和顺序生成SQL的ORDER BY子句
+ * @param sortType 排序类型（0-创建时间，1-截止日期，2-重要性，3-标题）
+ * @param descending 是否降序
+ * @return SQL的ORDER BY子句
+ */
+QString TodoDataStorage::构建SQL排序语句(int sortType, bool descending) {
+    QString order;
+    switch (sortType) {
+    case 1: // 截止日期
+        // NULL 截止日期 放最后
+        order = "ORDER BY (deadline IS NULL) ASC, deadline";
+        break;
+    case 2:                                                 // 重要性
+        order = "ORDER BY important DESC, created_at DESC"; // 重要性 固定优先降序
+        if (descending) {
+            // 如果用户希望 overall descending，则在 importance 模式下可以理解为反向：再追加一个标识
+            // 这里保持简单：用户 descending=true 时调整主列方向
+            order = "ORDER BY important ASC, created_at DESC";
+        }
+        return order; // 已返回
+    case 3:           // 标题
+        order = "ORDER BY title COLLATE NOCASE";
+        break;
+    case 0: // 创建时间(默认)
+    default:
+        order = "ORDER BY created_at";
+        break;
+    }
+    if (descending) {
+        order += " DESC";
+    } else {
+        order += " ASC";
+    }
+    return order;
+}
+
+/**
+ * @brief 查询待办ID列表
+ * @param opt 查询选项
+ * @return 符合条件的待办ID列表
+ */
+QList<int> TodoDataStorage::查询待办ID列表(const QueryOptions &opt) {
+    QList<int> indexs;
+    QSqlDatabase db = m_database.getDatabase();
+    if (!db.isOpen()) {
+        qCritical() << "数据库未打开，无法查询待办ID列表";
+        return indexs;
+    }
+
+    QString sql = "SELECT id FROM todos WHERE 1=1";
+
+    // 分类
+    if (!opt.category.isEmpty() && opt.category != "全部" && opt.category != "all") {
+        sql += " AND category = :category";
+    }
+
+    // 状态与删除逻辑
+    // recycle: is_deleted=1
+    // 其它：is_deleted=0
+    if (opt.statusFilter == "recycle") {
+        sql += " AND is_deleted = 1";
+    } else {
+        sql += " AND is_deleted = 0";
+        if (opt.statusFilter == "todo") {
+            sql += " AND is_completed = 0";
+        } else if (opt.statusFilter == "done") {
+            sql += " AND is_completed = 1";
+        } else if (opt.statusFilter == "all") {
+            // is_deleted=0 已限制，全部不过滤完成状态
+        }
+    }
+
+    // 日期范围 (deadline)
+    if (opt.dateFilterEnabled) {
+        sql += " AND deadline IS NOT NULL";
+        if (opt.dateStart.isValid()) {
+            sql += " AND date(deadline) >= :dateStart";
+        }
+        if (opt.dateEnd.isValid()) {
+            sql += " AND date(deadline) <= :dateEnd";
+        }
+    }
+
+    // 搜索 (LIKE)
+    bool doSearch = !opt.searchText.isEmpty();
+    if (doSearch) {
+        sql += " AND (title LIKE :kw OR description LIKE :kw OR category LIKE :kw)";
+    }
+
+    // 排序
+    sql += ' ' + 构建SQL排序语句(opt.sortType, opt.descending);
+
+    // 分页
+    if (opt.limit > 0) {
+        sql += " LIMIT :limit";
+        if (opt.offset > 0) {
+            sql += " OFFSET :offset";
+        }
+    }
+
+    QSqlQuery query(db);
+    if (!query.prepare(sql)) {
+        qCritical() << "准备查询失败:" << query.lastError().text() << sql;
+        return indexs;
+    }
+
+    if (!opt.category.isEmpty() && opt.category != "全部" && opt.category != "all") {
+        query.bindValue(":category", opt.category);
+    }
+    if (opt.dateFilterEnabled) {
+        if (opt.dateStart.isValid()) {
+            query.bindValue(":dateStart", opt.dateStart.toString(Qt::ISODate));
+        }
+        if (opt.dateEnd.isValid()) {
+            query.bindValue(":dateEnd", opt.dateEnd.toString(Qt::ISODate));
+        }
+    }
+    if (doSearch) {
+        QString pattern = '%' + opt.searchText + '%';
+        query.bindValue(":kw", pattern);
+    }
+    if (opt.limit > 0) {
+        query.bindValue(":limit", opt.limit);
+        if (opt.offset > 0) {
+            query.bindValue(":offset", opt.offset);
+        }
+    }
+
+    if (!query.exec()) {
+        qCritical() << "执行查询失败:" << query.lastError().text() << sql;
+        return indexs;
+    }
+
+    while (query.next()) {
+        indexs << query.value(0).toInt();
+    }
+    return indexs;
 }

@@ -27,8 +27,7 @@ Setting::Setting(QObject *parent)
  *
  * 清理Setting对象，释放资源。
  */
-Setting::~Setting() {
-}
+Setting::~Setting() {}
 
 int Setting::getOsType() const {
 #if defined(Q_OS_WIN)
@@ -162,6 +161,11 @@ void Setting::initializeDefaultServerConfig() {
     // 检查并设置默认的服务器基础URL
     if (!m_config.contains("server/baseUrl")) {
         m_config.save("server/baseUrl", QString(DefaultValues::baseUrl));
+        NetworkRequest::GetInstance().setServerConfig(QString(DefaultValues::baseUrl));
+    } else {
+        // 如果已经存在配置，确保NetworkRequest也同步更新
+        QString existingUrl = m_config.get("server/baseUrl").toString();
+        NetworkRequest::GetInstance().setServerConfig(existingUrl);
     }
 
     // 检查并设置默认的待办事项API端点

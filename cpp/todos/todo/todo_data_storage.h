@@ -58,6 +58,23 @@ class TodoDataStorage : public QObject {
   public:
     using TodoList = std::vector<std::unique_ptr<TodoItem>>;
 
+    /**
+     * @brief 查询参数结构（数据库端过滤 + 排序）
+     * 允许按分类、状态、搜索文本、日期范围、排序等生成 SQL。
+     */
+    struct QueryOptions {
+        QString category;     // 分类过滤，空=全部
+        QString statusFilter; // "" | "todo" | "done" | "recycle" | "all"
+        QString searchText;   // 模糊搜索（title/description/category）
+        bool dateFilterEnabled{false};
+        QDate dateStart;        // 起始日期（deadline）
+        QDate dateEnd;          // 截止日期（deadline）
+        int sortType{0};        // 对应 TodoSorter::SortType
+        bool descending{false}; // 是否倒序
+        int limit{0};           // 分页限制，0=不限制 // TODO: 未来可支持分页，目前数据量不大
+        int offset{0};          // 偏移量            // TODO: 未来可支持分页，目前数据量不大
+    };
+
     // 定义导入冲突的解决策略
     enum ConflictResolution {
         Skip = 0,      // 跳过冲突项目
@@ -89,7 +106,13 @@ class TodoDataStorage : public QObject {
     bool 删除待办(TodoList &todos, int id);
     bool 软删除待办(TodoList &todos, int id);
 
+    // 数据库侧过滤 + 排序查询（仅返回符合条件的 id 列表，后续由上层映射为对象）
+    QList<int> 查询待办ID列表(const QueryOptions &options);
+
   private:
+    int 获取最后插入行ID(QSqlDatabase &db) const;                  // 获取自增ID
+    static QString 构建SQL排序语句(int sortType, bool descending); // 构建查询SQL
+
     // 成员变量
     Setting &m_setting;   ///< 设置对象引用
     Database &m_database; ///< 数据库管理器引用
