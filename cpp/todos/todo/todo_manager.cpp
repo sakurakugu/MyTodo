@@ -29,7 +29,8 @@
 #include <QProcess>
 #include <QUuid>
 
-TodoManager::TodoManager(UserAuth &userAuth, CategoryManager &categoryManager, QObject *parent)
+TodoManager::TodoManager(UserAuth &userAuth, CategoryManager &categoryManager,
+                         QObject *parent)
     : QAbstractListModel(parent),                        //
       m_filterCacheDirty(true),                          //
       m_networkRequest(NetworkRequest::GetInstance()),   //
@@ -44,7 +45,7 @@ TodoManager::TodoManager(UserAuth &userAuth, CategoryManager &categoryManager, Q
     // 连接筛选器信号，当筛选条件变化时更新缓存
     connect(m_filter, &TodoFilter::filtersChanged, this, [this]() {
         beginResetModel();
-        invalidateFilterCache();
+        清除过滤后的待办();
         endResetModel();
     });
 
@@ -58,16 +59,13 @@ TodoManager::TodoManager(UserAuth &userAuth, CategoryManager &categoryManager, Q
     connect(m_syncManager, &TodoSyncServer::todosUpdatedFromServer, this, &TodoManager::onTodosUpdatedFromServer);
 
     // 连接用户认证信号，登录成功后触发同步
-    connect(&m_userAuth, &UserAuth::loginSuccessful, this, [this](const QString &username) {
-        Q_UNUSED(username)
-        syncWithServer();
-    });
+    connect(&m_userAuth, &UserAuth::firstAuthCompleted, this, [this]() { syncWithServer(); });
 
     // 通过数据管理器加载本地数据
     m_dataManager->加载待办事项(m_todos);
 
     // 设置待办事项数据到同步管理器
-    updateSyncManagerData();
+    更新同步管理器的数据();
 
     // 如果已登录，CategorySyncServer 会自动处理类别同步
     if (m_userAuth.isLoggedIn()) {
@@ -85,15 +83,6 @@ TodoManager::~TodoManager() {
     m_filteredTodos.clear();
 }
 
-void TodoManager::saveTodosToLocalStorage() {
-    if (!m_dataManager)
-        return;
-    qInfo() << "应用退出前保存待办事项到本地存储";
-    if (!m_dataManager->saveToLocalStorage(m_todos)) {
-        qWarning() << "保存待办事项失败（saveTodosToLocalStorage）";
-    }
-}
-
 /**
  * @brief 获取模型中的行数（待办事项数量）
  * @param parent 父索引，默认为无效索引（根）
@@ -109,7 +98,7 @@ int TodoManager::rowCount(const QModelIndex &parent) const {
     }
 
     // 使用缓存的过滤结果
-    const_cast<TodoManager *>(this)->updateFilterCache();
+    const_cast<TodoManager *>(this)->更新过滤后的待办();
     return m_filteredTodos.count();
 }
 
@@ -131,7 +120,7 @@ QVariant TodoManager::data(const QModelIndex &index, int role) const {
     }
 
     // 使用缓存的过滤结果
-    const_cast<TodoManager *>(this)->updateFilterCache();
+    const_cast<TodoManager *>(this)->更新过滤后的待办();
     if (index.row() >= m_filteredTodos.size())
         return QVariant();
 
@@ -175,8 +164,6 @@ QVariant TodoManager::getItemData(const TodoItem *item, int role) const {
         return item->createdAt();
     case UpdatedAtRole:
         return item->updatedAt();
-    case LastModifiedAtRole:
-        return item->lastModifiedAt();
     case SyncedRole:
         return item->synced();
     default:
@@ -189,12 +176,12 @@ QVariant TodoManager::getItemData(const TodoItem *item, int role) const {
  * @param todoItem 待获取索引的TodoItem指针
  * @return 对应的模型索引
  */
-QModelIndex TodoManager::indexFromItem(TodoItem *todoItem) const {
+QModelIndex TodoManager::获取内容在待办列表中的索引(TodoItem *todoItem) const {
     if (!todoItem) {
         return QModelIndex();
     }
 
-    // 使用std::find_if查找TodoItem在m_todos中的位置
+    // 查找TodoItem在m_todos中的位置
     auto it = std::find_if(m_todos.begin(), m_todos.end(),
                            [todoItem](const std::unique_ptr<TodoItem> &todo) { return todo.get() == todoItem; });
 
@@ -247,8 +234,6 @@ TodoManager::TodoRoles TodoManager::roleFromName(const QString &name) const {
         return CreatedAtRole; // 任务创建时间
     if (name == "updatedAt")
         return UpdatedAtRole; // 任务更新时间
-    if (name == "lastModifiedAt")
-        return LastModifiedAtRole; // 任务最后修改时间
     if (name == "synced")
         return SyncedRole; // 任务是否已同步
 
@@ -278,7 +263,6 @@ QHash<int, QByteArray> TodoManager::roleNames() const {
     roles[DeletedAtRole] = "deletedAt";
     roles[CreatedAtRole] = "createdAt";
     roles[UpdatedAtRole] = "updatedAt";
-    roles[LastModifiedAtRole] = "lastModifiedAt";
     roles[SyncedRole] = "synced";
     return roles;
 }
@@ -342,13 +326,15 @@ bool TodoManager::setData(const QModelIndex &index, const QVariant &value, int r
 
     if (changed) {
         item->setUpdatedAt(QDateTime::currentDateTime());
-        item->setSynced(2);
-        invalidateFilterCache();
+        if (item->synced() != 1) { // 如果之前不是未同步+新建状态
+            item->setSynced(2);
+        }
+        清除过滤后的待办();
         emit dataChanged(index, index, QVector<int>() << role);
-        m_dataManager->saveToLocalStorage(m_todos);
+        m_dataManager->更新待办(m_todos, *item);
 
         // 更新同步管理器的数据
-        updateSyncManagerData();
+        更新同步管理器的数据();
 
         return true;
     }
@@ -357,7 +343,7 @@ bool TodoManager::setData(const QModelIndex &index, const QVariant &value, int r
 }
 
 // 性能优化相关方法实现
-void TodoManager::updateFilterCache() {
+void TodoManager::更新过滤后的待办() {
     if (!m_filterCacheDirty) {
         return;
     }
@@ -371,7 +357,7 @@ void TodoManager::updateFilterCache() {
 }
 
 TodoItem *TodoManager::getFilteredItem(int index) const {
-    const_cast<TodoManager *>(this)->updateFilterCache();
+    const_cast<TodoManager *>(this)->更新过滤后的待办();
 
     if (index < 0 || index >= m_filteredTodos.size()) {
         return nullptr;
@@ -380,7 +366,7 @@ TodoItem *TodoManager::getFilteredItem(int index) const {
     return m_filteredTodos[index];
 }
 
-void TodoManager::invalidateFilterCache() {
+void TodoManager::清除过滤后的待办() {
     m_filterCacheDirty = true;
 }
 
@@ -398,12 +384,12 @@ void TodoManager::addTodo(const QString &title, const QString &description, cons
     m_dataManager->新增待办(m_todos, title, description, category, important,
                             QDateTime::fromString(deadline, Qt::ISODate), 0, -1, QDate(), m_userAuth.getUuid());
 
-    invalidateFilterCache();
+    清除过滤后的待办();
 
     endInsertRows();
 
     // 更新同步管理器的数据
-    updateSyncManagerData();
+    更新同步管理器的数据();
 
     if (m_globalState.isAutoSyncEnabled() && m_userAuth.isLoggedIn()) {
         // 如果开启自动同步且已登录，立即尝试同步到服务器
@@ -425,7 +411,7 @@ bool TodoManager::updateTodo(int index, const QVariantMap &todoData) {
     }
 
     // 获取过滤后的索引，因为QML传入的是过滤后的索引
-    updateFilterCache();
+    更新过滤后的待办();
     if (index >= static_cast<int>(m_filteredTodos.size())) {
         qWarning() << "过滤后的索引超出范围:" << index;
         return false;
@@ -433,7 +419,7 @@ bool TodoManager::updateTodo(int index, const QVariantMap &todoData) {
 
     // 通过过滤后的索引获取实际的任务项
     auto todoItem = m_filteredTodos[index];
-    QModelIndex modelIndex = indexFromItem(todoItem);
+    QModelIndex modelIndex = 获取内容在待办列表中的索引(todoItem);
 
     bool anyUpdated = false;
     TodoItem *item = m_todos[modelIndex.row()].get();
@@ -441,8 +427,8 @@ bool TodoManager::updateTodo(int index, const QVariantMap &todoData) {
 
     try {
         beginResetModel();
-        // qInfo() << "modelIndex.row(): " << modelIndex.row() << "标题: " << todoItem->title();
-        // 直接更新TodoItem对象，避免多次触发dataChanged信号
+        // qInfo() << "modelIndex.row(): " << modelIndex.row() << "标题: " <<
+        // todoItem->title(); 直接更新TodoItem对象，避免多次触发dataChanged信号
         if (todoData.contains("title")) {
             QString newTitle = todoData["title"].toString();
             if (item->title() != newTitle) {
@@ -533,7 +519,7 @@ bool TodoManager::updateTodo(int index, const QVariantMap &todoData) {
         if (anyUpdated) {
             item->setUpdatedAt(QDateTime::currentDateTime());
             item->setSynced(2);
-            invalidateFilterCache();
+            清除过滤后的待办();
 
             // 只触发一次dataChanged信号
             emit dataChanged(modelIndex, modelIndex, changedRoles);
@@ -543,7 +529,7 @@ bool TodoManager::updateTodo(int index, const QVariantMap &todoData) {
             }
 
             // 更新同步管理器的数据
-            updateSyncManagerData();
+            更新同步管理器的数据();
 
             if (m_globalState.isAutoSyncEnabled() && m_userAuth.isLoggedIn()) {
                 syncWithServer();
@@ -590,7 +576,7 @@ bool TodoManager::removeTodo(int index) {
 
     try {
         // 获取过滤后的索引，因为QML传入的是过滤后的索引
-        updateFilterCache();
+        更新过滤后的待办();
         if (index >= static_cast<int>(m_filteredTodos.size())) {
             qWarning() << "过滤后的索引超出范围:" << index;
             return false;
@@ -606,7 +592,7 @@ bool TodoManager::removeTodo(int index) {
         todoItem->setSynced(2); // 标记为未同步，放到到回收站
 
         // 使筛选缓存失效，以便重新筛选
-        invalidateFilterCache();
+        清除过滤后的待办();
 
         // 通知视图删除完成
         endRemoveRows();
@@ -661,7 +647,7 @@ bool TodoManager::restoreTodo(int index) {
         emit dataChanged(modelIndex, modelIndex);
 
         // 使筛选缓存失效，以便重新筛选
-        invalidateFilterCache();
+        清除过滤后的待办();
 
         if (!m_dataManager->saveToLocalStorage(m_todos)) {
             qWarning() << "恢复待办事项后无法保存到本地存储";
@@ -691,7 +677,7 @@ bool TodoManager::permanentlyDeleteTodo(int index) {
 
     try {
         // 获取过滤后的索引，因为QML传入的是过滤后的索引
-        updateFilterCache();
+        更新过滤后的待办();
         if (index >= static_cast<int>(m_filteredTodos.size())) {
             qWarning() << "过滤后的索引超出范围:" << index;
             return false;
@@ -718,7 +704,7 @@ bool TodoManager::permanentlyDeleteTodo(int index) {
         // 永久删除：从列表中物理移除
         beginRemoveRows(QModelIndex(), index, index);
         m_todos.erase(it);
-        invalidateFilterCache();
+        清除过滤后的待办();
         endRemoveRows();
 
         if (!m_dataManager->saveToLocalStorage(m_todos)) {
@@ -767,7 +753,7 @@ void TodoManager::deleteAllTodos(bool deleteLocal) {
         m_todos.clear();
 
         // 使筛选缓存失效
-        invalidateFilterCache();
+        清除过滤后的待办();
 
         // 结束重置模型
         endResetModel();
@@ -811,7 +797,6 @@ bool TodoManager::updateAllTodosUserUuid() {
         for (auto &todoItem : m_todos) {
             if (todoItem->userUuid() != newUserUuid) {
                 todoItem->setUserUuid(newUserUuid);
-                todoItem->setLastModifiedAt(QDateTime::currentDateTime());
                 todoItem->setSynced(2); // 标记为未同步
                 hasChanges = true;
             }
@@ -820,7 +805,7 @@ bool TodoManager::updateAllTodosUserUuid() {
         if (hasChanges) {
             // 通知模型数据已更改
             beginResetModel();
-            invalidateFilterCache();
+            清除过滤后的待办();
             endResetModel();
 
             // 保存到本地存储
@@ -829,7 +814,7 @@ bool TodoManager::updateAllTodosUserUuid() {
             }
 
             // 更新同步管理器的数据
-            updateSyncManagerData();
+            更新同步管理器的数据();
 
             // 如果在线且已登录，同步到服务器
             if (m_globalState.isAutoSyncEnabled() && m_userAuth.isLoggedIn()) {
@@ -865,7 +850,7 @@ bool TodoManager::markAsDoneOrTodo(int index) {
 
     try {
         // 获取过滤后的索引，因为QML传入的是过滤后的索引
-        updateFilterCache();
+        更新过滤后的待办();
         if (index >= static_cast<int>(m_filteredTodos.size())) {
             qWarning() << "过滤后的索引超出范围:" << index;
             return false;
@@ -873,10 +858,11 @@ bool TodoManager::markAsDoneOrTodo(int index) {
 
         // 通过过滤后的索引获取实际的任务项
         auto todoItem = m_filteredTodos[index];
-        QModelIndex modelIndex = indexFromItem(todoItem);
+        QModelIndex modelIndex = 获取内容在待办列表中的索引(todoItem);
 
         beginResetModel();
-        // qInfo() << "modelIndex.row(): " << index.row() << "标题: " << todoItem->title()
+        // qInfo() << "modelIndex.row(): " << index.row() << "标题: " <<
+        // todoItem->title()
         //         << (todoItem->isCompleted()? "已完成" : "未完成");
         bool success = false;
         if (todoItem->isCompleted()) {
@@ -884,7 +870,8 @@ bool TodoManager::markAsDoneOrTodo(int index) {
         } else {
             success = setData(modelIndex, true, IsCompletedRole);
         }
-        // qInfo() << "modelIndex.row(): " << index.row() << "标题: " << todoItem->title()
+        // qInfo() << "modelIndex.row(): " << index.row() << "标题: " <<
+        // todoItem->title()
         //         << (todoItem->isCompleted()? "已完成" : "未完成");
 
         if (success) {
@@ -916,7 +903,7 @@ bool TodoManager::markAsDoneOrTodo(int index) {
  */
 void TodoManager::syncWithServer() {
     // 更新同步管理器的数据
-    updateSyncManagerData();
+    更新同步管理器的数据();
 
     // 委托给同步管理器处理
     m_syncManager->与服务器同步();
@@ -957,11 +944,13 @@ void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
         QString uuid = todoObj["uuid"].toString();
         TodoItem *existingItem = nullptr;
 
-        // qDebug() << "处理服务器项目，UUID:" << uuid << ", 标题:" << todoObj["title"].toString();
+        // qDebug() << "处理服务器项目，UUID:" << uuid << ", 标题:" <<
+        // todoObj["title"].toString();
 
         for (const auto &item : m_todos) {
             QString localUuid = item->uuid().toString(QUuid::WithoutBraces); // 去掉花括号
-            // qDebug() << "比较本地项目 UUID:" << localUuid << " vs 服务器 UUID:" << uuid;
+            // qDebug() << "比较本地项目 UUID:" << localUuid << " vs 服务器 UUID:" <<
+            // uuid;
             if (localUuid == uuid && !uuid.isEmpty()) {
                 existingItem = item.get();
                 // qDebug() << "找到现有项目，UUID:" << uuid;
@@ -985,7 +974,6 @@ void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
             existingItem->setIsDeleted(todoObj["is_deleted"].toBool());
             existingItem->setDeletedAt(QDateTime::fromString(todoObj["deleted_at"].toString(), Qt::ISODate));
             existingItem->setUpdatedAt(QDateTime::fromString(todoObj["updated_at"].toString(), Qt::ISODate));
-            existingItem->setLastModifiedAt(QDateTime::fromString(todoObj["last_modified_at"].toString(), Qt::ISODate));
             existingItem->setSynced(0);
         } else {
             // 创建新项目
@@ -1008,7 +996,6 @@ void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
             newItem->setDeletedAt(QDateTime::fromString(todoObj["deleted_at"].toString(), Qt::ISODate));
             newItem->setCreatedAt(QDateTime::fromString(todoObj["created_at"].toString(), Qt::ISODate));
             newItem->setUpdatedAt(QDateTime::fromString(todoObj["updated_at"].toString(), Qt::ISODate));
-            newItem->setLastModifiedAt(QDateTime::fromString(todoObj["last_modified_at"].toString(), Qt::ISODate));
             newItem->setSynced(0);
 
             m_todos.push_back(std::move(newItem));
@@ -1016,7 +1003,7 @@ void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
     }
 
     endResetModel();
-    invalidateFilterCache();
+    清除过滤后的待办();
 
     // 保存到本地存储
     if (!m_dataManager->saveToLocalStorage(m_todos)) {
@@ -1024,11 +1011,11 @@ void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
     }
 
     // 更新同步管理器的数据
-    updateSyncManagerData();
+    更新同步管理器的数据();
 }
 
 // 更新同步管理器的待办事项数据
-void TodoManager::updateSyncManagerData() {
+void TodoManager::更新同步管理器的数据() {
     QList<TodoItem *> todoItems;
     for (const auto &item : m_todos) {
         todoItems.append(item.get());
@@ -1061,7 +1048,7 @@ void TodoManager::sortTodos() {
     m_sorter->sortTodos(m_todos);
 
     // 排序后需要更新过滤缓存
-    invalidateFilterCache();
+    清除过滤后的待办();
 
     endResetModel();
 

@@ -41,8 +41,7 @@ TodoDataStorage::TodoDataStorage(QObject *parent)
     }
 }
 
-TodoDataStorage::~TodoDataStorage() {
-}
+TodoDataStorage::~TodoDataStorage() {}
 
 /**
  * @brief 加载待办事项
@@ -67,7 +66,7 @@ bool TodoDataStorage::加载待办事项(TodoList &todos) {
         const QString queryString =
             "SELECT id, uuid, user_uuid, title, description, category, important, deadline, recurrence_interval, "
             "recurrence_count, recurrence_start_date, is_completed, completed_at, is_deleted, deleted_at, created_at, "
-            "updated_at, last_modified_at, synced FROM todos ORDER BY id";
+            "updated_at, synced FROM todos ORDER BY id";
 
         if (!query.exec(queryString)) {
             qCritical() << "加载待办事项查询失败:" << query.lastError().text();
@@ -92,7 +91,6 @@ bool TodoDataStorage::加载待办事项(TodoList &todos) {
             QDateTime deletedAt = QDateTime::fromString(query.value("deleted_at").toString(), Qt::ISODate);
             QDateTime createdAt = QDateTime::fromString(query.value("created_at").toString(), Qt::ISODate);
             QDateTime updatedAt = QDateTime::fromString(query.value("updated_at").toString(), Qt::ISODate);
-            QDateTime lastModifiedAt = QDateTime::fromString(query.value("last_modified_at").toString(), Qt::ISODate);
             int synced = query.value("synced").toInt();
 
             auto item = std::make_unique<TodoItem>( //
@@ -113,7 +111,6 @@ bool TodoDataStorage::加载待办事项(TodoList &todos) {
                 deletedAt,                          // 删除时间
                 createdAt,                          // 创建时间
                 updatedAt,                          // 更新时间
-                lastModifiedAt,                     // 最后修改时间
                 synced,                             // 是否已同步
                 this);
 
@@ -166,7 +163,7 @@ bool TodoDataStorage::saveToLocalStorage(const TodoList &todos) {
         const QString insertString =
             "INSERT INTO todos (id, uuid, user_uuid, title, description, category, important, deadline, "
             "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, is_deleted, "
-            "deleted_at, created_at, updated_at, last_modified_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
+            "deleted_at, created_at, updated_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
             "?, ?, ?, ?, ?, ?, ?)";
         insertQuery.prepare(insertString);
 
@@ -188,7 +185,6 @@ bool TodoDataStorage::saveToLocalStorage(const TodoList &todos) {
             insertQuery.addBindValue(item->deletedAt().toString(Qt::ISODate));
             insertQuery.addBindValue(item->createdAt().toString(Qt::ISODate));
             insertQuery.addBindValue(item->updatedAt().toString(Qt::ISODate));
-            insertQuery.addBindValue(item->lastModifiedAt().toString(Qt::ISODate));
             insertQuery.addBindValue(item->synced());
 
             if (!insertQuery.exec()) {
@@ -232,7 +228,7 @@ bool TodoDataStorage::saveToLocalStorage(const TodoList &todos) {
 std::unique_ptr<TodoItem> TodoDataStorage::新增待办(TodoList &todos, const QString &title, const QString &description,
                                                     const QString &category, bool important, const QDateTime &deadline,
                                                     int recurrenceInterval, int recurrenceCount,
-                                                    const QDate &recurrenceStartDate,QUuid userUuid) {
+                                                    const QDate &recurrenceStartDate, QUuid userUuid) {
     QSqlDatabase db = m_database.getDatabase();
     if (!db.isOpen()) {
         qCritical() << "数据库未打开，无法添加待办事项";
@@ -272,7 +268,6 @@ std::unique_ptr<TodoItem> TodoDataStorage::新增待办(TodoList &todos, const Q
         nullTime,                              // deletedAt
         now,                                   // createdAt
         now,                                   // updatedAt
-        now,                                   // lastModifiedAt
         1,                                     // synced
         this                                   // parent
     );
@@ -282,7 +277,7 @@ std::unique_ptr<TodoItem> TodoDataStorage::新增待办(TodoList &todos, const Q
     const QString insertString =
         "INSERT INTO todos (id, uuid, user_uuid, title, description, category, important, deadline, "
         "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, is_deleted, "
-        "deleted_at, created_at, updated_at, last_modified_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
+        "deleted_at, created_at, updated_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
         "?, ?, ?, ?, ?, ?)";
     insertQuery.prepare(insertString);
 
@@ -303,7 +298,6 @@ std::unique_ptr<TodoItem> TodoDataStorage::新增待办(TodoList &todos, const Q
     insertQuery.addBindValue(newTodo->deletedAt().toString(Qt::ISODate));
     insertQuery.addBindValue(newTodo->createdAt().toString(Qt::ISODate));
     insertQuery.addBindValue(newTodo->updatedAt().toString(Qt::ISODate));
-    insertQuery.addBindValue(newTodo->lastModifiedAt().toString(Qt::ISODate));
     insertQuery.addBindValue(newTodo->synced());
 
     if (!insertQuery.exec()) {
@@ -315,6 +309,70 @@ std::unique_ptr<TodoItem> TodoDataStorage::新增待办(TodoList &todos, const Q
 
     qDebug() << "成功添加待办事项到数据库，ID:" << newId;
     return newTodo;
+}
+
+/**
+ * @brief 添加新的待办事项
+ * @param todos 待办事项容器引用
+ * @param item 待办事项智能指针(已经改好的)
+ */
+bool TodoDataStorage::新增待办(TodoList &todos, std::unique_ptr<TodoItem> item) {
+    QSqlDatabase db = m_database.getDatabase();
+    if (!db.isOpen()) {
+        qCritical() << "数据库未打开，无法添加待办事项";
+        return false;
+    }
+
+    // 获取当前最大ID
+    QSqlQuery maxIdQuery(db);
+    int maxId = 0;
+    if (maxIdQuery.exec("SELECT MAX(id) FROM todos")) {
+        if (maxIdQuery.next()) {
+            maxId = maxIdQuery.value(0).toInt();
+        }
+    }
+
+    item->setId(maxId + 1);
+
+    // 插入到数据库
+    QSqlQuery insertQuery(db);
+    const QString insertString =
+        "INSERT INTO todos (id, uuid, user_uuid, title, description, category, important, deadline, "
+        "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, is_deleted, "
+        "deleted_at, created_at, updated_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
+        "?, ?, ?, ?, ?, ?)";
+
+    insertQuery.prepare(insertString);
+
+    insertQuery.addBindValue(item->id());
+    insertQuery.addBindValue(item->uuid().toString());
+    insertQuery.addBindValue(item->userUuid().toString());
+    insertQuery.addBindValue(item->title());
+    insertQuery.addBindValue(item->description());
+    insertQuery.addBindValue(item->category());
+    insertQuery.addBindValue(item->important());
+    insertQuery.addBindValue(item->deadline().toString(Qt::ISODate));
+    insertQuery.addBindValue(item->recurrenceInterval());
+    insertQuery.addBindValue(item->recurrenceCount());
+    insertQuery.addBindValue(item->recurrenceStartDate().toString(Qt::ISODate));
+    insertQuery.addBindValue(item->isCompleted());
+    insertQuery.addBindValue(item->completedAt().toString(Qt::ISODate));
+    insertQuery.addBindValue(item->isDeleted());
+    insertQuery.addBindValue(item->deletedAt().toString(Qt::ISODate));
+    insertQuery.addBindValue(item->createdAt().toString(Qt::ISODate));
+    insertQuery.addBindValue(item->updatedAt().toString(Qt::ISODate));
+    insertQuery.addBindValue(item->synced());
+
+    if (!insertQuery.exec()) {
+        qCritical() << "插入待办事项到数据库失败:" << insertQuery.lastError().text();
+        return false;
+    }
+
+    int itemId = item->id();
+    todos.push_back(std::move(item));
+
+    qDebug() << "成功添加待办事项到数据库，ID:" << itemId;
+    return true;
 }
 
 /**
@@ -331,9 +389,9 @@ std::unique_ptr<TodoItem> TodoDataStorage::新增待办(TodoList &todos, const Q
  * @param recurrenceStartDate 重复开始日期
  * @return 更新是否成功
  */
-bool TodoDataStorage::更新待办(TodoList &todos, int id, const QString &title, const QString &description, const QString &category,
-                               bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount,
-                               const QDate &recurrenceStartDate) {
+bool TodoDataStorage::更新待办(TodoList &todos, int id, const QString &title, const QString &description,
+                               const QString &category, bool important, const QDateTime &deadline,
+                               int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate) {
     QSqlDatabase db = m_database.getDatabase();
     if (!db.isOpen()) {
         qCritical() << "数据库未打开，无法更新待办事项";
@@ -346,7 +404,7 @@ bool TodoDataStorage::更新待办(TodoList &todos, int id, const QString &title
     QSqlQuery updateQuery(db);
     const QString updateString = "UPDATE todos SET title = ?, description = ?, category = ?, important = ?, deadline = "
                                  "?, recurrence_interval = ?, recurrence_count = ?, recurrence_start_date = ?, "
-                                 "updated_at = ?, last_modified_at = ?, synced = ? WHERE id = ?";
+                                 "updated_at = ?, synced = ? WHERE id = ?";
     updateQuery.prepare(updateString);
     updateQuery.addBindValue(title);
     updateQuery.addBindValue(description);
@@ -356,7 +414,6 @@ bool TodoDataStorage::更新待办(TodoList &todos, int id, const QString &title
     updateQuery.addBindValue(recurrenceInterval);
     updateQuery.addBindValue(recurrenceCount);
     updateQuery.addBindValue(recurrenceStartDate.toString(Qt::ISODate));
-    updateQuery.addBindValue(now.toString(Qt::ISODate));
     updateQuery.addBindValue(now.toString(Qt::ISODate));
     updateQuery.addBindValue(2); // synced
     updateQuery.addBindValue(id);
@@ -372,6 +429,58 @@ bool TodoDataStorage::更新待办(TodoList &todos, int id, const QString &title
     }
 
     qDebug() << "成功更新待办事项，ID:" << id;
+    return true;
+}
+
+/**
+ * @brief 更新待办事项
+ * @param todos 待办事项容器引用
+ * @param item 待办事项对象引用(已经改好的)
+ * @return 更新是否成功
+ */
+bool TodoDataStorage::更新待办(TodoList &todos, TodoItem &item) {
+    QSqlDatabase db = m_database.getDatabase();
+    if (!db.isOpen()) {
+        qCritical() << "数据库未打开，无法更新待办事项";
+        return false;
+    }
+
+    // 更新数据库中的待办事项
+    QSqlQuery updateQuery(db);
+    const QString updateString =
+        "UPDATE todos SET title = ?, description = ?, category = ?, important = ?, deadline = ?, "
+        "recurrence_interval = ?, recurrence_count = ?, recurrence_start_date = ?, "
+        "is_completed = ?, completed_at = ?, is_deleted = ?, deleted_at = ?, "
+        "updated_at = ?, synced = ? WHERE id = ?";
+
+    updateQuery.prepare(updateString);
+    updateQuery.addBindValue(item.title());
+    updateQuery.addBindValue(item.description());
+    updateQuery.addBindValue(item.category());
+    updateQuery.addBindValue(item.important());
+    updateQuery.addBindValue(item.deadline().toString(Qt::ISODate));
+    updateQuery.addBindValue(item.recurrenceInterval());
+    updateQuery.addBindValue(item.recurrenceCount());
+    updateQuery.addBindValue(item.recurrenceStartDate().toString(Qt::ISODate));
+    updateQuery.addBindValue(item.isCompleted());
+    updateQuery.addBindValue(item.completedAt().toString(Qt::ISODate));
+    updateQuery.addBindValue(item.isDeleted());
+    updateQuery.addBindValue(item.deletedAt().toString(Qt::ISODate));
+    updateQuery.addBindValue(item.updatedAt().toString(Qt::ISODate));
+    updateQuery.addBindValue(item.synced());
+    updateQuery.addBindValue(item.id());
+
+    if (!updateQuery.exec()) {
+        qCritical() << "更新待办事项到数据库失败:" << updateQuery.lastError().text();
+        return false;
+    }
+
+    if (updateQuery.numRowsAffected() == 0) {
+        qWarning() << "未找到ID为" << item.id() << "的待办事项";
+        return false;
+    }
+
+    qDebug() << "成功更新待办事项，ID:" << item.id();
     return true;
 }
 
@@ -392,12 +501,10 @@ bool TodoDataStorage::回收待办(TodoList &todos, int id) {
 
     // 更新数据库中的待办事项（标记为已删除）
     QSqlQuery updateQuery(db);
-    const QString updateString =
-        "UPDATE todos SET is_deleted = ?, deleted_at = ?, last_modified_at = ?, synced = ? WHERE id = ?";
+    const QString updateString = "UPDATE todos SET is_deleted = ?, deleted_at = ?, synced = ? WHERE id = ?";
     updateQuery.prepare(updateString);
 
     updateQuery.addBindValue(true);
-    updateQuery.addBindValue(now.toString(Qt::ISODate));
     updateQuery.addBindValue(now.toString(Qt::ISODate));
     updateQuery.addBindValue(2); // synced
     updateQuery.addBindValue(id);

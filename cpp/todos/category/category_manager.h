@@ -72,7 +72,6 @@ class CategoryManager : public QAbstractListModel {
         UserUuidRole,              // 用户UUID
         CreatedAtRole,             // 创建时间
         UpdatedAtRole,             // 更新时间
-        LastModifiedAtRole,        // 最后修改时间
         SyncedRole,                // 是否已同步
     };
     Q_ENUM(CategoryRoles)
@@ -95,14 +94,6 @@ class CategoryManager : public QAbstractListModel {
     // 同步相关方法
     Q_INVOKABLE void syncWithServer();  ///< 与服务器同步类别
     Q_INVOKABLE bool isSyncing() const; ///< 检查是否正在同步
-
-    // 属性访问器
-    // CategorySyncServer *getSyncServer() const {
-    //     return m_syncServer;
-    // } ///< 获取同步服务器实例
-    // CategoryDataStorage *getDataStorage() const {
-    //     return m_dataStorage;
-    // } ///< 获取数据存储实例
 
     const std::vector<std::unique_ptr<CategorieItem>> &getCategoryItems() const; ///< 获取类别项目列表
     CategorieItem *寻找类别(const QString &name) const;
@@ -139,5 +130,5 @@ class CategoryManager : public QAbstractListModel {
 
     CategorySyncServer *m_syncServer;   ///< 类别同步服务器对象
     CategoryDataStorage *m_dataStorage; ///< 类别数据存储对象
-    UserAuth &m_userAuth;                               ///< 用户认证管理
+    UserAuth &m_userAuth;               ///< 用户认证管理
 };

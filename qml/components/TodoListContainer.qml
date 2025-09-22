@@ -219,7 +219,7 @@ ListView {
                             priority: model.priority,
                             completed: model.completed,
                             createdAt: model.createdAt,
-                            lastModifiedAt: model.lastModifiedAt,
+                            updatedAt: model.updatedAt,
                             completedAt: model.completedAt,
                             deletedAt: model.deletedAt,
                             deadline: model.deadline,

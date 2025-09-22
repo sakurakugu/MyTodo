@@ -61,6 +61,13 @@ class CategoryDataStorage : public QObject {
     };
     Q_ENUM(ConflictResolution)
 
+    // 定义导入来源
+    enum CategoryImportSource {
+        Server = 0,     // 服务器
+        LocalBackup = 1 // 本地备份
+    };
+    Q_ENUM(CategoryImportSource)
+
     // 构造函数
     explicit CategoryDataStorage(QObject *parent = nullptr);
     ~CategoryDataStorage();
@@ -77,13 +84,14 @@ class CategoryDataStorage : public QObject {
 
     bool 创建默认类别(CategorieList &categories, const QUuid &userUuid);
     bool 导入类别从JSON(CategorieList &categories, const QJsonArray &categoriesArray,
+                        CategoryImportSource source = CategoryImportSource::Server,
                         ConflictResolution resolution = ConflictResolution::Merge);
 
   private:
     // 辅助方法
     int 获取下一个可用ID(const CategorieList &categories) const;
     bool 处理冲突(CategorieList &categories, const std::unique_ptr<CategorieItem> &newCategory,
-                  ConflictResolution resolution);
+                  CategoryImportSource source, ConflictResolution resolution);
 
     // 成员变量
     Database &m_database; ///< 数据库管理器引用

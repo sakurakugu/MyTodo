@@ -83,6 +83,7 @@ class UserAuth : public QObject {
     void tokenRefreshStarted();                    // 令牌刷新开始信号
     void tokenRefreshSuccessful();                 // 令牌刷新成功信号
     void tokenRefreshFailed(const QString &error); // 令牌刷新失败信号
+    void firstAuthCompleted();                     // 首次完成认证（登录或首次刷新）信号，仅触发一次
 
   public slots:
     void onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response); // 处理网络请求成功
@@ -103,6 +104,7 @@ class UserAuth : public QObject {
     void 加载数据();
     void 开启令牌过期计时器();
     void 停止令牌过期计时器();
+    void 是否发送首次认证信号();
 
     // 令牌管理
     void 刷新访问令牌();               // 刷新访问令牌
@@ -120,11 +122,12 @@ class UserAuth : public QObject {
     QUuid m_uuid;           ///< 用户UUID
 
     // 令牌管理
-    QTimer *m_tokenExpiryTimer; ///< 令牌过期检查定时器
-    qint64 m_tokenExpiryTime;   ///< 令牌过期时间戳
-    bool m_isRefreshing;        ///< 是否正在刷新令牌
+    QTimer *m_tokenExpiryTimer;      ///< 令牌过期检查定时器
+    qint64 m_tokenExpiryTime;        ///< 令牌过期时间戳
+    bool m_isRefreshing;             ///< 是否正在刷新令牌
+    bool m_firstAuthEmitted = false; ///< 首次认证信号是否已经发出
 
-    static const int TOKEN_REFRESH_THRESHOLD = DefaultValues::token_refresh_threshold; ///< 令牌刷新阈值（秒）
+    static const int TOKEN_REFRESH_THRESHOLD = DefaultValues::令牌刷新间隔; // (秒)
 
     // 服务器配置
     QString m_authApiEndpoint; ///< 认证API端点

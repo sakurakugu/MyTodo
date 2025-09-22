@@ -223,7 +223,6 @@ void UserAuth::onNetworkRequestCompleted(NetworkRequest::RequestType type, const
     case NetworkRequest::RequestType::FetchTodos:
         // 如果是token验证请求成功，说明token有效
         qDebug() << "存储的访问令牌验证成功，用户已自动登录：" << m_username;
-        emit loginSuccessful(m_username);
         break;
     default:
         // 其他请求类型不在此处理
@@ -345,6 +344,7 @@ void UserAuth::处理登录成功(const QJsonObject &response) {
     // 发出信号
     emit isLoggedInChanged();
     emit loginSuccessful(m_username);
+    是否发送首次认证信号();
 }
 
 void UserAuth::处理令牌刷新成功(const QJsonObject &response) {
@@ -386,6 +386,7 @@ void UserAuth::处理令牌刷新成功(const QJsonObject &response) {
 
     qDebug() << "访问令牌刷新成功，定时器已重新启动";
     emit tokenRefreshSuccessful();
+    是否发送首次认证信号();
 }
 
 void UserAuth::保存凭据() {
@@ -402,7 +403,7 @@ void UserAuth::保存凭据() {
         // 使用REPLACE INTO来插入或更新用户记录
         query.prepare(R"(
             REPLACE INTO users (uuid, username, email, refreshToken)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?)
         )");
 
         query.addBindValue(m_uuid.toString());
@@ -425,6 +426,9 @@ void UserAuth::清除凭据() {
 
     // 重置刷新状态
     m_isRefreshing = false;
+
+    // 重置首次认证信号状态
+    m_firstAuthEmitted = false;
 
     // 清除内存中的凭据
     m_accessToken.clear();
@@ -456,6 +460,14 @@ void UserAuth::清除凭据() {
     emit isLoggedInChanged();
 
     qDebug() << "已清除用户凭据";
+}
+
+void UserAuth::是否发送首次认证信号() {
+    if (!m_firstAuthEmitted && !m_accessToken.isEmpty()) {
+        m_firstAuthEmitted = true;
+        emit firstAuthCompleted();
+        qDebug() << "首次认证完成信号已发出";
+    }
 }
 
 void UserAuth::onTokenExpiryCheck() {

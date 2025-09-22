@@ -55,7 +55,7 @@ bool CategoryDataStorage::加载类别(CategorieList &categories) {
 
         QSqlQuery query(db);
         const QString queryString = //
-            "SELECT id, uuid, name, user_uuid, created_at, updated_at, last_modified_at, "
+            "SELECT id, uuid, name, user_uuid, created_at, updated_at, "
             "synced FROM categories ORDER BY id"; // 按id排序
 
         if (!query.exec(queryString)) {
@@ -70,7 +70,6 @@ bool CategoryDataStorage::加载类别(CategorieList &categories) {
             QUuid userUuid = QUuid::fromString(query.value("user_uuid").toString());
             QDateTime createdAt = QDateTime::fromString(query.value("created_at").toString(), Qt::ISODate);
             QDateTime updatedAt = QDateTime::fromString(query.value("updated_at").toString(), Qt::ISODate);
-            QDateTime lastModifiedAt = QDateTime::fromString(query.value("last_modified_at").toString(), Qt::ISODate);
             int synced = query.value("synced").toInt();
 
             auto item = std::make_unique<CategorieItem>( //
@@ -80,7 +79,6 @@ bool CategoryDataStorage::加载类别(CategorieList &categories) {
                 userUuid,                                // 用户UUID
                 createdAt,                               // 创建时间
                 updatedAt,                               // 更新时间
-                lastModifiedAt,                          // 最后修改时间
                 synced,                                  // 是否已同步
                 this                                     // 父对象
             );
@@ -137,21 +135,19 @@ bool CategoryDataStorage::新增类别(CategorieList &categories, const QString 
             userUuid,                                   // 用户UUID
             createdAt,                                  // 当前时间
             createdAt,                                  // 更新时间
-            createdAt,                                  // 最后修改时间
             1,                                          // 未同步，插入
             this);
 
         // 插入到数据库
         QSqlQuery insertQuery(db);
         const QString insertString = //
-            "INSERT INTO categories (id, uuid, name, user_uuid, created_at, updated_at, "
-            "last_modified_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            "INSERT INTO categories (id, uuid, name, user_uuid, created_at, updated_at, synced) VALUES (?, ?, ?, ?, ?, "
+            "?, ?, ?)";
         insertQuery.prepare(insertString);
         insertQuery.addBindValue(newId);
         insertQuery.addBindValue(newUuid.toString());
         insertQuery.addBindValue(name);
         insertQuery.addBindValue(userUuid.toString());
-        insertQuery.addBindValue(createdAt.toString(Qt::ISODate));
         insertQuery.addBindValue(createdAt.toString(Qt::ISODate));
         insertQuery.addBindValue(createdAt.toString(Qt::ISODate));
         insertQuery.addBindValue(1); // 未同步，插入
@@ -195,13 +191,11 @@ bool CategoryDataStorage::更新类别(CategorieList &categories, const QString 
 
         // 更新数据库中的类别
         QSqlQuery updateQuery(db);
-        const QString updateString =
-            "UPDATE categories SET name = ?, updated_at = ?, last_modified_at = ?, synced = ? WHERE name = ?";
+        const QString updateString = "UPDATE categories SET name = ?, updated_at = ?, synced = ? WHERE name = ?";
         updateQuery.prepare(updateString);
         QString currentTime = QDateTime::currentDateTime().toString(Qt::ISODate);
         updateQuery.addBindValue(newName);
         updateQuery.addBindValue(currentTime); // updated_at
-        updateQuery.addBindValue(currentTime); // last_modified_at
         updateQuery.addBindValue(2);           // 标记为未同步，待更新
         updateQuery.addBindValue(name);        // WHERE条件
 
@@ -228,7 +222,6 @@ bool CategoryDataStorage::更新类别(CategorieList &categories, const QString 
                 updateQuery.addBindValue(1);
             }
             (*it)->setUpdatedAt(QDateTime::fromString(currentTime, Qt::ISODate));
-            (*it)->setLastModifiedAt(QDateTime::fromString(currentTime, Qt::ISODate));
             success = true;
         }
 
@@ -315,12 +308,10 @@ bool CategoryDataStorage::软删除类别(CategorieList &categories, const QStri
 
         // 更新数据库中的类别
         QSqlQuery softDeleteQuery(db);
-        const QString updateString =
-            "UPDATE categories SET updated_at = ?, last_modified_at = ?, synced = ? WHERE name = ?";
+        const QString updateString = "UPDATE categories SET updated_at = ?, synced = ? WHERE name = ?";
         softDeleteQuery.prepare(updateString);
         QString currentTime = QDateTime::currentDateTime().toString(Qt::ISODate);
         softDeleteQuery.addBindValue(currentTime); // updated_at
-        softDeleteQuery.addBindValue(currentTime); // last_modified_at
         softDeleteQuery.addBindValue(3);           // 标记为未同步，待删除
         softDeleteQuery.addBindValue(name);        // WHERE条件
 
@@ -345,7 +336,6 @@ bool CategoryDataStorage::软删除类别(CategorieList &categories, const QStri
             } else {
                 (*it)->setSynced(3); // 标记为未同步，待删除
                 (*it)->setUpdatedAt(QDateTime::fromString(currentTime, Qt::ISODate));
-                (*it)->setLastModifiedAt(QDateTime::fromString(currentTime, Qt::ISODate));
                 success = true;
                 qDebug() << "成功软删除类别:" << name;
             }
@@ -380,13 +370,11 @@ bool CategoryDataStorage::更新同步状态(CategorieList &categories, const QU
 
         // 更新数据库中的类别
         QSqlQuery updateQuery(db);
-        const QString updateString =
-            "UPDATE categories SET synced = ?, updated_at = ?, last_modified_at = ?, synced = ? WHERE uuid = ?";
+        const QString updateString = "UPDATE categories SET synced = ?, updated_at = ?, synced = ? WHERE uuid = ?";
         updateQuery.prepare(updateString);
         QString currentTime = QDateTime::currentDateTime().toString(Qt::ISODate);
         updateQuery.addBindValue(synced);
         updateQuery.addBindValue(currentTime); // updated_at
-        updateQuery.addBindValue(currentTime); // last_modified_at
         updateQuery.addBindValue(2);           // 标记为未同步，待更新
         updateQuery.addBindValue(uuid);        // WHERE条件
 
@@ -407,7 +395,6 @@ bool CategoryDataStorage::更新同步状态(CategorieList &categories, const QU
         if (it != categories.end()) {
             (*it)->setSynced(0); // 标记为已同步
             (*it)->setUpdatedAt(QDateTime::fromString(currentTime, Qt::ISODate));
-            (*it)->setLastModifiedAt(QDateTime::fromString(currentTime, Qt::ISODate));
             success = true;
         }
 
@@ -467,21 +454,19 @@ bool CategoryDataStorage::创建默认类别(CategorieList &categories, const QU
             userUuid,                                   // 用户UUID
             createdAt,                                  // 当前时间
             createdAt,                                  // 更新时间
-            createdAt,                                  // 最后修改时间
             0,                                          // 已同步（不需要同步）
             this);
 
         // 插入到数据库
         QSqlQuery insertQuery(db);
         const QString insertString = //
-            "INSERT INTO categories (id, uuid, name, user_uuid, created_at, updated_at, "
-            "last_modified_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            "INSERT INTO categories (id, uuid, name, user_uuid, created_at, updated_at, synced) VALUES (?, ?, ?, ?, ?, "
+            "?, ?, ?)";
         insertQuery.prepare(insertString);
         insertQuery.addBindValue(1);
         insertQuery.addBindValue(newUuid.toString());
         insertQuery.addBindValue("未分类");
         insertQuery.addBindValue(userUuid.toString());
-        insertQuery.addBindValue(createdAt.toString(Qt::ISODate));
         insertQuery.addBindValue(createdAt.toString(Qt::ISODate));
         insertQuery.addBindValue(createdAt.toString(Qt::ISODate));
         insertQuery.addBindValue(0); // 已同步（不需要同步）
@@ -519,10 +504,11 @@ bool CategoryDataStorage::创建默认类别(CategorieList &categories, const QU
  * @brief 导入类别从JSON
  * @param categories 类别列表引用
  * @param categoriesArray JSON类别数组
+ * @param source 来源（服务器或本地备份）
  * @param resolution 冲突解决策略
  */
 bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const QJsonArray &categoriesArray,
-                                         ConflictResolution resolution) {
+                                         CategoryImportSource source, ConflictResolution resolution) {
     bool success = true;
 
     try {
@@ -547,26 +533,18 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
             QDateTime updatedAt = obj.contains("updated_at")
                                       ? QDateTime::fromString(obj.value("updated_at").toString(), Qt::ISODate)
                                       : createdAt;
-            QDateTime lastModifiedAt =
-                obj.contains("last_modified_at")
-                    ? QDateTime::fromString(obj.value("last_modified_at").toString(), Qt::ISODate)
-                    : createdAt;
 
-            auto newItem = std::make_unique<CategorieItem>( //
-                获取下一个可用ID(categories),               // 唯一标识符
-                uuid,                                       // 唯一标识符（UUID）
-                name,                                       // 分类名称
-                userUuid,                                   // 用户UUID
-                createdAt,                                  // 创建时间
-                updatedAt,                                  // 更新时间
-                lastModifiedAt,                             // 最后修改时间
-                1,                                          // 未同步，插入
+            auto newItem = std::make_unique<CategorieItem>(     //
+                获取下一个可用ID(categories),                   // 唯一标识符
+                uuid,                                           // 唯一标识符（UUID）
+                name,                                           // 分类名称
+                userUuid,                                       // 用户UUID
+                createdAt,                                      // 创建时间
+                updatedAt,                                      // 更新时间
+                source == CategoryImportSource::Server ? 0 : 1, // 服务器就是已同步（0）否则是未同步，插入（1）
                 this);
 
-            if (!处理冲突(categories, newItem, resolution)) {
-                // 如果没合并成功，说明不存在内部，直接添加
-                categories.push_back(std::move(newItem)); 
-            }
+            处理冲突(categories, newItem, source, resolution);
         }
 
         qDebug() << "成功从JSON导入类别，当前总数:" << categories.size();
@@ -606,7 +584,7 @@ int CategoryDataStorage::获取下一个可用ID(const CategorieList &categories
  * @return 处理成功返回true，否则返回false
  */
 bool CategoryDataStorage::处理冲突(CategorieList &categories, const std::unique_ptr<CategorieItem> &newCategory,
-                                   ConflictResolution resolution) {
+                                   CategoryImportSource source, ConflictResolution resolution) {
     if (!newCategory)
         return false;
 
@@ -621,6 +599,8 @@ bool CategoryDataStorage::处理冲突(CategorieList &categories, const std::uni
         categories.push_back(std::move(const_cast<std::unique_ptr<CategorieItem> &>(newCategory)));
         return true;
     }
+
+    newCategory->setSynced(source == CategoryImportSource::Server ? 0 : 1);
 
     switch (resolution) {
     case Skip:

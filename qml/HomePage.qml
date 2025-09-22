@@ -548,7 +548,7 @@ Page {
                                 } else if (todoFilter.currentFilter === "done") {
                                     return globalState.selectedTodo.completedAt ? qsTr("完成时间: ") + Qt.formatDateTime(globalState.selectedTodo.completedAt, "yyyy-MM-dd hh:mm") : "";
                                 } else {
-                                    return globalState.selectedTodo.lastModifiedAt ? qsTr("修改时间: ") + Qt.formatDateTime(globalState.selectedTodo.lastModifiedAt, "yyyy-MM-dd hh:mm") : "";
+                                    return globalState.selectedTodo.updatedAt ? qsTr("修改时间: ") + Qt.formatDateTime(globalState.selectedTodo.updatedAt, "yyyy-MM-dd hh:mm") : "";
                                 }
                             }
                             property string createdText: {

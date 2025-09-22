@@ -31,8 +31,7 @@ TodoSyncServer::TodoSyncServer(UserAuth &userAuth, QObject *parent)
     m_apiEndpoint = m_config.get("server/todoApiEndpoint", QString(DefaultValues::todoApiEndpoint)).toString();
 }
 
-TodoSyncServer::~TodoSyncServer() {
-}
+TodoSyncServer::~TodoSyncServer() {}
 
 // 同步操作实现 - 重写基类方法
 void TodoSyncServer::与服务器同步(SyncDirection direction) {
@@ -274,7 +273,6 @@ void TodoSyncServer::pushBatchToServer(const QList<TodoItem *> &batch) {
             obj["deleted_at"] = item->deletedAt().toString(Qt::ISODate);
             obj["created_at"] = item->createdAt().toString(Qt::ISODate);
             obj["updated_at"] = item->updatedAt().toString(Qt::ISODate);
-            obj["last_modified_at"] = item->lastModifiedAt().toString(Qt::ISODate);
 
             jsonArray.append(obj);
         }

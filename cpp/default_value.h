@@ -20,7 +20,7 @@ constexpr const char *todoApiEndpoint{"/todo/todo_api"};             // 待办�
 constexpr const char *userAuthApiEndpoint{"/auth_api"};              // 用户认证 API 端点
 constexpr const char *categoriesApiEndpoint{"/todo/categories_api"}; // 分类 API 端点
 
-constexpr const int token_refresh_threshold{3600}; // 令牌刷新阈值（秒）
+constexpr const int 令牌刷新间隔{3600}; // (秒)
 // constexpr const int auto_sync_interval{30};        // 自动同步间隔（分钟）
 
 } // namespace DefaultValues

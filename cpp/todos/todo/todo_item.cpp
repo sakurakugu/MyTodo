@@ -23,21 +23,19 @@
  * @param parent 父对象指针，用于Qt的对象树管理
  */
 TodoItem::TodoItem(QObject *parent)
-    : QObject(parent),                                // 初始化父对象
-      m_id(0),                                        // 初始化待办事项ID为0
-      m_uuid(QUuid::createUuid()),                    // 初始化UUID
-      m_userUuid(""),                                 // 初始化用户UUID为空字符串
-      m_important(false),                             // 初始化重要程度为false
-      m_recurrenceInterval(0),                        // 初始化循环间隔为0
-      m_recurrenceCount(0),                           // 初始化循环次数为0
-      m_isCompleted(false),                           // 初始化是否已完成为false
-      m_isDeleted(false),                             // 初始化是否已删除为false
-      m_createdAt(QDateTime::currentDateTime()),      // 初始化创建时间为当前时间
-      m_updatedAt(QDateTime::currentDateTime()),      // 初始化更新时间为当前时间
-      m_lastModifiedAt(QDateTime::currentDateTime()), // 初始化最后修改时间为当前时间
-      m_synced(1)                                     // 初始化是否已同步为false
-{
-}
+    : QObject(parent),                           // 初始化父对象
+      m_id(0),                                   // 初始化待办事项ID为0
+      m_uuid(QUuid::createUuid()),               // 初始化UUID
+      m_userUuid(""),                            // 初始化用户UUID为空字符串
+      m_important(false),                        // 初始化重要程度为false
+      m_recurrenceInterval(0),                   // 初始化循环间隔为0
+      m_recurrenceCount(0),                      // 初始化循环次数为0
+      m_isCompleted(false),                      // 初始化是否已完成为false
+      m_isDeleted(false),                        // 初始化是否已删除为false
+      m_createdAt(QDateTime::currentDateTime()), // 初始化创建时间为当前时间
+      m_updatedAt(QDateTime::currentDateTime()), // 初始化更新时间为当前时间
+      m_synced(1)                                // 初始化是否已同步为false
+{}
 
 /**
  * @brief 带参数的构造函数
@@ -62,7 +60,6 @@ TodoItem::TodoItem(int id,                           ///< 待办事项唯一标�
                    const QDateTime &deletedAt,       ///< 删除时间
                    const QDateTime &createdAt,       ///< 创建时间
                    const QDateTime &updatedAt,       ///< 最后更新时间
-                   const QDateTime &lastModifiedAt,  ///< 最后修改时间
                    int synced,                       ///< 是否已与服务器同步
                    QObject *parent)                  ///< 父对象指针
                                                      //
@@ -84,10 +81,8 @@ TodoItem::TodoItem(int id,                           ///< 待办事项唯一标�
       m_deletedAt(deletedAt),                        ///< 初始化删除时间
       m_createdAt(createdAt),                        ///< 初始化待办事项创建时间
       m_updatedAt(updatedAt),                        ///< 初始化待办事项更新时间
-      m_lastModifiedAt(lastModifiedAt),              ///< 初始化最后修改时间
       m_synced(synced)                               ///< 初始化待办事项同步状态
-{
-}
+{}
 
 /**
  * @brief 设置待办事项的唯一标识符
@@ -242,14 +237,6 @@ void TodoItem::setCreatedAt(const QDateTime &createdAt) {
  */
 void TodoItem::setUpdatedAt(const QDateTime &updatedAt) {
     setProperty(m_updatedAt, updatedAt, &TodoItem::updatedAtChanged);
-}
-
-/**
- * @brief 设置最后修改时间
- * @param lastModifiedAt 新的最后修改时间
- */
-void TodoItem::setLastModifiedAt(const QDateTime &lastModifiedAt) {
-    setProperty(m_lastModifiedAt, lastModifiedAt, &TodoItem::lastModifiedAtChanged);
 }
 
 /**
@@ -415,7 +402,6 @@ bool TodoItem::operator==(const TodoItem &other) const {
            m_deletedAt == other.m_deletedAt &&                     // 删除时间
            m_createdAt == other.m_createdAt &&                     // 创建时间
            m_updatedAt == other.m_updatedAt &&                     // 最后更新时间
-           m_lastModifiedAt == other.m_lastModifiedAt &&           // 最后修改时间
            m_synced == other.m_synced;                             // 同步状态
 }
 

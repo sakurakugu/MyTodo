@@ -18,10 +18,10 @@
 #include <algorithm>
 
 CategoryManager::CategoryManager(UserAuth &userAuth, QObject *parent)
-    : QAbstractListModel(parent),                                   //
-      m_syncServer(new CategorySyncServer(userAuth,this)), //
-      m_dataStorage(new CategoryDataStorage(this)),       //
-      m_userAuth(userAuth)                                          //
+    : QAbstractListModel(parent),                           //
+      m_syncServer(new CategorySyncServer(userAuth, this)), //
+      m_dataStorage(new CategoryDataStorage(this)),         //
+      m_userAuth(userAuth)                                  //
 {
 
     // 连接同步服务器信号
@@ -32,8 +32,7 @@ CategoryManager::CategoryManager(UserAuth &userAuth, QObject *parent)
     加载类别();
 }
 
-CategoryManager::~CategoryManager() {
-}
+CategoryManager::~CategoryManager() {}
 
 /**
  * @brief 获取模型中的行数（类别数量）
@@ -71,7 +70,6 @@ QHash<int, QByteArray> CategoryManager::roleNames() const {
     roles[UserUuidRole] = "userUuid";
     roles[CreatedAtRole] = "createdAt";
     roles[UpdatedAtRole] = "updatedAt";
-    roles[LastModifiedAtRole] = "lastModifiedAt";
     roles[SyncedRole] = "synced";
     return roles;
 }
@@ -145,8 +143,6 @@ QVariant CategoryManager::getItemData(const CategorieItem *item, int role) const
         return item->createdAt();
     case UpdatedAtRole:
         return item->updatedAt();
-    case LastModifiedAtRole:
-        return item->lastModifiedAt();
     case SyncedRole:
         return item->synced();
     default:

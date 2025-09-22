@@ -23,17 +23,15 @@
  * @param parent 父对象指针，用于Qt的对象树管理
  */
 CategorieItem::CategorieItem(QObject *parent)
-    : QObject(parent),                                // 初始化父对象
-      m_id(0),                                        // 初始化分类ID为0
-      m_uuid(QUuid()),                                // 初始化分类UUID为空UUID
-      m_name(""),                                     // 初始化分类名称为空字符串
-      m_userUuid(QUuid()),                            // 初始化用户UUID为空UUID
-      m_createdAt(QDateTime::currentDateTime()),      // 初始化创建时间为当前时间
-      m_updatedAt(QDateTime::currentDateTime()),      // 初始化更新时间为当前时间
-      m_lastModifiedAt(QDateTime::currentDateTime()), // 初始化最后修改时间为当前时间
-      m_synced(1)                                     // 初始化是否已同步为false
-{
-}
+    : QObject(parent),                           // 初始化父对象
+      m_id(0),                                   // 初始化分类ID为0
+      m_uuid(QUuid()),                           // 初始化分类UUID为空UUID
+      m_name(""),                                // 初始化分类名称为空字符串
+      m_userUuid(QUuid()),                       // 初始化用户UUID为空UUID
+      m_createdAt(QDateTime::currentDateTime()), // 初始化创建时间为当前时间
+      m_updatedAt(QDateTime::currentDateTime()), // 初始化更新时间为当前时间
+      m_synced(1)                                // 初始化是否已同步为false
+{}
 
 /**
  * @brief 带参数的构造函数
@@ -41,26 +39,46 @@ CategorieItem::CategorieItem(QObject *parent)
  * 使用指定的参数创建CategorieItem对象。这个构造函数通常用于
  * 从数据库或网络加载已存在的分类数据。
  */
-CategorieItem::CategorieItem(int id,                          ///< 分类唯一标识符
-                             const QUuid &uuid,               ///< 分类唯一标识符（UUID)
-                             const QString &name,             ///< 分类名称
-                             const QUuid &userUuid,           ///< 用户UUID
-                             const QDateTime &createdAt,      ///< 创建时间
-                             const QDateTime &updatedAt,      ///< 更新时间
-                             const QDateTime &lastModifiedAt, ///< 最后修改时间
-                             int synced,                      ///< 是否已与服务器同步
-                             QObject *parent)                 ///< 父对象指针
-    : QObject(parent),                                        ///< 初始化父对象
-      m_id(id),                                               ///< 初始化分类ID
-      m_uuid(uuid),                                           ///< 初始化分类UUID
-      m_name(name),                                           ///< 初始化分类名称
-      m_userUuid(userUuid),                                   ///< 初始化用户UUID
-      m_createdAt(createdAt),                                 ///< 初始化创建时间
-      m_updatedAt(updatedAt),                                 ///< 初始化更新时间
-      m_lastModifiedAt(lastModifiedAt),                       ///< 初始化最后修改时间
-      m_synced(synced)                                        ///< 初始化同步状态
-{
-}
+CategorieItem::CategorieItem(                    //
+    int id,                                      ///< 分类唯一标识符
+    const QUuid &uuid,                           ///< 分类唯一标识符（UUID)
+    const QString &name,                         ///< 分类名称
+    const QUuid &userUuid,                       ///< 用户UUID
+    QObject *parent)                             ///< 父对象指针
+    : QObject(parent),                           ///< 初始化父对象
+      m_id(id),                                  ///< 初始化分类ID
+      m_uuid(uuid),                              ///< 初始化分类UUID
+      m_name(name),                              ///< 初始化分类名称
+      m_userUuid(userUuid),                      ///< 初始化用户UUID
+      m_createdAt(QDateTime::currentDateTime()), ///< 初始化创建时间
+      m_updatedAt(QDateTime::currentDateTime()), ///< 初始化更新时间
+      m_synced(1)                                ///< 初始化同步状态
+{}
+
+/**
+ * @brief 带参数的构造函数
+ *
+ * 使用指定的参数创建CategorieItem对象。这个构造函数通常用于
+ * 从数据库或网络加载已存在的分类数据。
+ */
+CategorieItem::CategorieItem(   //
+    int id,                     ///< 分类唯一标识符
+    const QUuid &uuid,          ///< 分类唯一标识符（UUID)
+    const QString &name,        ///< 分类名称
+    const QUuid &userUuid,      ///< 用户UUID
+    const QDateTime &createdAt, ///< 创建时间
+    const QDateTime &updatedAt, ///< 更新时间
+    int synced,                 ///< 是否已与服务器同步
+    QObject *parent)            ///< 父对象指针
+    : QObject(parent),          ///< 初始化父对象
+      m_id(id),                 ///< 初始化分类ID
+      m_uuid(uuid),             ///< 初始化分类UUID
+      m_name(name),             ///< 初始化分类名称
+      m_userUuid(userUuid),     ///< 初始化用户UUID
+      m_createdAt(createdAt),   ///< 初始化创建时间
+      m_updatedAt(updatedAt),   ///< 初始化更新时间
+      m_synced(synced)          ///< 初始化同步状态
+{}
 
 /**
  * @brief 设置分类的唯一标识符
@@ -114,14 +132,6 @@ void CategorieItem::setCreatedAt(const QDateTime &createdAt) {
  */
 void CategorieItem::setUpdatedAt(const QDateTime &updatedAt) {
     setProperty(m_updatedAt, updatedAt, &CategorieItem::updatedAtChanged);
-}
-
-/**
- * @brief 设置分类最后修改时间
- * @param lastModifiedAt 新的最后修改时间
- */
-void CategorieItem::setLastModifiedAt(const QDateTime &lastModifiedAt) {
-    setProperty(m_lastModifiedAt, lastModifiedAt, &CategorieItem::lastModifiedAtChanged);
 }
 
 /**

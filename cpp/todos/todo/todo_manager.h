@@ -82,7 +82,6 @@ class TodoManager : public QAbstractListModel {
         DeletedAtRole,             // 任务删除时间
         CreatedAtRole,             // 任务创建时间
         UpdatedAtRole,             // 任务更新时间
-        LastModifiedAtRole,        // 任务最后修改时间
         SyncedRole                 // 任务是否已同步
     };
     Q_ENUM(TodoRoles)
@@ -132,19 +131,16 @@ class TodoManager : public QAbstractListModel {
     void onTodosUpdatedFromServer(const QJsonArray &todosArray);                     // 处理从服务器更新的待办事项
 
   private:
-    // 在应用退出前显式保存到本地存储（避免在析构阶段访问 QSqlDatabase）
-    void saveTodosToLocalStorage();
-
     void updateTodosFromServer(const QJsonArray &todosArray); // 从服务器数据更新待办事项
-    void updateSyncManagerData();                             // 更新同步管理器的待办事项数据
+    void 更新同步管理器的数据();                              // 更新同步管理器的待办事项数据
     QVariant getItemData(const TodoItem *item, int role) const;
-    QModelIndex indexFromItem(TodoItem *todoItem) const; // 获取指定TodoItem的模型索引
-    TodoRoles roleFromName(const QString &name) const;   // 从名称获取角色
+    QModelIndex 获取内容在待办列表中的索引(TodoItem *todoItem) const;
+    TodoRoles roleFromName(const QString &name) const; // 从名称获取角色
 
     // 性能优化相关方法
-    void updateFilterCache();                   // 更新过滤缓存
+    void 更新过滤后的待办();
     TodoItem *getFilteredItem(int index) const; // 获取过滤后的项目（带边界检查）
-    void invalidateFilterCache();               // 使过滤缓存失效
+    void 清除过滤后的待办();
 
     // 成员变量
     std::vector<std::unique_ptr<TodoItem>> m_todos; ///< 待办事项列表

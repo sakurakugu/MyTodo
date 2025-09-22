@@ -12,8 +12,8 @@
 
 #include "database.h"
 #include "config.h"
-#include "version.h"
 #include "default_value.h"
+#include "version.h"
 
 #include <QCoreApplication>
 #include <QDebug>
@@ -25,8 +25,8 @@
 #include <mutex>
 
 Database::Database(QObject *parent) : QObject(parent), m_initialized(false) {
-    m_databasePath =
-        QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)).absoluteFilePath(QString(DefaultValues::appName) + ".db");
+    m_databasePath = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
+                         .absoluteFilePath(QString(DefaultValues::appName) + ".db");
 
     // 初始化数据库
     if (!initializeDatabase()) {
@@ -285,7 +285,6 @@ bool Database::createCategoriesTable() {
             user_uuid TEXT NOT NULL,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
-            last_modified_at TEXT NOT NULL,
             synced INTEGER NOT NULL DEFAULT 1
         )
     )";
@@ -336,7 +335,6 @@ bool Database::createTodosTable() {
             deleted_at TEXT,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
-            last_modified_at TEXT NOT NULL,
             synced INTEGER NOT NULL DEFAULT 1
         )
     )";

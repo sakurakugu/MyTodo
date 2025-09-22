@@ -44,16 +44,17 @@ class TodoItem : public QObject {
     Q_PROPERTY(QString category READ category WRITE setCategory NOTIFY categoryChanged)
     Q_PROPERTY(bool important READ important WRITE setImportant NOTIFY importantChanged)
     Q_PROPERTY(QDateTime deadline READ deadline WRITE setDeadline NOTIFY deadlineChanged)
-    Q_PROPERTY(int recurrenceInterval READ recurrenceInterval WRITE setRecurrenceInterval NOTIFY recurrenceIntervalChanged)
+    Q_PROPERTY(
+        int recurrenceInterval READ recurrenceInterval WRITE setRecurrenceInterval NOTIFY recurrenceIntervalChanged)
     Q_PROPERTY(int recurrenceCount READ recurrenceCount WRITE setRecurrenceCount NOTIFY recurrenceCountChanged)
-    Q_PROPERTY(QDate recurrenceStartDate READ recurrenceStartDate WRITE setRecurrenceStartDate NOTIFY recurrenceStartDateChanged)
+    Q_PROPERTY(QDate recurrenceStartDate READ recurrenceStartDate WRITE setRecurrenceStartDate NOTIFY
+                   recurrenceStartDateChanged)
     Q_PROPERTY(bool isCompleted READ isCompleted WRITE setIsCompleted NOTIFY isCompletedChanged)
     Q_PROPERTY(QDateTime completedAt READ completedAt WRITE setCompletedAt NOTIFY completedAtChanged)
     Q_PROPERTY(bool isDeleted READ isDeleted WRITE setIsDeleted NOTIFY isDeletedChanged)
     Q_PROPERTY(QDateTime deletedAt READ deletedAt WRITE setDeletedAt NOTIFY deletedAtChanged)
     Q_PROPERTY(QDateTime createdAt READ createdAt WRITE setCreatedAt NOTIFY createdAtChanged)
     Q_PROPERTY(QDateTime updatedAt READ updatedAt WRITE setUpdatedAt NOTIFY updatedAtChanged)
-    Q_PROPERTY(QDateTime lastModifiedAt READ lastModifiedAt WRITE setLastModifiedAt NOTIFY lastModifiedAtChanged)
     Q_PROPERTY(int synced READ synced WRITE setSynced NOTIFY syncedChanged)
 
   public:
@@ -76,8 +77,7 @@ class TodoItem : public QObject {
              bool isDeleted,                   ///< 是否已删除
              const QDateTime &deletedAt,       ///< 删除时间
              const QDateTime &createdAt,       ///< 创建时间
-             const QDateTime &updatedAt,       ///< 最后更新时间（整个对象最后更新时间，用于同步）
-             const QDateTime &lastModifiedAt,  ///< 最后修改时间（标题、描述、分类等）
+             const QDateTime &updatedAt,       ///< 最后更新时间
              int synced,                       ///< 是否已与服务器同步（是否要上传）
              QObject *parent = nullptr);
 
@@ -132,18 +132,16 @@ class TodoItem : public QObject {
     QDateTime updatedAt() const noexcept { return m_updatedAt; } // 获取更新时间
     void setUpdatedAt(const QDateTime &updatedAt);               // 设置更新时间
 
-    QDateTime lastModifiedAt() const noexcept { return m_lastModifiedAt; } // 获取最后修改时间
-    void setLastModifiedAt(const QDateTime &lastModifiedAt);               // 设置最后修改时间
-
     int synced() const noexcept { return m_synced; } // 获取是否已同步
     void setSynced(int synced);                      // 设置是否已同步
 
     // 便利方法
-    bool isOverdue() const noexcept;                                                         // 检查是否已过期
-    constexpr bool isRecurring() const noexcept;                                             // 检查是否为重复任务
-    bool isDue(const QDateTime &checkTime = QDateTime::currentDateTime()) const noexcept;    // 检查是否到期
-    int daysUntilDeadline() const noexcept;                                                  // 距离截止日期的天数
-    bool isInRecurrencePeriod(const QDate &checkDate = QDate::currentDate()) const noexcept; // 检查指定日期是否在重复周期内
+    bool isOverdue() const noexcept;                                                      // 检查是否已过期
+    constexpr bool isRecurring() const noexcept;                                          // 检查是否为重复任务
+    bool isDue(const QDateTime &checkTime = QDateTime::currentDateTime()) const noexcept; // 检查是否到期
+    int daysUntilDeadline() const noexcept;                                               // 距离截止日期的天数
+    bool isInRecurrencePeriod(
+        const QDate &checkDate = QDate::currentDate()) const noexcept; // 检查指定日期是否在重复周期内
 
     // 比较操作符
     bool operator==(const TodoItem &other) const;
@@ -167,7 +165,6 @@ class TodoItem : public QObject {
     void deletedAtChanged();           ///< 删除时间改变信号
     void createdAtChanged();           ///< 创建时间改变信号
     void updatedAtChanged();           ///< 更新时间改变信号
-    void lastModifiedAtChanged();      ///< 最后修改时间改变信号
     void syncedChanged();              ///< 同步状态改变信号
 
   private:
@@ -178,8 +175,7 @@ class TodoItem : public QObject {
      * @param value 新值
      * @param signal 信号指针
      */
-    template <typename T>
-    constexpr void setProperty(T& member, const T& value, void (TodoItem::*signal)()) {
+    template <typename T> constexpr void setProperty(T &member, const T &value, void (TodoItem::*signal)()) {
         if (member != value) {
             member = value;
             emit(this->*signal)();
@@ -204,6 +200,5 @@ class TodoItem : public QObject {
     QDateTime m_deletedAt;       // 任务删除时间
     QDateTime m_createdAt;       // 任务创建时间
     QDateTime m_updatedAt;       // 任务更新时间
-    QDateTime m_lastModifiedAt;  // 任务最后修改时间
-    int m_synced;               // 任务是否已同步
+    int m_synced;                // 任务是否已同步
 };

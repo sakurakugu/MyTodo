@@ -27,8 +27,7 @@ CategorySyncServer::CategorySyncServer(UserAuth &userAuth, QObject *parent) : Ba
         m_config.get("server/categoriesApiEndpoint", QString(DefaultValues::categoriesApiEndpoint)).toString();
 }
 
-CategorySyncServer::~CategorySyncServer() {
-}
+CategorySyncServer::~CategorySyncServer() {}
 
 // 属性访问器已在基类中实现
 
@@ -317,7 +316,6 @@ void CategorySyncServer::推送类别() {
             obj["name"] = item->name();
             obj["created_at"] = item->createdAt().toString(Qt::ISODate);
             obj["updated_at"] = item->updatedAt().toString(Qt::ISODate);
-            obj["last_modified_at"] = item->lastModifiedAt().toString(Qt::ISODate);
             obj["synced"] = item->synced();
 
             jsonArray.append(obj);
