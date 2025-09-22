@@ -46,12 +46,6 @@ class CategorieItem : public QObject {
     CategorieItem(const CategorieItem &) = delete;
     CategorieItem &operator=(const CategorieItem &) = delete;
     explicit CategorieItem(QObject *parent = nullptr);
-    CategorieItem(int id,                   ///< 分类唯一标识符
-                  const QUuid &uuid,        ///< 分类唯一标识符（UUID）
-                  const QString &name,      ///< 分类名称
-                  const QUuid &userUuid,    ///< 用户UUID
-                  QObject *parent = nullptr //
-    );
     CategorieItem(int id,                     ///< 分类唯一标识符
                   const QUuid &uuid,          ///< 分类唯一标识符（UUID）
                   const QString &name,        ///< 分类名称

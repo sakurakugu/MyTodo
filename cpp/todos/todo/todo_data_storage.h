@@ -62,7 +62,8 @@ class TodoDataStorage : public QObject {
     enum ConflictResolution {
         Skip = 0,      // 跳过冲突项目
         Overwrite = 1, // 覆盖现有项目
-        Merge = 2      // 合并（保留较新的版本）
+        Merge = 2,     // 合并（保留较新的版本）
+        Insert = 3     // 插入新项目
     };
     Q_ENUM(ConflictResolution)
 
@@ -89,9 +90,6 @@ class TodoDataStorage : public QObject {
     bool 软删除待办(TodoList &todos, int id);
 
   private:
-    // 辅助方法
-    int 获取下一个可用ID(const TodoList &todos) const;
-
     // 成员变量
     Setting &m_setting;   ///< 设置对象引用
     Database &m_database; ///< 数据库管理器引用

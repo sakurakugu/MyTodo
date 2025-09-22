@@ -94,6 +94,9 @@ int main(int argc, char *argv[]) {
     CategoryManager categoryManager(userAuth);          // 创建CategoryManager实例
     TodoManager todoManager(userAuth, categoryManager); // 创建TodoManager实例
 
+    // SQLite 版本: "3.50.4"
+    // qDebug() << "SQLite 版本:" << Database::GetInstance().getSqliteVersion();
+
     // 检查是否通过开机自启动启动
     QStringList arguments = app.arguments();
     if (arguments.contains("--autostart")) {

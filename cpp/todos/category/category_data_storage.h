@@ -57,14 +57,15 @@ class CategoryDataStorage : public QObject {
     enum ConflictResolution {
         Skip = 0,      // 跳过冲突项目
         Overwrite = 1, // 覆盖现有项目
-        Merge = 2      // 合并（保留较新的版本）
+        Merge = 2,     // 合并（保留较新的版本）
+        Insert = 3     // 插入新项目
     };
     Q_ENUM(ConflictResolution)
 
     // 定义导入来源
     enum CategoryImportSource {
-        Server = 0,     // 服务器
-        LocalBackup = 1 // 本地备份
+        Server = 0, // 服务器
+        Local = 1   // 本地/本地备份
     };
     Q_ENUM(CategoryImportSource)
 
@@ -76,11 +77,12 @@ class CategoryDataStorage : public QObject {
     bool 加载类别(CategorieList &categorieList);
 
     // CRUD操作
-    bool 新增类别(CategorieList &categories, const QString &name, const QUuid &userUuid);
+    std::unique_ptr<CategorieItem> 新增类别(CategorieList &categories, const QString &name, const QUuid &userUuid,
+                                            CategoryImportSource source = Local);
     bool 更新类别(CategorieList &categories, const QString &name, const QString &newName);
     bool 删除类别(CategorieList &categories, const QString &name);
     bool 软删除类别(CategorieList &categories, const QString &name);
-    bool 更新同步状态(CategorieList &categories, const QUuid &uuid, int synced = 0);
+    bool 更新同步状态(CategorieList &categories, const QString &name, int synced = 0);
 
     bool 创建默认类别(CategorieList &categories, const QUuid &userUuid);
     bool 导入类别从JSON(CategorieList &categories, const QJsonArray &categoriesArray,
@@ -89,9 +91,9 @@ class CategoryDataStorage : public QObject {
 
   private:
     // 辅助方法
-    int 获取下一个可用ID(const CategorieList &categories) const;
-    bool 处理冲突(CategorieList &categories, const std::unique_ptr<CategorieItem> &newCategory,
-                  CategoryImportSource source, ConflictResolution resolution);
+    ConflictResolution 评估冲突(const CategorieItem *existing, const CategorieItem &incoming,
+                                ConflictResolution resolution) const; // 返回应执行的动作
+    int 获取最后插入行ID(QSqlDatabase &db) const;                     // 获取自增ID
 
     // 成员变量
     Database &m_database; ///< 数据库管理器引用

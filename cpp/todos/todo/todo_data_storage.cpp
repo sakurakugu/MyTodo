@@ -235,23 +235,13 @@ std::unique_ptr<TodoItem> TodoDataStorage::新增待办(TodoList &todos, const Q
         return nullptr;
     }
 
-    // 获取当前最大ID
-    QSqlQuery maxIdQuery(db);
-    int maxId = 0;
-    if (maxIdQuery.exec("SELECT MAX(id) FROM todos")) {
-        if (maxIdQuery.next()) {
-            maxId = maxIdQuery.value(0).toInt();
-        }
-    }
-
-    int newId = maxId + 1;
     QDateTime now = QDateTime::currentDateTime();
     QUuid newUuid = QUuid::createUuid();
     QDateTime nullTime = QDateTime::fromString("1970-01-01T00:00:00", Qt::ISODate);
 
     // 创建新的待办事项
     auto newTodo = std::make_unique<TodoItem>( //
-        newId,                                 // id
+        -1,                                    // 占位id，插入后再获取
         newUuid,                               // uuid
         userUuid,                              // userUuid
         title,                                 // title
@@ -275,13 +265,10 @@ std::unique_ptr<TodoItem> TodoDataStorage::新增待办(TodoList &todos, const Q
     // 插入到数据库
     QSqlQuery insertQuery(db);
     const QString insertString =
-        "INSERT INTO todos (id, uuid, user_uuid, title, description, category, important, deadline, "
+        "INSERT INTO todos (uuid, user_uuid, title, description, category, important, deadline, "
         "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, is_deleted, "
-        "deleted_at, created_at, updated_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
-        "?, ?, ?, ?, ?, ?)";
+        "deleted_at, created_at, updated_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     insertQuery.prepare(insertString);
-
-    insertQuery.addBindValue(newTodo->id());
     insertQuery.addBindValue(newTodo->uuid().toString());
     insertQuery.addBindValue(newTodo->userUuid().toString());
     insertQuery.addBindValue(newTodo->title());
@@ -305,10 +292,23 @@ std::unique_ptr<TodoItem> TodoDataStorage::新增待办(TodoList &todos, const Q
         return nullptr;
     }
 
-    todos.push_back(std::move(newTodo));
+    // 获取自增ID
+    QSqlQuery idQuery(db);
+    int newId = -1;
+    if (idQuery.exec("SELECT last_insert_rowid()")) {
+        if (idQuery.next()) {
+            newId = idQuery.value(0).toInt();
+        }
+    }
+    if (newId <= 0) {
+        qWarning() << "获取自增ID失败，使用临时ID -1";
+    }
+    newTodo->setId(newId);
 
     qDebug() << "成功添加待办事项到数据库，ID:" << newId;
-    return newTodo;
+    todos.push_back(std::move(newTodo));
+    // 目前调用方未使用返回值，保持接口，返回空unique_ptr（之前实现返回已被移动的指针，同样为空）。
+    return {};
 }
 
 /**
@@ -322,29 +322,17 @@ bool TodoDataStorage::新增待办(TodoList &todos, std::unique_ptr<TodoItem> it
         qCritical() << "数据库未打开，无法添加待办事项";
         return false;
     }
-
-    // 获取当前最大ID
-    QSqlQuery maxIdQuery(db);
-    int maxId = 0;
-    if (maxIdQuery.exec("SELECT MAX(id) FROM todos")) {
-        if (maxIdQuery.next()) {
-            maxId = maxIdQuery.value(0).toInt();
-        }
-    }
-
-    item->setId(maxId + 1);
+    item->setId(-1); // 占位，稍后获取真正ID
 
     // 插入到数据库
     QSqlQuery insertQuery(db);
     const QString insertString =
-        "INSERT INTO todos (id, uuid, user_uuid, title, description, category, important, deadline, "
+        "INSERT INTO todos (uuid, user_uuid, title, description, category, important, deadline, "
         "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, is_deleted, "
-        "deleted_at, created_at, updated_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
-        "?, ?, ?, ?, ?, ?)";
+        "deleted_at, created_at, updated_at, synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     insertQuery.prepare(insertString);
-
-    insertQuery.addBindValue(item->id());
+    // 不绑定id
     insertQuery.addBindValue(item->uuid().toString());
     insertQuery.addBindValue(item->userUuid().toString());
     insertQuery.addBindValue(item->title());
@@ -368,10 +356,21 @@ bool TodoDataStorage::新增待办(TodoList &todos, std::unique_ptr<TodoItem> it
         return false;
     }
 
-    int itemId = item->id();
-    todos.push_back(std::move(item));
+    // 获取自增ID
+    QSqlQuery idQuery(db);
+    int newId = -1;
+    if (idQuery.exec("SELECT last_insert_rowid()")) {
+        if (idQuery.next()) {
+            newId = idQuery.value(0).toInt();
+        }
+    }
+    if (newId <= 0) {
+        qWarning() << "获取自增ID失败，使用临时ID -1";
+    }
+    item->setId(newId);
 
-    qDebug() << "成功添加待办事项到数据库，ID:" << itemId;
+    todos.push_back(std::move(item));
+    qDebug() << "成功添加待办事项到数据库，ID:" << newId;
     return true;
 }
 
@@ -493,7 +492,7 @@ bool TodoDataStorage::更新待办(TodoList &todos, TodoItem &item) {
 bool TodoDataStorage::回收待办(TodoList &todos, int id) {
     QSqlDatabase db = m_database.getDatabase();
     if (!db.isOpen()) {
-        qCritical() << "数据库未打开，无法删除待办事项";
+        qCritical() << "数据库未打开，无法回收待办事项";
         return false;
     }
 
@@ -510,7 +509,7 @@ bool TodoDataStorage::回收待办(TodoList &todos, int id) {
     updateQuery.addBindValue(id);
 
     if (!updateQuery.exec()) {
-        qCritical() << "删除待办事项失败:" << updateQuery.lastError().text();
+        qCritical() << "回收待办事项失败:" << updateQuery.lastError().text();
         return false;
     }
 
@@ -519,7 +518,7 @@ bool TodoDataStorage::回收待办(TodoList &todos, int id) {
         return false;
     }
 
-    qDebug() << "成功删除待办事项，ID:" << id;
+    qDebug() << "成功回收待办事项，ID:" << id;
     return true;
 }
 
@@ -567,16 +566,38 @@ bool TodoDataStorage::删除待办(TodoList &todos, int id) {
 }
 
 /**
- * @brief 获取下一个可用ID
- * @param categories 类别列表
- * @return 下一个可用ID
+ * @brief 软删除待办事项
+ * @param todos 软删除待办容器引用
+ * @param id 待办事项ID
+ * @return 回收是否成功
  */
-int TodoDataStorage::获取下一个可用ID(const TodoList &todos) const {
-    int maxId = 0;
-    for (const auto &todo : todos) {
-        if (todo && todo->id() > maxId) {
-            maxId = todo->id();
-        }
+bool TodoDataStorage::软删除待办(TodoList &todos, int id) {
+    QSqlDatabase db = m_database.getDatabase();
+    if (!db.isOpen()) {
+        qCritical() << "数据库未打开，无法软删除待办事项";
+        return false;
     }
-    return maxId + 1;
+
+    QDateTime now = QDateTime::currentDateTime();
+
+    // 更新数据库中的待办事项（标记synced为已删除(3)）
+    QSqlQuery updateQuery(db);
+    const QString updateString = "UPDATE todos SET synced = ? WHERE id = ?";
+    updateQuery.prepare(updateString);
+
+    updateQuery.addBindValue(3); // synced
+    updateQuery.addBindValue(id);
+
+    if (!updateQuery.exec()) {
+        qCritical() << "软删除待办事项失败:" << updateQuery.lastError().text();
+        return false;
+    }
+
+    if (updateQuery.numRowsAffected() == 0) {
+        qWarning() << "未找到ID为" << id << "的待办事项";
+        return false;
+    }
+
+    qDebug() << "成功软删除待办事项，ID:" << id;
+    return true;
 }

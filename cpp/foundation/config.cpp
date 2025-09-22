@@ -40,8 +40,7 @@ Config::Config(QObject *parent)
     loadFromFile();
 }
 
-Config::~Config() {
-}
+Config::~Config() {}
 
 /**
  * @brief 从TOML文件加载配置
@@ -90,7 +89,6 @@ bool Config::saveToFile() const {
             return false;
         }
 
-        qDebug() << "成功保存配置文件:" << m_filePath;
         return true;
     } catch (...) {
         qCritical() << "写入配置文件失败:" << m_filePath;
@@ -860,6 +858,6 @@ std::string Config::getConfigLocationPath(ConfigLocation location) const {
 
     // 将路径分隔符统一为正斜杠
     configPath = QDir::fromNativeSeparators(configPath);
-    
+
     return configPath.toStdString();
 }

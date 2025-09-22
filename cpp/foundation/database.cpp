@@ -216,6 +216,21 @@ int Database::getDatabaseVersion() const {
 }
 
 /**
+ * @brief 查询数据库版本
+ * @return 数据库版本号
+ */
+QString Database::getSqliteVersion() {
+    QSqlQuery query(m_database);
+    query.prepare("SELECT sqlite_version();");
+
+    if (query.exec() && query.next()) {
+        return query.value(0).toString();
+    }
+
+    return "未知";
+}
+
+/**
  * @brief 创建数据库表
  * @return 创建是否成功
  */

@@ -31,8 +31,7 @@ CategoryDataStorage::CategoryDataStorage(QObject *parent)
     }
 }
 
-CategoryDataStorage::~CategoryDataStorage() {
-}
+CategoryDataStorage::~CategoryDataStorage() {}
 
 /**
  * @brief 加载类别
@@ -102,74 +101,65 @@ bool CategoryDataStorage::加载类别(CategorieList &categories) {
  * @param categories 类别列表引用
  * @param name 类别名称
  * @param userUuid 用户UUID
- * @return 添加成功返回true，否则返回false
+ * @param source 导入来源
+ * @return 添加成功返回新创建的CategorieItem指针，否则返回nullptr
  */
-bool CategoryDataStorage::新增类别(CategorieList &categories, const QString &name, const QUuid &userUuid) {
-    bool success = true;
+std::unique_ptr<CategorieItem> CategoryDataStorage::新增类别(CategorieList &categories, const QString &name,
+                                                             const QUuid &userUuid, CategoryImportSource source) {
 
     try {
         QSqlDatabase db = m_database.getDatabase();
         if (!db.isOpen()) {
             qCritical() << "数据库未打开，无法新增类别";
-            return false;
-        }
-
-        // 获取当前最大的id
-        int maxId = 0;
-        QSqlQuery maxIdQuery(db);
-        if (maxIdQuery.exec("SELECT MAX(id) FROM categories")) {
-            if (maxIdQuery.next()) {
-                maxId = maxIdQuery.value(0).toInt();
-            }
+            return nullptr;
         }
 
         // 创建新的类别项
-        int newId = maxId + 1;
         QUuid newUuid = QUuid::createUuid();
         QDateTime createdAt = QDateTime::currentDateTime();
-
-        auto newItem = std::make_unique<CategorieItem>( //
-            newId,                                      // 新的唯一标识符
-            newUuid,                                    // 新的UUID
-            name,                                       // 类别名称
-            userUuid,                                   // 用户UUID
-            createdAt,                                  // 当前时间
-            createdAt,                                  // 更新时间
-            1,                                          // 未同步，插入
-            this);
 
         // 插入到数据库
         QSqlQuery insertQuery(db);
         const QString insertString = //
-            "INSERT INTO categories (id, uuid, name, user_uuid, created_at, updated_at, synced) VALUES (?, ?, ?, ?, ?, "
-            "?, ?, ?)";
+            "INSERT INTO categories (uuid, name, user_uuid, created_at, updated_at, synced) VALUES (?, ?, ?, ?, ?, ?)";
         insertQuery.prepare(insertString);
-        insertQuery.addBindValue(newId);
         insertQuery.addBindValue(newUuid.toString());
         insertQuery.addBindValue(name);
         insertQuery.addBindValue(userUuid.toString());
         insertQuery.addBindValue(createdAt.toString(Qt::ISODate));
         insertQuery.addBindValue(createdAt.toString(Qt::ISODate));
-        insertQuery.addBindValue(1); // 未同步，插入
+        insertQuery.addBindValue(source == CategoryImportSource::Server ? 0 : 1);
 
         if (!insertQuery.exec()) {
             qCritical() << "插入类别到数据库失败:" << insertQuery.lastError().text();
-            return false;
+            return nullptr;
         }
+
+        // 获取自增ID
+        int newId = 获取最后插入行ID(db);
+        auto newItem = std::make_unique<CategorieItem>(     //
+            newId,                                          // 占位ID，插入后回填
+            newUuid,                                        // 新的UUID
+            name,                                           // 类别名称
+            userUuid,                                       // 用户UUID
+            createdAt,                                      // 创建时间
+            createdAt,                                      // 更新时间
+            source == CategoryImportSource::Server ? 0 : 1, // 默认未同步，插入
+            this                                            //
+        );
 
         // 添加到内存列表
         categories.push_back(std::move(newItem));
 
-        qDebug() << "成功新增类别:" << name;
+        qDebug() << "成功新增类别:" << name << "ID:" << newId;
+        return newItem;
     } catch (const std::exception &e) {
         qCritical() << "新增类别时发生异常:" << e.what();
-        success = false;
+        return nullptr;
     } catch (...) {
         qCritical() << "新增类别时发生未知异常";
-        success = false;
+        return nullptr;
     }
-
-    return success;
 }
 
 /**
@@ -300,43 +290,15 @@ bool CategoryDataStorage::软删除类别(CategorieList &categories, const QStri
     bool success = false;
 
     try {
-        QSqlDatabase db = m_database.getDatabase();
-        if (!db.isOpen()) {
-            qCritical() << "数据库未打开，无法软删除类别";
-            return false;
-        }
-
-        // 更新数据库中的类别
-        QSqlQuery softDeleteQuery(db);
-        const QString updateString = "UPDATE categories SET updated_at = ?, synced = ? WHERE name = ?";
-        softDeleteQuery.prepare(updateString);
-        QString currentTime = QDateTime::currentDateTime().toString(Qt::ISODate);
-        softDeleteQuery.addBindValue(currentTime); // updated_at
-        softDeleteQuery.addBindValue(3);           // 标记为未同步，待删除
-        softDeleteQuery.addBindValue(name);        // WHERE条件
-
-        if (!softDeleteQuery.exec()) {
-            qCritical() << "软删除数据库中的类别失败:" << softDeleteQuery.lastError().text();
-            return false;
-        }
-
-        if (softDeleteQuery.numRowsAffected() == 0) {
-            qWarning() << "未找到要软删除的类别，名称:" << name;
-            return false;
-        }
-
         // 更新内存中的类别
         auto it = std::find_if(categories.begin(), categories.end(),
                                [name](const std::unique_ptr<CategorieItem> &item) { return item->name() == name; });
 
         if (it != categories.end()) {
             if ((*it)->synced() == 1) {
-                // 如果之前是插入状态，直接从内存中删除
-                success = 删除类别(categories, name);
+                success = 删除类别(categories, name); // 如果之前是插入状态，直接从内存中删除
             } else {
-                (*it)->setSynced(3); // 标记为未同步，待删除
-                (*it)->setUpdatedAt(QDateTime::fromString(currentTime, Qt::ISODate));
-                success = true;
+                success = 更新同步状态(categories, name, 3); // 标记为未同步，待删除
                 qDebug() << "成功软删除类别:" << name;
             }
         }
@@ -356,9 +318,9 @@ bool CategoryDataStorage::软删除类别(CategorieList &categories, const QStri
  * @param categories 类别列表引用
  * @param uuid 类别UUID
  * @param synced 同步状态（0：已同步，1：未同步插入，2：未同步更新，3：未同步删除）
- * @return 更新成功返回true，否则返回false
+ * @return 成功返回item在待办类别中的指针，否则返回nullptr
  */
-bool CategoryDataStorage::更新同步状态(CategorieList &categories, const QUuid &uuid, int synced) {
+bool CategoryDataStorage::更新同步状态(CategorieList &categories, const QString &name, int synced) {
     bool success = false;
 
     try {
@@ -370,13 +332,12 @@ bool CategoryDataStorage::更新同步状态(CategorieList &categories, const QU
 
         // 更新数据库中的类别
         QSqlQuery updateQuery(db);
-        const QString updateString = "UPDATE categories SET synced = ?, updated_at = ?, synced = ? WHERE uuid = ?";
+        const QString updateString = "UPDATE categories SET synced = ?, updated_at = ? WHERE name = ?";
         updateQuery.prepare(updateString);
         QString currentTime = QDateTime::currentDateTime().toString(Qt::ISODate);
-        updateQuery.addBindValue(synced);
+        updateQuery.addBindValue(synced);      // 目标同步状态（调用者给）
         updateQuery.addBindValue(currentTime); // updated_at
-        updateQuery.addBindValue(2);           // 标记为未同步，待更新
-        updateQuery.addBindValue(uuid);        // WHERE条件
+        updateQuery.addBindValue(name);        // WHERE条件
 
         if (!updateQuery.exec()) {
             qCritical() << "更新数据库中的类别同步状态失败:" << updateQuery.lastError().text();
@@ -384,22 +345,19 @@ bool CategoryDataStorage::更新同步状态(CategorieList &categories, const QU
         }
 
         if (updateQuery.numRowsAffected() == 0) {
-            qWarning() << "未找到要更新的类别，uuid:" << uuid;
+            qWarning() << "未找到要更新的类别，名称:" << name;
             return false;
         }
 
         // 更新内存中的类别
         auto it = std::find_if(categories.begin(), categories.end(),
-                               [uuid](const std::unique_ptr<CategorieItem> &item) { return item->uuid() == uuid; });
+                               [name](const std::unique_ptr<CategorieItem> &item) { return item->name() == name; });
 
         if (it != categories.end()) {
-            (*it)->setSynced(0); // 标记为已同步
+            (*it)->setSynced(synced); // 同步为调用者指定的状态
             (*it)->setUpdatedAt(QDateTime::fromString(currentTime, Qt::ISODate));
             success = true;
-        }
-
-        if (success) {
-            qDebug() << "成功更新类别:" << (*it)->name() << "的同步状态";
+            qDebug() << "成功更新类别:" << (*it)->name() << "的同步状态 ->" << synced;
         }
     } catch (const std::exception &e) {
         qCritical() << "更新类别时发生异常:" << e.what();
@@ -443,25 +401,14 @@ bool CategoryDataStorage::创建默认类别(CategorieList &categories, const QU
         }
 
         categories.clear();
-        // 添加默认的"未分类"选项
         QUuid newUuid = QUuid::createUuid();
         QDateTime createdAt = QDateTime::currentDateTime();
-
-        auto newItem = std::make_unique<CategorieItem>( //
-            1,                                          // 新的唯一标识符
-            newUuid,                                    // 新的UUID
-            "未分类",                                   // 类别名称
-            userUuid,                                   // 用户UUID
-            createdAt,                                  // 当前时间
-            createdAt,                                  // 更新时间
-            0,                                          // 已同步（不需要同步）
-            this);
 
         // 插入到数据库
         QSqlQuery insertQuery(db);
         const QString insertString = //
             "INSERT INTO categories (id, uuid, name, user_uuid, created_at, updated_at, synced) VALUES (?, ?, ?, ?, ?, "
-            "?, ?, ?)";
+            "?, ?)";
         insertQuery.prepare(insertString);
         insertQuery.addBindValue(1);
         insertQuery.addBindValue(newUuid.toString());
@@ -483,9 +430,20 @@ bool CategoryDataStorage::创建默认类别(CategorieList &categories, const QU
             return false;
         }
 
+        // 添加默认的"未分类"选项
+        auto newItem = std::make_unique<CategorieItem>( //
+            1,                                          // 占位ID，自增后回填
+            newUuid,                                    // 新的UUID
+            "未分类",                                   // 类别名称
+            userUuid,                                   // 用户UUID
+            createdAt,                                  // 创建时间
+            createdAt,                                  // 更新时间
+            0,                                          // 已同步（默认内置）
+            this                                        //
+        );
+
         // 添加到内存列表
         categories.push_back(std::move(newItem));
-
         qDebug() << "成功添加默认类别";
     } catch (const std::exception &e) {
         qCritical() << "添加默认类别时发生异常:" << e.what();
@@ -511,48 +469,134 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
                                          CategoryImportSource source, ConflictResolution resolution) {
     bool success = true;
 
+    QSqlDatabase db = m_database.getDatabase();
+    if (!db.isOpen()) {
+        qCritical() << "数据库未打开，无法导入类别";
+        return false;
+    }
+
+    // 构建现有类别索引（按 uuid 与 name）
+    QHash<QString, CategorieItem *> nameIndex;
+    QHash<QString, CategorieItem *> uuidIndex;
+    for (auto &item : categories) {
+        if (item) {
+            uuidIndex.insert(item->uuid().toString(QUuid::WithoutBraces), item.get());
+            nameIndex.insert(item->name(), item.get());
+        }
+    }
+
+    if (!db.transaction()) {
+        qCritical() << "无法开启事务以导入类别:" << db.lastError().text();
+        return false;
+    }
+
+    int insertCount = 0;
+    int updateCount = 0;
+    int skipCount = 0;
+
     try {
         for (const QJsonValue &value : categoriesArray) {
             if (!value.isObject()) {
-                qWarning() << "跳过无效的类别项（非对象）";
+                qWarning() << "跳过无效类别（非对象）";
+                ++skipCount;
                 continue;
             }
-
             QJsonObject obj = value.toObject();
             if (!obj.contains("name") || !obj.contains("user_uuid")) {
-                qWarning() << "跳过无效的类别项（缺少必要字段）";
+                qWarning() << "跳过无效类别（缺字段）";
+                ++skipCount;
                 continue;
             }
 
             QString name = obj.value("name").toString();
             QUuid userUuid = QUuid::fromString(obj.value("user_uuid").toString());
+            if (userUuid.isNull()) {
+                qWarning() << "跳过无效类别（user_uuid 无效）";
+                ++skipCount;
+                continue;
+            }
+
             QUuid uuid = obj.contains("uuid") ? QUuid::fromString(obj.value("uuid").toString()) : QUuid::createUuid();
+            if (uuid.isNull())
+                uuid = QUuid::createUuid();
+
             QDateTime createdAt = obj.contains("created_at")
                                       ? QDateTime::fromString(obj.value("created_at").toString(), Qt::ISODate)
                                       : QDateTime::currentDateTime();
+            if (!createdAt.isValid())
+                createdAt = QDateTime::currentDateTime();
             QDateTime updatedAt = obj.contains("updated_at")
                                       ? QDateTime::fromString(obj.value("updated_at").toString(), Qt::ISODate)
                                       : createdAt;
+            if (!updatedAt.isValid())
+                updatedAt = createdAt;
 
-            auto newItem = std::make_unique<CategorieItem>(     //
-                获取下一个可用ID(categories),                   // 唯一标识符
-                uuid,                                           // 唯一标识符（UUID）
-                name,                                           // 分类名称
-                userUuid,                                       // 用户UUID
-                createdAt,                                      // 创建时间
-                updatedAt,                                      // 更新时间
-                source == CategoryImportSource::Server ? 0 : 1, // 服务器就是已同步（0）否则是未同步，插入（1）
-                this);
+            // 构造临时 incoming 对象（不立即放入列表）
+            CategorieItem incoming(-1, uuid, name, userUuid, createdAt, updatedAt,
+                                   source == CategoryImportSource::Server ? 0 : 1, this);
 
-            处理冲突(categories, newItem, source, resolution);
+            // 查找现有
+            CategorieItem *existing = uuidIndex.value(uuid.toString(QUuid::WithoutBraces), nullptr);
+            if (!existing)
+                existing = nameIndex.value(name, nullptr);
+
+            ConflictResolution action = 评估冲突(existing, incoming, resolution);
+            if (action == ConflictResolution::Skip) {
+                ++skipCount;
+                continue;
+            }
+
+            if (action == ConflictResolution::Insert) {
+                auto newPtr = 新增类别(categories, name, userUuid, source);
+                // 更新索引
+                nameIndex.insert(name, newPtr.get());
+                uuidIndex.insert(uuid.toString(QUuid::WithoutBraces), newPtr.get());
+                ++insertCount;
+            } else if (action == ConflictResolution::Overwrite && existing) {
+                QSqlQuery updateQuery(db);
+                updateQuery.prepare("UPDATE categories SET name = ?, user_uuid = ?, created_at = ?, updated_at = ?, "
+                                    "synced = ? WHERE uuid = ? OR name = ?");
+                updateQuery.addBindValue(name);
+                updateQuery.addBindValue(userUuid.toString());
+                updateQuery.addBindValue(createdAt.toString(Qt::ISODate));
+                updateQuery.addBindValue(updatedAt.toString(Qt::ISODate));
+                updateQuery.addBindValue(source == CategoryImportSource::Server ? 0
+                                                                                : (existing->synced() == 1 ? 1 : 2));
+                updateQuery.addBindValue(existing->uuid().toString());
+                updateQuery.addBindValue(existing->name());
+                if (!updateQuery.exec()) {
+                    qCritical() << "更新类别失败(uuid=" << existing->uuid() << "):" << updateQuery.lastError().text();
+                    success = false;
+                    break;
+                }
+                // 更新内存
+                existing->setName(name);
+                existing->setUserUuid(userUuid);
+                existing->setCreatedAt(createdAt);
+                existing->setUpdatedAt(updatedAt);
+                existing->setSynced(source == CategoryImportSource::Server ? 0 : (existing->synced() == 1 ? 1 : 2));
+                ++updateCount;
+            }
         }
 
-        qDebug() << "成功从JSON导入类别，当前总数:" << categories.size();
+        if (success) {
+            if (!db.commit()) {
+                qCritical() << "提交事务失败:" << db.lastError().text();
+                success = false;
+                db.rollback();
+            } else {
+                qDebug() << "导入完成 - 新增:" << insertCount << ", 更新:" << updateCount << ", 跳过:" << skipCount;
+            }
+        } else {
+            db.rollback();
+        }
     } catch (const std::exception &e) {
-        qCritical() << "从JSON导入类别时发生异常:" << e.what();
+        qCritical() << "导入类别时发生异常:" << e.what();
+        db.rollback();
         success = false;
     } catch (...) {
-        qCritical() << "从JSON导入类别时发生未知异常";
+        qCritical() << "导入类别时发生未知异常";
+        db.rollback();
         success = false;
     }
 
@@ -562,63 +606,55 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
 // 私有辅助方法实现
 
 /**
- * @brief 获取下一个可用ID
- * @param categories 类别列表
- * @return 下一个可用ID
- */
-int CategoryDataStorage::获取下一个可用ID(const CategorieList &categories) const {
-    int maxId = 0;
-    for (const auto &category : categories) {
-        if (category && category->id() > maxId) {
-            maxId = category->id();
-        }
-    }
-    return maxId + 1;
-}
-
-/**
- * @brief 处理冲突
- * @param categories 类别列表
- * @param newCategory 新类别
+ * @brief 评估冲突并决定动作
+ * @param existing 现有类别指针（若无则为nullptr）
+ * @param incoming 新导入的类别引用
  * @param resolution 冲突解决策略
- * @return 处理成功返回true，否则返回false
+ * @return 决定的冲突动作
  */
-bool CategoryDataStorage::处理冲突(CategorieList &categories, const std::unique_ptr<CategorieItem> &newCategory,
-                                   CategoryImportSource source, ConflictResolution resolution) {
-    if (!newCategory)
-        return false;
-
-    // 查找冲突的类别
-    auto it = std::find_if(
-        categories.begin(), categories.end(), [&newCategory](const std::unique_ptr<CategorieItem> &existing) {
-            return existing && (existing->name() == newCategory->name() || existing->uuid() == newCategory->uuid());
-        });
-
-    if (it == categories.end()) {
-        // 没有冲突，直接添加
-        categories.push_back(std::move(const_cast<std::unique_ptr<CategorieItem> &>(newCategory)));
-        return true;
+CategoryDataStorage::ConflictResolution CategoryDataStorage::评估冲突(const CategorieItem *existing,
+                                                                      const CategorieItem &incoming,
+                                                                      ConflictResolution resolution) const {
+    // 无冲突，直接插入
+    if (!existing) {
+        return ConflictResolution::Insert;
     }
-
-    newCategory->setSynced(source == CategoryImportSource::Server ? 0 : 1);
 
     switch (resolution) {
     case Skip:
-        return false; // 跳过冲突项目
-
+        return ConflictResolution::Skip; // 直接跳过
     case Overwrite:
-        // 覆盖现有项目
-        *it = std::move(const_cast<std::unique_ptr<CategorieItem> &>(newCategory));
-        return true;
-
-    case Merge:
-        // 合并（保留较新的版本）
-        if (newCategory->updatedAt() > (*it)->updatedAt()) {
-            *it = std::move(const_cast<std::unique_ptr<CategorieItem> &>(newCategory));
+        return ConflictResolution::Overwrite; // 强制覆盖
+    case Merge: {
+        // Merge: 选择更新时间新的那条；若相等则保留旧
+        if (incoming.updatedAt() > existing->updatedAt()) {
+            return ConflictResolution::Overwrite;
+        } else {
+            return ConflictResolution::Skip;
         }
-        return true;
-
-    default:
-        return false;
     }
+    case Insert:
+        return ConflictResolution::Insert;
+    default:
+        return ConflictResolution::Skip;
+    }
+}
+
+/**
+ * @brief 获取最后插入行ID
+ * @param db 数据库连接引用
+ * @return 最后插入行ID，失败返回-1
+ */
+int CategoryDataStorage::获取最后插入行ID(QSqlDatabase &db) const {
+    if (!db.isOpen())
+        return -1;
+    QSqlQuery idQuery(db);
+    if (!idQuery.exec("SELECT last_insert_rowid()")) {
+        qWarning() << "执行 last_insert_rowid 查询失败:" << idQuery.lastError().text();
+        return -1;
+    }
+    if (idQuery.next()) {
+        return idQuery.value(0).toInt();
+    }
+    return -1;
 }

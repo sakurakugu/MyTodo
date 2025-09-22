@@ -109,7 +109,8 @@
         "*.in": "cpp",
         "cinttypes": "cpp",
         "qsqlerror": "cpp",
-        "qdatetime": "cpp"
+        "qdatetime": "cpp",
+        "qabstractlistmodel": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "search.useIgnoreFiles": false, // 禁用git忽略文件

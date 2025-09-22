@@ -39,28 +39,6 @@ CategorieItem::CategorieItem(QObject *parent)
  * 使用指定的参数创建CategorieItem对象。这个构造函数通常用于
  * 从数据库或网络加载已存在的分类数据。
  */
-CategorieItem::CategorieItem(                    //
-    int id,                                      ///< 分类唯一标识符
-    const QUuid &uuid,                           ///< 分类唯一标识符（UUID)
-    const QString &name,                         ///< 分类名称
-    const QUuid &userUuid,                       ///< 用户UUID
-    QObject *parent)                             ///< 父对象指针
-    : QObject(parent),                           ///< 初始化父对象
-      m_id(id),                                  ///< 初始化分类ID
-      m_uuid(uuid),                              ///< 初始化分类UUID
-      m_name(name),                              ///< 初始化分类名称
-      m_userUuid(userUuid),                      ///< 初始化用户UUID
-      m_createdAt(QDateTime::currentDateTime()), ///< 初始化创建时间
-      m_updatedAt(QDateTime::currentDateTime()), ///< 初始化更新时间
-      m_synced(1)                                ///< 初始化同步状态
-{}
-
-/**
- * @brief 带参数的构造函数
- *
- * 使用指定的参数创建CategorieItem对象。这个构造函数通常用于
- * 从数据库或网络加载已存在的分类数据。
- */
 CategorieItem::CategorieItem(   //
     int id,                     ///< 分类唯一标识符
     const QUuid &uuid,          ///< 分类唯一标识符（UUID)

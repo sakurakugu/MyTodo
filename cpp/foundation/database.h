@@ -78,6 +78,7 @@ class Database : public QObject {
     // 数据库信息
     QString getDatabasePath() const; ///< 获取数据库文件路径
     int getDatabaseVersion() const;  ///< 获取数据库版本
+    QString getSqliteVersion();      ///< 查询sqlite版本
 
   private:
     explicit Database(QObject *parent = nullptr);
@@ -104,6 +105,6 @@ class Database : public QObject {
     QString m_lastError;        ///< 最后一次错误信息
     bool m_initialized;         ///< 是否已初始化
 
-    static constexpr int DATABASE_VERSION = 1;                        ///< 当前数据库版本
+    static constexpr int DATABASE_VERSION = 1;                                                   ///< 当前数据库版本
     static inline const QString CONNECTION_NAME = QString(DefaultValues::appName) + "_Database"; ///< 数据库连接名称
 };
