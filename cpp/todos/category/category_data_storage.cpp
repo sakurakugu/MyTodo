@@ -105,7 +105,7 @@ bool CategoryDataStorage::加载类别(CategorieList &categories) {
  * @return 添加成功返回新创建的CategorieItem指针，否则返回nullptr
  */
 std::unique_ptr<CategorieItem> CategoryDataStorage::新增类别(CategorieList &categories, const QString &name,
-                                                             const QUuid &userUuid, CategoryImportSource source) {
+                                                             const QUuid &userUuid, ImportSource source) {
 
     try {
         QSqlDatabase db = m_database.getDatabase();
@@ -128,7 +128,7 @@ std::unique_ptr<CategorieItem> CategoryDataStorage::新增类别(CategorieList &
         insertQuery.addBindValue(userUuid.toString());
         insertQuery.addBindValue(createdAt.toString(Qt::ISODate));
         insertQuery.addBindValue(createdAt.toString(Qt::ISODate));
-        insertQuery.addBindValue(source == CategoryImportSource::Server ? 0 : 1);
+        insertQuery.addBindValue(source == ImportSource::Server ? 0 : 1);
 
         if (!insertQuery.exec()) {
             qCritical() << "插入类别到数据库失败:" << insertQuery.lastError().text();
@@ -137,15 +137,15 @@ std::unique_ptr<CategorieItem> CategoryDataStorage::新增类别(CategorieList &
 
         // 获取自增ID
         int newId = 获取最后插入行ID(db);
-        auto newItem = std::make_unique<CategorieItem>(     //
-            newId,                                          // 占位ID，插入后回填
-            newUuid,                                        // 新的UUID
-            name,                                           // 类别名称
-            userUuid,                                       // 用户UUID
-            createdAt,                                      // 创建时间
-            createdAt,                                      // 更新时间
-            source == CategoryImportSource::Server ? 0 : 1, // 默认未同步，插入
-            this                                            //
+        auto newItem = std::make_unique<CategorieItem>( //
+            newId,                                      // 占位ID，插入后回填
+            newUuid,                                    // 新的UUID
+            name,                                       // 类别名称
+            userUuid,                                   // 用户UUID
+            createdAt,                                  // 创建时间
+            createdAt,                                  // 更新时间
+            source == ImportSource::Server ? 0 : 1,     // 默认未同步，插入
+            this                                        //
         );
 
         // 添加到内存列表
@@ -466,7 +466,7 @@ bool CategoryDataStorage::创建默认类别(CategorieList &categories, const QU
  * @param resolution 冲突解决策略
  */
 bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const QJsonArray &categoriesArray,
-                                         CategoryImportSource source, ConflictResolution resolution) {
+                                         ImportSource source, ConflictResolution resolution) {
     bool success = true;
 
     QSqlDatabase db = m_database.getDatabase();
@@ -533,7 +533,7 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
 
             // 构造临时 incoming 对象（不立即放入列表）
             CategorieItem incoming(-1, uuid, name, userUuid, createdAt, updatedAt,
-                                   source == CategoryImportSource::Server ? 0 : 1, this);
+                                   source == ImportSource::Server ? 0 : 1, this);
 
             // 查找现有
             CategorieItem *existing = uuidIndex.value(uuid.toString(QUuid::WithoutBraces), nullptr);
@@ -560,8 +560,7 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
                 updateQuery.addBindValue(userUuid.toString());
                 updateQuery.addBindValue(createdAt.toString(Qt::ISODate));
                 updateQuery.addBindValue(updatedAt.toString(Qt::ISODate));
-                updateQuery.addBindValue(source == CategoryImportSource::Server ? 0
-                                                                                : (existing->synced() == 1 ? 1 : 2));
+                updateQuery.addBindValue(source == ImportSource::Server ? 0 : (existing->synced() == 1 ? 1 : 2));
                 updateQuery.addBindValue(existing->uuid().toString());
                 updateQuery.addBindValue(existing->name());
                 if (!updateQuery.exec()) {
@@ -574,7 +573,7 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
                 existing->setUserUuid(userUuid);
                 existing->setCreatedAt(createdAt);
                 existing->setUpdatedAt(updatedAt);
-                existing->setSynced(source == CategoryImportSource::Server ? 0 : (existing->synced() == 1 ? 1 : 2));
+                existing->setSynced(source == ImportSource::Server ? 0 : (existing->synced() == 1 ? 1 : 2));
                 ++updateCount;
             }
         }

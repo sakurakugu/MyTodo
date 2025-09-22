@@ -592,6 +592,259 @@ bool TodoDataStorage::软删除待办(TodoList &todos, int id) {
 }
 
 /**
+ * @brief 导入类别从JSON
+ * @param categories 类别列表引用
+ * @param categoriesArray JSON类别数组
+ * @param source 来源（服务器或本地备份）
+ * @param resolution 冲突解决策略
+ */
+bool TodoDataStorage::导入类别从JSON(TodoList &todos, const QJsonArray &todosArray, ImportSource source,
+                                     ConflictResolution resolution) {
+    bool success = true;
+
+    QSqlDatabase db = m_database.getDatabase();
+    if (!db.isOpen()) {
+        qCritical() << "数据库未打开，无法导入类别";
+        return false;
+    }
+
+    // 构建现有类别索引（按 uuid 与 name）
+    QHash<QString, TodoItem *> uuidIndex;
+    for (auto &item : todos) {
+        if (item) {
+            uuidIndex.insert(item->uuid().toString(QUuid::WithoutBraces), item.get());
+        }
+    }
+
+    if (!db.transaction()) {
+        qCritical() << "无法开启事务以导入类别:" << db.lastError().text();
+        return false;
+    }
+
+    int insertCount = 0;
+    int updateCount = 0;
+    int skipCount = 0;
+
+    try {
+        for (const QJsonValue &value : todosArray) {
+            if (!value.isObject()) {
+                qWarning() << "跳过无效待办（非对象）";
+                ++skipCount;
+                continue;
+            }
+            QJsonObject obj = value.toObject();
+            if (!obj.contains("title") || !obj.contains("user_uuid")) {
+                qWarning() << "跳过无效待办（缺字段）";
+                ++skipCount;
+                continue;
+            }
+
+            QUuid userUuid = QUuid::fromString(obj.value("user_uuid").toString());
+            if (userUuid.isNull()) {
+                qWarning() << "跳过无效待办（user_uuid 无效）";
+                ++skipCount;
+                continue;
+            }
+            QUuid uuid = obj.contains("uuid") ? QUuid::fromString(obj.value("uuid").toString()) : QUuid::createUuid();
+            if (uuid.isNull())
+                uuid = QUuid::createUuid();
+            QString title = obj.value("title").toString();
+            QString description = obj.value("description").toString();
+            QString category = obj.value("category").toString();
+            bool important = obj.value("important").toBool();
+            QDateTime deadline = QDateTime::fromString(obj["deadline"].toString(), Qt::ISODate);
+            int recurrenceInterval = obj.value("recurrenceInterval").toInt();
+            int recurrenceCount = obj.value("recurrenceCount").toInt();
+            QDate recurrenceStartDate = QDate::fromString(obj["recurrenceStartDate"].toString(), Qt::ISODate);
+            bool isCompleted = obj.value("isCompleted").toBool();
+            QDateTime completedAt = QDateTime::fromString(obj["completed_at"].toString(), Qt::ISODate);
+            bool isDeleted = obj.value("isDeleted").toBool();
+            QDateTime deletedAt = QDateTime::fromString(obj["deleted_at"].toString(), Qt::ISODate);
+            QDateTime createdAt = obj.contains("created_at")
+                                      ? QDateTime::fromString(obj.value("created_at").toString(), Qt::ISODate)
+                                      : QDateTime::currentDateTime();
+            if (!createdAt.isValid())
+                createdAt = QDateTime::currentDateTime();
+            QDateTime updatedAt = obj.contains("updated_at")
+                                      ? QDateTime::fromString(obj.value("updated_at").toString(), Qt::ISODate)
+                                      : createdAt;
+            if (!updatedAt.isValid())
+                updatedAt = createdAt;
+
+            // 构造临时 incoming 对象（不立即放入列表）
+            TodoItem incoming(                          //
+                -1,                                     //
+                uuid,                                   //
+                userUuid,                               //
+                title,                                  //
+                description,                            //
+                category,                               //
+                important,                              //
+                deadline,                               //
+                recurrenceInterval,                     //
+                recurrenceCount,                        //
+                recurrenceStartDate,                    //
+                isCompleted,                            //
+                completedAt,                            //
+                isDeleted,                              //
+                deletedAt,                              //
+                createdAt,                              //
+                updatedAt,                              //
+                source == ImportSource::Server ? 0 : 1, //
+                this                                    //
+            );
+
+            // 查找现有
+            TodoItem *existing = uuidIndex.value(uuid.toString(QUuid::WithoutBraces), nullptr);
+
+            ConflictResolution action = 评估冲突(existing, incoming, resolution);
+            if (action == ConflictResolution::Skip) {
+                ++skipCount;
+                continue;
+            }
+
+            if (action == ConflictResolution::Insert) {
+                auto newItem = std::make_unique<TodoItem>(
+                    incoming.id(),
+                    incoming.uuid(),
+                    incoming.userUuid(),
+                    incoming.title(),
+                    incoming.description(),
+                    incoming.category(),
+                    incoming.important(),
+                    incoming.deadline(),
+                    incoming.recurrenceInterval(),
+                    incoming.recurrenceCount(),
+                    incoming.recurrenceStartDate(),
+                    incoming.isCompleted(),
+                    incoming.completedAt(),
+                    incoming.isDeleted(),
+                    incoming.deletedAt(),
+                    incoming.createdAt(),
+                    incoming.updatedAt(),
+                    incoming.synced(),
+                    this
+                );
+                TodoItem* itemPtr = newItem.get();
+                bool success = 新增待办(todos, std::move(newItem));
+                    // 更新索引
+                    uuidIndex.insert(uuid.toString(QUuid::WithoutBraces), itemPtr);
+                    ++insertCount;
+
+            } else if (action == ConflictResolution::Overwrite && existing) {
+                QSqlQuery updateQuery(db);
+                updateQuery.prepare( //
+                    "UPDATE todos SET user_uuid = ?, title = ?, description = ?,category = ?, important = ?, "
+                    "deadline = ?, recurrence_interval = ?, recurrence_count = ?, recurrence_start_date = ?, "
+                    "is_completed = ?, completed_at = ?, is_deleted = ?, deleted_at = ?, created_at = ?, "
+                    "updated_at = ?, synced = ? WHERE uuid = ?");
+                updateQuery.addBindValue(userUuid.toString());
+                updateQuery.addBindValue(title);
+                updateQuery.addBindValue(description);
+                updateQuery.addBindValue(category);
+                updateQuery.addBindValue(important);
+                updateQuery.addBindValue(deadline.toString(Qt::ISODate));
+                updateQuery.addBindValue(recurrenceInterval);
+                updateQuery.addBindValue(recurrenceCount);
+                updateQuery.addBindValue(recurrenceStartDate.toString(Qt::ISODate));
+                updateQuery.addBindValue(isCompleted);
+                updateQuery.addBindValue(completedAt.toString(Qt::ISODate));
+                updateQuery.addBindValue(isDeleted);
+                updateQuery.addBindValue(deletedAt.toString(Qt::ISODate));
+                updateQuery.addBindValue(createdAt.toString(Qt::ISODate));
+                updateQuery.addBindValue(updatedAt.toString(Qt::ISODate));
+                updateQuery.addBindValue(source == ImportSource::Server ? 0 : (existing->synced() == 1 ? 1 : 2));
+                updateQuery.addBindValue(existing->uuid().toString());
+                if (!updateQuery.exec()) {
+                    qCritical() << "更新待办失败(uuid=" << existing->uuid() << "):" << updateQuery.lastError().text();
+                    success = false;
+                    break;
+                }
+                // 更新内存
+                existing->setTitle(title);
+                existing->setUserUuid(userUuid);
+                existing->setDescription(description);
+                existing->setCategory(category);
+                existing->setImportant(important);
+                existing->setDeadline(deadline);
+                existing->setRecurrenceInterval(recurrenceInterval);
+                existing->setRecurrenceCount(recurrenceCount);
+                existing->setRecurrenceStartDate(recurrenceStartDate);
+                existing->setIsCompleted(isCompleted);
+                existing->setCompletedAt(completedAt);
+                existing->setIsDeleted(isDeleted);
+                existing->setDeletedAt(deletedAt);
+                existing->setCreatedAt(createdAt);
+                existing->setUpdatedAt(updatedAt);
+                existing->setSynced(source == ImportSource::Server ? 0 : (existing->synced() == 1 ? 1 : 2));
+                ++updateCount;
+            }
+        }
+
+        if (success) {
+            if (!db.commit()) {
+                qCritical() << "提交事务失败:" << db.lastError().text();
+                success = false;
+                db.rollback();
+            } else {
+                qDebug() << "导入完成 - 新增:" << insertCount << ", 更新:" << updateCount << ", 跳过:" << skipCount;
+            }
+        } else {
+            db.rollback();
+        }
+    } catch (const std::exception &e) {
+        qCritical() << "导入待办时发生异常:" << e.what();
+        db.rollback();
+        success = false;
+    } catch (...) {
+        qCritical() << "导入待办时发生未知异常";
+        db.rollback();
+        success = false;
+    }
+
+    return success;
+}
+
+// 私有辅助方法实现
+
+/**
+ * @brief 评估冲突并决定动作
+ * @param existing 现有类别指针（若无则为nullptr）
+ * @param incoming 新导入的类别引用
+ * @param resolution 冲突解决策略
+ * @return 决定的冲突动作
+ */
+TodoDataStorage::ConflictResolution TodoDataStorage::评估冲突( //
+    const TodoItem *existing,                                  //
+    const TodoItem &incoming,                                  //
+    ConflictResolution resolution) const                       //
+{
+    // 无冲突，直接插入
+    if (!existing) {
+        return ConflictResolution::Insert;
+    }
+
+    switch (resolution) {
+    case Skip:
+        return ConflictResolution::Skip; // 直接跳过
+    case Overwrite:
+        return ConflictResolution::Overwrite; // 强制覆盖
+    case Merge: {
+        // Merge: 选择更新时间新的那条；若相等则保留旧
+        if (incoming.updatedAt() > existing->updatedAt()) {
+            return ConflictResolution::Overwrite;
+        } else {
+            return ConflictResolution::Skip;
+        }
+    }
+    case Insert:
+        return ConflictResolution::Insert;
+    default:
+        return ConflictResolution::Skip;
+    }
+}
+
+/**
  * @brief 获取最后插入行ID
  * @param db 数据库连接引用
  * @return 最后插入行ID，失败返回-1

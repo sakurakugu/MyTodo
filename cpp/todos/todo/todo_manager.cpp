@@ -956,87 +956,14 @@ void TodoManager::onTodosUpdatedFromServer(const QJsonArray &todosArray) {
 }
 
 void TodoManager::updateTodosFromServer(const QJsonArray &todosArray) {
-    qDebug() << "从服务器更新" << todosArray.size() << "个待办事项";
-    qDebug() << "当前本地有" << m_todos.size() << "个待办事项";
+    qDebug() << "从服务器更新" << todosArray.size() << "个待办事项，当前本地有" << m_todos.size() << "个待办事项";
 
     beginResetModel();
-
-    // 解析服务器返回的待办事项数据
-    for (const QJsonValue &value : todosArray) {
-        QJsonObject todoObj = value.toObject();
-
-        // 查找是否已存在相同UUID的项目
-        QString uuid = todoObj["uuid"].toString();
-        TodoItem *existingItem = nullptr;
-
-        // qDebug() << "处理服务器项目，UUID:" << uuid << ", 标题:" <<
-        // todoObj["title"].toString();
-
-        for (const auto &item : m_todos) {
-            QString localUuid = item->uuid().toString(QUuid::WithoutBraces); // 去掉花括号
-            // qDebug() << "比较本地项目 UUID:" << localUuid << " vs 服务器 UUID:" <<
-            // uuid;
-            if (localUuid == uuid && !uuid.isEmpty()) {
-                existingItem = item.get();
-                // qDebug() << "找到现有项目，UUID:" << uuid;
-                break;
-            }
-        }
-
-        if (existingItem) {
-            // 更新现有项目
-            existingItem->setTitle(todoObj["title"].toString());
-            existingItem->setDescription(todoObj["description"].toString());
-            existingItem->setCategory(todoObj["category"].toString());
-            existingItem->setImportant(todoObj["important"].toBool());
-            existingItem->setDeadline(QDateTime::fromString(todoObj["deadline"].toString(), Qt::ISODate));
-            existingItem->setRecurrenceInterval(todoObj["recurrenceInterval"].toInt());
-            existingItem->setRecurrenceCount(todoObj["recurrenceCount"].toInt());
-            existingItem->setRecurrenceStartDate(
-                QDate::fromString(todoObj["recurrenceStartDate"].toString(), Qt::ISODate));
-            existingItem->setIsCompleted(todoObj["is_completed"].toBool());
-            existingItem->setCompletedAt(QDateTime::fromString(todoObj["completed_at"].toString(), Qt::ISODate));
-            existingItem->setIsDeleted(todoObj["is_deleted"].toBool());
-            existingItem->setDeletedAt(QDateTime::fromString(todoObj["deleted_at"].toString(), Qt::ISODate));
-            existingItem->setUpdatedAt(QDateTime::fromString(todoObj["updated_at"].toString(), Qt::ISODate));
-            existingItem->setSynced(0);
-        } else {
-            // 创建新项目
-            qDebug() << "未找到现有项目，创建新项目，UUID:" << uuid;
-            auto newItem = std::make_unique<TodoItem>();
-            newItem->setId(todoObj["id"].toInt());
-            newItem->setUuid(QUuid(todoObj["uuid"].toString()));
-            newItem->setUserUuid(QUuid(todoObj["user_uuid"].toString()));
-            newItem->setTitle(todoObj["title"].toString());
-            newItem->setDescription(todoObj["description"].toString());
-            newItem->setCategory(todoObj["category"].toString());
-            newItem->setImportant(todoObj["important"].toBool());
-            newItem->setDeadline(QDateTime::fromString(todoObj["deadline"].toString(), Qt::ISODate));
-            newItem->setRecurrenceInterval(todoObj["recurrenceInterval"].toInt());
-            newItem->setRecurrenceCount(todoObj["recurrenceCount"].toInt());
-            newItem->setRecurrenceStartDate(QDate::fromString(todoObj["recurrenceStartDate"].toString(), Qt::ISODate));
-            newItem->setIsCompleted(todoObj["is_completed"].toBool());
-            newItem->setCompletedAt(QDateTime::fromString(todoObj["completed_at"].toString(), Qt::ISODate));
-            newItem->setIsDeleted(todoObj["is_deleted"].toBool());
-            newItem->setDeletedAt(QDateTime::fromString(todoObj["deleted_at"].toString(), Qt::ISODate));
-            newItem->setCreatedAt(QDateTime::fromString(todoObj["created_at"].toString(), Qt::ISODate));
-            newItem->setUpdatedAt(QDateTime::fromString(todoObj["updated_at"].toString(), Qt::ISODate));
-            newItem->setSynced(0);
-
-            m_todos.push_back(std::move(newItem));
-        }
-    }
-
+    m_dataManager->导入类别从JSON(m_todos, todosArray);
     endResetModel();
+
     清除过滤后的待办();
     rebuildIdIndex();
-
-    // 保存到本地存储
-    if (!m_dataManager->saveToLocalStorage(m_todos)) {
-        qWarning() << "无法在服务器更新后保存本地存储";
-    }
-
-    // 更新同步管理器的数据
     更新同步管理器的数据();
 }
 

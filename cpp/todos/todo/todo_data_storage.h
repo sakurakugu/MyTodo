@@ -84,6 +84,13 @@ class TodoDataStorage : public QObject {
     };
     Q_ENUM(ConflictResolution)
 
+    // 定义导入来源
+    enum ImportSource {
+        Server = 0, // 服务器
+        Local = 1   // 本地/本地备份
+    };
+    Q_ENUM(ImportSource)
+
     // 构造函数
     explicit TodoDataStorage(QObject *parent = nullptr);
     ~TodoDataStorage();
@@ -106,12 +113,18 @@ class TodoDataStorage : public QObject {
     bool 删除待办(TodoList &todos, int id);
     bool 软删除待办(TodoList &todos, int id);
 
+    bool 导入类别从JSON(TodoList &categories, const QJsonArray &categoriesArray,
+                        ImportSource source = ImportSource::Server,
+                        ConflictResolution resolution = ConflictResolution::Merge);
+
     // 数据库侧过滤 + 排序查询（仅返回符合条件的 id 列表，后续由上层映射为对象）
     QList<int> 查询待办ID列表(const QueryOptions &options);
 
   private:
-    int 获取最后插入行ID(QSqlDatabase &db) const;                  // 获取自增ID
-    static QString 构建SQL排序语句(int sortType, bool descending); // 构建查询SQL
+    ConflictResolution 评估冲突(const TodoItem *existing, const TodoItem &incoming,
+                                ConflictResolution resolution) const; // 返回应执行的动作
+    int 获取最后插入行ID(QSqlDatabase &db) const;                     // 获取自增ID
+    static QString 构建SQL排序语句(int sortType, bool descending);    // 构建查询SQL
 
     // 成员变量
     Setting &m_setting;   ///< 设置对象引用

@@ -63,11 +63,11 @@ class CategoryDataStorage : public QObject {
     Q_ENUM(ConflictResolution)
 
     // 定义导入来源
-    enum CategoryImportSource {
+    enum ImportSource {
         Server = 0, // 服务器
         Local = 1   // 本地/本地备份
     };
-    Q_ENUM(CategoryImportSource)
+    Q_ENUM(ImportSource)
 
     // 构造函数
     explicit CategoryDataStorage(QObject *parent = nullptr);
@@ -78,7 +78,7 @@ class CategoryDataStorage : public QObject {
 
     // CRUD操作
     std::unique_ptr<CategorieItem> 新增类别(CategorieList &categories, const QString &name, const QUuid &userUuid,
-                                            CategoryImportSource source = Local);
+                                            ImportSource source = Local);
     bool 更新类别(CategorieList &categories, const QString &name, const QString &newName);
     bool 删除类别(CategorieList &categories, const QString &name);
     bool 软删除类别(CategorieList &categories, const QString &name);
@@ -86,7 +86,7 @@ class CategoryDataStorage : public QObject {
 
     bool 创建默认类别(CategorieList &categories, const QUuid &userUuid);
     bool 导入类别从JSON(CategorieList &categories, const QJsonArray &categoriesArray,
-                        CategoryImportSource source = CategoryImportSource::Server,
+                        ImportSource source = ImportSource::Server,
                         ConflictResolution resolution = ConflictResolution::Merge);
 
   private:
