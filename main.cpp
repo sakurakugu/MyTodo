@@ -35,9 +35,8 @@
 #include "cpp/todos/category/category_data_storage.h"
 #include "cpp/todos/category/category_manager.h"
 #include "cpp/todos/category/category_sync_server.h"
-#include "cpp/todos/todo/todo_filter.h"
 #include "cpp/todos/todo/todo_manager.h"
-#include "cpp/todos/todo/todo_sorter.h"
+#include "cpp/todos/todo/todo_queryer.h"
 #include "cpp/user_auth.h"
 #include "version.h"
 
@@ -94,9 +93,6 @@ int main(int argc, char *argv[]) {
     CategoryManager categoryManager(userAuth);          // 创建CategoryManager实例
     TodoManager todoManager(userAuth, categoryManager); // 创建TodoManager实例
 
-    // SQLite 版本: "3.50.4"
-    // qDebug() << "SQLite 版本:" << Database::GetInstance().getSqliteVersion();
-
     // 检查是否通过开机自启动启动
     QStringList arguments = app.arguments();
     if (arguments.contains("--autostart")) {
@@ -111,9 +107,7 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("userAuth", &userAuth);
     engine.rootContext()->setContextProperty("categoryManager", &categoryManager);
     engine.rootContext()->setContextProperty("todoManager", &todoManager);
-    engine.rootContext()->setContextProperty("todoFilter", todoManager.filter());
-    engine.rootContext()->setContextProperty("todoSorter", todoManager.sorter());
-    engine.rootContext()->setContextProperty("todoSyncServer", todoManager.syncServer());
+    engine.rootContext()->setContextProperty("todoQueryer", todoManager.queryer());
     engine.rootContext()->setContextProperty("globalState", &globalState);
 
     QObject::connect(

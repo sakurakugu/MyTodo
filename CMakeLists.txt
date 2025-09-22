@@ -140,10 +140,8 @@ set(TODO_SOURCES
     cpp/todos/todo/todo_sync_server.h
     cpp/todos/todo/todo_data_storage.cpp
     cpp/todos/todo/todo_data_storage.h
-    cpp/todos/todo/todo_sorter.cpp
-    cpp/todos/todo/todo_sorter.h
-    cpp/todos/todo/todo_filter.cpp
-    cpp/todos/todo/todo_filter.h
+    cpp/todos/todo/todo_queryer.cpp
+    cpp/todos/todo/todo_queryer.h
 )
 
 set(CATEGORY_SOURCES

@@ -26,7 +26,7 @@ Page {
 
     // 组件完成时设置默认过滤器为"未完成"（待办）
     Component.onCompleted: {
-        todoFilter.currentFilter = "todo";
+        todoQueryer.currentFilter = "todo";
     }
 
     background: MainBackground {}
@@ -133,25 +133,25 @@ Page {
 
                         IconButton {
                             text: "\ue8df"              ///< 全部图标
-                            onClicked: todoFilter.currentFilter = "all"
+                            onClicked: todoQueryer.currentFilter = "all"
                             width: parent.width
                         }
 
                         IconButton {
                             text: "\ue7fc"              ///< 未完成图标
-                            onClicked: todoFilter.currentFilter = "todo"
+                            onClicked: todoQueryer.currentFilter = "todo"
                             width: parent.width
                         }
 
                         IconButton {
                             text: "\ue7fa"              ///< 已完成图标
-                            onClicked: todoFilter.currentFilter = "done"
+                            onClicked: todoQueryer.currentFilter = "done"
                             width: parent.width
                         }
 
                         IconButton {
                             text: "\ue922"              ///< 回收站图标
-                            onClicked: todoFilter.currentFilter = "recycle"
+                            onClicked: todoQueryer.currentFilter = "recycle"
                             width: parent.width
                         }
                     }
@@ -163,7 +163,7 @@ Page {
                     text: isHovered ? (isDescending ? "\ue8c3" : "\ue8c4") : ("\ue8c5")
                     onClicked: {
                         isDescending = !isDescending;
-                        todoSorter.setDescending(isDescending);
+                        todoQueryer.setDescending(isDescending);
                     }
                     width: parent.width
                 }
@@ -280,7 +280,7 @@ Page {
                             selectByMouse: true
                             verticalAlignment: TextInput.AlignVCenter
                             onTextChanged: {
-                                todoFilter.searchText = text;
+                                todoQueryer.searchText = text;
                             }
                         }
 
@@ -449,7 +449,7 @@ Page {
                             Layout.fillHeight: true
                             Layout.fillWidth: true
                             font.bold: true
-                            enabled: globalState.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done" // 只有选中待办事项且不在回收站或已完成模式时才能编辑
+                            enabled: globalState.selectedTodo !== null && todoQueryer.currentFilter !== "recycle" && todoQueryer.currentFilter !== "done" // 只有选中待办事项且不在回收站或已完成模式时才能编辑
                             borderWidth: 0
                             backgroundColor: "transparent"
 
@@ -543,9 +543,9 @@ Page {
                             property string timeText: {
                                 if (!globalState.selectedTodo)
                                     return "";
-                                if (todoFilter.currentFilter === "recycle") {
+                                if (todoQueryer.currentFilter === "recycle") {
                                     return globalState.selectedTodo.deletedAt ? qsTr("删除时间: ") + Qt.formatDateTime(globalState.selectedTodo.deletedAt, "yyyy-MM-dd hh:mm") : "";
-                                } else if (todoFilter.currentFilter === "done") {
+                                } else if (todoQueryer.currentFilter === "done") {
                                     return globalState.selectedTodo.completedAt ? qsTr("完成时间: ") + Qt.formatDateTime(globalState.selectedTodo.completedAt, "yyyy-MM-dd hh:mm") : "";
                                 } else {
                                     return globalState.selectedTodo.updatedAt ? qsTr("修改时间: ") + Qt.formatDateTime(globalState.selectedTodo.updatedAt, "yyyy-MM-dd hh:mm") : "";
@@ -601,7 +601,7 @@ Page {
                                 font.pixelSize: 12
                                 implicitHeight: 30
                                 implicitWidth: 70
-                                enabled: globalState.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                                enabled: globalState.selectedTodo !== null && todoQueryer.currentFilter !== "recycle" && todoQueryer.currentFilter !== "done"
                                 onClicked: {
                                     var pos = mapToItem(null, 0, height);
                                     todoCategoryManager.popup(pos.x, pos.y, false);
@@ -639,7 +639,7 @@ Page {
                     placeholderText: qsTr("输入详情")
                     text: globalState.selectedTodo ? (globalState.selectedTodo.description || "") : ""
                     wrapMode: TextEdit.WrapAnywhere
-                    enabled: globalState.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                    enabled: globalState.selectedTodo !== null && todoQueryer.currentFilter !== "recycle" && todoQueryer.currentFilter !== "done"
 
                     onEditingFinished: {
                         saveDescriptionIfChanged();
@@ -789,7 +789,7 @@ Page {
                                     }
                                     font.pixelSize: 12
                                     implicitHeight: 40
-                                    enabled: globalState.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                                    enabled: globalState.selectedTodo !== null && todoQueryer.currentFilter !== "recycle" && todoQueryer.currentFilter !== "done"
                                     onClicked: {
                                         var pos = mapToItem(null, 0, height);
                                         todoCategoryManager.popup(pos.x, pos.y, false);
@@ -822,7 +822,7 @@ Page {
                                             return Qt.formatDateTime(globalState.selectedTodo.deadline, "yyyy-MM-dd hh:mm");
                                         return qsTr("点击选择日期");
                                     }
-                                    enabled: globalState.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                                    enabled: globalState.selectedTodo !== null && todoQueryer.currentFilter !== "recycle" && todoQueryer.currentFilter !== "done"
                                     font.pixelSize: 12
                                     Layout.fillWidth: true
                                     implicitHeight: 40
@@ -855,7 +855,7 @@ Page {
                                     id: drawerIntervalSelector
                                     Layout.fillWidth: true
                                     value: globalState.selectedTodo ? globalState.selectedTodo.recurrenceInterval : 0
-                                    enabled: globalState.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                                    enabled: globalState.selectedTodo !== null && todoQueryer.currentFilter !== "recycle" && todoQueryer.currentFilter !== "done"
 
                                     onIntervalChanged: function (newValue) {
                                         if (globalState.selectedTodo && newValue !== globalState.selectedTodo.recurrenceInterval) {
@@ -887,7 +887,7 @@ Page {
                                     from: 0
                                     to: 999
                                     value: globalState.selectedTodo ? globalState.selectedTodo.recurrenceCount : 0
-                                    enabled: globalState.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                                    enabled: globalState.selectedTodo !== null && todoQueryer.currentFilter !== "recycle" && todoQueryer.currentFilter !== "done"
                                     implicitWidth: 100
                                     implicitHeight: 25
 
@@ -930,7 +930,7 @@ Page {
                                             return Qt.formatDate(globalState.selectedTodo.recurrenceStartDate, "yyyy-MM-dd");
                                         return qsTr("点击选择日期");
                                     }
-                                    enabled: globalState.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                                    enabled: globalState.selectedTodo !== null && todoQueryer.currentFilter !== "recycle" && todoQueryer.currentFilter !== "done"
                                     font.pixelSize: 12
                                     Layout.fillWidth: true
                                     implicitHeight: 40
@@ -957,7 +957,7 @@ Page {
                                     id: drawerCompletedCheckBox
                                     text: qsTr("已完成:")
                                     checked: globalState.selectedTodo && globalState.selectedTodo.completed !== undefined ? globalState.selectedTodo.completed : false
-                                    enabled: globalState.selectedTodo !== null && todoFilter.currentFilter !== "recycle"
+                                    enabled: globalState.selectedTodo !== null && todoQueryer.currentFilter !== "recycle"
                                     fontSize: 16
                                     implicitHeight: 30
                                     isCheckBoxOnLeft: false
@@ -985,7 +985,7 @@ Page {
                                     id: drawerImportantCheckBox
                                     text: qsTr("重要:")
                                     checked: globalState.selectedTodo && globalState.selectedTodo.important !== undefined ? globalState.selectedTodo.important : false
-                                    enabled: globalState.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                                    enabled: globalState.selectedTodo !== null && todoQueryer.currentFilter !== "recycle" && todoQueryer.currentFilter !== "done"
                                     fontSize: 16
                                     implicitHeight: 30
                                     isCheckBoxOnLeft: false
@@ -1019,7 +1019,7 @@ Page {
                                 CustomButton {
                                     text: qsTr("删除")
                                     font.pixelSize: 16
-                                    enabled: globalState.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                                    enabled: globalState.selectedTodo !== null && todoQueryer.currentFilter !== "recycle" && todoQueryer.currentFilter !== "done"
                                     backgroundColor: ThemeManager.errorColor
                                     hoverColor: Qt.darker(ThemeManager.errorColor, 1.1)
                                     pressedColor: Qt.darker(ThemeManager.errorColor, 1.2)
@@ -1063,7 +1063,7 @@ Page {
 
         MenuItem {
             text: qsTr("按创建时间")
-            onTriggered: todoSorter.setSortType(0)
+            onTriggered: todoQueryer.setSortType(0)
             contentItem: Text {
                 text: parent.text
                 color: ThemeManager.textColor
@@ -1073,7 +1073,7 @@ Page {
 
         MenuItem {
             text: qsTr("按截止日期")
-            onTriggered: todoSorter.setSortType(1)
+            onTriggered: todoQueryer.setSortType(1)
             contentItem: Text {
                 text: parent.text
                 color: ThemeManager.textColor
@@ -1083,7 +1083,7 @@ Page {
 
         MenuItem {
             text: qsTr("按重要性")
-            onTriggered: todoSorter.setSortType(2)
+            onTriggered: todoQueryer.setSortType(2)
             contentItem: Text {
                 text: parent.text
                 color: ThemeManager.textColor
@@ -1093,7 +1093,7 @@ Page {
 
         MenuItem {
             text: qsTr("按标题")
-            onTriggered: todoSorter.setSortType(3)
+            onTriggered: todoQueryer.setSortType(3)
             contentItem: Text {
                 text: parent.text
                 color: ThemeManager.textColor
@@ -1158,7 +1158,7 @@ Page {
                                 toggle();
                                 homePage.loginStatusDialogs.showLoginRequired();
                             } else {
-                                todoSyncServer.setAutoSyncEnabled(checked);
+                                globalState.setIsAutoSyncEnabled(checked);
                             }
                         }
                     }

@@ -204,7 +204,7 @@ Page {
                             toggle();
                             settingPage.loginStatusDialogs.showLoginRequired();
                         } else {
-                            todoSyncServer.setAutoSyncEnabled(checked);
+                            globalState.setIsAutoSyncEnabled(checked);
                         }
                     }
                 }

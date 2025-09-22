@@ -27,9 +27,8 @@
 #include "foundation/network_request.h"
 #include "setting.h"
 #include "todo_data_storage.h" // 数据管理器
-#include "todo_filter.h"       // 筛选管理器
 #include "todo_item.h"
-#include "todo_sorter.h"      // 排序管理器
+#include "todo_queryer.h"     // 筛选管理器
 #include "todo_sync_server.h" // 服务器同步管理器
 
 class GlobalState; // 前向声明
@@ -99,8 +98,7 @@ class TodoManager : public QAbstractListModel {
 
     // 筛选和排序功能访问器
     // 访问器
-    Q_INVOKABLE TodoFilter *filter() const;
-    Q_INVOKABLE TodoSorter *sorter() const;
+    Q_INVOKABLE TodoQueryer *queryer() const;
     Q_INVOKABLE TodoSyncServer *syncServer() const;
 
     // CRUD操作
@@ -158,8 +156,7 @@ class TodoManager : public QAbstractListModel {
     TodoSyncServer *m_syncManager;      ///< 同步管理器 - 负责所有服务器同步相关功能
     TodoDataStorage *m_dataManager;     ///< 数据管理器 - 负责本地存储和文件导入导出
     CategoryManager *m_categoryManager; ///< 类别管理器 - 负责类别相关操作
-    TodoFilter *m_filter;               ///< 筛选管理器 - 负责所有筛选相关功能
-    TodoSorter *m_sorter;               ///< 排序管理器 - 负责所有排序相关功能
+    TodoQueryer *m_queryer;             ///< 查询管理器 - 负责所有筛选排序相关功能
 
     // 辅助方法
     int generateUniqueId(); ///< 生成唯一的待办事项ID

@@ -14,8 +14,7 @@
 #include "../category/category_sync_server.h"
 #include "foundation/network_request.h"
 #include "global_state.h"
-#include "todo_filter.h"
-#include "todo_sorter.h"
+#include "todo_queryer.h"
 #include "user_auth.h"
 
 #include <QDateTime>
@@ -39,19 +38,18 @@ TodoManager::TodoManager(UserAuth &userAuth, CategoryManager &categoryManager,
       m_syncManager(new TodoSyncServer(userAuth, this)), //
       m_dataManager(new TodoDataStorage(this)),          //
       m_categoryManager(&categoryManager),               //
-      m_filter(new TodoFilter(this)),                    //
-      m_sorter(new TodoSorter(this))                     //
+      m_queryer(new TodoQueryer(this))                   //
 {
     // 连接筛选器信号，当筛选条件变化时更新缓存
-    connect(m_filter, &TodoFilter::filtersChanged, this, [this]() {
+    connect(m_queryer, &TodoQueryer::filtersChanged, this, [this]() {
         beginResetModel();
         清除过滤后的待办();
         endResetModel();
     });
 
     // 连接排序器信号，当排序类型或倒序状态变化时重新排序
-    connect(m_sorter, &TodoSorter::sortTypeChanged, this, &TodoManager::sortTodos);
-    connect(m_sorter, &TodoSorter::descendingChanged, this, &TodoManager::sortTodos);
+    connect(m_queryer, &TodoQueryer::sortTypeChanged, this, &TodoManager::sortTodos);
+    connect(m_queryer, &TodoQueryer::descendingChanged, this, &TodoManager::sortTodos);
 
     // 连接同步管理器信号
     connect(m_syncManager, &TodoSyncServer::syncStarted, this, &TodoManager::onSyncStarted);
@@ -95,7 +93,7 @@ int TodoManager::rowCount(const QModelIndex &parent) const {
         return 0;
 
     // 使用筛选器获取筛选后的项目数量
-    if (!m_filter->hasActiveFilters()) {
+    if (!m_queryer->hasActiveFilters()) {
         return m_todos.size();
     }
 
@@ -115,7 +113,7 @@ QVariant TodoManager::data(const QModelIndex &index, int role) const {
         return QVariant();
 
     // 如果没有设置过滤条件，直接返回对应索引的项目
-    if (!m_filter->hasActiveFilters()) {
+    if (!m_queryer->hasActiveFilters()) {
         if (static_cast<size_t>(index.row()) >= m_todos.size())
             return QVariant();
         return getItemData(m_todos[index.row()].get(), role);
@@ -354,14 +352,14 @@ void TodoManager::更新过滤后的待办() {
 
     // 组装查询参数（数据库端过滤 + 排序）
     TodoDataStorage::QueryOptions opt{
-        .category = m_filter->currentCategory(),            //
-        .statusFilter = m_filter->currentFilter(),          //
-        .searchText = m_filter->searchText(),               //
-        .dateFilterEnabled = m_filter->dateFilterEnabled(), //
-        .dateStart = m_filter->dateFilterStart(),           //
-        .dateEnd = m_filter->dateFilterEnd(),               //
-        .sortType = m_sorter->sortType(),                   //
-        .descending = m_sorter->descending()                //
+        .category = m_queryer->currentCategory(),            //
+        .statusFilter = m_queryer->currentFilter(),          //
+        .searchText = m_queryer->searchText(),               //
+        .dateFilterEnabled = m_queryer->dateFilterEnabled(), //
+        .dateStart = m_queryer->dateFilterStart(),           //
+        .dateEnd = m_queryer->dateFilterEnd(),               //
+        .sortType = m_queryer->sortType(),                   //
+        .descending = m_queryer->descending()                //
     }; // 暂不分页，后续可加入 opt.limit/offset
 
     QList<int> ids = m_dataManager->查询待办ID列表(opt);
@@ -1052,12 +1050,8 @@ void TodoManager::更新同步管理器的数据() {
 }
 
 // 访问器方法
-TodoFilter *TodoManager::filter() const {
-    return m_filter;
-}
-
-TodoSorter *TodoManager::sorter() const {
-    return m_sorter;
+TodoQueryer *TodoManager::queryer() const {
+    return m_queryer;
 }
 
 TodoSyncServer *TodoManager::syncServer() const {

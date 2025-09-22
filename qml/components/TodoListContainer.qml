@@ -432,7 +432,7 @@ ListView {
                     itemMouseArea.enabled = false; // 先禁用以防多次点
 
                     // 检查是否在回收站中
-                    if (todoFilter.currentFilter === "recycle") {
+                    if (todoQueryer.currentFilter === "recycle") {
                         // 在回收站中，弹出确认弹窗进行硬删除
                         confirmDeleteDialog.selectedIndices = [index];
                         confirmDeleteDialog.open();
@@ -636,7 +636,7 @@ ListView {
                 fontSize: 12
                 onClicked: {
                     // 检查是否在回收站中
-                    if (todoFilter.currentFilter === "recycle") {
+                    if (todoQueryer.currentFilter === "recycle") {
                         // 在回收站中，弹出确认弹窗进行硬删除
                         confirmDeleteDialog.selectedIndices = selectedItems.slice();
                         confirmDeleteDialog.open();

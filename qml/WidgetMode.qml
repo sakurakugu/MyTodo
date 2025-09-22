@@ -249,7 +249,7 @@ Item {
                             toggle();
                             settingPage.loginStatusDialogs.showLoginRequired();
                         } else {
-                            todoSyncServer.setAutoSyncEnabled(checked);
+                            globalState.setIsAutoSyncEnabled(checked);
                         }
                     }
                 }
@@ -478,7 +478,7 @@ Item {
                 from: 0
                 to: 999
                 value: globalState.selectedTodo ? globalState.selectedTodo.recurrenceCount : 0
-                enabled: globalState.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                enabled: globalState.selectedTodo !== null && todoQueryer.currentFilter !== "recycle" && todoQueryer.currentFilter !== "done"
                 implicitWidth: 100
                 implicitHeight: 25
 
@@ -519,7 +519,7 @@ Item {
                 id: drawerIntervalSelector
                 Layout.fillWidth: true
                 value: globalState.selectedTodo ? globalState.selectedTodo.recurrenceInterval : 0
-                enabled: globalState.selectedTodo !== null && todoFilter.currentFilter !== "recycle" && todoFilter.currentFilter !== "done"
+                enabled: globalState.selectedTodo !== null && todoQueryer.currentFilter !== "recycle" && todoQueryer.currentFilter !== "done"
 
                 onIntervalChanged: function (newValue) {
                     if (globalState.isNew) {
