@@ -41,7 +41,8 @@ TodoModel::TodoModel(TodoDataStorage &dataStorage, TodoSyncServer &syncServer, T
     // connect(&m_userAuth, &UserAuth::firstAuthCompleted, this, [this]() { syncWithServer(); }); // TODO
 }
 
-TodoModel::~TodoModel() {}
+TodoModel::~TodoModel() {
+}
 
 /**
  * @brief 获取模型中的行数（待办事项数量）
@@ -192,6 +193,7 @@ bool TodoModel::加载待办() {
     m_dataManager.加载待办事项(m_todos);
     rebuildIdIndex();
     更新同步管理器的数据();
+    return true;
 }
 
 bool TodoModel::新增待办(const QString &title, const QUuid &userUuid, const QString &description,      //
@@ -400,7 +402,8 @@ bool TodoModel::标记删除(int index, bool deleted) {
     }
 }
 
-bool TodoModel::软删除待办(int id) {}
+bool TodoModel::软删除待办(int id) {
+}
 
 bool TodoModel::删除待办(int index) {
     // 检查索引是否有效

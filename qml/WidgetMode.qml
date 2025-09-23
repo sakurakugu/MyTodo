@@ -133,7 +133,7 @@ Item {
                 font.bold: true
 
                 // TODO: 新增或删除待办后，这里的文字没有更改（显示的是当前分类下的待办数量）
-                property int todoCount: todoManager.rowCount()
+                property int todoCount: todoManager.todoModel.rowCount()
                 property bool isHovered: false
 
                 text: {

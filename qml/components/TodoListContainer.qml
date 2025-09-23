@@ -156,7 +156,7 @@ ListView {
     }
 
     Connections {
-        target: todoManager
+        target: todoManager.todoModel
         function onSyncStarted() {
             console.info("开始同步");
             if (!globalState.refreshing && root.atYBeginning) {

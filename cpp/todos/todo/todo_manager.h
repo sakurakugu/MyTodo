@@ -62,8 +62,8 @@ class GlobalState; // 前向声明
  */
 class TodoManager : public QObject {
     Q_OBJECT
-  // 通过属性将内部的 TodoModel 暴露给 QML：qml 中可使用 todoManager.todoModel 访问
-  Q_PROPERTY(TodoModel *todoModel READ todoModel CONSTANT)
+    // 通过属性将内部的 TodoModel 暴露给 QML：qml 中可使用 todoManager.todoModel 访问
+    Q_PROPERTY(TodoModel *todoModel READ todoModel CONSTANT)
 
   public:
     explicit TodoManager(UserAuth &userAuth, CategoryManager &categoryManager, QObject *parent = nullptr);
@@ -85,6 +85,7 @@ class TodoManager : public QObject {
     Q_INVOKABLE bool markAsDone(int index, bool remove = true);   // 标记待办为已完成或未完成
     Q_INVOKABLE bool permanentlyDeleteTodo(int index);            // 删除待办事项
     Q_INVOKABLE void deleteAllTodos(bool deleteLocal);            // 删除所有待办事项
+    Q_INVOKABLE void syncWithServer();                            // 与服务器同步
 
   signals:
 

@@ -48,7 +48,8 @@ TodoManager::TodoManager(UserAuth &userAuth, CategoryManager &categoryManager,
  *
  * 清理资源，保存未同步的数据到本地存储。
  */
-TodoManager::~TodoManager() {}
+TodoManager::~TodoManager() {
+}
 
 void TodoManager::loadTodo() {
     m_todoModel->加载待办();
@@ -98,6 +99,10 @@ bool TodoManager::permanentlyDeleteTodo(int index) {
  */
 void TodoManager::deleteAllTodos(bool deleteLocal) {
     m_todoModel->删除所有待办(deleteLocal);
+}
+
+void TodoManager::syncWithServer() {
+    m_todoModel->syncWithServer();
 }
 
 /**
