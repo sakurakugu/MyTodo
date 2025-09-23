@@ -101,13 +101,13 @@ class TodoModel : public QAbstractListModel {
                   int recurrenceCount = 0, const QDate &recurrenceStartDate = QDate());                //
     bool 更新待办(int index, const QVariantMap &todoData);
     bool 标记完成(int index, bool completed);
-    bool 标记删除(int index, bool deleted); // isDeleted = 1/0 回收或删除
-    bool 软删除待办(int index);             // synced = 3
-    bool 删除待办(int index);               // 永久删除
-    bool 删除所有待办(bool deleteLocal);    // 永久删除所有
+    bool 标记删除(int index, bool deleted);                     // isDeleted = 1/0 回收或删除
+    bool 软删除待办(int index);                                 // synced = 3
+    bool 删除待办(int index);                                   // 永久删除
+    bool 删除所有待办(bool deleteLocal, const QUuid &userUuid); // 永久删除所有
 
     void 更新过滤后的待办();
-    void 清除过滤后的待办();
+    void 需要重新筛选();
 
     void 更新同步管理器的数据();
 

@@ -149,7 +149,7 @@ void TodoQueryer::setDateFilterEnabled(bool enabled) {
  * @brief 检查是否有任何筛选条件被激活
  * @return 如果有筛选条件被激活返回true，否则返回false
  */
-bool TodoQueryer::hasActiveFilters() const {
+bool TodoQueryer::是否激活任何查询条件() const {
     return !m_currentCategory.isEmpty() || !m_currentFilter.isEmpty() || !m_searchText.isEmpty() || m_dateFilterEnabled;
 }
 

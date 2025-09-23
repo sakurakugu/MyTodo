@@ -97,7 +97,7 @@ class TodoQueryer : public QObject {
     bool descending() const;       // 获取是否倒序
     void setDescending(bool desc); // 设置是否倒序
 
-    bool hasActiveFilters() const; ///< 检查是否有任何筛选条件被激活
+    bool 是否激活任何查询条件() const; ///< 检查是否有任何筛选条件被激活
 
   signals:
     void currentCategoryChanged();   // 当前分类筛选器变化信号

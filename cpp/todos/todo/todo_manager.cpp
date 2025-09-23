@@ -97,7 +97,7 @@ bool TodoManager::permanentlyDeleteTodo(int index) {
  * @param deleteLocal 是否删除本地数据
  */
 void TodoManager::deleteAllTodos(bool deleteLocal) {
-    m_todoModel->删除所有待办(deleteLocal);
+    m_todoModel->删除所有待办(deleteLocal, m_userAuth.getUuid());
 }
 
 void TodoManager::syncWithServer() {

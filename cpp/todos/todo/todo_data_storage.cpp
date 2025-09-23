@@ -371,10 +371,17 @@ bool TodoDataStorage::新增待办(TodoList &todos, std::unique_ptr<TodoItem> it
  * @param todoData 待办事项数据映射
  * @return 更新是否成功
  */
-bool TodoDataStorage::更新待办(TodoList &todos, int id, const QVariantMap &todoData) {
+bool TodoDataStorage::更新待办(TodoList &todos, const QUuid &uuid, const QVariantMap &todoData) {
     QSqlDatabase db = m_database.getDatabase();
     if (!db.isOpen()) {
         qCritical() << "数据库未打开，无法更新待办事项";
+        return false;
+    }
+
+    auto it = std::find_if(todos.begin(), todos.end(),
+                           [uuid](const std::unique_ptr<TodoItem> &item) { return item->uuid() == uuid; });
+    if (it == todos.end()) {
+        qWarning() << "未找到待办事项，UUID:" << uuid.toString();
         return false;
     }
 
@@ -385,34 +392,43 @@ bool TodoDataStorage::更新待办(TodoList &todos, int id, const QVariantMap &t
     if (todoData.contains("title")) {
         order += "title = ?, ";
         fields << "title";
+        (*it)->setTitle(todoData.value("title").toString());
     }
     if (todoData.contains("description")) {
         order += "description = ?, ";
         fields << "description";
+        (*it)->setDescription(todoData.value("description").toString());
     }
     if (todoData.contains("category")) {
         order += "category = ?, ";
         fields << "category";
+        (*it)->setCategory(todoData.value("category").toString());
     }
     if (todoData.contains("important")) {
         order += "important = ?, ";
         fields << "important";
+        (*it)->setImportant(todoData.value("important").toBool());
     }
     if (todoData.contains("deadline")) {
         order += "deadline = ?, ";
         fields << "deadline";
+        (*it)->setDeadline(QDateTime::fromString(todoData.value("deadline").toString(), Qt::ISODate));
     }
     if (todoData.contains("recurrence_interval")) {
         order += "recurrence_interval = ?, ";
         fields << "recurrence_interval";
+        (*it)->setRecurrenceInterval(todoData.value("recurrence_interval").toInt());
     }
     if (todoData.contains("recurrence_count")) {
         order += "recurrence_count = ?, ";
         fields << "recurrence_count";
+        (*it)->setRecurrenceCount(todoData.value("recurrence_count").toInt());
     }
     if (todoData.contains("recurrence_start_date")) {
         order += "recurrence_start_date = ?, ";
         fields << "recurrence_start_date";
+        (*it)->setRecurrenceStartDate(
+            QDate::fromString(todoData.value("recurrence_start_date").toString(), Qt::ISODate));
     }
     if (todoData.contains("is_completed")) {
         order += "is_completed = ?, ";
@@ -421,17 +437,20 @@ bool TodoDataStorage::更新待办(TodoList &todos, int id, const QVariantMap &t
     if (todoData.contains("completed_at")) {
         order += "completed_at = ?, ";
         fields << "completed_at";
+        (*it)->setCompletedAt(QDateTime::fromString(todoData.value("completed_at").toString(), Qt::ISODate));
     }
     if (todoData.contains("is_deleted")) {
         order += "is_deleted = ?, ";
         fields << "is_deleted";
+        (*it)->setIsDeleted(todoData.value("is_deleted").toBool());
     }
     if (todoData.contains("deleted_at")) {
         order += "deleted_at = ?, ";
         fields << "deleted_at";
+        (*it)->setDeletedAt(QDateTime::fromString(todoData.value("deleted_at").toString(), Qt::ISODate));
     }
     // 始终更新这两个字段
-    order += "updated_at = ?, synced = ? WHERE id = ?";
+    order += "updated_at = ?, synced = ? WHERE uuid = ?";
     updateQuery.prepare(order);
     for (const QString &field : fields) {
         if (field == "deadline" || field == "recurrence_start_date" || field == "completed_at" ||
@@ -444,17 +463,24 @@ bool TodoDataStorage::更新待办(TodoList &todos, int id, const QVariantMap &t
     }
     QDateTime now = QDateTime::currentDateTime();
     updateQuery.addBindValue(now.toString(Qt::ISODate));
-    updateQuery.addBindValue(2); // synced
-    updateQuery.addBindValue(id);
+    updateQuery.addBindValue(((*it)->synced() != 1) ? 2 : 1); // synced
+    updateQuery.addBindValue(uuid);
     if (!updateQuery.exec()) {
         qCritical() << "更新待办事项到数据库失败:" << updateQuery.lastError().text();
         return false;
     }
+    // 更新内存中的待办事项
+    if (it != todos.end()) {
+        (*it)->setUpdatedAt(now);
+        if ((*it)->synced() != 1) { // 如果之前是插入状态，不要改成更新状态
+            (*it)->setSynced(2);    // 标记为未同步，待更新
+        }
+    }
     if (updateQuery.numRowsAffected() == 0) {
-        qWarning() << "未找到ID为" << id << "的待办事项";
+        qWarning() << "未找到UUID为" << uuid << "的待办事项";
         return false;
     }
-    qDebug() << "成功更新待办事项，ID:" << id;
+    qDebug() << "成功更新待办事项，UUID:" << uuid;
     return true;
 }
 
@@ -470,14 +496,13 @@ bool TodoDataStorage::更新待办(TodoList &todos, TodoItem &item) {
         qCritical() << "数据库未打开，无法更新待办事项";
         return false;
     }
-
     // 更新数据库中的待办事项
     QSqlQuery updateQuery(db);
     const QString updateString =
         "UPDATE todos SET title = ?, description = ?, category = ?, important = ?, deadline = ?, "
         "recurrence_interval = ?, recurrence_count = ?, recurrence_start_date = ?, "
         "is_completed = ?, completed_at = ?, is_deleted = ?, deleted_at = ?, "
-        "updated_at = ?, synced = ? WHERE id = ?";
+        "updated_at = ?, synced = ? WHERE uuid = ?";
 
     updateQuery.prepare(updateString);
     updateQuery.addBindValue(item.title());
@@ -494,7 +519,7 @@ bool TodoDataStorage::更新待办(TodoList &todos, TodoItem &item) {
     updateQuery.addBindValue(item.deletedAt().toString(Qt::ISODate));
     updateQuery.addBindValue(item.updatedAt().toString(Qt::ISODate));
     updateQuery.addBindValue(item.synced());
-    updateQuery.addBindValue(item.id());
+    updateQuery.addBindValue(item.uuid());
 
     if (!updateQuery.exec()) {
         qCritical() << "更新待办事项到数据库失败:" << updateQuery.lastError().text();
@@ -502,60 +527,34 @@ bool TodoDataStorage::更新待办(TodoList &todos, TodoItem &item) {
     }
 
     if (updateQuery.numRowsAffected() == 0) {
-        qWarning() << "未找到ID为" << item.id() << "的待办事项";
+        qWarning() << "未找到UUID为" << item.uuid() << "的待办事项";
         return false;
     }
 
-    qDebug() << "成功更新待办事项，ID:" << item.id();
+    qDebug() << "成功更新待办事项，UUID:" << item.uuid();
     return true;
 }
 
 /**
  * @brief 回收待办事项
  * @param todos 待办事项容器引用
- * @param id 待办事项ID
+ * @param uuid 待办事项UUID
  * @return 回收是否成功
  */
-bool TodoDataStorage::回收待办(TodoList &todos, int id) {
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qCritical() << "数据库未打开，无法回收待办事项";
-        return false;
-    }
-
-    QDateTime now = QDateTime::currentDateTime();
-
-    // 更新数据库中的待办事项（标记为已删除）
-    QSqlQuery updateQuery(db);
-    const QString updateString = "UPDATE todos SET is_deleted = ?, deleted_at = ?, synced = ? WHERE id = ?";
-    updateQuery.prepare(updateString);
-
-    updateQuery.addBindValue(true);
-    updateQuery.addBindValue(now.toString(Qt::ISODate));
-    updateQuery.addBindValue(2); // synced
-    updateQuery.addBindValue(id);
-
-    if (!updateQuery.exec()) {
-        qCritical() << "回收待办事项失败:" << updateQuery.lastError().text();
-        return false;
-    }
-
-    if (updateQuery.numRowsAffected() == 0) {
-        qWarning() << "未找到ID为" << id << "的待办事项";
-        return false;
-    }
-
-    qDebug() << "成功回收待办事项，ID:" << id;
-    return true;
+bool TodoDataStorage::回收待办(TodoList &todos, const QUuid &uuid) {
+    QVariantMap todoData;
+    todoData["is_deleted"] = true;
+    todoData["deleted_at"] = QDateTime::currentDateTime();
+    return 更新待办(todos, uuid, todoData);
 }
 
 /**
  * @brief 软删除待办事项
  * @param todos 软删除待办容器引用
- * @param id 待办事项ID
+ * @param uuid 待办事项UUID
  * @return 回收是否成功
  */
-bool TodoDataStorage::软删除待办(TodoList &todos, int id) {
+bool TodoDataStorage::软删除待办(TodoList &todos, const QUuid &uuid) {
     QSqlDatabase db = m_database.getDatabase();
     if (!db.isOpen()) {
         qCritical() << "数据库未打开，无法软删除待办事项";
@@ -566,11 +565,11 @@ bool TodoDataStorage::软删除待办(TodoList &todos, int id) {
 
     // 更新数据库中的待办事项（标记synced为已删除(3)）
     QSqlQuery updateQuery(db);
-    const QString updateString = "UPDATE todos SET synced = ? WHERE id = ?";
+    const QString updateString = "UPDATE todos SET synced = ? WHERE uuid = ?";
     updateQuery.prepare(updateString);
 
     updateQuery.addBindValue(3); // synced
-    updateQuery.addBindValue(id);
+    updateQuery.addBindValue(uuid);
 
     if (!updateQuery.exec()) {
         qCritical() << "软删除待办事项失败:" << updateQuery.lastError().text();
@@ -578,11 +577,11 @@ bool TodoDataStorage::软删除待办(TodoList &todos, int id) {
     }
 
     if (updateQuery.numRowsAffected() == 0) {
-        qWarning() << "未找到ID为" << id << "的待办事项";
+        qWarning() << "未找到UUID为" << uuid << "的待办事项";
         return false;
     }
 
-    qDebug() << "成功软删除待办事项，ID:" << id;
+    qDebug() << "成功软删除待办事项，UUID:" << uuid;
     return true;
 }
 
@@ -676,7 +675,7 @@ bool TodoDataStorage::更新所有待办用户UUID(TodoList &todos, const QUuid 
  * @param todos 待办事项容器引用
  * @param id 待办事项ID
  */
-bool TodoDataStorage::删除待办(TodoList &todos, int id) {
+bool TodoDataStorage::删除待办(TodoList &todos, const QUuid &uuid) {
     bool success = false;
     try {
         QSqlDatabase db = m_database.getDatabase();
@@ -687,9 +686,9 @@ bool TodoDataStorage::删除待办(TodoList &todos, int id) {
 
         // 从数据库中永久删除待办事项
         QSqlQuery deleteQuery(db);
-        const QString deleteString = "DELETE FROM todos WHERE id = ?";
+        const QString deleteString = "DELETE FROM todos WHERE uuid = ?";
         deleteQuery.prepare(deleteString);
-        deleteQuery.addBindValue(id);
+        deleteQuery.addBindValue(uuid);
 
         if (!deleteQuery.exec()) {
             qCritical() << "永久删除待办事项失败:" << deleteQuery.lastError().text();
@@ -697,11 +696,11 @@ bool TodoDataStorage::删除待办(TodoList &todos, int id) {
         }
 
         if (deleteQuery.numRowsAffected() == 0) {
-            qWarning() << "未找到ID为" << id << "的待办事项，无法删除";
+            qWarning() << "未找到UUID为" << uuid << "的待办事项，无法删除";
             return false;
         }
 
-        qDebug() << "成功永久删除待办事项，ID:" << id;
+        qDebug() << "成功永久删除待办事项，UUID:" << uuid;
         return true;
     } catch (const std::exception &e) {
         qCritical() << "删除待办事项时发生异常:" << e.what();
@@ -715,23 +714,23 @@ bool TodoDataStorage::删除待办(TodoList &todos, int id) {
 }
 
 /**
- * @brief 导入类别从JSON
- * @param categories 类别列表引用
- * @param categoriesArray JSON类别数组
+ * @brief 导入待办事项从JSON
+ * @param todos 待办事项容器引用
+ * @param todosArray JSON待办事项数组
  * @param source 来源（服务器或本地备份）
  * @param resolution 冲突解决策略
  */
-bool TodoDataStorage::导入类别从JSON(TodoList &todos, const QJsonArray &todosArray, ImportSource source,
-                                     ConflictResolution resolution) {
+bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArray &todosArray, ImportSource source,
+                                         ConflictResolution resolution) {
     bool success = true;
 
     QSqlDatabase db = m_database.getDatabase();
     if (!db.isOpen()) {
-        qCritical() << "数据库未打开，无法导入类别";
+        qCritical() << "数据库未打开，无法导入待办事项";
         return false;
     }
 
-    // 构建现有类别索引（按 uuid 与 name）
+    // 构建现有待办事项索引（按 uuid 与 name）
     QHash<QString, TodoItem *> uuidIndex;
     for (auto &item : todos) {
         if (item) {
@@ -740,7 +739,7 @@ bool TodoDataStorage::导入类别从JSON(TodoList &todos, const QJsonArray &tod
     }
 
     if (!db.transaction()) {
-        qCritical() << "无法开启事务以导入类别:" << db.lastError().text();
+        qCritical() << "无法开启事务以导入待办事项:" << db.lastError().text();
         return false;
     }
 
