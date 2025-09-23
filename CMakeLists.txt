@@ -136,6 +136,8 @@ set(TODO_SOURCES
     cpp/todos/todo/todo_item.h
     cpp/todos/todo/todo_manager.cpp
     cpp/todos/todo/todo_manager.h
+    cpp/todos/todo/todo_model.cpp
+    cpp/todos/todo/todo_model.h
     cpp/todos/todo/todo_sync_server.cpp
     cpp/todos/todo/todo_sync_server.h
     cpp/todos/todo/todo_data_storage.cpp
@@ -150,6 +152,8 @@ set(CATEGORY_SOURCES
     cpp/todos/category/categorie_item.h
     cpp/todos/category/category_manager.h
     cpp/todos/category/category_manager.cpp
+    cpp/todos/category/category_model.h
+    cpp/todos/category/category_model.cpp
     cpp/todos/category/category_sync_server.cpp
     cpp/todos/category/category_sync_server.h
     cpp/todos/category/category_data_storage.cpp

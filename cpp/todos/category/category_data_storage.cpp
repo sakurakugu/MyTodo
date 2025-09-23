@@ -31,7 +31,8 @@ CategoryDataStorage::CategoryDataStorage(QObject *parent)
     }
 }
 
-CategoryDataStorage::~CategoryDataStorage() {}
+CategoryDataStorage::~CategoryDataStorage() {
+}
 
 /**
  * @brief 加载类别
@@ -104,8 +105,8 @@ bool CategoryDataStorage::加载类别(CategorieList &categories) {
  * @param source 导入来源
  * @return 添加成功返回新创建的CategorieItem指针，否则返回nullptr
  */
-std::unique_ptr<CategorieItem> CategoryDataStorage::新增类别(CategorieList &categories, const QString &name,
-                                                             const QUuid &userUuid, ImportSource source) {
+std::unique_ptr<CategorieItem> CategoryDataStorage::新增类别( //
+    CategorieList &categories, const QString &name, const QUuid &userUuid, ImportSource source) {
 
     try {
         QSqlDatabase db = m_database.getDatabase();

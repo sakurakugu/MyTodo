@@ -46,13 +46,12 @@ class Config;
  * @note 该类是线程安全的，所有文件操作都有异常处理
  * @see CategorieItem, Setting
  */
+using CategorieList = std::vector<std::unique_ptr<CategorieItem>>;
 
 class CategoryDataStorage : public QObject {
     Q_OBJECT
 
   public:
-    using CategorieList = std::vector<std::unique_ptr<CategorieItem>>;
-
     // 定义导入冲突的解决策略
     enum ConflictResolution {
         Skip = 0,      // 跳过冲突项目
