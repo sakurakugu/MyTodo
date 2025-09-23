@@ -119,8 +119,9 @@ class TodoQueryer : public QObject {
     void dateFilterEndChanged();     // 日期筛选结束日期变化信号
     void dateFilterEnabledChanged(); // 日期筛选启用状态变化信号
     void filtersChanged();           // 任何筛选条件变化的通用信号
-    void sortTypeChanged();          // 排序类型变化信号
-    void descendingChanged();        // 倒序状态变化信号
+    void sortTypeChanged();          // 排序类型变化信号 // TODO：目前暴露给qml了，暂时不删除
+    void descendingChanged();        // 倒序状态变化信号 // TODO：目前暴露给qml了，暂时不删除
+    void sortStateChanged();         // 排序状态变化信号 在排序类型或倒序状态变化时发射
 
   private:
     // 筛选条件成员变量

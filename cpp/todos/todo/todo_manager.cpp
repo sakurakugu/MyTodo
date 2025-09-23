@@ -48,8 +48,7 @@ TodoManager::TodoManager(UserAuth &userAuth, CategoryManager &categoryManager,
  *
  * 清理资源，保存未同步的数据到本地存储。
  */
-TodoManager::~TodoManager() {
-}
+TodoManager::~TodoManager() {}
 
 void TodoManager::loadTodo() {
     m_todoModel->加载待办();
@@ -102,7 +101,15 @@ void TodoManager::deleteAllTodos(bool deleteLocal) {
 }
 
 void TodoManager::syncWithServer() {
-    m_todoModel->syncWithServer();
+    m_todoModel->与服务器同步();
+}
+
+/**
+ * @brief 处理首次认证完成信号
+ * 当用户首次认证完成时，触发此槽函数，用于同步待办事项。
+ */
+void TodoManager::onFirstAuthCompleted() {
+    syncWithServer();
 }
 
 /**
@@ -119,7 +126,6 @@ TodoQueryer *TodoManager::queryer() const {
     return m_queryer;
 }
 
-// 暴露内部 TodoModel 给 QML 使用
 TodoModel *TodoManager::todoModel() const {
     return m_todoModel;
 }

@@ -28,21 +28,12 @@ TodoModel::TodoModel(TodoDataStorage &dataStorage, TodoSyncServer &syncServer, T
         endResetModel();
     });
 
-    // 连接排序器信号，当排序类型或倒序状态变化时重新排序
-    connect(&m_queryer, &TodoQueryer::sortTypeChanged, this, &TodoModel::sortTodos);
-    connect(&m_queryer, &TodoQueryer::descendingChanged, this, &TodoModel::sortTodos);
-
     // 连接同步管理器信号
     connect(&m_syncManager, &TodoSyncServer::syncStarted, this, &TodoModel::onSyncStarted);
-    connect(&m_syncManager, &TodoSyncServer::syncCompleted, this, &TodoModel::onSyncCompleted);
     connect(&m_syncManager, &TodoSyncServer::todosUpdatedFromServer, this, &TodoModel::onTodosUpdatedFromServer);
-
-    // 连接用户认证信号，登录成功后触发同步
-    // connect(&m_userAuth, &UserAuth::firstAuthCompleted, this, [this]() { syncWithServer(); }); // TODO
 }
 
-TodoModel::~TodoModel() {
-}
+TodoModel::~TodoModel() {}
 
 /**
  * @brief 获取模型中的行数（待办事项数量）
@@ -200,9 +191,22 @@ bool TodoModel::新增待办(const QString &title, const QUuid &userUuid, const 
                          const QString &category, bool important, const QDateTime &deadline,           //
                          int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate //
 ) {
+    // 记录添加前的数量
+    size_t oldSize = m_todos.size();
+
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
-    m_dataManager.新增待办(m_todos, title, description, category, important, //
-                           deadline, recurrenceInterval, recurrenceCount, recurrenceStartDate, userUuid);
+
+    // 调用新增待办方法
+    auto result = m_dataManager.新增待办(m_todos, title, description, category, important, //
+                                         deadline, recurrenceInterval, recurrenceCount, recurrenceStartDate, userUuid);
+
+    // 检查是否成功添加：如果返回nullptr且容器大小没有增加，说明添加失败
+    if (result == nullptr && m_todos.size() == oldSize) {
+        endInsertRows();
+        return false;
+    }
+
+    // 添加到索引
     if (!m_todos.empty()) {
         addToIndex(m_todos.back().get());
     }
@@ -213,7 +217,9 @@ bool TodoModel::新增待办(const QString &title, const QUuid &userUuid, const 
     // 更新同步管理器的数据
     更新同步管理器的数据();
 
-    syncWithServer();
+    与服务器同步();
+
+    return true;
 }
 
 bool TodoModel::更新待办(int index, const QVariantMap &todoData) {
@@ -234,7 +240,6 @@ bool TodoModel::更新待办(int index, const QVariantMap &todoData) {
     auto todoItem = m_filteredTodos[index];
     QModelIndex modelIndex = 获取内容在待办列表中的索引(todoItem);
 
-    bool anyUpdated = false;
     TodoItem *item = m_todos[modelIndex.row()].get();
     QVector<int> changedRoles;
 
@@ -256,7 +261,7 @@ bool TodoModel::更新待办(int index, const QVariantMap &todoData) {
         // 更新同步管理器的数据
         更新同步管理器的数据();
 
-        syncWithServer();
+        与服务器同步();
 
         qDebug() << "成功更新索引" << index << "处的待办事项";
         return true;
@@ -305,7 +310,7 @@ bool TodoModel::标记完成(int index, bool completed) {
 
         if (success) {
 
-            syncWithServer();
+            与服务器同步();
 
             qDebug() << "成功将索引" << index << "处的待办事项标记为已完成";
         } else {
@@ -331,6 +336,7 @@ bool TodoModel::标记删除(int index, bool deleted) {
         return false;
     }
 
+    bool success = false;
     try {
         if (deleted) {
             // 获取过滤后的索引，因为QML传入的是过滤后的索引
@@ -358,10 +364,10 @@ bool TodoModel::标记删除(int index, bool deleted) {
             // 通知视图删除完成
             endRemoveRows();
 
-            syncWithServer();
+            与服务器同步();
 
             qDebug() << "成功软删除索引" << index << "处的待办事项";
-            return true;
+            success = true;
         } else {
             auto &todoItem = m_todos[index];
 
@@ -388,22 +394,22 @@ bool TodoModel::标记删除(int index, bool deleted) {
                 qWarning() << "恢复待办事项后无法更新到数据库";
             }
 
-            syncWithServer();
+            与服务器同步();
 
             qDebug() << "成功恢复索引" << index << "处的待办事项";
-            return true;
+            success = true;
         }
     } catch (const std::exception &e) {
         qCritical() << "软删除待办事项时发生异常:" << e.what();
-        return false;
+        success = false;
     } catch (...) {
         qCritical() << "软删除待办事项时发生未知异常";
-        return false;
+        success = false;
     }
+    return success;
 }
 
-bool TodoModel::软删除待办(int id) {
-}
+bool TodoModel::软删除待办(int id) {}
 
 bool TodoModel::删除待办(int index) {
     // 检查索引是否有效
@@ -451,7 +457,7 @@ bool TodoModel::删除待办(int index) {
         endRemoveRows();
         rebuildIdIndex();
 
-        syncWithServer();
+        与服务器同步();
 
         qDebug() << "成功永久删除索引" << index << "处的待办事项";
         return true;
@@ -465,6 +471,7 @@ bool TodoModel::删除待办(int index) {
 }
 
 bool TodoModel::删除所有待办(bool deleteLocal) {
+    bool success = false;
     try {
         qDebug() << "删除所有待办事项" << deleteLocal;
         beginResetModel();
@@ -490,14 +497,18 @@ bool TodoModel::删除所有待办(bool deleteLocal) {
         // 结束重置模型
         endResetModel();
 
-        syncWithServer();
+        与服务器同步();
 
         qDebug() << "成功删除所有待办事项";
+        success = true;
     } catch (const std::exception &e) {
         qCritical() << "删除所有待办事项时发生异常:" << e.what();
+        success = false;
     } catch (...) {
         qCritical() << "删除所有待办事项时发生未知异常";
+        success = false;
     }
+    return success;
 }
 
 // 性能优化相关方法实现
@@ -570,7 +581,7 @@ void TodoModel::onRowsRemoved() {
 }
 
 // 排序相关实现
-void TodoModel::sortTodos() {
+void TodoModel::onSortStateChanged() {
     // 现在排序在数据库端完成，只需标记缓存失效并刷新视图
     beginResetModel();
     清除过滤后的待办();
@@ -583,7 +594,7 @@ void TodoModel::sortTodos() {
  * 该方法会先获取服务器上的最新数据，然后将本地更改推送到服务器。
  * 操作结果通过syncCompleted信号通知。
  */
-void TodoModel::syncWithServer() {
+void TodoModel::与服务器同步() {
     // if (!m_globalState.isAutoSyncEnabled() || !m_userAuth.isLoggedIn()) { // TODO
     return;
     // }
@@ -597,18 +608,6 @@ void TodoModel::syncWithServer() {
 // 同步管理器信号处理槽函数
 void TodoModel::onSyncStarted() {
     emit syncStarted();
-}
-
-void TodoModel::onSyncCompleted(TodoSyncServer::SyncResult result, const QString &message) {
-    bool success = (result == TodoSyncServer::Success);
-    emit syncCompleted(success, message); // TODO:触发了两次
-
-    // 如果同步成功，保存到本地存储
-    if (success) {
-        if (!m_dataManager.saveToLocalStorage(m_todos)) {
-            qWarning() << "同步成功后无法保存到本地存储";
-        }
-    }
 }
 
 void TodoModel::onTodosUpdatedFromServer(const QJsonArray &todosArray) {

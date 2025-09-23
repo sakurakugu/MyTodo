@@ -30,60 +30,6 @@ ListView {
     property int pullThreshold: 20 // 下拉刷新触发阈值
     property real pullDistance: 0  // 当前下拉距离
 
-    // 智能时间格式化函数
-    function formatDateTime(dateTime) {
-        if (!dateTime)
-            return "";
-
-        var now = new Date();
-        var date = new Date(dateTime);
-
-        // 计算时间差（毫秒）
-        var timeDiff = now.getTime() - date.getTime();
-        var minutesDiff = Math.floor(timeDiff / (1000 * 60));
-        var hoursDiff = Math.floor(timeDiff / (1000 * 60 * 60));
-        var daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-
-        // 今天
-        if (daysDiff === 0) {
-            // 小于1分钟
-            if (minutesDiff < 1) {
-                return qsTr("刚刚");
-            } else
-            // 小于1小时
-            if (hoursDiff < 1) {
-                return minutesDiff + qsTr("分钟前");
-            } else
-            // 显示具体时间
-            {
-                var hours = date.getHours();
-                var minutes = date.getMinutes();
-                return String(hours).padStart(2, '0') + ":" + String(minutes).padStart(2, '0');
-            }
-        } else
-        // 昨天
-        if (daysDiff === 1) {
-            return qsTr("昨天");
-        } else
-        // 前天
-        if (daysDiff === 2) {
-            return qsTr("前天");
-        } else
-        // 今年内
-        if (date.getFullYear() === now.getFullYear()) {
-            var month = date.getMonth() + 1;
-            var day = date.getDate();
-            return String(month).padStart(2, '0') + "/" + String(day).padStart(2, '0');
-        } else
-        // 跨年
-        {
-            var year = date.getFullYear();
-            var month = date.getMonth() + 1;
-            var day = date.getDate();
-            return year + "/" + String(month).padStart(2, '0') + "/" + String(day).padStart(2, '0');
-        }
-    }
-
     onContentYChanged: {
         pullDistance = contentY < 0 ? -contentY : 0;
     }
@@ -316,7 +262,7 @@ ListView {
                             spacing: 4
                             // 时间
                             Label {
-                                text: root.formatDateTime(model.updatedAt)
+                                text: utility.formatDateTime(model.updatedAt)
                                 font.pixelSize: 12
                                 color: ThemeManager.secondaryTextColor
                             }

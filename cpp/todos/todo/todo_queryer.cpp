@@ -337,6 +337,7 @@ void TodoQueryer::setSortType(int type) {
     if (m_sortType != type) {
         m_sortType = type;
         emit sortTypeChanged();
+        emit sortStateChanged();
     }
 }
 
@@ -356,6 +357,7 @@ void TodoQueryer::setDescending(bool desc) {
     if (m_descending != desc) {
         m_descending = desc;
         emit descendingChanged();
+        emit sortStateChanged();
     }
 }
 

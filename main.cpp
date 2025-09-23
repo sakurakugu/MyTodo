@@ -30,6 +30,7 @@
 #include "cpp/foundation/database.h"
 #include "cpp/foundation/logger.h"
 #include "cpp/foundation/network_request.h"
+#include "cpp/foundation/utility.h"
 #include "cpp/global_state.h"
 #include "cpp/setting.h"
 #include "cpp/todos/category/category_data_storage.h"
@@ -103,6 +104,7 @@ int main(int argc, char *argv[]) {
     QQmlApplicationEngine engine;
 
     // 将类注册到QML上下文
+    engine.rootContext()->setContextProperty("utility", &Utility::GetInstance());
     engine.rootContext()->setContextProperty("setting", &setting);
     engine.rootContext()->setContextProperty("userAuth", &userAuth);
     engine.rootContext()->setContextProperty("categoryManager", &categoryManager);

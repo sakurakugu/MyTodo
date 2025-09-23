@@ -112,10 +112,7 @@ class TodoModel : public QAbstractListModel {
     void 更新同步管理器的数据();
 
     // 网络同步操作
-    Q_INVOKABLE void syncWithServer(); // 与服务器同步待办事项数据
-
-    // 排序相关
-    Q_INVOKABLE void sortTodos(); // 对待办事项进行排序
+    void 与服务器同步(); // 与服务器同步待办事项数据
 
   signals:
     void dataUpdated();                                                        ///< 数据更新信号
@@ -123,12 +120,12 @@ class TodoModel : public QAbstractListModel {
     void syncCompleted(bool success, const QString &errorMessage = QString()); // 同步操作完成信号
 
   public slots:
-    void onDataChanged();                                                            ///< 处理数据变化
-    void onRowsInserted();                                                           ///< 处理行插入
-    void onRowsRemoved();                                                            ///< 处理行删除
-    void onSyncStarted();                                                            // 处理同步开始
-    void onSyncCompleted(TodoSyncServer::SyncResult result, const QString &message); // 处理同步完成
-    void onTodosUpdatedFromServer(const QJsonArray &todosArray);                     // 处理从服务器更新的待办事项
+    void onDataChanged();                                        ///< 处理数据变化
+    void onRowsInserted();                                       ///< 处理行插入
+    void onRowsRemoved();                                        ///< 处理行删除
+    void onSyncStarted();                                        // 处理同步开始
+    void onSortStateChanged();                                   // 对待办事项进行排序
+    void onTodosUpdatedFromServer(const QJsonArray &todosArray); // 处理从服务器更新的待办事项
 
   private:
     std::vector<std::unique_ptr<TodoItem>> m_todos; ///< 待办事项列表

@@ -57,12 +57,13 @@ class GlobalState; // 前向声明
  * - 在C++中作为数据访问层
  * - 支持在线/离线模式切换
  *
- * @note 该类是线程安全的，所有网络操作都在后台线程执行
+ * @note 该类是线程
+ *
+ * 安全的，所有网络操作都在后台线程执行
  * @see TodoItem, CategorieItem, NetworkRequest, Config, TodoModel
  */
 class TodoManager : public QObject {
     Q_OBJECT
-    // 通过属性将内部的 TodoModel 暴露给 QML：qml 中可使用 todoManager.todoModel 访问
     Q_PROPERTY(TodoModel *todoModel READ todoModel CONSTANT)
 
   public:
@@ -71,8 +72,7 @@ class TodoManager : public QObject {
 
     // 访问器
     Q_INVOKABLE TodoQueryer *queryer() const;
-    // 提供只读访问 TodoModel，用于 QML 绑定 (ListView.model: todoManager.todoModel)
-    TodoModel *todoModel() const; // 不需要 Q_INVOKABLE，Q_PROPERTY READ 已可用
+    TodoModel *todoModel() const;
 
     // CRUD操作
     void loadTodo();                                                                               // 加载待办
@@ -90,6 +90,7 @@ class TodoManager : public QObject {
   signals:
 
   private slots:
+    void onFirstAuthCompleted(); // 处理首次认证完成信号
 
   private:
     // 管理器

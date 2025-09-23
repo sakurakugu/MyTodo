@@ -27,7 +27,8 @@ Setting::Setting(QObject *parent)
  *
  * 清理Setting对象，释放资源。
  */
-Setting::~Setting() {}
+Setting::~Setting() {
+}
 
 int Setting::getOsType() const {
 #if defined(Q_OS_WIN)

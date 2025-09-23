@@ -228,7 +228,6 @@ Page {
 
                 onCheckedChanged: {
                     setting.setProxyEnabled(checked);
-                    // 应用代理设置
                     applyProxySettings();
                 }
             }
@@ -241,7 +240,7 @@ Page {
                 model: [qsTr("不使用代理"), qsTr("系统代理"), qsTr("HTTP代理"), qsTr("SOCKS5代理")]
                 currentIndex: setting.getProxyType()
 
-                onCurrentIndexChanged: {
+                onActivated: {
                     setting.setProxyType(currentIndex);
                     applyProxySettings();
                 }
@@ -269,7 +268,7 @@ Page {
                         text: setting.getProxyHost()
                         width: parent.width - 90
 
-                        onTextChanged: {
+                        onEditingFinished: {
                             setting.setProxyHost(text);
                             applyProxySettings();
                         }
@@ -293,7 +292,7 @@ Page {
                         editable: true
                         value: setting.getProxyPort()
 
-                        onValueChanged: {
+                        onEditingFinished: {
                             setting.setProxyPort(value);
                             applyProxySettings();
                         }
@@ -316,9 +315,8 @@ Page {
                         text: setting.getProxyUsername()
                         width: parent.width - 90
 
-                        onTextChanged: {
+                        onEditingFinished: {
                             setting.setProxyUsername(text);
-                            applyProxySettings();
                         }
                     }
                 }
@@ -340,7 +338,7 @@ Page {
                         echoMode: TextInput.Password
                         width: parent.width - 90
 
-                        onTextChanged: {
+                        onEditingFinished: {
                             setting.setProxyPassword(text);
                             applyProxySettings();
                         }

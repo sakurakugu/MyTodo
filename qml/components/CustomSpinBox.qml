@@ -46,6 +46,9 @@ SpinBox {
     implicitWidth: 150                                           ///< 默认宽度
     implicitHeight: 30                                           ///< 默认高度
 
+    // 信号定义
+    signal editingFinished                                     ///< 编辑完成信号
+
     // 内容项（输入框）
     contentItem: TextInput {
         z: 2
@@ -66,6 +69,10 @@ SpinBox {
             if (root.editable) {
                 root.value = root.valueFromText(text, root.locale);
             }
+        }
+
+        onEditingFinished: {
+            root.editingFinished();
         }
     }
 
