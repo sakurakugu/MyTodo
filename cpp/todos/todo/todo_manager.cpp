@@ -757,36 +757,28 @@ bool TodoManager::permanentlyDeleteTodo(int index) {
 void TodoManager::deleteAllTodos(bool deleteLocal) {
     try {
         qDebug() << "删除所有待办事项" << deleteLocal;
-        if (!deleteLocal) {
-            // 如果不删除本地数据，只更新用户UUID
-            qDebug() << "不删除本地数据，只更新用户UUID";
-            updateAllTodosUserUuid();
-            return;
-        }
-
-        // 删除本地数据
-
-        if (m_todos.empty()) {
-            qDebug() << "没有待办事项需要删除";
-        }
-
-        // 开始重置模型
         beginResetModel();
+        if (!deleteLocal) {
+            qDebug() << "不删除本地数据，只更新用户UUID";
+            m_dataManager->更新所有待办用户UUID(m_todos, m_userAuth.getUuid(), 1);
 
-        // 清空所有待办事项
-        m_todos.clear();
-        m_idIndex.clear();
+            更新同步管理器的数据();
+        } else {
+            // 删除本地数据
+            if (m_todos.empty()) {
+                qDebug() << "没有待办事项需要删除";
+            }
+
+            // 清空所有待办事项
+            m_dataManager->删除所有待办(m_todos);
+            m_idIndex.clear();
+        }
 
         // 使筛选缓存失效
         清除过滤后的待办();
 
         // 结束重置模型
         endResetModel();
-
-        // 保存到本地存储
-        if (!m_dataManager->saveToLocalStorage(m_todos)) {
-            qWarning() << "删除所有待办事项后无法保存到本地存储";
-        }
 
         // 如果开启自动同步且已登录，同步到服务器
         if (m_globalState.isAutoSyncEnabled() && m_userAuth.isLoggedIn()) {
@@ -798,66 +790,6 @@ void TodoManager::deleteAllTodos(bool deleteLocal) {
         qCritical() << "删除所有待办事项时发生异常:" << e.what();
     } catch (...) {
         qCritical() << "删除所有待办事项时发生未知异常";
-    }
-}
-
-/**
- * @brief 更新所有待办事项的用户UUID
- * @param newUserUuid 新的用户UUID
- * @return 更新是否成功
- */
-bool TodoManager::updateAllTodosUserUuid() {
-    try {
-        if (m_todos.empty()) {
-            qDebug() << "没有待办事项需要更新用户UUID";
-            return true;
-        }
-
-        bool hasChanges = false;
-
-        // 获取当前用户UUID
-        QUuid newUserUuid = m_userAuth.getUuid();
-
-        // 遍历所有待办事项，更新用户UUID
-        for (auto &todoItem : m_todos) {
-            if (todoItem->userUuid() != newUserUuid) {
-                todoItem->setUserUuid(newUserUuid);
-                todoItem->setSynced(2); // 标记为未同步
-                hasChanges = true;
-            }
-        }
-
-        if (hasChanges) {
-            // 通知模型数据已更改
-            beginResetModel();
-            清除过滤后的待办();
-            endResetModel();
-
-            // 保存到本地存储
-            if (!m_dataManager->saveToLocalStorage(m_todos)) {
-                qWarning() << "更新用户UUID后无法保存到本地存储";
-            }
-
-            // 更新同步管理器的数据
-            更新同步管理器的数据();
-
-            // 如果在线且已登录，同步到服务器
-            if (m_globalState.isAutoSyncEnabled() && m_userAuth.isLoggedIn()) {
-                syncWithServer();
-            }
-
-            qDebug() << "成功更新所有待办事项的用户UUID为:" << newUserUuid.toString();
-        } else {
-            qDebug() << "所有待办事项的用户UUID已经是最新的";
-        }
-
-        return true;
-    } catch (const std::exception &e) {
-        qCritical() << "更新用户UUID时发生异常:" << e.what();
-        return false;
-    } catch (...) {
-        qCritical() << "更新用户UUID时发生未知异常";
-        return false;
     }
 }
 

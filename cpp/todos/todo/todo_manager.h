@@ -60,10 +60,10 @@ class TodoManager : public QAbstractListModel {
     Q_OBJECT
 
   public:
-    /**
-     * @enum TodoRoles
-     * @brief 定义待办事项模型中的数据角色
-     */
+    // friend class TodoSyncServer;  // 允许直接访问 TodoManager 的私有成员
+    // friend class TodoDataStorage; // 同上
+
+    // 定义待办事项模型中的数据角色
     enum TodoRoles {
         IdRole = Qt::UserRole + 1, // 任务ID
         UuidRole,                  // 任务UUID
@@ -113,7 +113,6 @@ class TodoManager : public QAbstractListModel {
     Q_INVOKABLE bool permanentlyDeleteTodo(int index); // 删除待办事项
     Q_INVOKABLE void deleteAllTodos(bool deleteLocal); // 删除所有待办事项
     Q_INVOKABLE bool markAsDoneOrTodo(int index);      // 将待办事项标记为已完成或未完成
-    Q_INVOKABLE bool updateAllTodosUserUuid();         // 更新所有待办事项的用户UUID
 
     // 网络同步操作
     Q_INVOKABLE void syncWithServer(); // 与服务器同步待办事项数据

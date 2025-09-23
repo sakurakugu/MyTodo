@@ -109,9 +109,13 @@ class TodoDataStorage : public QObject {
                   bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount,
                   const QDate &recurrenceStartDate);
     bool 更新待办(TodoList &todos, TodoItem &item);
-    bool 回收待办(TodoList &todos, int id);
+    bool 回收待办(TodoList &todos, int id);   // (标记isDeleted为删除)
+    bool 软删除待办(TodoList &todos, int id); // (标记synced为删除)
     bool 删除待办(TodoList &todos, int id);
-    bool 软删除待办(TodoList &todos, int id);
+
+    // 退出登录操作
+    bool 删除所有待办(TodoList &todos);
+    bool 更新所有待办用户UUID(TodoList &todos, const QUuid &newUserUuid, int synced);
 
     bool 导入类别从JSON(TodoList &categories, const QJsonArray &categoriesArray,
                         ImportSource source = ImportSource::Server,
