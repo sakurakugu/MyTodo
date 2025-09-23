@@ -76,9 +76,7 @@ class CategoryManager : public QObject {
     Q_INVOKABLE bool categoryExists(const QString &name) const; ///< 检查类别名称是否已存在
 
   signals:
-    void categoriesChanged();                 ///< 类别列表变化信号
-    void loadingStateChanged();               ///< 加载状态变化信号
-    void errorOccurred(const QString &error); ///< 错误发生信号
+    void categoriesChanged(); ///< 类别列表变化信号
 
   public slots:
     void onCategoriesUpdatedFromServer(const QJsonArray &categoriesArray);            ///< 处理从服务器更新的类别数据

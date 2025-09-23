@@ -108,6 +108,8 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("categoryManager", &categoryManager);
     engine.rootContext()->setContextProperty("todoManager", &todoManager);
     engine.rootContext()->setContextProperty("todoQueryer", todoManager.queryer());
+    // 直接暴露内部数据模型，等价于在 QML 中使用 todoManager.todoModel
+    // engine.rootContext()->setContextProperty("todoModel", todoManager.todoModel());
     engine.rootContext()->setContextProperty("globalState", &globalState);
 
     QObject::connect(

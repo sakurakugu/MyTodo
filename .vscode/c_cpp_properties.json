@@ -12,7 +12,7 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:\\Software\\Deps\\Qt\\6.9.1\\mingw_64\\include\\**"
+                "C:\\Software\\Deps\\Qt\\6.9.2\\mingw_64\\include\\**"
             ],
             "defines": [
                 "_DEBUG",

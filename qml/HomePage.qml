@@ -1028,7 +1028,7 @@ Page {
 
                                     onClicked: {
                                         if (globalState.selectedTodo) {
-                                            todoManager.removeTodo(globalState.selectedTodo.index);
+                                            todoManager.markAsRemove(globalState.selectedTodo.index);
                                         }
                                     }
                                 }

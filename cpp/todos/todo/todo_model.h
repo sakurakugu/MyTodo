@@ -17,8 +17,10 @@
 #include <QVariant>
 #include <QVariantMap>
 
+#include "todo_data_storage.h"
 #include "todo_item.h"
 #include "todo_queryer.h"
+#include "todo_sync_server.h"
 
 class TodoManager; // 前向声明
 
@@ -81,7 +83,8 @@ class TodoModel : public QAbstractListModel {
     };
     Q_ENUM(TodoRoles)
 
-    explicit TodoModel(TodoQueryer queryer, QObject *parent = nullptr);
+    explicit TodoModel(TodoDataStorage &dataStorage, TodoSyncServer &syncServer, //
+                       TodoQueryer &queryer, QObject *parent = nullptr);
     ~TodoModel();
 
     // QAbstractListModel 必要的实现方法
@@ -90,20 +93,61 @@ class TodoModel : public QAbstractListModel {
     QHash<int, QByteArray> roleNames() const override;
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
 
+    bool 加载待办(); // 从数据库加载待办事项
+
+    bool 新增待办(const QString &title, const QUuid &userUuid, const QString &description = QString(), //
+                  const QString &category = "未分类", bool important = false,                          //
+                  const QDateTime &deadline = QDateTime(), int recurrenceInterval = 0,                 //
+                  int recurrenceCount = 0, const QDate &recurrenceStartDate = QDate());                //
+    bool 更新待办(int index, const QVariantMap &todoData);
+    bool 标记完成(int index, bool completed);
+    bool 标记删除(int index, bool deleted); // isDeleted = 1/0 回收或删除
+    bool 软删除待办(int index);             // synced = 3
+    bool 删除待办(int index);               // 永久删除
+    bool 删除所有待办(bool deleteLocal);    // 永久删除所有
+
+    void 更新过滤后的待办();
+    void 清除过滤后的待办();
+
+    void 更新同步管理器的数据();
+
+    // 网络同步操作
+    Q_INVOKABLE void syncWithServer(); // 与服务器同步待办事项数据
+
+    // 排序相关
+    Q_INVOKABLE void sortTodos(); // 对待办事项进行排序
+
   signals:
-    void dataUpdated(); ///< 数据更新信号
+    void dataUpdated();                                                        ///< 数据更新信号
+    void syncStarted();                                                        // 同步操作开始信号
+    void syncCompleted(bool success, const QString &errorMessage = QString()); // 同步操作完成信号
 
   public slots:
-    void onDataChanged();  ///< 处理数据变化
-    void onRowsInserted(); ///< 处理行插入
-    void onRowsRemoved();  ///< 处理行删除
+    void onDataChanged();                                                            ///< 处理数据变化
+    void onRowsInserted();                                                           ///< 处理行插入
+    void onRowsRemoved();                                                            ///< 处理行删除
+    void onSyncStarted();                                                            // 处理同步开始
+    void onSyncCompleted(TodoSyncServer::SyncResult result, const QString &message); // 处理同步完成
+    void onTodosUpdatedFromServer(const QJsonArray &todosArray);                     // 处理从服务器更新的待办事项
 
   private:
     std::vector<std::unique_ptr<TodoItem>> m_todos; ///< 待办事项列表
+    QList<TodoItem *> m_filteredTodos;              ///< 过滤后的待办事项列表
+    bool m_filterCacheDirty;                        ///< 过滤缓存是否需要更新
+    std::unordered_map<int, TodoItem *> m_idIndex;  ///< id -> TodoItem* 快速索引
 
     // 辅助方法
     QVariant getItemData(const TodoItem *item, int role) const; ///< 根据角色获取项目数据
     TodoRoles roleFromName(const QString &name) const;          ///< 从名称获取角色
+    void updateTodosFromServer(const QJsonArray &todosArray);   // 从服务器数据更新待办事项
+    QModelIndex 获取内容在待办列表中的索引(TodoItem *todoItem) const;
+    TodoItem *getFilteredItem(int index) const; // 获取过滤后的项目（带边界检查）
 
-    TodoQueryer m_queryer; ///< 筛选器 - 负责所有筛选排序相关功能
+    void rebuildIdIndex(); ///< 重建 id 索引
+    void addToIndex(TodoItem *item);
+    void removeFromIndex(int id);
+
+    TodoDataStorage &m_dataManager; ///< 数据存储管理器 - 负责数据的增删改查
+    TodoSyncServer &m_syncManager;  ///< 同步管理器 - 负责与服务器同步
+    TodoQueryer &m_queryer;         ///< 筛选器 - 负责所有筛选排序相关功能
 };

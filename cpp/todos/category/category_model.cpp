@@ -17,11 +17,9 @@
 CategoryModel::CategoryModel(CategoryDataStorage &dataStorage, CategorySyncServer &syncServer, QObject *parent)
     : QAbstractListModel(parent), //
       m_dataStorage(dataStorage), //
-      m_syncServer(syncServer) {
-}
+      m_syncServer(syncServer) {}
 
-CategoryModel::~CategoryModel() {
-}
+CategoryModel::~CategoryModel() {}
 
 /**
  * @brief 获取模型中的行数（类别数量）

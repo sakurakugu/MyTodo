@@ -21,7 +21,7 @@ ListView {
     clip: true
 
     // 使用 C++ 的 todoManager
-    model: todoManager
+    model: todoManager.todoModel
 
     property bool multiSelectMode: false  // 多选模式
     property var selectedItems: []        // 选中的项目索引列表
@@ -170,7 +170,7 @@ ListView {
             pullDistanceAnimation.start();
             // 强制刷新ListView以确保显示最新数据
             root.model = null;
-            root.model = todoManager;
+            root.model = todoManager.todoModel;
         }
     }
 
@@ -393,7 +393,7 @@ ListView {
                 hoverEnabled: true
                 onClicked: {
                     itemMouseArea.enabled = false; // 先禁用以防多次点
-                    todoManager.markAsDoneOrTodo(index);     // 切换完成状态
+                    todoManager.markAsDone(index);     // 切换完成状态
                     // model.isCompleted = !model.isCompleted;
 
                     // 延迟重新启用项目的MouseArea
@@ -438,7 +438,7 @@ ListView {
                         confirmDeleteDialog.open();
                     } else {
                         // 不在回收站中，执行软删除
-                        todoManager.removeTodo(index);
+                        todoManager.markAsRemove(index);
                     }
 
                     // 延迟重新启用项目的MouseArea
@@ -646,7 +646,7 @@ ListView {
                             return b - a;
                         });
                         for (var i = 0; i < sortedIndices.length; i++) {
-                            todoManager.removeTodo(sortedIndices[i]);
+                            todoManager.markAsRemove(sortedIndices[i]);
                         }
                         multiSelectMode = false;
                         selectedItems = [];
