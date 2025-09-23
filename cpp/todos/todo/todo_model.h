@@ -1,0 +1,109 @@
+/**
+ * @file todo_model.h
+ * @brief TodoModel类的头文件
+ *
+ * 该文件定义了TodoModel类，专门负责待办事项的数据模型显示。
+ * 从TodoManager中拆分出来，专门负责QAbstractListModel的实现。
+ *
+ * @author Sakurakugu
+ * @date 2025-09-23 (UTC+8)
+ * @version 0.4.0
+ */
+
+#pragma once
+
+#include <QAbstractListModel>
+#include <QObject>
+#include <QVariant>
+#include <QVariantMap>
+
+#include "todo_item.h"
+#include "todo_queryer.h"
+
+class TodoManager; // 前向声明
+
+/**
+ * @class TodoModel
+ * @brief 待办事项数据模型，专门负责QML界面显示
+ *
+ * TodoModel类继承自QAbstractListModel，专门负责待办事项数据的视图层：
+ *
+ * **核心功能：**
+ * - 为QML ListView提供数据模型
+ * - 支持待办事项数据的增删改查显示
+ * - 处理模型数据的角色映射
+ * - 响应数据变化并通知视图更新
+ * - 支持过滤和排序后的数据显示
+ *
+ * **架构特点：**
+ * - 继承自QAbstractListModel，与Qt视图系统完美集成
+ * - 支持QML属性绑定和信号槽机制
+ * - 与TodoManager协作，实现数据与视图的分离
+ * - 支持动态数据更新和通知
+ * - 高效的过滤缓存机制
+ *
+ * **使用场景：**
+ * - 在QML中作为ListView的model
+ * - 为待办事项列表提供数据源
+ * - 支持待办事项列表的实时更新显示
+ * - 处理过滤和排序后的数据展示
+ *
+ * @note 该类专注于视图层，业务逻辑由TodoManager处理
+ * @see TodoManager, TodoItem
+ */
+class TodoModel : public QAbstractListModel {
+    Q_OBJECT
+
+  public:
+    /**
+     * @enum TodoRoles
+     * @brief 定义待办事项模型中的数据角色
+     */
+    enum TodoRoles {
+        IdRole = Qt::UserRole + 1, // 任务ID
+        UuidRole,                  // 任务UUID
+        UserUuidRole,              // 用户UUID
+        TitleRole,                 // 任务标题
+        DescriptionRole,           // 任务描述
+        CategoryRole,              // 任务分类
+        ImportantRole,             // 任务重要程度
+        DeadlineRole,              // 任务截止时间
+        RecurrenceIntervalRole,    // 循环间隔
+        RecurrenceCountRole,       // 循环次数
+        RecurrenceStartDateRole,   // 循环开始日期
+        IsCompletedRole,           // 任务是否已完成
+        CompletedAtRole,           // 任务完成时间
+        IsDeletedRole,             // 任务是否已删除
+        DeletedAtRole,             // 任务删除时间
+        CreatedAtRole,             // 任务创建时间
+        UpdatedAtRole,             // 任务更新时间
+        SyncedRole                 // 任务是否已同步
+    };
+    Q_ENUM(TodoRoles)
+
+    explicit TodoModel(TodoQueryer queryer, QObject *parent = nullptr);
+    ~TodoModel();
+
+    // QAbstractListModel 必要的实现方法
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    QHash<int, QByteArray> roleNames() const override;
+    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
+
+  signals:
+    void dataUpdated(); ///< 数据更新信号
+
+  public slots:
+    void onDataChanged();  ///< 处理数据变化
+    void onRowsInserted(); ///< 处理行插入
+    void onRowsRemoved();  ///< 处理行删除
+
+  private:
+    std::vector<std::unique_ptr<TodoItem>> m_todos; ///< 待办事项列表
+
+    // 辅助方法
+    QVariant getItemData(const TodoItem *item, int role) const; ///< 根据角色获取项目数据
+    TodoRoles roleFromName(const QString &name) const;          ///< 从名称获取角色
+
+    TodoQueryer m_queryer; ///< 筛选器 - 负责所有筛选排序相关功能
+};

@@ -108,6 +108,7 @@ class TodoDataStorage : public QObject {
     bool 更新待办(TodoList &todos, int id, const QString &title, const QString &description, const QString &category,
                   bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount,
                   const QDate &recurrenceStartDate);
+    bool 更新待办(TodoList &todos, int id, const QVariantMap &todoData);
     bool 更新待办(TodoList &todos, TodoItem &item);
     bool 回收待办(TodoList &todos, int id);   // (标记isDeleted为删除)
     bool 软删除待办(TodoList &todos, int id); // (标记synced为删除)

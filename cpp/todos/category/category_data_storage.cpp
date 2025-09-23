@@ -27,7 +27,7 @@ CategoryDataStorage::CategoryDataStorage(QObject *parent)
 {
     // 确保数据库已初始化
     if (!m_database.initializeDatabase()) {
-        qCritical() << "数据库未初始化";
+        qCritical() << "数据库初始化失败";
     }
 }
 

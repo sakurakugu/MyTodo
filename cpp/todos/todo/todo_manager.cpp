@@ -30,7 +30,7 @@
 
 TodoManager::TodoManager(UserAuth &userAuth, CategoryManager &categoryManager,
                          QObject *parent)
-    : QAbstractListModel(parent),                        //
+    : QObject(parent),                                   //
       m_filterCacheDirty(true),                          //
       m_networkRequest(NetworkRequest::GetInstance()),   //
       m_userAuth(userAuth),                              //
@@ -38,14 +38,9 @@ TodoManager::TodoManager(UserAuth &userAuth, CategoryManager &categoryManager,
       m_syncManager(new TodoSyncServer(userAuth, this)), //
       m_dataManager(new TodoDataStorage(this)),          //
       m_categoryManager(&categoryManager),               //
-      m_queryer(new TodoQueryer(this))                   //
+      m_queryer(new TodoQueryer(this)),                  //
+      m_todoModel(new TodoModel(m_queryer, this))        //
 {
-    // 连接筛选器信号，当筛选条件变化时更新缓存
-    connect(m_queryer, &TodoQueryer::filtersChanged, this, [this]() {
-        beginResetModel();
-        清除过滤后的待办();
-        endResetModel();
-    });
 
     // 连接排序器信号，当排序类型或倒序状态变化时重新排序
     connect(m_queryer, &TodoQueryer::sortTypeChanged, this, &TodoManager::sortTodos);
@@ -84,94 +79,6 @@ TodoManager::~TodoManager() {
 }
 
 /**
- * @brief 获取模型中的行数（待办事项数量）
- * @param parent 父索引，默认为无效索引（根）
- * @return 待办事项数量
- */
-int TodoManager::rowCount(const QModelIndex &parent) const {
-    if (parent.isValid())
-        return 0;
-
-    // 使用筛选器获取筛选后的项目数量
-    if (!m_queryer->hasActiveFilters()) {
-        return m_todos.size();
-    }
-
-    // 使用缓存的过滤结果
-    const_cast<TodoManager *>(this)->更新过滤后的待办();
-    return m_filteredTodos.count();
-}
-
-/**
- * @brief 获取指定索引和角色的数据
- * @param index 待获取数据的模型索引
- * @param role 数据角色
- * @return 请求的数据值
- */
-QVariant TodoManager::data(const QModelIndex &index, int role) const {
-    if (!index.isValid())
-        return QVariant();
-
-    // 如果没有设置过滤条件，直接返回对应索引的项目
-    if (!m_queryer->hasActiveFilters()) {
-        if (static_cast<size_t>(index.row()) >= m_todos.size())
-            return QVariant();
-        return getItemData(m_todos[index.row()].get(), role);
-    }
-
-    // 使用缓存的过滤结果
-    const_cast<TodoManager *>(this)->更新过滤后的待办();
-    if (index.row() >= m_filteredTodos.size())
-        return QVariant();
-
-    return getItemData(m_filteredTodos[index.row()], role);
-}
-
-// 辅助方法，根据角色返回项目数据
-QVariant TodoManager::getItemData(const TodoItem *item, int role) const {
-    switch (role) {
-    case IdRole:
-        return item->id();
-    case UuidRole:
-        return item->uuid();
-    case UserUuidRole:
-        return item->userUuid();
-    case TitleRole:
-        return item->title();
-    case DescriptionRole:
-        return item->description();
-    case CategoryRole:
-        return item->category();
-    case ImportantRole:
-        return item->important();
-    case DeadlineRole:
-        return item->deadline();
-    case RecurrenceIntervalRole:
-        return item->recurrenceInterval();
-    case RecurrenceCountRole:
-        return item->recurrenceCount();
-    case RecurrenceStartDateRole:
-        return item->recurrenceStartDate();
-    case IsCompletedRole:
-        return item->isCompleted();
-    case CompletedAtRole:
-        return item->completedAt();
-    case IsDeletedRole:
-        return item->isDeleted();
-    case DeletedAtRole:
-        return item->deletedAt();
-    case CreatedAtRole:
-        return item->createdAt();
-    case UpdatedAtRole:
-        return item->updatedAt();
-    case SyncedRole:
-        return item->synced();
-    default:
-        return QVariant();
-    }
-}
-
-/**
  * @brief 获取指定TodoItem的模型索引
  * @param todoItem 待获取索引的TodoItem指针
  * @return 对应的模型索引
@@ -192,154 +99,6 @@ QModelIndex TodoManager::获取内容在待办列表中的索引(TodoItem *todoI
     // 计算索引
     int index = static_cast<int>(std::distance(m_todos.begin(), it));
     return createIndex(index, 0);
-}
-
-/**
- * @brief 从名称获取角色
- * @param name 角色名称
- * @return 对应的角色ID
- */
-TodoManager::TodoRoles TodoManager::roleFromName(const QString &name) const {
-    if (name == "id")
-        return IdRole; // 任务ID
-    if (name == "uuid")
-        return UuidRole; // 任务UUID
-    if (name == "userUuid")
-        return UserUuidRole; // 用户UUID
-    if (name == "title")
-        return TitleRole; // 任务标题
-    if (name == "description")
-        return DescriptionRole; // 任务描述
-    if (name == "category")
-        return CategoryRole; // 任务分类
-    if (name == "important")
-        return ImportantRole; // 任务重要程度
-    if (name == "deadline")
-        return DeadlineRole; // 任务截止时间
-    if (name == "recurrenceInterval")
-        return RecurrenceIntervalRole; // 循环间隔
-    if (name == "recurrenceCount")
-        return RecurrenceCountRole; // 循环次数
-    if (name == "recurrenceStartDate")
-        return RecurrenceStartDateRole; // 循环开始日期
-    if (name == "isCompleted")
-        return IsCompletedRole; // 任务是否已完成
-    if (name == "completedAt")
-        return CompletedAtRole; // 任务完成时间
-    if (name == "isDeleted")
-        return IsDeletedRole; // 任务是否已删除
-    if (name == "deletedAt")
-        return DeletedAtRole; // 任务删除时间
-    if (name == "createdAt")
-        return CreatedAtRole; // 任务创建时间
-    if (name == "updatedAt")
-        return UpdatedAtRole; // 任务更新时间
-    if (name == "synced")
-        return SyncedRole; // 任务是否已同步
-
-    return static_cast<TodoRoles>(-1); // 返回一个无效的角色值
-}
-
-/**
- * @brief 获取角色名称映射，用于QML访问
- * @return 角色ID到角色名称的映射
- */
-QHash<int, QByteArray> TodoManager::roleNames() const {
-    QHash<int, QByteArray> roles;
-    roles[IdRole] = "id";
-    roles[UuidRole] = "uuid";
-    roles[UserUuidRole] = "userUuid";
-    roles[TitleRole] = "title";
-    roles[DescriptionRole] = "description";
-    roles[CategoryRole] = "category";
-    roles[ImportantRole] = "important";
-    roles[DeadlineRole] = "deadline";
-    roles[RecurrenceIntervalRole] = "recurrenceInterval";
-    roles[RecurrenceCountRole] = "recurrenceCount";
-    roles[RecurrenceStartDateRole] = "recurrenceStartDate";
-    roles[IsCompletedRole] = "isCompleted";
-    roles[CompletedAtRole] = "completedAt";
-    roles[IsDeletedRole] = "isDeleted";
-    roles[DeletedAtRole] = "deletedAt";
-    roles[CreatedAtRole] = "createdAt";
-    roles[UpdatedAtRole] = "updatedAt";
-    roles[SyncedRole] = "synced";
-    return roles;
-}
-
-/**
- * @brief 设置指定索引和角色的数据
- * @param index 待设置数据的模型索引
- * @param value 新的数据值
- * @param role 数据角色
- * @return 设置是否成功
- */
-bool TodoManager::setData(const QModelIndex &index, const QVariant &value, int role) {
-    if (!index.isValid() || static_cast<size_t>(index.row()) >= m_todos.size())
-        return false;
-
-    TodoItem *item = m_todos.at(index.row()).get();
-    bool changed = false;
-
-    switch (role) {
-    case TitleRole:
-        item->setTitle(value.toString());
-        changed = true;
-        break;
-    case DescriptionRole:
-        item->setDescription(value.toString());
-        changed = true;
-        break;
-    case CategoryRole:
-        item->setCategory(value.toString());
-        changed = true;
-        break;
-    case ImportantRole:
-        item->setImportant(value.toBool());
-        changed = true;
-        break;
-    case RecurrenceIntervalRole:
-        item->setRecurrenceInterval(value.toInt());
-        changed = true;
-        break;
-    case RecurrenceCountRole:
-        item->setRecurrenceCount(value.toInt());
-        changed = true;
-        break;
-    case RecurrenceStartDateRole:
-        item->setRecurrenceStartDate(value.toDate());
-        changed = true;
-        break;
-    case DeadlineRole:
-        item->setDeadline(value.toDateTime());
-        changed = true;
-        break;
-    case IsCompletedRole:
-        item->setIsCompleted(value.toBool());
-        changed = true;
-        break;
-    case IsDeletedRole:
-        item->setIsDeleted(value.toBool());
-        changed = true;
-        break;
-    }
-
-    if (changed) {
-        item->setUpdatedAt(QDateTime::currentDateTime());
-        if (item->synced() != 1) { // 如果之前不是未同步+新建状态
-            item->setSynced(2);
-        }
-        清除过滤后的待办();
-        emit dataChanged(index, index, QVector<int>() << role);
-        m_dataManager->更新待办(m_todos, *item);
-
-        // 更新同步管理器的数据
-        更新同步管理器的数据();
-
-        return true;
-    }
-
-    return false;
 }
 
 // 性能优化相关方法实现

@@ -189,6 +189,8 @@ set(UTILITY_SOURCES
     cpp/foundation/config.h
     cpp/foundation/logger.cpp
     cpp/foundation/logger.h
+    cpp/foundation/utility.h
+    cpp/foundation/utility.cpp
     cpp/setting.cpp
     cpp/setting.h
     cpp/foundation/database.cpp
