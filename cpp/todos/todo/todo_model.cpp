@@ -21,8 +21,8 @@ TodoModel::TodoModel(TodoDataStorage &dataStorage, TodoSyncServer &syncServer, T
       m_syncManager(syncServer),  //
       m_queryer(queryer)          //
 {
-    // 连接筛选器信号，当筛选条件变化时更新缓存
-    connect(&m_queryer, &TodoQueryer::filtersChanged, this, [this]() {
+    // 连接查询器信号，当查询条件变化时更新缓存
+    connect(&m_queryer, &TodoQueryer::queryConditionsChanged, this, [this]() {
         beginResetModel();
         清除过滤后的待办();
         endResetModel();
@@ -578,14 +578,6 @@ void TodoModel::onRowsInserted() {
 void TodoModel::onRowsRemoved() {
     // 当有待办事项删除时调用
     onDataChanged();
-}
-
-// 排序相关实现
-void TodoModel::onSortStateChanged() {
-    // 现在排序在数据库端完成，只需标记缓存失效并刷新视图
-    beginResetModel();
-    清除过滤后的待办();
-    endResetModel();
 }
 
 /**

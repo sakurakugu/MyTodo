@@ -91,24 +91,13 @@ class TodoQueryer : public QObject {
     bool dateFilterEnabled() const;             // 获取日期筛选是否启用
     void setDateFilterEnabled(bool enabled);    // 设置日期筛选是否启用
 
-    // 筛选核心方法
-    bool itemMatchesFilter(const TodoItem *item) const; ///< 检查项目是否匹配当前筛选条件
-    QList<TodoItem *> filterTodos(
-        const std::vector<std::unique_ptr<TodoItem>> &todos) const; ///< 从待办事项列表中筛选出匹配的项目
-    void resetFilters();                                            ///< 重置所有筛选条件
-    bool hasActiveFilters() const;                                  ///< 检查是否有任何筛选条件被激活
-
     // 排序属性访问器
-    int sortType() const;                      // 获取当前排序类型
-    Q_INVOKABLE void setSortType(int type);    // 设置排序类型
-    bool descending() const;                   // 获取是否倒序
-    Q_INVOKABLE void setDescending(bool desc); // 设置是否倒序
+    int sortType() const;          // 获取当前排序类型
+    void setSortType(int type);    // 设置排序类型
+    bool descending() const;       // 获取是否倒序
+    void setDescending(bool desc); // 设置是否倒序
 
-    // 排序核心方法
-    void sortTodos(std::vector<std::unique_ptr<TodoItem>> &todos) const; // 对待办事项列表进行排序
-    void sortTodoPointers(QList<TodoItem *> &todos) const;               // 对待办事项指针列表进行排序
-    static QString getSortTypeName(SortType type);                       // 获取排序类型的显示名称
-    static QList<SortType> getAvailableSortTypes();                      // 获取所有可用的排序类型
+    bool hasActiveFilters() const; ///< 检查是否有任何筛选条件被激活
 
   signals:
     void currentCategoryChanged();   // 当前分类筛选器变化信号
@@ -118,10 +107,9 @@ class TodoQueryer : public QObject {
     void dateFilterStartChanged();   // 日期筛选开始日期变化信号
     void dateFilterEndChanged();     // 日期筛选结束日期变化信号
     void dateFilterEnabledChanged(); // 日期筛选启用状态变化信号
-    void filtersChanged();           // 任何筛选条件变化的通用信号
-    void sortTypeChanged();          // 排序类型变化信号 // TODO：目前暴露给qml了，暂时不删除
-    void descendingChanged();        // 倒序状态变化信号 // TODO：目前暴露给qml了，暂时不删除
-    void sortStateChanged();         // 排序状态变化信号 在排序类型或倒序状态变化时发射
+    void sortTypeChanged();          // 排序类型变化信号
+    void descendingChanged();        // 倒序状态变化信号
+    void queryConditionsChanged();   // 查询条件变化信号
 
   private:
     // 筛选条件成员变量
@@ -139,6 +127,4 @@ class TodoQueryer : public QObject {
     bool checkStatusMatch(const TodoItem *item) const;   // 检查状态筛选条件
     bool checkSearchMatch(const TodoItem *item) const;   // 检查搜索文本筛选条件
     bool checkDateMatch(const TodoItem *item) const;     // 检查日期筛选条件
-
-    void emitFiltersChanged(); // 发射筛选条件变化信号
 };

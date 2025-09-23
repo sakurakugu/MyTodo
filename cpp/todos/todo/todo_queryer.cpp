@@ -41,7 +41,7 @@ void TodoQueryer::setCurrentCategory(const QString &category) {
     if (m_currentCategory != category) {
         m_currentCategory = category;
         emit currentCategoryChanged();
-        emitFiltersChanged();
+        emit queryConditionsChanged();
     }
 }
 
@@ -61,7 +61,7 @@ void TodoQueryer::setCurrentFilter(const QString &filter) {
     if (m_currentFilter != filter) {
         m_currentFilter = filter;
         emit currentFilterChanged();
-        emitFiltersChanged();
+        emit queryConditionsChanged();
     }
 }
 
@@ -81,7 +81,7 @@ void TodoQueryer::setSearchText(const QString &text) {
     if (m_searchText != text) {
         m_searchText = text;
         emit searchTextChanged();
-        emitFiltersChanged();
+        emit queryConditionsChanged();
     }
 }
 
@@ -101,7 +101,7 @@ void TodoQueryer::setDateFilterStart(const QDate &date) {
     if (m_dateFilterStart != date) {
         m_dateFilterStart = date;
         emit dateFilterStartChanged();
-        emitFiltersChanged();
+        emit queryConditionsChanged();
     }
 }
 
@@ -121,7 +121,7 @@ void TodoQueryer::setDateFilterEnd(const QDate &date) {
     if (m_dateFilterEnd != date) {
         m_dateFilterEnd = date;
         emit dateFilterEndChanged();
-        emitFiltersChanged();
+        emit queryConditionsChanged();
     }
 }
 
@@ -141,83 +141,7 @@ void TodoQueryer::setDateFilterEnabled(bool enabled) {
     if (m_dateFilterEnabled != enabled) {
         m_dateFilterEnabled = enabled;
         emit dateFilterEnabledChanged();
-        emitFiltersChanged();
-    }
-}
-
-/**
- * @brief 检查项目是否匹配当前筛选条件
- * @param item 待检查的待办事项
- * @return 如果匹配返回true，否则返回false
- */
-bool TodoQueryer::itemMatchesFilter(const TodoItem *item) const {
-    if (!item)
-        return false;
-
-    return checkCategoryMatch(item) && checkStatusMatch(item) && checkSearchMatch(item) && checkDateMatch(item);
-}
-
-/**
- * @brief 从待办事项列表中筛选出匹配的项目
- * @param todos 原始待办事项列表
- * @return 筛选后的待办事项列表
- */
-QList<TodoItem *> TodoQueryer::filterTodos(const std::vector<std::unique_ptr<TodoItem>> &todos) const {
-    QList<TodoItem *> filteredTodos;
-
-    for (const auto &todo : todos) {
-        if (itemMatchesFilter(todo.get())) {
-            filteredTodos.append(todo.get());
-        }
-    }
-
-    return filteredTodos;
-}
-
-/**
- * @brief 重置所有筛选条件
- */
-void TodoQueryer::resetFilters() {
-    bool changed = false;
-
-    if (!m_currentCategory.isEmpty()) {
-        m_currentCategory.clear();
-        emit currentCategoryChanged();
-        changed = true;
-    }
-
-    if (!m_currentFilter.isEmpty()) {
-        m_currentFilter.clear();
-        emit currentFilterChanged();
-        changed = true;
-    }
-
-    if (!m_searchText.isEmpty()) {
-        m_searchText.clear();
-        emit searchTextChanged();
-        changed = true;
-    }
-
-    if (m_dateFilterEnabled) {
-        m_dateFilterEnabled = false;
-        emit dateFilterEnabledChanged();
-        changed = true;
-    }
-
-    if (m_dateFilterStart.isValid()) {
-        m_dateFilterStart = QDate();
-        emit dateFilterStartChanged();
-        changed = true;
-    }
-
-    if (m_dateFilterEnd.isValid()) {
-        m_dateFilterEnd = QDate();
-        emit dateFilterEndChanged();
-        changed = true;
-    }
-
-    if (changed) {
-        emitFiltersChanged();
+        emit queryConditionsChanged();
     }
 }
 
@@ -315,13 +239,6 @@ bool TodoQueryer::checkDateMatch(const TodoItem *item) const {
 }
 
 /**
- * @brief 发射筛选条件变化信号
- */
-void TodoQueryer::emitFiltersChanged() {
-    emit filtersChanged();
-}
-
-/**
  * @brief 获取当前排序类型
  * @return 当前排序类型
  */
@@ -337,7 +254,7 @@ void TodoQueryer::setSortType(int type) {
     if (m_sortType != type) {
         m_sortType = type;
         emit sortTypeChanged();
-        emit sortStateChanged();
+        emit queryConditionsChanged();
     }
 }
 
@@ -357,128 +274,6 @@ void TodoQueryer::setDescending(bool desc) {
     if (m_descending != desc) {
         m_descending = desc;
         emit descendingChanged();
-        emit sortStateChanged();
+        emit queryConditionsChanged();
     }
-}
-
-/**
- * @brief 对待办事项列表进行排序
- * @param todos 待排序的待办事项列表
- */
-void TodoQueryer::sortTodos(std::vector<std::unique_ptr<TodoItem>> &todos) const {
-    switch (static_cast<SortType>(m_sortType)) {
-    case SortByDeadline:
-        std::sort(todos.begin(), todos.end(),
-                  [this](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
-                      QDateTime deadlineA = a->deadline();
-                      QDateTime deadlineB = b->deadline();
-                      if (deadlineA.isValid() && !deadlineB.isValid()) {
-                          return !m_descending;
-                      }
-                      if (!deadlineA.isValid() && deadlineB.isValid()) {
-                          return m_descending;
-                      }
-                      if (!deadlineA.isValid() && !deadlineB.isValid()) {
-                          return m_descending ? (a->createdAt() < b->createdAt()) : (a->createdAt() > b->createdAt());
-                      }
-                      return m_descending ? (deadlineA > deadlineB) : (deadlineA < deadlineB);
-                  });
-        break;
-    case SortByImportance:
-        std::sort(todos.begin(), todos.end(),
-                  [this](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
-                      if (a->important() != b->important()) {
-                          return m_descending ? (a->important() < b->important()) : (a->important() > b->important());
-                      }
-                      return m_descending ? (a->createdAt() < b->createdAt()) : (a->createdAt() > b->createdAt());
-                  });
-        break;
-    case SortByTitle:
-        std::sort(todos.begin(), todos.end(),
-                  [this](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
-                      int result = a->title().compare(b->title(), Qt::CaseInsensitive);
-                      return m_descending ? (result > 0) : (result < 0);
-                  });
-        break;
-    case SortByCreatedTime:
-    default:
-        std::sort(todos.begin(), todos.end(),
-                  [this](const std::unique_ptr<TodoItem> &a, const std::unique_ptr<TodoItem> &b) {
-                      return m_descending ? (a->createdAt() < b->createdAt()) : (a->createdAt() > b->createdAt());
-                  });
-        break;
-    }
-}
-
-/**
- * @brief 对待办事项指针列表进行排序
- * @param todos 待排序的待办事项指针列表
- */
-void TodoQueryer::sortTodoPointers(QList<TodoItem *> &todos) const {
-    switch (static_cast<SortType>(m_sortType)) {
-    case SortByDeadline:
-        std::sort(todos.begin(), todos.end(), [this](const TodoItem *a, const TodoItem *b) {
-            QDateTime deadlineA = a->deadline();
-            QDateTime deadlineB = b->deadline();
-            if (deadlineA.isValid() && !deadlineB.isValid()) {
-                return !m_descending;
-            }
-            if (!deadlineA.isValid() && deadlineB.isValid()) {
-                return m_descending;
-            }
-            if (!deadlineA.isValid() && !deadlineB.isValid()) {
-                return m_descending ? (a->createdAt() < b->createdAt()) : (a->createdAt() > b->createdAt());
-            }
-            return m_descending ? (deadlineA > deadlineB) : (deadlineA < deadlineB);
-        });
-        break;
-    case SortByImportance:
-        std::sort(todos.begin(), todos.end(), [this](const TodoItem *a, const TodoItem *b) {
-            if (a->important() != b->important()) {
-                return m_descending ? (a->important() < b->important()) : (a->important() > b->important());
-            }
-            return m_descending ? (a->createdAt() < b->createdAt()) : (a->createdAt() > b->createdAt());
-        });
-        break;
-    case SortByTitle:
-        std::sort(todos.begin(), todos.end(), [this](const TodoItem *a, const TodoItem *b) {
-            int result = a->title().compare(b->title(), Qt::CaseInsensitive);
-            return m_descending ? (result > 0) : (result < 0);
-        });
-        break;
-    case SortByCreatedTime:
-    default:
-        std::sort(todos.begin(), todos.end(), [this](const TodoItem *a, const TodoItem *b) {
-            return m_descending ? (a->createdAt() < b->createdAt()) : (a->createdAt() > b->createdAt());
-        });
-        break;
-    }
-}
-
-/**
- * @brief 获取排序类型的显示名称
- * @param type 排序类型
- * @return 排序类型的显示名称
- */
-QString TodoQueryer::getSortTypeName(SortType type) {
-    switch (type) {
-    case SortByCreatedTime:
-        return QObject::tr("按创建时间");
-    case SortByDeadline:
-        return QObject::tr("按截止日期");
-    case SortByImportance:
-        return QObject::tr("按重要程度");
-    case SortByTitle:
-        return QObject::tr("按标题");
-    default:
-        return QObject::tr("未知排序");
-    }
-}
-
-/**
- * @brief 获取所有可用的排序类型
- * @return 排序类型列表
- */
-QList<TodoQueryer::SortType> TodoQueryer::getAvailableSortTypes() {
-    return {SortByCreatedTime, SortByDeadline, SortByImportance, SortByTitle};
 }

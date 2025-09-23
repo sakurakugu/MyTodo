@@ -124,7 +124,6 @@ class TodoModel : public QAbstractListModel {
     void onRowsInserted();                                       ///< 处理行插入
     void onRowsRemoved();                                        ///< 处理行删除
     void onSyncStarted();                                        // 处理同步开始
-    void onSortStateChanged();                                   // 对待办事项进行排序
     void onTodosUpdatedFromServer(const QJsonArray &todosArray); // 处理从服务器更新的待办事项
 
   private:

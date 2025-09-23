@@ -163,7 +163,7 @@ Page {
                     text: isHovered ? (isDescending ? "\ue8c3" : "\ue8c4") : ("\ue8c5")
                     onClicked: {
                         isDescending = !isDescending;
-                        todoQueryer.setDescending(isDescending);
+                        todoQueryer.descending = isDescending;
                     }
                     width: parent.width
                 }
@@ -1063,7 +1063,7 @@ Page {
 
         MenuItem {
             text: qsTr("按创建时间")
-            onTriggered: todoQueryer.setSortType(0)
+            onTriggered: todoQueryer.sortType = 0
             contentItem: Text {
                 text: parent.text
                 color: ThemeManager.textColor
@@ -1073,7 +1073,7 @@ Page {
 
         MenuItem {
             text: qsTr("按截止日期")
-            onTriggered: todoQueryer.setSortType(1)
+            onTriggered: todoQueryer.sortType = 1
             contentItem: Text {
                 text: parent.text
                 color: ThemeManager.textColor
@@ -1083,7 +1083,7 @@ Page {
 
         MenuItem {
             text: qsTr("按重要性")
-            onTriggered: todoQueryer.setSortType(2)
+            onTriggered: todoQueryer.sortType = 2
             contentItem: Text {
                 text: parent.text
                 color: ThemeManager.textColor
@@ -1093,7 +1093,7 @@ Page {
 
         MenuItem {
             text: qsTr("按标题")
-            onTriggered: todoQueryer.setSortType(3)
+            onTriggered: todoQueryer.sortType = 3
             contentItem: Text {
                 text: parent.text
                 color: ThemeManager.textColor
