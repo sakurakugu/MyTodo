@@ -133,15 +133,13 @@ class TodoModel : public QAbstractListModel {
     std::unordered_map<int, TodoItem *> m_idIndex;  ///< id -> TodoItem* 快速索引
 
     // 辅助方法
-    QVariant getItemData(const TodoItem *item, int role) const; ///< 根据角色获取项目数据
-    TodoRoles roleFromName(const QString &name) const;          ///< 从名称获取角色
-    void updateTodosFromServer(const QJsonArray &todosArray);   // 从服务器数据更新待办事项
+    QVariant 获取项目数据(const TodoItem *item, int role) const; ///< 根据角色获取项目数据
     QModelIndex 获取内容在待办列表中的索引(TodoItem *todoItem) const;
-    TodoItem *getFilteredItem(int index) const; // 获取过滤后的项目（带边界检查）
+    TodoItem *获取过滤后的待办(int index) const; // 获取过滤后的项目（带边界检查）
 
-    void rebuildIdIndex(); ///< 重建 id 索引
-    void addToIndex(TodoItem *item);
-    void removeFromIndex(int id);
+    void 重建ID索引(); ///< 重建 id 索引
+    void 添加到ID索引(TodoItem *item);
+    void 从ID索引中移除(int id);
 
     TodoDataStorage &m_dataManager; ///< 数据存储管理器 - 负责数据的增删改查
     TodoSyncServer &m_syncManager;  ///< 同步管理器 - 负责与服务器同步

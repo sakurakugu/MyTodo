@@ -79,8 +79,8 @@ class CategoryManager : public QObject {
     void categoriesChanged(); ///< 类别列表变化信号
 
   public slots:
-    void onCategoriesUpdatedFromServer(const QJsonArray &categoriesArray);            ///< 处理从服务器更新的类别数据
-    void onLocalChangesUploaded(const std::vector<CategorieItem *> &m_unsyncedItems); ///< 处理本地更改已上传
+    void onCategoriesUpdatedFromServer(const QJsonArray &categoriesArray);               ///< 处理从服务器更新的类别数据
+    void onLocalChangesUploaded(const std::vector<CategorieItem *> &succeedSyncedItems); ///< 处理本地更改已上传
   private:
     // 成员变量
     CategorySyncServer *m_syncServer;   ///< 类别同步服务器对象

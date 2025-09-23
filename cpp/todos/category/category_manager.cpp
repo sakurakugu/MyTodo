@@ -33,8 +33,7 @@ CategoryManager::CategoryManager(UserAuth &userAuth, QObject *parent)
     loadCategories();
 }
 
-CategoryManager::~CategoryManager() {
-}
+CategoryManager::~CategoryManager() {}
 
 QStringList CategoryManager::getCategories() const {
     return m_categoryModel->获取类别();
@@ -82,6 +81,6 @@ void CategoryManager::onCategoriesUpdatedFromServer(const QJsonArray &categories
     m_categoryModel->导入类别从JSON(categoriesArray);
 }
 
-void CategoryManager::onLocalChangesUploaded(const std::vector<CategorieItem *> &m_succeedSyncedItems) {
-    m_categoryModel->更新同步成功状态(m_succeedSyncedItems);
+void CategoryManager::onLocalChangesUploaded(const std::vector<CategorieItem *> &succeedSyncedItems) {
+    m_categoryModel->更新同步成功状态(succeedSyncedItems);
 }

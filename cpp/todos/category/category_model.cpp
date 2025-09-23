@@ -42,7 +42,7 @@ QVariant CategoryModel::data(const QModelIndex &index, int role) const {
     if (!index.isValid() || static_cast<size_t>(index.row()) >= m_categoryItems.size())
         return QVariant();
 
-    return getItemData(m_categoryItems[index.row()].get(), role);
+    return 获取项目数据(m_categoryItems[index.row()].get(), role);
 }
 
 /**
@@ -121,7 +121,7 @@ void CategoryModel::onCategoriesChanged() {
  * @param role 数据角色
  * @return 请求的数据值
  */
-QVariant CategoryModel::getItemData(const CategorieItem *item, int role) const {
+QVariant CategoryModel::获取项目数据(const CategorieItem *item, int role) const {
     if (!item)
         return QVariant();
 

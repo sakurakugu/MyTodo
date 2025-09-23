@@ -141,7 +141,7 @@ void CategorySyncServer::设置未同步的对象(const std::vector<std::unique_
 
     for (const auto &item : categoryItems) {
         totalItems++;
-        if (item->synced() > 0) {
+        if (item->synced() > 0) { // 1=插入,2=更新,3=删除
             m_unsyncedItems.push_back(item.get());
         } else {
             syncedItems++;

@@ -69,7 +69,7 @@ QVariant TodoModel::data(const QModelIndex &index, int role) const {
     if (!m_queryer.是否激活任何查询条件()) {
         if (static_cast<size_t>(index.row()) >= m_todos.size())
             return QVariant();
-        return getItemData(m_todos[index.row()].get(), role);
+        return 获取项目数据(m_todos[index.row()].get(), role);
     }
 
     // 使用缓存的过滤结果
@@ -77,7 +77,7 @@ QVariant TodoModel::data(const QModelIndex &index, int role) const {
     if (index.row() >= m_filteredTodos.size())
         return QVariant();
 
-    return getItemData(m_filteredTodos[index.row()], role);
+    return 获取项目数据(m_filteredTodos[index.row()], role);
 }
 
 /**
@@ -183,7 +183,7 @@ bool TodoModel::setData(const QModelIndex &index, const QVariant &value, int rol
 
 bool TodoModel::加载待办() {
     m_dataManager.加载待办事项(m_todos);
-    rebuildIdIndex();
+    重建ID索引();
     更新同步管理器的数据();
     return true;
 }
@@ -205,7 +205,7 @@ bool TodoModel::新增待办(const QString &title, const QUuid &userUuid, const 
 
     // 添加到索引
     if (!m_todos.empty()) {
-        addToIndex(m_todos.back().get());
+        添加到ID索引(m_todos.back().get());
     }
     需要重新筛选();
     endInsertRows();
@@ -215,21 +215,8 @@ bool TodoModel::新增待办(const QString &title, const QUuid &userUuid, const 
 }
 
 bool TodoModel::更新待办(int index, const QVariantMap &todoData) {
-    // 检查索引是否有效
-    if (index < 0 || static_cast<size_t>(index) >= m_todos.size()) {
-        qWarning() << "尝试更新无效的索引:" << index;
-        return false;
-    }
-
-    // 获取过滤后的索引，因为QML传入的是过滤后的索引
-    更新过滤后的待办();
-    if (index >= static_cast<int>(m_filteredTodos.size())) {
-        qWarning() << "过滤后的索引超出范围:" << index;
-        return false;
-    }
-
     // 通过过滤后的索引获取实际的任务项
-    auto todoItem = m_filteredTodos[index];
+    auto todoItem = 获取过滤后的待办(index);
     QModelIndex modelIndex = 获取内容在待办列表中的索引(todoItem);
 
     TodoItem *item = m_todos[modelIndex.row()].get();
@@ -261,21 +248,8 @@ bool TodoModel::标记完成(int index, bool completed) {
 }
 
 bool TodoModel::标记删除(int index, bool deleted) {
-    // 检查索引是否有效
-    if (index < 0 || static_cast<size_t>(index) >= m_todos.size()) {
-        qWarning() << "尝试更新无效的索引:" << index;
-        return false;
-    }
-
-    // 获取过滤后的索引，因为QML传入的是过滤后的索引
-    更新过滤后的待办();
-    if (index >= static_cast<int>(m_filteredTodos.size())) {
-        qWarning() << "过滤后的索引超出范围:" << index;
-        return false;
-    }
-
     // 通过过滤后的索引获取实际的任务项
-    auto todoItem = m_filteredTodos[index];
+    auto todoItem = 获取过滤后的待办(index);
     QModelIndex modelIndex = 获取内容在待办列表中的索引(todoItem);
 
     TodoItem *item = m_todos[modelIndex.row()].get();
@@ -287,7 +261,7 @@ bool TodoModel::标记删除(int index, bool deleted) {
             // 通知视图即将删除行
             beginRemoveRows(QModelIndex(), index, index);
             // 软删除
-            m_dataManager.回收待办(m_todos, todoItem->uuid());
+            m_dataManager.回收待办(m_todos, item->uuid());
             需要重新筛选();
             emit dataChanged(modelIndex, modelIndex, changedRoles);
             // 通知视图删除完成
@@ -329,41 +303,15 @@ bool TodoModel::标记删除(int index, bool deleted) {
 }
 
 bool TodoModel::软删除待办(int index) {
-    // 检查索引是否有效
-    if (index < 0 || static_cast<size_t>(index) >= m_todos.size()) {
-        qWarning() << "尝试软删除无效的索引:" << index;
-        return false;
-    }
-
-    // 获取过滤后的索引，因为QML传入的是过滤后的索引
-    更新过滤后的待办();
-    if (index >= static_cast<int>(m_filteredTodos.size())) {
-        qWarning() << "过滤后的索引超出范围:" << index;
-        return false;
-    }
-
     // 通过过滤后的索引获取实际的任务项
-    auto todoItem = m_filteredTodos[index];
+    auto todoItem = 获取过滤后的待办(index);
     return m_dataManager.软删除待办(m_todos, todoItem->uuid());
 }
 
 bool TodoModel::删除待办(int index) {
-    // 检查索引是否有效
-    if (index < 0 || static_cast<size_t>(index) >= m_todos.size()) {
-        qWarning() << "尝试永久删除无效的索引:" << index;
-        return false;
-    }
-
     try {
-        // 获取过滤后的索引，因为QML传入的是过滤后的索引
-        更新过滤后的待办();
-        if (index >= static_cast<int>(m_filteredTodos.size())) {
-            qWarning() << "过滤后的索引超出范围:" << index;
-            return false;
-        }
-
         // 通过过滤后的索引获取实际的任务项
-        auto todoItem = m_filteredTodos[index];
+        auto todoItem = 获取过滤后的待办(index);
 
         // 检查任务是否已删除
         if (!todoItem->isDeleted()) {
@@ -391,7 +339,7 @@ bool TodoModel::删除待办(int index) {
         m_todos.erase(it);
         需要重新筛选();
         endRemoveRows();
-        rebuildIdIndex();
+        重建ID索引();
         与服务器同步();
 
         qDebug() << "成功永久删除索引" << index << "处的待办事项";
@@ -532,10 +480,6 @@ void TodoModel::onSyncStarted() {
 }
 
 void TodoModel::onTodosUpdatedFromServer(const QJsonArray &todosArray) {
-    updateTodosFromServer(todosArray);
-}
-
-void TodoModel::updateTodosFromServer(const QJsonArray &todosArray) {
     qDebug() << "从服务器更新" << todosArray.size() << "个待办事项，当前本地有" << m_todos.size() << "个待办事项";
 
     beginResetModel();
@@ -543,7 +487,7 @@ void TodoModel::updateTodosFromServer(const QJsonArray &todosArray) {
     endResetModel();
 
     需要重新筛选();
-    rebuildIdIndex();
+    重建ID索引();
     更新同步管理器的数据();
 }
 
@@ -570,13 +514,16 @@ QModelIndex TodoModel::获取内容在待办列表中的索引(TodoItem *todoIte
     return createIndex(index, 0);
 }
 
-TodoItem *TodoModel::getFilteredItem(int index) const {
-    const_cast<TodoModel *>(this)->更新过滤后的待办();
-
-    if (index < 0 || index >= m_filteredTodos.size()) {
+TodoItem *TodoModel::获取过滤后的待办(int index) const {
+    if (index < 0 || static_cast<size_t>(index) >= m_todos.size()) {
+        qWarning() << "尝试更新无效的索引:" << index;
         return nullptr;
     }
-
+    const_cast<TodoModel *>(this)->更新过滤后的待办();
+    if (index < 0 || index >= static_cast<int>(m_filteredTodos.size())) {
+        qWarning() << "过滤后的索引超出范围:" << index;
+        return nullptr;
+    }
     return m_filteredTodos[index];
 }
 
@@ -586,7 +533,7 @@ TodoItem *TodoModel::getFilteredItem(int index) const {
  * 该方法会清空现有的ID索引映射，并重新遍历m_todos列表，构建新的映射。
  * 适用于在批量修改m_todos后需要重新生成索引的场景。
  */
-void TodoModel::rebuildIdIndex() {
+void TodoModel::重建ID索引() {
     m_idIndex.clear();
     for (auto &ptr : m_todos) {
         if (ptr) {
@@ -598,7 +545,7 @@ void TodoModel::rebuildIdIndex() {
 /**
  * @brief 向ID索引映射中添加一个新的待办事项
  */
-void TodoModel::addToIndex(TodoItem *item) {
+void TodoModel::添加到ID索引(TodoItem *item) {
     if (item) {
         m_idIndex[item->id()] = item;
     }
@@ -607,7 +554,7 @@ void TodoModel::addToIndex(TodoItem *item) {
 /**
  * @brief 从ID索引映射中移除一个待办事项
  */
-void TodoModel::removeFromIndex(int id) {
+void TodoModel::从ID索引中移除(int id) {
     m_idIndex.erase(id);
 }
 
@@ -617,7 +564,7 @@ void TodoModel::removeFromIndex(int id) {
  * @param role 数据角色
  * @return 请求的数据值
  */
-QVariant TodoModel::getItemData(const TodoItem *item, int role) const {
+QVariant TodoModel::获取项目数据(const TodoItem *item, int role) const {
     if (!item)
         return QVariant();
 
@@ -661,35 +608,4 @@ QVariant TodoModel::getItemData(const TodoItem *item, int role) const {
     default:
         return QVariant();
     }
-}
-
-/**
- * @brief 从名称获取角色
- * @param name 角色名称
- * @return 对应的角色枚举值
- */
-TodoModel::TodoRoles TodoModel::roleFromName(const QString &name) const {
-    static const QHash<QString, TodoRoles> roleMap = //
-        {
-            {"id", IdRole},
-            {"uuid", UuidRole},
-            {"userUuid", UserUuidRole},
-            {"title", TitleRole},
-            {"description", DescriptionRole},
-            {"category", CategoryRole},
-            {"important", ImportantRole},
-            {"deadline", DeadlineRole},
-            {"recurrenceInterval", RecurrenceIntervalRole},
-            {"recurrenceCount", RecurrenceCountRole},
-            {"recurrenceStartDate", RecurrenceStartDateRole},
-            {"isCompleted", IsCompletedRole},
-            {"completedAt", CompletedAtRole},
-            {"isDeleted", IsDeletedRole},
-            {"deletedAt", DeletedAtRole},
-            {"createdAt", CreatedAtRole},
-            {"updatedAt", UpdatedAtRole},
-            {"synced", SyncedRole} //
-        };
-
-    return roleMap.value(name, static_cast<TodoRoles>(Qt::DisplayRole));
 }

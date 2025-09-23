@@ -101,7 +101,7 @@ class CategoryModel : public QAbstractListModel {
 
   private:
     // 辅助方法
-    QVariant getItemData(const CategorieItem *item, int role) const; ///< 根据角色获取项目数据
+    QVariant 获取项目数据(const CategorieItem *item, int role) const; ///< 根据角色获取项目数据
     bool 是否是有效名称(const QString &name) const;
     void 开始更新模型(); ///< 开始模型更新
     void 结束更新模型(); ///< 结束模型更新
