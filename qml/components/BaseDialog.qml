@@ -8,7 +8,6 @@
  * @author Sakurakugu
  * @date 2025-08-23 16:13:21(UTC+8) 周六
  * @change 2025-09-04 23:39:30(UTC+8) 周四
- * @version 0.4.0
  */
 
 import QtQuick
@@ -51,7 +50,7 @@ Dialog {
     title: dialogTitle
     anchors.centerIn: parent
     modal: true
-    
+
     // 自定义遮罩层样式
     Overlay.modal: Rectangle {
         color: Qt.rgba(0, 0, 0, 0.4)  // 半透明黑色背景

@@ -2,9 +2,8 @@
  * @file logger.cpp
  * @brief 日志记录器实现
  * @author Sakurakugu
- * @date 2025-08-17 07:17:29(UTC+8) 周日
- * @change 2025-08-31 15:07:38(UTC+8) 周日
- * @version 0.4.0
+ * @date 2025-08-19 05:57:09(UTC+8) 周二
+ * @change 2025-09-20 23:17:33(UTC+8) 周六
  */
 #include "logger.h"
 #include "default_value.h"
@@ -64,8 +63,7 @@ Logger::~Logger() noexcept {
             m_logFile->flush();
             m_logFile->close();
         }
-    } catch (...) {
-    }
+    } catch (...) {}
 }
 
 /**
@@ -78,8 +76,7 @@ Logger::~Logger() noexcept {
 void Logger::messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) noexcept {
     try {
         Logger::GetInstance().writeLog(type, context, msg);
-    } catch (...) {
-    }
+    } catch (...) {}
 }
 
 /**
@@ -291,8 +288,7 @@ void Logger::writeLog(QtMsgType type, const QMessageLogContext &context, const Q
                 static_cast<void>(checkLogRotation());
             }
         }
-    } catch (...) {
-    }
+    } catch (...) {}
 }
 
 /**

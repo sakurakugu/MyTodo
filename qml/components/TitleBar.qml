@@ -5,8 +5,7 @@
  *
  * @author Sakurakugu
  * @date 2025-09-04 23:39:30(UTC+8) 周四
- * @change 2025-09-06 00:46:10(UTC+8) 周六
- * @version 0.4.0
+ * @change 2025-09-06 17:22:15(UTC+8) 周六
  */
 import QtQuick
 import QtQuick.Layouts

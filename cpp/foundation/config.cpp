@@ -3,8 +3,7 @@
  * @brief 配置类实现
  * @author sakurakugu
  * @date 2025-08-16 20:05:55(UTC+8) 周六
- * @change 2025-08-31 15:07:38(UTC+8) 周日
- * @version 0.4.0
+ * @change 2025-09-10 16:24:14(UTC+8) 周三
  */
 #include "config.h"
 #include "version.h"

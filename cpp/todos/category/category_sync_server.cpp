@@ -5,8 +5,8 @@
  * 该文件实现了CategorySyncServer类的所有方法，负责类别的服务器同步功能。
  *
  * @author Sakurakugu
- * @date 2025-09-10 22:00:00(UTC+8) 周三
- * @version 0.4.0
+ * @date 2025-09-10 22:00:18(UTC+8) 周三
+ * @change 2025-09-24 03:45:31(UTC+8) 周三
  */
 
 #include "category_sync_server.h"

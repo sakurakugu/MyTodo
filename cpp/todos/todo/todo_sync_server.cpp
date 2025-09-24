@@ -6,8 +6,7 @@
  *
  * @author Sakurakugu
  * @date 2025-08-24 23:07:18(UTC+8) 周日
- * @change 2025-09-06 01:29:53(UTC+8) 周六
- * @version 0.4.0
+ * @change 2025-09-22 16:33:30(UTC+8) 周一
  */
 
 #include "todo_sync_server.h"

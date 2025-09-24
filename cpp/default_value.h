@@ -6,8 +6,7 @@
  *
  * @author Sakurakugu
  * @date 2025-08-21 23:33:39(UTC+8) 周四
- * @change 2025-08-31 15:07:38(UTC+8) 周日
- * @version 0.4.0
+ * @change 2025-09-22 16:33:30(UTC+8) 周一
  */
 #pragma once
 

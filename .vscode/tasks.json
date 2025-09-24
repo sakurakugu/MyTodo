@@ -1,16 +1,27 @@
+/**
+ * @file tasks.json
+ * @brief 编辑器任务文件
+ * @author Sakurakugu
+ * @date 2025-09-18 00:05:42(UTC+8) 周四
+ * @change 2025-09-24 03:53:42(UTC+8) 周四
+ */
 {
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "build",
+			"label": "cmake 构建 (Debug)",
 			"type": "shell",
-			"command": "msbuild",
+			"command": "cmake",
 			"args": [
-				"/property:GenerateFullPaths=true",
-				"/t:build",
-				"/consoleloggerparameters:NoSummary"
+				"--build",
+				"${workspaceFolder}/build",
+				"--config",
+				"Debug",
+				"--target",
+				"all"
 			],
-			"group": "build"
+			"group": "build",
+			"problemMatcher": []
 		}
 	]
 }

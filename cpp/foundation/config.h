@@ -6,8 +6,7 @@
  *
  * @author Sakurakugu
  * @date 2025-08-16 20:05:55(UTC+8) 周六
- * @change 2025-08-31 15:07:38(UTC+8) 周日
- * @version 0.4.0
+ * @change 2025-09-10 16:24:14(UTC+8) 周三
  */
 #pragma once
 
@@ -43,7 +42,7 @@ class Config : public QObject {
 
     // JSON 相关功能
     std::string exportToJson(const QStringList &excludeKeys = QStringList()) const; // 导出配置到JSON字符串
-    bool JsonToToml(const std::string &jsonContent, toml::table *table);  // JSON字符串 转换为 TOML
+    bool JsonToToml(const std::string &jsonContent, toml::table *table);            // JSON字符串 转换为 TOML
 
     // 配置文件位置切换
     enum class ConfigLocation {

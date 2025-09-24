@@ -6,8 +6,7 @@
  *
  * @author Sakurakugu
  * @date 2025-08-19 05:57:09(UTC+8) 周二
- * @change 2025-08-31 00:49:25(UTC+8) 周日
- * @version 0.4.0
+ * @change 2025-09-20 23:17:33(UTC+8) 周六
  */
 
 /**
@@ -67,7 +66,7 @@ class Logger : public QObject {
     Q_OBJECT
 
   public:
-        // 枚举比较概念
+    // 枚举比较概念
     template <LogLevelType T> static constexpr bool isValidLevel(T level) noexcept {
         constexpr auto min_level = static_cast<std::underlying_type_t<T>>(LogLevel::Debug);
         constexpr auto max_level = static_cast<std::underlying_type_t<T>>(LogLevel::Fatal);

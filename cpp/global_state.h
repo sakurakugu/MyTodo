@@ -6,8 +6,7 @@
  *
  * @author Sakurakugu
  * @date 2025-08-16 20:05:55(UTC+8) 周六
- * @change 2025-09-06 16:55:02(UTC+8) 周六
- * @version 0.4.0
+ * @change 2025-09-21 10:34:42(UTC+8) 周日
  */
 #pragma once
 
@@ -44,7 +43,7 @@ class GlobalState : public QObject {
     GlobalState &operator=(const GlobalState &) = delete;
     GlobalState(GlobalState &&) = delete;
     GlobalState &operator=(GlobalState &&) = delete;
-    
+
     explicit GlobalState(QObject *parent = nullptr);
     ~GlobalState();
 
@@ -138,5 +137,4 @@ class GlobalState : public QObject {
     bool m_isShowDropdown;   // 小工具模式--下拉菜单可见性
     bool m_refreshing;       // 刷新中
     QVariant m_selectedTodo; // 当前选中的待办事项
-
 };

@@ -8,8 +8,7 @@
  *
  * @author Sakurakugu
  * @date 2025-08-16 20:05:55(UTC+8) 周六
- * @change 2025-09-01 19:40:53(UTC+8) 周一
- * @version 0.4.0
+ * @change 2025-09-22 22:55:11(UTC+8) 周一
  */
 
 #include "todo_item.h"
@@ -37,8 +36,7 @@ TodoItem::TodoItem(QObject *parent)
       m_createdAt(QDateTime::currentDateTime()), // 初始化创建时间为当前时间
       m_updatedAt(QDateTime::currentDateTime()), // 初始化更新时间为当前时间
       m_synced(1)                                // 初始化是否已同步为false
-{
-}
+{}
 
 /**
  * @brief 带参数的构造函数
@@ -85,8 +83,7 @@ TodoItem::TodoItem(int id,                           ///< 待办事项唯一标�
       m_createdAt(createdAt),                        ///< 初始化待办事项创建时间
       m_updatedAt(updatedAt),                        ///< 初始化待办事项更新时间
       m_synced(synced)                               ///< 初始化待办事项同步状态
-{
-}
+{}
 
 /**
  * @brief 设置待办事项的唯一标识符

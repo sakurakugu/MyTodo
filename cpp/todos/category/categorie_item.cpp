@@ -8,8 +8,7 @@
  *
  * @author Sakurakugu
  * @date 2025-08-22 12:06:17(UTC+8) 周五
- * @change 2025-09-03 00:37:33(UTC+8) 周三
- * @version 0.4.0
+ * @change 2025-09-22 19:36:18(UTC+8) 周一
  */
 
 #include "categorie_item.h"

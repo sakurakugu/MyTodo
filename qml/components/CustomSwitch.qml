@@ -6,8 +6,7 @@
  *
  * @author Sakurakugu
  * @date 2025-09-04 14:37:56(UTC+8) 周四
- * @change 2025-09-04 14:37:56(UTC+8) 周四
- * @version 0.4.0
+ * @change 2025-09-10 01:01:04(UTC+8) 周三
  */
 import QtQuick
 import QtQuick.Effects

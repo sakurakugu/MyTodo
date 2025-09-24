@@ -6,9 +6,8 @@
  * 从CategoryManager类中拆分出来，实现单一职责原则。
  *
  * @author Sakurakugu
- * @date 2025-01-27 00:00:00(UTC+8) 周一
- * @change 2025-01-27 00:00:00(UTC+8) 周一
- * @version 0.4.0
+ * @date 2025-09-11 00:04:40(UTC+8) 周四
+ * @change 2025-09-23 18:45:36(UTC+8) 周二
  */
 
 #include "category_data_storage.h"
@@ -31,8 +30,7 @@ CategoryDataStorage::CategoryDataStorage(QObject *parent)
     }
 }
 
-CategoryDataStorage::~CategoryDataStorage() {
-}
+CategoryDataStorage::~CategoryDataStorage() {}
 
 /**
  * @brief 加载类别

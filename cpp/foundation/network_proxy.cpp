@@ -3,8 +3,7 @@
  * @brief 网络代理类实现
  * @author Sakurakugu
  * @date 2025-08-22 23:04:19(UTC+8) 周五
- * @change 2025-08-31 15:07:38(UTC+8) 周日
- * @version 0.4.0
+ * @change 2025-09-21 18:19:31(UTC+8) 周日
  */
 #include "network_proxy.h"
 #include "config.h"

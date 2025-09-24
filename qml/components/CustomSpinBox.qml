@@ -12,8 +12,7 @@
  *
  * @author Sakurakugu
  * @date 2025-09-05 01:04:35(UTC+8) 周五
- * @change 2025-09-05 18:17:08(UTC+8) 周五
- * @version 0.4.0
+ * @change 2025-09-24 00:55:58(UTC+8) 周三
  */
 
 import QtQuick

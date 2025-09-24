@@ -6,8 +6,8 @@
  * 从CategoryManager中拆分出来，专门负责QAbstractListModel的实现。
  *
  * @author Sakurakugu
- * @date 2025-09-23 (UTC+8)
- * @version 0.4.0
+ * @date 2025-09-23 16:11:01(UTC+8) 周二
+ * @change 2025-09-24 03:45:31(UTC+8) 周三
  */
 
 #pragma once

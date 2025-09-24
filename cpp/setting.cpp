@@ -5,8 +5,7 @@
  *
  * @param parent 父对象指针，默认值为nullptr。
  * @date 2025-08-21 21:31:41(UTC+8) 周四
- * @change 2025-09-04 23:39:30(UTC+8) 周四
- * @version 0.4.0
+ * @change 2025-09-24 00:55:58(UTC+8) 周三
  */
 #include "setting.h"
 #include "default_value.h"
@@ -27,8 +26,7 @@ Setting::Setting(QObject *parent)
  *
  * 清理Setting对象，释放资源。
  */
-Setting::~Setting() {
-}
+Setting::~Setting() {}
 
 int Setting::getOsType() const {
 #if defined(Q_OS_WIN)

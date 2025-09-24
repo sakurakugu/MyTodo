@@ -8,7 +8,6 @@
  * @author Sakurakugu
  * @date 2025-09-05 18:17:08(UTC+8) 周五
  * @change 2025-09-05 18:17:08(UTC+8) 周五
- * @version 0.4.0
  */
 import QtQuick
 import QtQuick.Effects
@@ -54,14 +53,14 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         anchors.left: root.isCheckBoxOnLeft ? parent.left : undefined
         anchors.right: !root.isCheckBoxOnLeft ? parent.right : undefined
-        
+
         color: {
             if (!root.enabled) {
                 return ThemeManager.buttonDisabledColor;
             }
             return root.checked ? ThemeManager.successColor : ThemeManager.backgroundColor;
         }
-        
+
         border.width: root.checked ? 0 : 1
         border.color: root.enabled ? ThemeManager.borderColor : ThemeManager.button2DisabledTextColor
 
@@ -115,17 +114,17 @@ Item {
             Canvas {
                 id: checkIcon
                 anchors.fill: parent
-                
+
                 onPaint: {
                     var ctx = getContext("2d");
                     ctx.clearRect(0, 0, width, height);
-                    
+
                     if (root.checked) {
                         ctx.strokeStyle = "white";
                         ctx.lineWidth = 2;
                         ctx.lineCap = "round";
                         ctx.lineJoin = "round";
-                        
+
                         // 绘制勾选标记
                         ctx.beginPath();
                         ctx.moveTo(width * 0.2, height * 0.5);

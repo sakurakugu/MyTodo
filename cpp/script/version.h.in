@@ -1,6 +1,13 @@
+/**
+ * @file version.h.in
+ * @brief 应用程序版本信息头文件模板
+ * @author Sakurakugu
+ * @date 2025-09-09 21:39:19(UTC+8) 周二
+ * @change 2025-09-15 22:34:47(UTC+8) 周一
+ */
 #pragma once
 
-// 系统自动生成的，需在根目录的version.in中修改
+// 系统会自动生成版本号的，需在根目录的version.in中修改
 #define APP_VERSION_MAJOR @VERSION_MAJOR@
 #define APP_VERSION_MINOR @VERSION_MINOR@
 #define APP_VERSION_PATCH @VERSION_PATCH@

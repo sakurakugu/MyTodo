@@ -5,8 +5,8 @@
  * 该文件实现了BaseSyncServer基类的通用同步功能。
  *
  * @author Sakurakugu
- * @date 2025-01-27 15:00:00(UTC+8) 周一
- * @version 0.4.0
+ * @date 2025-09-10 22:45:52(UTC+8) 周三
+ * @change 2025-09-21 22:40:34(UTC+8) 周日
  */
 
 #include "base_sync_server.h"
@@ -42,8 +42,7 @@ BaseSyncServer::BaseSyncServer(UserAuth &userAuth, QObject *parent)
     }
 }
 
-BaseSyncServer::~BaseSyncServer() {
-}
+BaseSyncServer::~BaseSyncServer() {}
 
 void BaseSyncServer::onAutoSyncSettingChanged() {
     if (GlobalState::GetInstance().isAutoSyncEnabled()) {

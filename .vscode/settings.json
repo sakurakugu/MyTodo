@@ -3,8 +3,7 @@
  * @brief 编辑器设置文件
  * @author Sakurakugu
  * @date 2025-08-16 20:05:55(UTC+8) 周六
- * @change 2025-08-31 15:07:38(UTC+8) 周日
- * @version 0.4.0
+ * @change 2025-09-22 19:36:18(UTC+8) 周一
  */
 {
     "files.associations": {
@@ -110,7 +109,12 @@
         "cinttypes": "cpp",
         "qsqlerror": "cpp",
         "qdatetime": "cpp",
-        "qabstractlistmodel": "cpp"
+        "qabstractlistmodel": "cpp",
+        "qjsonvalue": "cpp",
+        "qjsonobject": "cpp",
+        "quuid": "cpp",
+        "qjsonarray": "cpp",
+        "qsortfilterproxymodel": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "search.useIgnoreFiles": false, // 禁用git忽略文件
@@ -126,6 +130,5 @@
         "other": "on",
         "comments": "off",
         "strings": "on"
-    },
-    "editor.formatOnSave": true
+    }
 }

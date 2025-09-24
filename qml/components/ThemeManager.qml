@@ -7,8 +7,7 @@
  *
  * @author Sakurakugu
  * @date 2025-08-17 07:17:29(UTC+8) 周日
- * @change 2025-09-06 00:46:10(UTC+8) 周六
- * @version 0.4.0
+ * @change 2025-09-10 01:01:04(UTC+8) 周三
  */
 pragma Singleton
 import QtQuick

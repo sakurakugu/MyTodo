@@ -6,8 +6,8 @@
  * 实现代码复用，减少重复代码，提高可维护性。
  *
  * @author Sakurakugu
- * @date 2025-01-27 15:00:00(UTC+8) 周一
- * @version 0.4.0
+ * @date 2025-09-10 22:45:52(UTC+8) 周三
+ * @change 2025-09-21 22:40:34(UTC+8) 周日
  */
 
 #pragma once

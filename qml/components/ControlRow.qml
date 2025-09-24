@@ -7,8 +7,7 @@
  *
  * @author Sakurakugu
  * @date 2025-09-05 18:17:08(UTC+8) 周五
- * @change 2025-09-05 18:38:37(UTC+8) 周五
- * @version 0.4.0
+ * @change 2025-09-06 17:22:15(UTC+8) 周六
  */
 import QtQuick
 import QtQuick.Controls
@@ -45,7 +44,7 @@ Item {
 
     // 信号
     signal toggled(bool checked)
-    signal clicked()
+    signal clicked
     signal indexChanged(int index)
     signal valueChanged(int value)
     signal customControlSignal(var data)
@@ -86,25 +85,25 @@ Item {
         id: controlLoader
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        
+
         sourceComponent: {
             switch (root.controlType) {
-                case ControlRow.ControlType.Switch:
-                    return switchComponent
-                case ControlRow.ControlType.Button:
-                    return buttonComponent
-                case ControlRow.ControlType.RadioButton:
-                    return radioButtonComponent
-                case ControlRow.ControlType.CheckBox:
-                    return checkBoxComponent
-                case ControlRow.ControlType.ComboBox:
-                    return comboBoxComponent
-                case ControlRow.ControlType.SpinBox:
-                    return spinBoxComponent
-                case ControlRow.ControlType.Custom:
-                    return root.customControl
-                default:
-                    return switchComponent
+            case ControlRow.ControlType.Switch:
+                return switchComponent;
+            case ControlRow.ControlType.Button:
+                return buttonComponent;
+            case ControlRow.ControlType.RadioButton:
+                return radioButtonComponent;
+            case ControlRow.ControlType.CheckBox:
+                return checkBoxComponent;
+            case ControlRow.ControlType.ComboBox:
+                return comboBoxComponent;
+            case ControlRow.ControlType.SpinBox:
+                return spinBoxComponent;
+            case ControlRow.ControlType.Custom:
+                return root.customControl;
+            default:
+                return switchComponent;
             }
         }
     }
@@ -116,8 +115,8 @@ Item {
             checked: root.checked
             enabled: root.enabled
             onCheckedChanged: {
-                root.checked = checked
-                root.toggled(checked)
+                root.checked = checked;
+                root.toggled(checked);
             }
         }
     }
@@ -139,8 +138,8 @@ Item {
             checked: root.checked
             enabled: root.enabled
             onCheckedChanged: {
-                root.checked = checked
-                root.toggled(checked)
+                root.checked = checked;
+                root.toggled(checked);
             }
         }
     }
@@ -152,8 +151,8 @@ Item {
             checked: root.checked
             enabled: root.enabled
             onCheckedChanged: {
-                root.checked = checked
-                root.toggled(checked)
+                root.checked = checked;
+                root.toggled(checked);
             }
         }
     }
@@ -166,8 +165,8 @@ Item {
             currentIndex: root.currentIndex
             enabled: root.enabled
             onCurrentIndexChanged: {
-                root.currentIndex = currentIndex
-                root.indexChanged(currentIndex)
+                root.currentIndex = currentIndex;
+                root.indexChanged(currentIndex);
             }
         }
     }
@@ -181,8 +180,8 @@ Item {
             to: root.spinBoxTo
             enabled: root.enabled
             onValueChanged: {
-                root.spinBoxValue = value
-                root.valueChanged(value)
+                root.spinBoxValue = value;
+                root.valueChanged(value);
             }
         }
     }
@@ -190,16 +189,14 @@ Item {
     // 鼠标区域 - 对于某些控件类型允许点击整行操作
     MouseArea {
         anchors.fill: parent
-        enabled: root.enabled && (root.controlType === ControlRow.ControlType.Switch || 
-                                 root.controlType === ControlRow.ControlType.RadioButton ||
-                                 root.controlType === ControlRow.ControlType.CheckBox)
+        enabled: root.enabled && (root.controlType === ControlRow.ControlType.Switch || root.controlType === ControlRow.ControlType.RadioButton || root.controlType === ControlRow.ControlType.CheckBox)
         cursorShape: Qt.PointingHandCursor
 
         onClicked: {
             if (controlLoader.item && typeof controlLoader.item.toggle === "function") {
-                controlLoader.item.toggle()
+                controlLoader.item.toggle();
             } else if (controlLoader.item && controlLoader.item.hasOwnProperty("checked")) {
-                controlLoader.item.checked = !controlLoader.item.checked
+                controlLoader.item.checked = !controlLoader.item.checked;
             }
         }
     }
@@ -208,9 +205,9 @@ Item {
     function toggle() {
         if (root.enabled && controlLoader.item) {
             if (typeof controlLoader.item.toggle === "function") {
-                controlLoader.item.toggle()
+                controlLoader.item.toggle();
             } else if (controlLoader.item.hasOwnProperty("checked")) {
-                controlLoader.item.checked = !controlLoader.item.checked
+                controlLoader.item.checked = !controlLoader.item.checked;
             }
         }
     }
@@ -218,9 +215,9 @@ Item {
     function triggerAction() {
         if (root.enabled && controlLoader.item) {
             if (root.controlType === ControlRow.ControlType.Button && typeof controlLoader.item.clicked === "function") {
-                controlLoader.item.clicked()
+                controlLoader.item.clicked();
             } else {
-                toggle()
+                toggle();
             }
         }
     }

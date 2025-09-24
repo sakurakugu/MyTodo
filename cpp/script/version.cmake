@@ -1,5 +1,9 @@
 # 版本号解析模块
 # 从 version.in 文件读取版本信息并设置相应的 CMake 变量
+#
+# 作者： sakurakugu
+# 首次创建日期： 2025-09-09 21:39:19(UTC+8) 周二
+# 最后更新日期： 2025-09-15 22:34:47(UTC+8) 周一
 
 # 读取 version.in 文件
 file(STRINGS "${CMAKE_SOURCE_DIR}/version.in" VERSION_CONTENT)

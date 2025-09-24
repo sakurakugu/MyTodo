@@ -5,9 +5,8 @@
  * 该文件实现了DatabaseManager类，用于管理应用程序的SQLite数据库连接和初始化。
  *
  * @author Sakurakugu
- * @date 2025-01-27 00:00:00(UTC+8) 周一
- * @change 2025-01-27 00:00:00(UTC+8) 周一
- * @version 0.4.0
+ * @date 2025-09-15 20:55:22(UTC+8) 周一
+ * @change 2025-09-22 19:36:18(UTC+8) 周一
  */
 
 #include "database.h"

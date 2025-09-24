@@ -5,8 +5,7 @@
  *
  * @author Sakurakugu
  * @date 2025-08-16 20:05:55(UTC+8) 周六
- * @change 2025-09-06 16:55:02(UTC+8) 周六
- * @version 0.4.0
+ * @change 2025-09-13 22:46:17(UTC+8) 周六
  */
 #include "global_state.h"
 #include "foundation/config.h"
@@ -23,9 +22,9 @@ GlobalState::GlobalState(QObject *parent)
       m_config(Config::GetInstance()),                                  // 初始化配置文件
       m_isDarkMode(m_config.get("setting/isDarkMode", false).toBool()), // 初始化是否为深色模式为false
       m_isFollowSystemDarkMode(
-          m_config.get("setting/followSystemTheme", false).toBool()),             // 初始化是否跟随系统深色模式为false
-      m_preventDragging(m_config.get("setting/preventDragging", false).toBool()), // 初始化是否防止窗口拖动为false
-      m_isAutoSyncEnabled(m_config.get("setting/autoSyncEnabled", false).toBool()),  // 初始化是否自动同步为false
+          m_config.get("setting/followSystemTheme", false).toBool()),               // 初始化是否跟随系统深色模式为false
+      m_preventDragging(m_config.get("setting/preventDragging", false).toBool()),   // 初始化是否防止窗口拖动为false
+      m_isAutoSyncEnabled(m_config.get("setting/autoSyncEnabled", false).toBool()), // 初始化是否自动同步为false
       //
       m_isDesktopWidget(false),  // 初始化是否为桌面窗口为false
       m_isNew(false),            // 初始化是否为新创建的为false
