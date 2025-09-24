@@ -526,7 +526,7 @@ Page {
             }
             onAccepted: {
                 var filePath = selectedFile.toString().replace("file:///", "");
-                setting.exportToJsonFile(filePath);
+                setting.exportConfigToJsonFile(filePath);
             }
         }
 

@@ -71,7 +71,6 @@ class CategoryManager : public QObject {
     // 同步相关方法
     Q_INVOKABLE void syncWithServer();  ///< 与服务器同步类别
     Q_INVOKABLE bool isSyncing() const; ///< 检查是否正在同步
-
     Q_INVOKABLE bool categoryExists(const QString &name) const; ///< 检查类别名称是否已存在
 
   signals:

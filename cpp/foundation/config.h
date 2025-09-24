@@ -42,6 +42,7 @@ class Config : public QObject {
 
     // JSON 相关功能
     std::string exportToJson(const QStringList &excludeKeys = QStringList()) const; // 导出配置到JSON字符串
+    bool importFromJson(const std::string &jsonContent, bool replaceAll);           // 从JSON字符串导入到当前配置
     bool JsonToToml(const std::string &jsonContent, toml::table *table);            // JSON字符串 转换为 TOML
 
     // 配置文件位置切换

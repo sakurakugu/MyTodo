@@ -182,7 +182,8 @@ bool TodoModel::setData(const QModelIndex &index, const QVariant &value, int rol
 }
 
 bool TodoModel::加载待办() {
-    m_dataManager.加载待办事项(m_todos);
+    m_dataManager.加载待办(m_todos);
+    更新过滤后的待办();
     重建ID索引();
     更新同步管理器的数据();
     return true;
@@ -193,12 +194,9 @@ bool TodoModel::新增待办(const QString &title, const QUuid &userUuid, const 
                          int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate //
 ) {
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
-
-    // 调用新增待办方法
     auto result = m_dataManager.新增待办(m_todos, title, description, category, important, //
                                          deadline, recurrenceInterval, recurrenceCount, recurrenceStartDate, userUuid);
-
-    if (result == nullptr) {
+    if (!result) {
         endInsertRows();
         return false;
     }
@@ -209,6 +207,7 @@ bool TodoModel::新增待办(const QString &title, const QUuid &userUuid, const 
     }
     需要重新筛选();
     endInsertRows();
+
     与服务器同步();
 
     return true;
@@ -242,9 +241,46 @@ bool TodoModel::更新待办(int index, const QVariantMap &todoData) {
 }
 
 bool TodoModel::标记完成(int index, bool completed) {
-    QVariantMap todoData;
-    todoData["isCompleted"] = completed;
-    return 更新待办(index, todoData);
+    completed = !completed;
+    // 通过过滤后的索引获取实际的任务项
+    auto todoItem = 获取过滤后的待办(index);
+    QModelIndex modelIndex = 获取内容在待办列表中的索引(todoItem);
+
+    TodoItem *item = m_todos[modelIndex.row()].get();
+    QVector<int> changedRoles;
+
+    bool success = false;
+    try {
+        QVariantMap todoData;
+        todoData["isCompleted"] = completed;
+
+        // 如果任务被标记为完成，并且当前过滤器是“待办”或“已完成”，则将其从视图中移除
+        if (m_queryer.currentFilter() == "done" || m_queryer.currentFilter() == "todo") {
+            // 通知视图即将删除行
+            beginRemoveRows(QModelIndex(), index, index);
+            m_dataManager.更新待办(m_todos, item->uuid(), todoData);
+            需要重新筛选();
+            emit dataChanged(modelIndex, modelIndex, changedRoles);
+            endRemoveRows();
+        } else { // 否则直接更新视图
+            beginResetModel();
+            m_dataManager.更新待办(m_todos, item->uuid(), todoData);
+            QModelIndex modelIndex = createIndex(index, 0);
+            需要重新筛选();
+            emit dataChanged(modelIndex, modelIndex);
+            endResetModel();
+        }
+        与服务器同步();
+        qDebug() << "成功标记索引" << index << "处的待办事项为" << (completed ? "已完成" : "未完成");
+        success = true;
+    } catch (const std::exception &e) {
+        qCritical() << "标记做完/未做待办事项时发生异常:" << e.what();
+        success = false;
+    } catch (...) {
+        qCritical() << "标记做完/未做待办事项时发生未知异常";
+        success = false;
+    }
+    return success;
 }
 
 bool TodoModel::标记删除(int index, bool deleted) {

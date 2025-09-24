@@ -66,7 +66,9 @@ class TodoQueryer : public QObject {
         SortByCreatedTime = 0, // 按创建时间排序（默认）
         SortByDeadline = 1,    // 按截止日期排序
         SortByImportance = 2,  // 按重要程度排序
-        SortByTitle = 3        // 按标题排序
+        SortByTitle = 3,       // 按标题排序
+        SortByUpdatedTime = 4, // 按修改时间排序
+        SortByCompletedTime = 5 // 按完成时间排序
     };
     Q_ENUM(SortType)
 

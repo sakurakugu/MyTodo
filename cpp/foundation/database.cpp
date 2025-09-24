@@ -17,6 +17,11 @@
 #include <QCoreApplication>
 #include <QDebug>
 #include <QDir>
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QSaveFile>
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QStandardPaths>
@@ -227,6 +232,226 @@ QString Database::getSqliteVersion() {
     }
 
     return "未知";
+}
+
+/**
+ * @brief 导出数据库到JSON文件
+ */
+bool Database::exportDatabaseToJsonFile(const QString &filePath) {
+    std::lock_guard<std::mutex> locker(m_mutex);
+
+    if (!isDatabaseOpen()) {
+        m_lastError = "数据库未打开";
+        return false;
+    }
+
+    auto exportTable = [&](const QString &table, const QStringList &columns) -> QJsonArray {
+        QJsonArray array;
+        QSqlQuery q(m_database);
+        QString sql = QString("SELECT %1 FROM %2").arg(columns.join(", ")).arg(table);
+        if (!q.exec(sql)) {
+            qWarning() << "导出表失败:" << table << q.lastError().text();
+            return array;
+        }
+        while (q.next()) {
+            QJsonObject obj;
+            for (int i = 0; i < columns.size(); ++i) {
+                auto v = q.value(i);
+                if (v.typeId() == QMetaType::Bool)
+                    obj[columns[i]] = v.toBool();
+                else if (v.typeId() == QMetaType::Int || v.typeId() == QMetaType::LongLong)
+                    obj[columns[i]] = QJsonValue::fromVariant(v);
+                else if (v.typeId() == QMetaType::Double)
+                    obj[columns[i]] = v.toDouble();
+                else if (v.isNull())
+                    obj[columns[i]] = QJsonValue();
+                else
+                    obj[columns[i]] = v.toString();
+            }
+            array.append(obj);
+        }
+        return array;
+    };
+
+    QJsonObject root;
+    root["meta"] = QJsonObject //
+        {
+            {"version", QString(APP_VERSION_STRING)},
+            {"database_version", DATABASE_VERSION},
+            {"sqlite", getSqliteVersion()},
+            {"export_time", QDateTime::currentDateTime().toString(Qt::ISODate)} //
+        };
+
+    // 导出各表
+    root["database_version"] = exportTable("database_version", {"version"});
+    root["users"] = exportTable("users", {"uuid", "username", "email", "refreshToken"});
+    root["categories"] =
+        exportTable("categories", {"id", "uuid", "name", "user_uuid", "created_at", "updated_at", "synced"});
+    root["todos"] =
+        exportTable("todos", {"id", "uuid", "user_uuid", "title", "description", "category", "important", "deadline",
+                              "recurrence_interval", "recurrence_count", "recurrence_start_date", "is_completed",
+                              "completed_at", "is_deleted", "deleted_at", "created_at", "updated_at", "synced"});
+
+    QJsonDocument doc(root);
+
+    QSaveFile out(filePath);
+    if (!out.open(QIODevice::WriteOnly)) {
+        m_lastError = QString("无法写入JSON文件: %1").arg(out.errorString());
+        qCritical() << m_lastError;
+        return false;
+    }
+    out.write(doc.toJson(QJsonDocument::Indented));
+    if (!out.commit()) {
+        m_lastError = QString("保存JSON文件失败: %1").arg(out.errorString());
+        qCritical() << m_lastError;
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @brief 从JSON文件导入数据库
+ */
+bool Database::importDatabaseFromJsonFile(const QString &filePath, bool replaceAll) {
+    std::lock_guard<std::mutex> locker(m_mutex);
+
+    if (!isDatabaseOpen()) {
+        m_lastError = "数据库未打开";
+        return false;
+    }
+
+    QFile in(filePath);
+    if (!in.open(QIODevice::ReadOnly)) {
+        m_lastError = QString("无法读取JSON文件: %1").arg(in.errorString());
+        qCritical() << m_lastError;
+        return false;
+    }
+    QByteArray data = in.readAll();
+    in.close();
+
+    QJsonParseError err{};
+    QJsonDocument doc = QJsonDocument::fromJson(data, &err);
+    if (err.error != QJsonParseError::NoError || !doc.isObject()) {
+        m_lastError = QString("JSON解析失败: %1").arg(err.errorString());
+        qCritical() << m_lastError;
+        return false;
+    }
+    QJsonObject root = doc.object();
+
+    auto getArray = [&](const char *key) -> QJsonArray {
+        return root.contains(key) ? root.value(key).toArray() : QJsonArray();
+    };
+
+    QSqlQuery q(m_database);
+    if (!m_database.transaction()) {
+        m_lastError = "开启事务失败";
+        return false;
+    }
+
+    auto rollback = [&]() {
+        if (!m_database.rollback()) {
+            qWarning() << "事务回滚失败";
+        }
+    };
+
+    // 替换模式：清空表
+    if (replaceAll) {
+        const QStringList tables = {"todos", "categories", "users", "database_version"};
+        for (const auto &t : tables) {
+            if (!q.exec("DELETE FROM " + t)) {
+                m_lastError = QString("清空表失败 %1: %2").arg(t, q.lastError().text());
+                qCritical() << m_lastError;
+                rollback();
+                return false;
+            }
+        }
+    }
+
+    // 导入 users
+    for (const auto &v : getArray("users")) {
+        QJsonObject o = v.toObject();
+        q.prepare("INSERT OR REPLACE INTO users (uuid, username, email, refreshToken) VALUES (?, ?, ?, ?)");
+        q.addBindValue(o.value("uuid").toString());
+        q.addBindValue(o.value("username").toString());
+        q.addBindValue(o.value("email").toString());
+        q.addBindValue(o.value("refreshToken").toString());
+        if (!q.exec()) {
+            m_lastError = QString("导入users失败: %1").arg(q.lastError().text());
+            qCritical() << m_lastError;
+            rollback();
+            return false;
+        }
+    }
+
+    // 导入 categories
+    for (const auto &v : getArray("categories")) {
+        QJsonObject o = v.toObject();
+        q.prepare("INSERT OR REPLACE INTO categories (id, uuid, name, user_uuid, created_at, updated_at, synced) "
+                  "VALUES (?, ?, ?, ?, ?, ?, ?)");
+        q.addBindValue(o.value("id").toVariant());
+        q.addBindValue(o.value("uuid").toString());
+        q.addBindValue(o.value("name").toString());
+        q.addBindValue(o.value("user_uuid").toString());
+        q.addBindValue(o.value("created_at").toString());
+        q.addBindValue(o.value("updated_at").toString());
+        q.addBindValue(o.value("synced").toInt());
+        if (!q.exec()) {
+            m_lastError = QString("导入categories失败: %1").arg(q.lastError().text());
+            qCritical() << m_lastError;
+            rollback();
+            return false;
+        }
+    }
+
+    // 导入 todos
+    for (const auto &v : getArray("todos")) {
+        QJsonObject o = v.toObject();
+        q.prepare(
+            "INSERT OR REPLACE INTO todos (id, uuid, user_uuid, title, description, category, important, deadline, "
+            "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, is_deleted, "
+            "deleted_at, created_at, updated_at, synced) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+        q.addBindValue(o.value("id").toVariant());
+        q.addBindValue(o.value("uuid").toString());
+        q.addBindValue(o.value("user_uuid").toString());
+        q.addBindValue(o.value("title").toString());
+        q.addBindValue(o.value("description").toVariant());
+        q.addBindValue(o.value("category").toString());
+        q.addBindValue(o.value("important").toInt());
+        q.addBindValue(o.value("deadline").toVariant());
+        q.addBindValue(o.value("recurrence_interval").toInt());
+        q.addBindValue(o.value("recurrence_count").toInt());
+        q.addBindValue(o.value("recurrence_start_date").toVariant());
+        q.addBindValue(o.value("is_completed").toInt());
+        q.addBindValue(o.value("completed_at").toVariant());
+        q.addBindValue(o.value("is_deleted").toInt());
+        q.addBindValue(o.value("deleted_at").toVariant());
+        q.addBindValue(o.value("created_at").toString());
+        q.addBindValue(o.value("updated_at").toString());
+        q.addBindValue(o.value("synced").toInt());
+        if (!q.exec()) {
+            m_lastError = QString("导入todos失败: %1").arg(q.lastError().text());
+            qCritical() << m_lastError;
+            rollback();
+            return false;
+        }
+    }
+
+    // 导入 database_version（可选，没有则保持不变）
+    QJsonArray verArr = getArray("database_version");
+    if (!verArr.isEmpty()) {
+        int ver = verArr.first().toObject().value("version").toInt(DATABASE_VERSION);
+        if (!updateDatabaseVersion(ver)) {
+            rollback();
+            return false;
+        }
+    }
+
+    if (!m_database.commit()) {
+        m_lastError = "提交事务失败";
+        qCritical() << m_lastError;
+        return false;
+    }
+    return true;
 }
 
 /**

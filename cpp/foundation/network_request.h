@@ -49,6 +49,23 @@ class NetworkProxy;
  * @note 所有网络操作都是异步的，通过信号槽机制通知结果
  * @see TodoManager
  */
+namespace Network {
+// 请求类型枚举
+enum RequestType {
+    Login,           // 登录请求
+    Sync,            // 同步请求
+    FetchTodos,      // 获取待办事项请求
+    PushTodos,       // 推送待办事项请求
+    Logout,          // 退出登录请求
+    RefreshToken,    // 刷新令牌请求
+    FetchCategories, // 获取类别列表请求
+    CreateCategory,  // 创建类别请求
+    UpdateCategory,  // 更新类别请求
+    DeleteCategory,  // 删除类别请求
+    Other = 99,     // 其他请求
+};
+} // namespace Network
+
 class NetworkRequest : public QObject {
     Q_OBJECT
 
@@ -63,20 +80,6 @@ class NetworkRequest : public QObject {
     NetworkRequest &operator=(const NetworkRequest &) = delete;
     NetworkRequest(NetworkRequest &&) = delete;
     NetworkRequest &operator=(NetworkRequest &&) = delete;
-
-    // 请求类型枚举
-    enum RequestType {
-        Login,           // 登录请求
-        Sync,            // 同步请求
-        FetchTodos,      // 获取待办事项请求
-        PushTodos,       // 推送待办事项请求
-        Logout,          // 退出登录请求
-        RefreshToken,    // 刷新令牌请求
-        FetchCategories, // 获取类别列表请求
-        CreateCategory,  // 创建类别请求
-        UpdateCategory,  // 更新类别请求
-        DeleteCategory,  // 删除类别请求
-    };
 
     /**
      * @enum NetworkError
@@ -118,14 +121,14 @@ class NetworkRequest : public QObject {
     QString getApiUrl(const QString &endpoint) const;                             // 获取完整的API URL
 
     // 网络请求方法
-    void sendRequest(RequestType type, const RequestConfig &config); // 发送网络请求
-    void cancelRequest(RequestType type);                            // 取消指定类型的请求
-    void cancelAllRequests();                                        // 取消所有请求
+    void sendRequest(Network::RequestType type, const RequestConfig &config); // 发送网络请求
+    void cancelRequest(Network::RequestType type);                            // 取消指定类型的请求
+    void cancelAllRequests();                                                 // 取消所有请求
 
   signals:
-    void requestCompleted(RequestType type, const QJsonObject &response);             // 请求完成信号
-    void requestFailed(RequestType type, NetworkError error, const QString &message); // 请求失败信号
-    void authTokenExpired();                                                          // 认证令牌过期信号
+    void requestCompleted(Network::RequestType type, const QJsonObject &response);             // 请求完成信号
+    void requestFailed(Network::RequestType type, NetworkError error, const QString &message); // 请求失败信号
+    void authTokenExpired();                                                                   // 认证令牌过期信号
 
   private slots:
     void onReplyFinished();                           // 回复完成槽函数
@@ -141,7 +144,7 @@ class NetworkRequest : public QObject {
      * @brief 待处理请求结构
      */
     struct PendingRequest {
-        RequestType type;               // 请求类型
+        Network::RequestType type;      // 请求类型
         RequestConfig config;           // 请求配置
         QNetworkReply *reply = nullptr; // 网络回复对象
         QTimer *timeoutTimer = nullptr; // 超时定时器
@@ -164,9 +167,9 @@ class NetworkRequest : public QObject {
     void addAuthHeader(QNetworkRequest &request) const;       // 添加认证头
 
     // 请求去重
-    bool isDuplicateRequest(RequestType type) const;           // 检查是否为重复请求
-    void addActiveRequest(RequestType type, qint64 requestId); // 添加活跃请求
-    void removeActiveRequest(RequestType type);                // 移除活跃请求
+    bool isDuplicateRequest(Network::RequestType type) const;           // 检查是否为重复请求
+    void addActiveRequest(Network::RequestType type, qint64 requestId); // 添加活跃请求
+    void removeActiveRequest(Network::RequestType type);                // 移除活跃请求
 
     // 成员变量
     QNetworkAccessManager *m_networkRequest; // 网络访问管理器
@@ -174,9 +177,9 @@ class NetworkRequest : public QObject {
     QString m_serverBaseUrl;                 // 服务器基础URL
     QString m_apiVersion;                    // API版本
 
-    QMap<qint64, PendingRequest> m_pendingRequests; // 待处理请求映射
-    QMap<RequestType, qint64> m_activeRequests;     // 活跃请求映射（用于去重）
-    qint64 m_nextRequestId;                         // 下一个请求ID
+    QMap<qint64, PendingRequest> m_pendingRequests;      // 待处理请求映射
+    QMap<Network::RequestType, qint64> m_activeRequests; // 活跃请求映射（用于去重）
+    qint64 m_nextRequestId;                              // 下一个请求ID
 
     // 配置常量
     static const int DEFAULT_TIMEOUT_MS = 10000;

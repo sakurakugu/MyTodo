@@ -121,7 +121,7 @@ QString NetworkRequest::getApiUrl(const QString &endpoint) const {
     return baseUrl + cleanEndpoint;
 }
 
-void NetworkRequest::sendRequest(RequestType type, const RequestConfig &config) {
+void NetworkRequest::sendRequest(Network::RequestType type, const RequestConfig &config) {
     // 检查是否为重复请求
     if (isDuplicateRequest(type)) {
         qDebug() << "忽略重复请求:" << type;
@@ -416,7 +416,7 @@ void NetworkRequest::cleanupRequest(qint64 requestId) {
     m_pendingRequests.remove(requestId);
 }
 
-void NetworkRequest::cancelRequest(RequestType type) {
+void NetworkRequest::cancelRequest(Network::RequestType type) {
     if (!m_activeRequests.contains(type)) {
         return;
     }
@@ -533,14 +533,14 @@ bool NetworkRequest::shouldRetry(NetworkError error) const {
     return error == TimeoutError || error == ConnectionError || error == ServerError;
 }
 
-bool NetworkRequest::isDuplicateRequest(RequestType type) const {
+bool NetworkRequest::isDuplicateRequest(Network::RequestType type) const {
     return m_activeRequests.contains(type);
 }
 
-void NetworkRequest::addActiveRequest(RequestType type, qint64 requestId) {
+void NetworkRequest::addActiveRequest(Network::RequestType type, qint64 requestId) {
     m_activeRequests[type] = requestId;
 }
 
-void NetworkRequest::removeActiveRequest(RequestType type) {
+void NetworkRequest::removeActiveRequest(Network::RequestType type) {
     m_activeRequests.remove(type);
 }

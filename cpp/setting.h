@@ -43,7 +43,12 @@ class Setting : public QObject {
     Q_INVOKABLE void clear();                                                  ///< 清除所有设置
     Q_INVOKABLE bool openConfigFilePath() const;                               ///< 打开配置文件所在目录
     Q_INVOKABLE QString getConfigFilePath() const;                             ///< 获取配置文件路径
-    Q_INVOKABLE void exportToJsonFile(const QString &filePath);                ///< 导出配置到JSON文件
+
+    // JSON 导入导出相关方法
+    Q_INVOKABLE bool exportConfigToJsonFile(const QString &filePath);                      ///< 导出配置到JSON文件
+    Q_INVOKABLE bool importConfigFromJsonFile(const QString &filePath, bool replaceAll);   ///< 从JSON文件导入配置
+    Q_INVOKABLE bool exportDatabaseToJsonFile(const QString &filePath);                    ///< 导出数据库为JSON
+    Q_INVOKABLE bool importDatabaseFromJsonFile(const QString &filePath, bool replaceAll); ///< 导入数据库JSON
 
     // 代理配置相关方法
     Q_INVOKABLE void setProxyType(int type);                    ///< 设置代理类型

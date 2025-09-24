@@ -77,7 +77,7 @@ void CategorySyncServer::新增类别(const QString &name) {
         config.requiresAuth = true;
         config.data["name"] = name;
 
-        m_networkRequest.sendRequest(NetworkRequest::RequestType::CreateCategory, config);
+        m_networkRequest.sendRequest(Network::RequestType::CreateCategory, config);
     } catch (const std::exception &e) {
         qCritical() << "新增类别时发生异常:" << e.what();
         emit categoryCreated(name, false, QString("新增类别失败: %1").arg(e.what()));
@@ -102,7 +102,7 @@ void CategorySyncServer::更新类别(const QString &name, const QString &newNam
         config.data["old_name"] = name;
         config.data["new_name"] = newName;
 
-        m_networkRequest.sendRequest(NetworkRequest::RequestType::UpdateCategory, config);
+        m_networkRequest.sendRequest(Network::RequestType::UpdateCategory, config);
     } catch (const std::exception &e) {
         qCritical() << "更新类别时发生异常:" << e.what();
         emit categoryUpdated(name, newName, false, QString("更新类别失败: %1").arg(e.what()));
@@ -125,7 +125,7 @@ void CategorySyncServer::删除类别(const QString &name) {
         config.requiresAuth = true;
         config.data["name"] = name;
 
-        m_networkRequest.sendRequest(NetworkRequest::RequestType::DeleteCategory, config);
+        m_networkRequest.sendRequest(Network::RequestType::DeleteCategory, config);
     } catch (const std::exception &e) {
         qCritical() << "删除类别时发生异常:" << e.what();
         emit categoryDeleted(name, false, QString("删除类别失败: %1").arg(e.what()));
@@ -155,18 +155,18 @@ void CategorySyncServer::设置未同步的对象(const std::vector<std::unique_
 }
 
 // 网络请求回调处理
-void CategorySyncServer::onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response) {
+void CategorySyncServer::onNetworkRequestCompleted(Network::RequestType type, const QJsonObject &response) {
     switch (type) {
-    case NetworkRequest::RequestType::FetchCategories:
+    case Network::RequestType::FetchCategories:
         处理获取类别成功(response);
         break;
-    case NetworkRequest::RequestType::CreateCategory:
+    case Network::RequestType::CreateCategory:
         处理创建类别成功(response);
         break;
-    case NetworkRequest::RequestType::UpdateCategory:
+    case Network::RequestType::UpdateCategory:
         处理更新类别成功(response);
         break;
-    case NetworkRequest::RequestType::DeleteCategory:
+    case Network::RequestType::DeleteCategory:
         处理删除类别成功(response);
         break;
     default:
@@ -176,28 +176,28 @@ void CategorySyncServer::onNetworkRequestCompleted(NetworkRequest::RequestType t
     }
 }
 
-void CategorySyncServer::onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
+void CategorySyncServer::onNetworkRequestFailed(Network::RequestType type, NetworkRequest::NetworkError error,
                                                 const QString &message) {
     QString typeStr;
     SyncResult result = NetworkError;
 
     switch (type) {
-    case NetworkRequest::RequestType::FetchCategories:
+    case Network::RequestType::FetchCategories:
         typeStr = "拉取类别";
         break;
-    case NetworkRequest::RequestType::CreateCategory:
+    case Network::RequestType::CreateCategory:
         typeStr = "新建类别";
         qInfo() << "类别创建失败！错误类型:" << static_cast<int>(error);
         qInfo() << "失败详情:" << message;
         emit categoryCreated(m_currentOperationName, false, message);
         return;
-    case NetworkRequest::RequestType::UpdateCategory:
+    case Network::RequestType::UpdateCategory:
         typeStr = "更新类别";
         qInfo() << "类别更新失败！错误类型:" << static_cast<int>(error);
         qInfo() << "失败详情:" << message;
         emit categoryUpdated(m_currentOperationName, m_currentOperationNewName, false, message);
         return;
-    case NetworkRequest::RequestType::DeleteCategory:
+    case Network::RequestType::DeleteCategory:
         typeStr = "删除类别";
         qInfo() << "类别删除失败！错误类型:" << static_cast<int>(error);
         qInfo() << "失败详情:" << message;
@@ -271,7 +271,7 @@ void CategorySyncServer::拉取类别() {
         config.method = "GET";
         config.requiresAuth = true;
 
-        m_networkRequest.sendRequest(NetworkRequest::RequestType::FetchCategories, config);
+        m_networkRequest.sendRequest(Network::RequestType::FetchCategories, config);
     } catch (const std::exception &e) {
         qCritical() << "获取服务器类别数据时发生异常:" << e.what();
 
@@ -327,7 +327,7 @@ void CategorySyncServer::推送类别() {
         config.requiresAuth = true;
         config.data["categories"] = jsonArray;
 
-        m_networkRequest.sendRequest(NetworkRequest::RequestType::CreateCategory, config);
+        m_networkRequest.sendRequest(Network::RequestType::CreateCategory, config);
     } catch (const std::exception &e) {
         qCritical() << "推送类别更改时发生异常:" << e.what();
 

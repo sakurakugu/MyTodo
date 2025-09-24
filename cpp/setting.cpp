@@ -10,8 +10,13 @@
 #include "setting.h"
 #include "default_value.h"
 #include "foundation/config.h"
+#include "foundation/database.h"
 #include "foundation/network_proxy.h"
 #include "foundation/network_request.h"
+
+#include <QFile>
+#include <QSaveFile>
+#include <string>
 
 Setting::Setting(QObject *parent)
     : QObject(parent),                 //
@@ -20,12 +25,6 @@ Setting::Setting(QObject *parent)
 {
     initializeDefaultServerConfig();
 }
-
-/**
- * @brief 析构函数
- *
- * 清理Setting对象，释放资源。
- */
 Setting::~Setting() {}
 
 int Setting::getOsType() const {
@@ -57,7 +56,6 @@ void Setting::clear() {
     m_config.clear();
 }
 
-// 存储类型和路径管理相关方法实现
 bool Setting::openConfigFilePath() const {
     auto result = m_config.openConfigFilePath();
     return result;
@@ -67,10 +65,40 @@ QString Setting::getConfigFilePath() const {
     return m_config.getConfigFilePath();
 }
 
-void Setting::exportToJsonFile(const QString &filePath) {
+bool Setting::exportConfigToJsonFile(const QString &filePath) {
     QStringList excludeKeys;
-    excludeKeys << "proxy" << "auth";
-    // m_config.exportToJsonFile(filePath.toStdString(), excludeKeys);
+    excludeKeys << "proxy";
+    std::string jsonString = m_config.exportToJson(excludeKeys);
+    QSaveFile out(filePath);
+    if (!out.open(QIODevice::WriteOnly)) {
+        qCritical() << "保存配置JSON失败:" << filePath << out.errorString();
+        return false;
+    }
+    out.write(QByteArray::fromStdString(jsonString));
+    if (!out.commit()) {
+        qCritical() << "提交保存配置JSON失败:" << filePath << out.errorString();
+        return false;
+    }
+    return true;
+}
+
+bool Setting::importConfigFromJsonFile(const QString &filePath, bool replaceAll) {
+    QFile f(filePath);
+    if (!f.open(QIODevice::ReadOnly)) {
+        qCritical() << "无法打开配置JSON文件:" << filePath << f.errorString();
+        return false;
+    }
+    QByteArray data = f.readAll();
+    f.close();
+    return m_config.importFromJson(data.toStdString(), replaceAll);
+}
+
+bool Setting::exportDatabaseToJsonFile(const QString &filePath) {
+    return Database::GetInstance().exportDatabaseToJsonFile(filePath);
+}
+
+bool Setting::importDatabaseFromJsonFile(const QString &filePath, bool replaceAll) {
+    return Database::GetInstance().importDatabaseFromJsonFile(filePath, replaceAll);
 }
 
 // 日志配置相关方法实现
@@ -267,8 +295,8 @@ void Setting::updateServerConfig(const QString &baseUrl) {
     emit baseUrlChanged();
 }
 
-void Setting::setProxyConfig(bool enableProxy, int type, const QString &host, int port, const QString &username,
-                             const QString &password) {
-    NetworkProxy::GetInstance().setProxyConfig(enableProxy, static_cast<NetworkProxy::ProxyType>(type), host, port,
-                                               username, password);
+void Setting::setProxyConfig(bool enableProxy, int type, const QString &host, //
+                             int port, const QString &username, const QString &password) {
+    NetworkProxy::GetInstance().setProxyConfig(enableProxy, static_cast<NetworkProxy::ProxyType>(type), //
+                                               host, port, username, password);
 }

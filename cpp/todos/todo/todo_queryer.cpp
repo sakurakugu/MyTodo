@@ -18,8 +18,8 @@ TodoQueryer::TodoQueryer(QObject *parent)
       m_currentFilter(""),           //
       m_searchText(""),              //
       m_dateFilterEnabled(false),    //
-      m_sortType(SortByCreatedTime), //
-      m_descending(false)            //
+      m_sortType(SortByUpdatedTime), //
+      m_descending(true)            //
 {}
 
 TodoQueryer::~TodoQueryer() {}

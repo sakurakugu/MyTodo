@@ -158,21 +158,26 @@ ListView {
                     } else {
                         globalState.selectedTodo = {
                             index: index,
+                            uuid: model.uuid,
                             title: model.title,
                             description: model.description,
                             category: model.category,
-                            priority: model.priority,
-                            completed: model.completed,
-                            createdAt: model.createdAt,
-                            updatedAt: model.updatedAt,
-                            completedAt: model.completedAt,
-                            deletedAt: model.deletedAt,
+                            important: model.important,
                             deadline: model.deadline,
                             recurrenceInterval: model.recurrenceInterval,
                             recurrenceCount: model.recurrenceCount,
                             recurrenceStartDate: model.recurrenceStartDate,
-                            important: model.important
+                            isCompleted: model.isCompleted,
+                            completedAt: model.completedAt,
+                            isDeleted: model.isDeleted,
+                            deletedAt: model.deletedAt,
+                            createdAt: model.createdAt,
+                            updatedAt: model.updatedAt
                         };
+                        console.info("选中待办项：");
+                        console.info(index);
+                        console.info(globalState.selectedTodo.index);
+                        console.info(globalState.selectedTodo.title);
                         // 普通模式下切换添加任务窗口显示状态
                         // 如果点击的是同一个待办项，则切换isShowAddTask状态
                         if (globalState.isDesktopWidget) {
@@ -338,8 +343,8 @@ ListView {
                 hoverEnabled: true
                 onClicked: {
                     itemMouseArea.enabled = false; // 先禁用以防多次点
-                    todoManager.markAsDone(index);     // 切换完成状态
-                    // model.isCompleted = !model.isCompleted;
+                    todoManager.markAsDone(index, model.isCompleted ? true : false);
+                    model.isCompleted = !model.isCompleted;
 
                     // 延迟重新启用项目的MouseArea
                     Qt.callLater(function () {

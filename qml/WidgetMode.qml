@@ -392,12 +392,12 @@ Item {
                     IconButton {
                         text: "\ue8eb"
                         visible: !globalState.isNew
-                        property bool checked: globalState.selectedTodo ? (globalState.selectedTodo.completed || false) : false
+                        property bool checked: globalState.selectedTodo ? (globalState.selectedTodo.isCompleted || false) : false
                         onClicked: {
                             checked = !checked;
-                            if (globalState.selectedTodo && checked !== globalState.selectedTodo.completed) {
-                                todoManager.updateTodo(globalState.selectedTodo.index, "isCompleted", checked);
-                                globalState.selectedTodo.completed = checked;
+                            if (globalState.selectedTodo && checked !== globalState.selectedTodo.isCompleted) {
+                                todoManager.markAsDone(globalState.selectedTodo.index.checked);
+                                globalState.selectedTodo.isCompleted = checked;
                             }
                         }
                     }
@@ -447,7 +447,7 @@ Item {
                                 todoManager.updateTodo(globalState.selectedTodo.index, "recurrenceInterval", globalState.selectedTodo.recurrenceInterval);
                                 todoManager.updateTodo(globalState.selectedTodo.index, "important", globalState.selectedTodo.important);
                                 todoManager.updateTodo(globalState.selectedTodo.index, "category", globalState.selectedTodo.category);
-                                todoManager.updateTodo(globalState.selectedTodo.index, "completed", globalState.selectedTodo.completed);
+                                todoManager.markAsDone(globalState.selectedTodo.index, globalState.selectedTodo.isCompleted);
                             }
                             globalState.selectedTodo = null;
                         }

@@ -83,9 +83,9 @@ class TodoSyncServer : public BaseSyncServer {
     void syncConflictDetected(const QJsonArray &conflictItems); // 检测到同步冲突
 
   protected slots:
-    void onNetworkRequestCompleted(NetworkRequest::RequestType type,
+    void onNetworkRequestCompleted(Network::RequestType type,
                                    const QJsonObject &response) override; // 网络请求完成
-    void onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
+    void onNetworkRequestFailed(Network::RequestType type, NetworkRequest::NetworkError error,
                                 const QString &message) override; // 网络请求失败
 
   protected:

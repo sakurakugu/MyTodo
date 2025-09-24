@@ -79,6 +79,12 @@ class Database : public QObject {
     int getDatabaseVersion() const;  ///< 获取数据库版本
     QString getSqliteVersion();      ///< 查询sqlite版本
 
+    // JSON 相关功能
+    QString exportToJson(const QStringList &excludeKeys = QStringList()) const; // 导出配置到JSON字符串
+    bool importFromJson(const std::string &jsonContent, bool replaceAll);           // 从JSON字符串导入到当前配置
+    bool exportDatabaseToJsonFile(const QString &filePath);                         ///< 导出数据库所有表到JSON文件
+    bool importDatabaseFromJsonFile(const QString &filePath, bool replaceAll);      ///< 从JSON文件导入数据库
+
   private:
     explicit Database(QObject *parent = nullptr);
     ~Database();

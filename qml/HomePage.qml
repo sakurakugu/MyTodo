@@ -955,16 +955,16 @@ Page {
                                 CustomCheckBox {
                                     id: drawerCompletedCheckBox
                                     text: qsTr("已完成:")
-                                    checked: globalState.selectedTodo && globalState.selectedTodo.completed !== undefined ? globalState.selectedTodo.completed : false
+                                    checked: globalState.selectedTodo && globalState.selectedTodo.isCompleted !== undefined ? globalState.selectedTodo.isCompleted : false
                                     enabled: globalState.selectedTodo !== null && todoQueryer.currentFilter !== "recycle"
                                     fontSize: 16
                                     implicitHeight: 30
                                     isCheckBoxOnLeft: false
 
                                     onCheckedChanged: {
-                                        if (globalState.selectedTodo && checked !== globalState.selectedTodo.completed) {
-                                            todoManager.updateTodo(globalState.selectedTodo.index, "isCompleted", checked);
-                                            globalState.selectedTodo.completed = checked;
+                                        if (globalState.selectedTodo && checked !== globalState.selectedTodo.isCompleted) {
+                                            todoManager.markAsDone(globalState.selectedTodo.index, checked);
+                                            globalState.selectedTodo.isCompleted = checked;
                                         }
                                     }
                                 }
@@ -1093,6 +1093,26 @@ Page {
         MenuItem {
             text: qsTr("按标题")
             onTriggered: todoQueryer.sortType = 3
+            contentItem: Text {
+                text: parent.text
+                color: ThemeManager.textColor
+                font.pixelSize: 12
+            }
+        }
+
+        MenuItem {
+            text: qsTr("按修改时间")
+            onTriggered: todoQueryer.sortType = 4
+            contentItem: Text {
+                text: parent.text
+                color: ThemeManager.textColor
+                font.pixelSize: 12
+            }
+        }
+
+        MenuItem {
+            text: qsTr("按完成时间")
+            onTriggered: todoQueryer.sortType = 5
             contentItem: Text {
                 text: parent.text
                 color: ThemeManager.textColor

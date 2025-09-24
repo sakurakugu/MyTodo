@@ -28,6 +28,9 @@ CategoryManager::CategoryManager(UserAuth &userAuth, QObject *parent)
     connect(m_syncServer, &CategorySyncServer::categoriesUpdatedFromServer, this,
             &CategoryManager::onCategoriesUpdatedFromServer);
 
+    // 桥接模型变化到管理器的属性通知：确保 QML 对 categoryManager.categories 的绑定会更新
+    connect(m_categoryModel, &CategoryModel::categoriesChanged, this, &CategoryManager::categoriesChanged);
+
     // 从存储加载类别数据
     loadCategories();
 }

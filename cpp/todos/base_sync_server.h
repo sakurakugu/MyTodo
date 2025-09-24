@@ -106,9 +106,9 @@ class BaseSyncServer : public QObject {
     void autoSyncIntervalChanged(); // 自动同步间隔变化
 
   protected slots:
-    virtual void onNetworkRequestCompleted(NetworkRequest::RequestType type,
+    virtual void onNetworkRequestCompleted(Network::RequestType type,
                                            const QJsonObject &response); // 网络请求完成
-    virtual void onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
+    virtual void onNetworkRequestFailed(Network::RequestType type, NetworkRequest::NetworkError error,
                                         const QString &message); // 网络请求失败
     void onAutoSyncTimer();                                      // 自动同步定时器触发
     void onAutoSyncSettingChanged();                             // 自动同步设置变化

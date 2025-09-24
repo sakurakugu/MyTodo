@@ -95,18 +95,14 @@ class TodoDataStorage : public QObject {
     ~TodoDataStorage();
 
     // 本地存储功能
-    bool 加载待办事项(TodoList &todos);             // 加载类别待办事项
-    bool saveToLocalStorage(const TodoList &todos); // 将待办事项保存到本地存储
+    bool 加载待办(TodoList &todos);
 
     // CRUD操作
-    std::unique_ptr<TodoItem> 新增待办(TodoList &todos, const QString &title, const QString &description,
+    bool 新增待办(TodoList &todos, const QString &title, const QString &description,
                                        const QString &category, bool important, const QDateTime &deadline,
                                        int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate,
                                        QUuid userUuid);
     bool 新增待办(TodoList &todos, std::unique_ptr<TodoItem> item);
-    bool 更新待办(TodoList &todos, const QUuid &uuid, const QString &title, const QString &description,
-                  const QString &category, bool important, const QDateTime &deadline, int recurrenceInterval,
-                  int recurrenceCount, const QDate &recurrenceStartDate);
     bool 更新待办(TodoList &todos, const QUuid &uuid, const QVariantMap &todoData);
     bool 更新待办(TodoList &todos, TodoItem &item);
     bool 回收待办(TodoList &todos, const QUuid &uuid);   // (标记isDeleted为删除)
@@ -116,7 +112,7 @@ class TodoDataStorage : public QObject {
     // 退出登录操作
     bool 删除所有待办(TodoList &todos);
     bool 更新所有待办用户UUID(TodoList &todos, const QUuid &newUserUuid, int synced);
-
+    
     bool 导入待办事项从JSON(TodoList &todos, const QJsonArray &todosArray, //
                             ImportSource source = ImportSource::Server,    //
                             ConflictResolution resolution = ConflictResolution::Merge);

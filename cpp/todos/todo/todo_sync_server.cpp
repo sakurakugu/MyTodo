@@ -129,12 +129,12 @@ void TodoSyncServer::markItemAsUnsynced(TodoItem *item) {
 }
 
 // 网络请求回调处理 - 重写基类方法
-void TodoSyncServer::onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response) {
+void TodoSyncServer::onNetworkRequestCompleted(Network::RequestType type, const QJsonObject &response) {
     switch (type) {
-    case NetworkRequest::RequestType::FetchTodos:
+    case Network::RequestType::FetchTodos:
         handleFetchTodosSuccess(response);
         break;
-    case NetworkRequest::RequestType::PushTodos:
+    case Network::RequestType::PushTodos:
         handlePushChangesSuccess(response);
         break;
     default:
@@ -144,9 +144,9 @@ void TodoSyncServer::onNetworkRequestCompleted(NetworkRequest::RequestType type,
     }
 }
 
-void TodoSyncServer::onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
+void TodoSyncServer::onNetworkRequestFailed(Network::RequestType type, NetworkRequest::NetworkError error,
                                             const QString &message) {
-    if (type == NetworkRequest::RequestType::PushTodos) {
+    if (type == Network::RequestType::PushTodos) {
         qInfo() << "项目推送失败！错误类型:" << static_cast<int>(error);
         qInfo() << "失败详情:" << message;
         qInfo() << "当前推送索引:" << m_currentPushIndex;
@@ -187,7 +187,7 @@ void TodoSyncServer::fetchTodosFromServer() {
         config.method = "GET"; // 明确指定使用GET方法
         config.requiresAuth = true;
 
-        m_networkRequest.sendRequest(NetworkRequest::RequestType::FetchTodos, config);
+        m_networkRequest.sendRequest(Network::RequestType::FetchTodos, config);
     } catch (const std::exception &e) {
         qCritical() << "获取服务器数据时发生异常:" << e.what();
 
@@ -285,7 +285,7 @@ void TodoSyncServer::pushBatchToServer(const QList<TodoItem *> &batch) {
         // 存储当前批次的未同步项目引用，用于成功后标记为已同步
         m_pendingUnsyncedItems = batch;
 
-        m_networkRequest.sendRequest(NetworkRequest::RequestType::PushTodos, config);
+        m_networkRequest.sendRequest(Network::RequestType::PushTodos, config);
     } catch (const std::exception &e) {
         qCritical() << "推送更改时发生异常:" << e.what();
 
@@ -515,7 +515,7 @@ void TodoSyncServer::pushSingleItem(TodoItem *item) {
     qInfo() << "请求方法:" << config.method;
     qInfo() << "项目数据:" << QJsonDocument(itemData).toJson(QJsonDocument::Compact);
 
-    m_networkRequest.sendRequest(NetworkRequest::RequestType::PushTodos, config);
+    m_networkRequest.sendRequest(Network::RequestType::PushTodos, config);
     qInfo() << "项目推送请求已发送，等待服务器响应...";
 }
 

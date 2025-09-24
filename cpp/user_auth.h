@@ -85,8 +85,8 @@ class UserAuth : public QObject {
     void firstAuthCompleted();                     // 首次完成认证（登录或首次刷新）信号，仅触发一次
 
   public slots:
-    void onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response); // 处理网络请求成功
-    void onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
+    void onNetworkRequestCompleted(Network::RequestType type, const QJsonObject &response); // 处理网络请求成功
+    void onNetworkRequestFailed(Network::RequestType type, NetworkRequest::NetworkError error,
                                 const QString &message); // 处理网络请求失败
     void onAuthTokenExpired();                           // 处理认证令牌过期
 

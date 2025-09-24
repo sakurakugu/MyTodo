@@ -249,6 +249,7 @@ bool CategoryModel::删除类别(const QString &name) {
 
     开始更新模型();
     bool success = m_dataStorage.软删除类别(m_categoryItems, name);
+    //^ 内部会判断是直接删还是标记为同步
     与服务器同步();
     qDebug() << "本地类别删除成功:" << name;
     结束更新模型();
@@ -281,6 +282,7 @@ void CategoryModel::与服务器同步() {
 }
 
 void CategoryModel::更新同步成功状态(const std::vector<CategorieItem *> &categories) {
+    开始更新模型();
     for (auto item : categories) {
         if (item->synced() != 3) { // 保留已删除状态
             m_dataStorage.更新同步状态(m_categoryItems, item->name());
@@ -288,6 +290,7 @@ void CategoryModel::更新同步成功状态(const std::vector<CategorieItem *> 
             m_dataStorage.删除类别(m_categoryItems, item->name());
         }
     }
+    结束更新模型();
 }
 
 bool CategoryModel::导入类别从JSON(const QJsonArray &jsonArray, CategoryDataStorage::ImportSource source) {

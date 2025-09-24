@@ -15,10 +15,15 @@
 #include <QCoreApplication>
 #include <QDesktopServices>
 #include <QDir>
+#include <QFile>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QSaveFile>
 #include <QStandardPaths>
 #include <QUrl>
+#include <cmath>
+#include <functional>
+#include <limits>
 
 Config::Config(QObject *parent)
     : QObject(parent),        //
@@ -632,8 +637,8 @@ std::string Config::exportToJson(const QStringList &excludeKeys) const {
 
             copyTable(m_config, filteredConfig, "");
 
-            filteredConfig.insert("export_info/version", APP_VERSION_STRING); // 应用版本
-            filteredConfig.insert("export_info/export_time",
+            filteredConfig.insert("meta/version", APP_VERSION_STRING); // 应用版本
+            filteredConfig.insert("meta/export_time",
                                   QDateTime::currentDateTime().toString(Qt::ISODate).toStdString()); // 添加导出时间
 
             std::ostringstream oss;
@@ -752,6 +757,74 @@ bool Config::JsonToToml(const std::string &jsonContent, toml::table *table) {
         qCritical() << "将JSON字符串转化为Toml格式失败:" << e.what();
         return false;
     }
+}
+
+/**
+ * @brief 从JSON字符串导入配置
+ * @param jsonContent JSON内容
+ * @param replaceAll 是否替换整个配置（true 替换；false 合并/覆盖键）
+ * @return 是否成功
+ */
+bool Config::importFromJson(const std::string &jsonContent, bool replaceAll) {
+    toml::table newTable;
+    if (!JsonToToml(jsonContent, &newTable)) {
+        return false;
+    }
+
+    // 移除导出时附带的元信息键，避免污染配置
+    try {
+        // 兼容扁平键路径或嵌套表两种形态
+        // 1) 扁平键：meta/version, meta/export_time
+        if (newTable.contains("meta/version")) {
+            newTable.erase("meta/version");
+        }
+        if (newTable.contains("meta/export_time")) {
+            newTable.erase("meta/export_time");
+        }
+        // 2) 嵌套表：meta { version=..., export_time=... }
+        if (auto ei = newTable["meta"].as_table()) {
+            ei->erase("version");
+            ei->erase("export_time");
+            if (ei->empty()) {
+                newTable.erase("meta");
+            }
+        }
+    } catch (...) {
+        // 忽略清理失败，不影响导入
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+
+        try {
+            if (replaceAll) {
+                m_config = std::move(newTable);
+            } else {
+                // 递归合并：new 覆盖 m_config 对应键
+                std::function<void(toml::table &, const toml::table &)>     //
+                    merge = [&](toml::table &dst, const toml::table &src) { //
+                        for (auto &[k, v] : src) {
+                            std::string key = std::string(k);
+                            if (v.is_table()) {
+                                if (auto *dt = dst[key].as_table()) {
+                                    merge(*dt, *v.as_table());
+                                } else {
+                                    dst.insert_or_assign(key, *v.as_table());
+                                }
+                            } else {
+                                dst.insert_or_assign(key, v);
+                            }
+                        }
+                    };
+                merge(m_config, newTable);
+            }
+        } catch (const std::exception &e) {
+            qCritical() << "导入JSON到配置失败:" << e.what();
+            return false;
+        }
+    }
+
+    return saveToFile();
 }
 
 /**

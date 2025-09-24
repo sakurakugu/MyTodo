@@ -128,7 +128,7 @@ void UserAuth::login(const QString &account, const QString &password) {
     config.data["password"] = password;
 
     // 发送登录请求
-    m_networkRequest.sendRequest(NetworkRequest::RequestType::Login, config);
+    m_networkRequest.sendRequest(Network::RequestType::Login, config);
 }
 
 /**
@@ -193,7 +193,7 @@ void UserAuth::刷新访问令牌() {
     config.data["refresh_token"] = m_refreshToken;
 
     // 发送刷新请求
-    m_networkRequest.sendRequest(NetworkRequest::RequestType::RefreshToken, config);
+    m_networkRequest.sendRequest(Network::RequestType::RefreshToken, config);
 }
 
 bool UserAuth::访问令牌是否即将过期() const {
@@ -207,19 +207,19 @@ bool UserAuth::访问令牌是否即将过期() const {
     return timeUntilExpiry <= TOKEN_REFRESH_THRESHOLD;
 }
 
-void UserAuth::onNetworkRequestCompleted(NetworkRequest::RequestType type, const QJsonObject &response) {
+void UserAuth::onNetworkRequestCompleted(Network::RequestType type, const QJsonObject &response) {
     switch (type) {
-    case NetworkRequest::RequestType::Login:
+    case Network::RequestType::Login:
         处理登录成功(response);
         break;
-    case NetworkRequest::RequestType::RefreshToken:
+    case Network::RequestType::RefreshToken:
         处理令牌刷新成功(response);
         break;
-    case NetworkRequest::RequestType::Logout:
+    case Network::RequestType::Logout:
         // 注销成功处理
         emit logoutSuccessful();
         break;
-    case NetworkRequest::RequestType::FetchTodos:
+    case Network::RequestType::FetchTodos:
         // 如果是token验证请求成功，说明token有效
         qDebug() << "存储的访问令牌验证成功，用户已自动登录：" << m_username;
         break;
@@ -229,15 +229,15 @@ void UserAuth::onNetworkRequestCompleted(NetworkRequest::RequestType type, const
     }
 }
 
-void UserAuth::onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkRequest::NetworkError error,
+void UserAuth::onNetworkRequestFailed(Network::RequestType type, NetworkRequest::NetworkError error,
                                       const QString &message) {
 
     switch (type) {
-    case NetworkRequest::RequestType::Login:
+    case Network::RequestType::Login:
         qWarning() << "登录失败:" << message;
         emit loginFailed(message);
         break;
-    case NetworkRequest::RequestType::RefreshToken:
+    case Network::RequestType::RefreshToken:
         m_isRefreshing = false;
         qWarning() << "令牌刷新失败:" << message << "错误类型:" << static_cast<int>(error);
         emit tokenRefreshFailed(message);
@@ -252,13 +252,13 @@ void UserAuth::onNetworkRequestFailed(NetworkRequest::RequestType type, NetworkR
             // 网络错误时不清理凭据，保留用户状态
         }
         break;
-    case NetworkRequest::RequestType::Logout:
+    case Network::RequestType::Logout:
         qWarning() << "注销失败:" << message;
         // 即使注销失败，也清除本地凭据
         清除凭据();
         emit logoutSuccessful();
         break;
-    case NetworkRequest::RequestType::FetchTodos:
+    case Network::RequestType::FetchTodos:
         // 如果是token验证请求失败，说明token无效
         if (error == NetworkRequest::NetworkError::AuthenticationError) {
             qWarning() << "存储的访问令牌无效，尝试静默刷新";
