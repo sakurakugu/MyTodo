@@ -193,7 +193,8 @@ bool TodoModel::新增待办(const QString &title, const QUuid &userUuid, const 
                          const QString &category, bool important, const QDateTime &deadline,           //
                          int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate //
 ) {
-    beginInsertRows(QModelIndex(), rowCount(), rowCount());
+    // 因为显示的是排序后的结果，所以直接重置模型
+    beginResetModel();
     auto result = m_dataManager.新增待办(m_todos, title, description, category, important, //
                                          deadline, recurrenceInterval, recurrenceCount, recurrenceStartDate, userUuid);
     if (!result) {
@@ -206,7 +207,8 @@ bool TodoModel::新增待办(const QString &title, const QUuid &userUuid, const 
         添加到ID索引(m_todos.back().get());
     }
     需要重新筛选();
-    endInsertRows();
+    更新过滤后的待办();
+    endResetModel();
 
     与服务器同步();
 
@@ -252,7 +254,7 @@ bool TodoModel::标记完成(int index, bool completed) {
     bool success = false;
     try {
         QVariantMap todoData;
-        todoData["isCompleted"] = completed;
+        todoData["is_completed"] = completed;
 
         // 如果任务被标记为完成，并且当前过滤器是“待办”或“已完成”，则将其从视图中移除
         if (m_queryer.currentFilter() == "done" || m_queryer.currentFilter() == "todo") {
