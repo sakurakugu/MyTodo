@@ -21,9 +21,8 @@
  *
  * @param parent 父对象指针，用于Qt的对象树管理
  */
-CategorieItem::CategorieItem(QObject *parent)
-    : QObject(parent),                           // 初始化父对象
-      m_id(0),                                   // 初始化分类ID为0
+CategorieItem::CategorieItem()
+    : m_id(0),                                   // 初始化分类ID为0
       m_uuid(QUuid()),                           // 初始化分类UUID为空UUID
       m_name(""),                                // 初始化分类名称为空字符串
       m_userUuid(QUuid()),                       // 初始化用户UUID为空UUID
@@ -45,10 +44,8 @@ CategorieItem::CategorieItem(   //
     const QUuid &userUuid,      ///< 用户UUID
     const QDateTime &createdAt, ///< 创建时间
     const QDateTime &updatedAt, ///< 更新时间
-    int synced,                 ///< 是否已与服务器同步
-    QObject *parent)            ///< 父对象指针
-    : QObject(parent),          ///< 初始化父对象
-      m_id(id),                 ///< 初始化分类ID
+    int synced)                 ///< 是否已与服务器同步
+    : m_id(id),                 ///< 初始化分类ID
       m_uuid(uuid),             ///< 初始化分类UUID
       m_name(name),             ///< 初始化分类名称
       m_userUuid(userUuid),     ///< 初始化用户UUID
@@ -62,7 +59,8 @@ CategorieItem::CategorieItem(   //
  * @param id 新的分类ID
  */
 void CategorieItem::setId(int id) {
-    setProperty(m_id, id, &CategorieItem::idChanged);
+    if (m_id != id)
+        m_id = id;
 }
 
 /**
@@ -70,7 +68,8 @@ void CategorieItem::setId(int id) {
  * @param uuid 新的分类UUID
  */
 void CategorieItem::setUuid(const QUuid &uuid) {
-    setProperty(m_uuid, uuid, &CategorieItem::uuidChanged);
+    if (m_uuid != uuid)
+        m_uuid = uuid;
 }
 
 /**
@@ -84,7 +83,9 @@ void CategorieItem::setName(const QString &name) {
     } else [[likely]] {
         name_ = name;
     }
-    setProperty(m_name, name_, &CategorieItem::nameChanged);
+    if (m_name != name_) {
+        m_name = name_;
+    }
 }
 
 /**
@@ -92,7 +93,8 @@ void CategorieItem::setName(const QString &name) {
  * @param userUuid 新的用户UUID
  */
 void CategorieItem::setUserUuid(const QUuid &userUuid) {
-    setProperty(m_userUuid, userUuid, &CategorieItem::userUuidChanged);
+    if (m_userUuid != userUuid)
+        m_userUuid = userUuid;
 }
 
 /**
@@ -100,7 +102,8 @@ void CategorieItem::setUserUuid(const QUuid &userUuid) {
  * @param createdAt 新的创建时间
  */
 void CategorieItem::setCreatedAt(const QDateTime &createdAt) {
-    setProperty(m_createdAt, createdAt, &CategorieItem::createdAtChanged);
+    if (m_createdAt != createdAt)
+        m_createdAt = createdAt;
 }
 
 /**
@@ -108,7 +111,8 @@ void CategorieItem::setCreatedAt(const QDateTime &createdAt) {
  * @param updatedAt 新的更新时间
  */
 void CategorieItem::setUpdatedAt(const QDateTime &updatedAt) {
-    setProperty(m_updatedAt, updatedAt, &CategorieItem::updatedAtChanged);
+    if (m_updatedAt != updatedAt)
+        m_updatedAt = updatedAt;
 }
 
 /**
@@ -116,7 +120,14 @@ void CategorieItem::setUpdatedAt(const QDateTime &updatedAt) {
  * @param synced 新的同步状态
  */
 void CategorieItem::setSynced(int synced) {
-    setProperty(m_synced, synced, &CategorieItem::syncedChanged);
+    if (m_synced == synced)
+        return;
+
+    // 如果之前是新建(1)，现在要改为更新(2)，保持不变
+    if (m_synced == 1 && synced == 2)
+        return;
+
+    m_synced = synced;
 }
 
 // 便利方法实现

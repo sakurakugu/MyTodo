@@ -12,7 +12,6 @@
 #pragma once
 
 #include <QDateTime>
-#include <QObject>
 #include <QString>
 #include <QUuid>
 
@@ -31,29 +30,19 @@
  * @note 所有属性都有对应的getter、setter方法和change信号
  * @see TodoManager
  */
-class CategorieItem : public QObject {
-    Q_OBJECT
-    Q_PROPERTY(int id READ id WRITE setId NOTIFY idChanged)
-    Q_PROPERTY(QUuid uuid READ uuid WRITE setUuid NOTIFY uuidChanged)
-    Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
-    Q_PROPERTY(QUuid userUuid READ userUuid WRITE setUserUuid NOTIFY userUuidChanged)
-    Q_PROPERTY(QDateTime createdAt READ createdAt WRITE setCreatedAt NOTIFY createdAtChanged)
-    Q_PROPERTY(QDateTime updatedAt READ updatedAt WRITE setUpdatedAt NOTIFY updatedAtChanged)
-    Q_PROPERTY(int synced READ synced WRITE setSynced NOTIFY syncedChanged)
-
+class CategorieItem {
   public:
     CategorieItem(const CategorieItem &) = delete;
     CategorieItem &operator=(const CategorieItem &) = delete;
-    explicit CategorieItem(QObject *parent = nullptr);
+    explicit CategorieItem();
     CategorieItem(int id,                     ///< 分类唯一标识符
                   const QUuid &uuid,          ///< 分类唯一标识符（UUID）
                   const QString &name,        ///< 分类名称
                   const QUuid &userUuid,      ///< 用户UUID
                   const QDateTime &createdAt, ///< 创建时间
                   const QDateTime &updatedAt, ///< 更新时间
-                  int synced,                 ///< 是否已与服务器同步（是否要上传）
+                  int synced                  ///< 是否已与服务器同步（是否要上传）
                                               ///< 0表示已同步，1表示插入，2表示更新，3表示删除
-                  QObject *parent = nullptr   //
     );
 
     int id() const noexcept { return m_id; } // 获取ID
@@ -87,30 +76,7 @@ class CategorieItem : public QObject {
     bool operator==(const CategorieItem &other) const;
     bool operator!=(const CategorieItem &other) const;
 
-  signals:
-    void idChanged();        ///< ID改变信号
-    void uuidChanged();      ///< UUID改变信号
-    void nameChanged();      ///< 分类名称改变信号
-    void userUuidChanged();  ///< 用户UUID改变信号
-    void createdAtChanged(); ///< 创建时间改变信号
-    void updatedAtChanged(); ///< 更新时间改变信号
-    void syncedChanged();    ///< 同步状态改变信号
-
   private:
-    /**
-     * @brief 通用属性设置方法
-     * @tparam T 属性类型，必须支持比较和赋值操作
-     * @param member 成员变量引用
-     * @param value 新值
-     * @param signal 信号指针
-     */
-    template <typename T> constexpr void setProperty(T &member, const T &value, void (CategorieItem::*signal)()) {
-        if (member != value) {
-            member = value;
-            emit(this->*signal)();
-        }
-    }
-
     // 成员变量
     int m_id;              // 分类ID
     QUuid m_uuid;          // 分类UUID

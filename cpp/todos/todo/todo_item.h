@@ -11,9 +11,7 @@
 
 #pragma once
 
-#include <QDate>
 #include <QDateTime>
-#include <QObject>
 #include <QString>
 #include <QUuid>
 
@@ -33,33 +31,12 @@
  * @note 所有属性都有对应的getter、setter方法和change信号
  * @see TodoManager
  */
-class TodoItem : public QObject {
-    Q_OBJECT
-    Q_PROPERTY(int id READ id WRITE setId NOTIFY idChanged)
-    Q_PROPERTY(QUuid uuid READ uuid WRITE setUuid NOTIFY uuidChanged)
-    Q_PROPERTY(QUuid userUuid READ userUuid WRITE setUserUuid NOTIFY userUuidChanged)
-    Q_PROPERTY(QString title READ title WRITE setTitle NOTIFY titleChanged)
-    Q_PROPERTY(QString description READ description WRITE setDescription NOTIFY descriptionChanged)
-    Q_PROPERTY(QString category READ category WRITE setCategory NOTIFY categoryChanged)
-    Q_PROPERTY(bool important READ important WRITE setImportant NOTIFY importantChanged)
-    Q_PROPERTY(QDateTime deadline READ deadline WRITE setDeadline NOTIFY deadlineChanged)
-    Q_PROPERTY(
-        int recurrenceInterval READ recurrenceInterval WRITE setRecurrenceInterval NOTIFY recurrenceIntervalChanged)
-    Q_PROPERTY(int recurrenceCount READ recurrenceCount WRITE setRecurrenceCount NOTIFY recurrenceCountChanged)
-    Q_PROPERTY(QDate recurrenceStartDate READ recurrenceStartDate WRITE setRecurrenceStartDate NOTIFY
-                   recurrenceStartDateChanged)
-    Q_PROPERTY(bool isCompleted READ isCompleted WRITE setIsCompleted NOTIFY isCompletedChanged)
-    Q_PROPERTY(QDateTime completedAt READ completedAt WRITE setCompletedAt NOTIFY completedAtChanged)
-    Q_PROPERTY(bool isDeleted READ isDeleted WRITE setIsDeleted NOTIFY isDeletedChanged)
-    Q_PROPERTY(QDateTime deletedAt READ deletedAt WRITE setDeletedAt NOTIFY deletedAtChanged)
-    Q_PROPERTY(QDateTime createdAt READ createdAt WRITE setCreatedAt NOTIFY createdAtChanged)
-    Q_PROPERTY(QDateTime updatedAt READ updatedAt WRITE setUpdatedAt NOTIFY updatedAtChanged)
-    Q_PROPERTY(int synced READ synced WRITE setSynced NOTIFY syncedChanged)
+class TodoItem {
 
   public:
     TodoItem(const TodoItem &) = delete;
     TodoItem &operator=(const TodoItem &) = delete;
-    explicit TodoItem(QObject *parent = nullptr);
+    explicit TodoItem();
     TodoItem(int id,                           ///< 唯一标识符
              const QUuid &uuid,                ///< 唯一标识符（UUID）
              const QUuid &userUuid,            ///< 用户UUID
@@ -77,8 +54,8 @@ class TodoItem : public QObject {
              const QDateTime &deletedAt,       ///< 删除时间
              const QDateTime &createdAt,       ///< 创建时间
              const QDateTime &updatedAt,       ///< 最后更新时间
-             int synced,                       ///< 是否已与服务器同步（是否要上传）
-             QObject *parent = nullptr);
+             int synced                        ///< 是否已与服务器同步（是否要上传）
+    );
 
     int id() const noexcept { return m_id; } // 获取ID
     void setId(int id);                      // 设置ID
@@ -146,41 +123,7 @@ class TodoItem : public QObject {
     bool operator==(const TodoItem &other) const;
     bool operator!=(const TodoItem &other) const;
 
-  signals:
-    void idChanged();                  ///< ID改变信号
-    void uuidChanged();                ///< UUID改变信号
-    void userUuidChanged();            ///< 用户UUID改变信号
-    void titleChanged();               ///< 标题改变信号
-    void descriptionChanged();         ///< 描述改变信号
-    void categoryChanged();            ///< 分类改变信号
-    void importantChanged();           ///< 重要程度改变信号
-    void deadlineChanged();            ///< 截止日期改变信号
-    void recurrenceIntervalChanged();  ///< 循环间隔改变信号
-    void recurrenceCountChanged();     ///< 循环次数改变信号
-    void recurrenceStartDateChanged(); ///< 循环开始日期改变信号
-    void isCompletedChanged();         ///< 完成状态改变信号
-    void completedAtChanged();         ///< 完成时间改变信号
-    void isDeletedChanged();           ///< 删除状态改变信号
-    void deletedAtChanged();           ///< 删除时间改变信号
-    void createdAtChanged();           ///< 创建时间改变信号
-    void updatedAtChanged();           ///< 更新时间改变信号
-    void syncedChanged();              ///< 同步状态改变信号
-
   private:
-    /**
-     * @brief 通用属性设置方法
-     * @tparam T 属性类型，必须支持比较和赋值操作
-     * @param member 成员变量引用
-     * @param value 新值
-     * @param signal 信号指针
-     */
-    template <typename T> constexpr void setProperty(T &member, const T &value, void (TodoItem::*signal)()) {
-        if (member != value) {
-            member = value;
-            emit(this->*signal)();
-        }
-    }
-
     // 成员变量
     int m_id;                    // 任务ID
     QUuid m_uuid;                // 任务UUID

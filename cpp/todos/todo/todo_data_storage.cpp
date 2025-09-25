@@ -110,9 +110,8 @@ bool TodoDataStorage::加载待办(TodoList &todos) {
                 deletedAt,                          // 删除时间
                 createdAt,                          // 创建时间
                 updatedAt,                          // 更新时间
-                synced,                             // 是否已同步
-                this);
-
+                synced                              // 是否已同步
+            );
             todos.push_back(std::move(item));
         }
 
@@ -175,8 +174,7 @@ bool TodoDataStorage::新增待办( //
         nullTime,                              // deletedAt
         now,                                   // createdAt
         now,                                   // updatedAt
-        1,                                     // synced
-        this                                   // parent
+        1                                      // synced
     );
 
     // 插入到数据库
@@ -303,77 +301,77 @@ bool TodoDataStorage::更新待办(TodoList &todos, const QUuid &uuid, const QVa
     // 更新数据库中的待办事项
     QSqlQuery updateQuery(db);
     // 记录要更新的字段 [原本类型，字段名]
-    QList<QPair<QVariant::Type, QString>> fields; 
+    QList<QPair<QMetaType::Type, QString>> fields;
     QString order = "UPDATE todos SET ";
     if (todoData.contains("title")) {
         order += "title = ?, ";
-        fields << qMakePair(QVariant::String, QString("title"));
+        fields << qMakePair(QMetaType::QString, QString("title"));
         (*it)->setTitle(todoData.value("title").toString());
     }
     if (todoData.contains("description")) {
         order += "description = ?, ";
-        fields << qMakePair(QVariant::String, QString("description"));
+        fields << qMakePair(QMetaType::QString, QString("description"));
         (*it)->setDescription(todoData.value("description").toString());
     }
     if (todoData.contains("category")) {
         order += "category = ?, ";
-        fields << qMakePair(QVariant::String, QString("category"));
+        fields << qMakePair(QMetaType::QString, QString("category"));
         (*it)->setCategory(todoData.value("category").toString());
     }
     if (todoData.contains("important")) {
         order += "important = ?, ";
-        fields << qMakePair(QVariant::Bool, QString("important"));
+        fields << qMakePair(QMetaType::Bool, QString("important"));
         (*it)->setImportant(todoData.value("important").toBool());
     }
     if (todoData.contains("deadline")) {
         order += "deadline = ?, ";
-        fields << qMakePair(QVariant::DateTime, QString("deadline"));
+        fields << qMakePair(QMetaType::QDateTime, QString("deadline"));
         (*it)->setDeadline(QDateTime::fromString(todoData.value("deadline").toString(), Qt::ISODate));
     }
     if (todoData.contains("recurrence_interval")) {
         order += "recurrence_interval = ?, ";
-        fields << qMakePair(QVariant::Int, QString("recurrence_interval"));
+        fields << qMakePair(QMetaType::Int, QString("recurrence_interval"));
         (*it)->setRecurrenceInterval(todoData.value("recurrence_interval").toInt());
     }
     if (todoData.contains("recurrence_count")) {
         order += "recurrence_count = ?, ";
-        fields << qMakePair(QVariant::Int, QString("recurrence_count"));
+        fields << qMakePair(QMetaType::Int, QString("recurrence_count"));
         (*it)->setRecurrenceCount(todoData.value("recurrence_count").toInt());
     }
     if (todoData.contains("recurrence_start_date")) {
         order += "recurrence_start_date = ?, ";
-        fields << qMakePair(QVariant::Date, QString("recurrence_start_date"));
+        fields << qMakePair(QMetaType::QDate, QString("recurrence_start_date"));
         (*it)->setRecurrenceStartDate(
             QDate::fromString(todoData.value("recurrence_start_date").toString(), Qt::ISODate));
     }
     if (todoData.contains("is_completed")) {
         order += "is_completed = ?, ";
-        fields << qMakePair(QVariant::Bool, QString("is_completed"));
+        fields << qMakePair(QMetaType::Bool, QString("is_completed"));
         (*it)->setIsCompleted(todoData.value("is_completed").toBool());
     }
     if (todoData.contains("completed_at")) {
         order += "completed_at = ?, ";
-        fields << qMakePair(QVariant::DateTime, QString("completed_at"));
+        fields << qMakePair(QMetaType::QDateTime, QString("completed_at"));
         (*it)->setCompletedAt(QDateTime::fromString(todoData.value("completed_at").toString(), Qt::ISODate));
     }
     if (todoData.contains("is_deleted")) {
         order += "is_deleted = ?, ";
-        fields << qMakePair(QVariant::Bool, QString("is_deleted"));
+        fields << qMakePair(QMetaType::Bool, QString("is_deleted"));
         (*it)->setIsDeleted(todoData.value("is_deleted").toBool());
     }
     if (todoData.contains("deleted_at")) {
         order += "deleted_at = ?, ";
-        fields << qMakePair(QVariant::DateTime, QString("deleted_at"));
+        fields << qMakePair(QMetaType::QDateTime, QString("deleted_at"));
         (*it)->setDeletedAt(QDateTime::fromString(todoData.value("deleted_at").toString(), Qt::ISODate));
     }
     // 始终更新这两个字段
     order += "updated_at = ?, synced = ? WHERE uuid = ?";
     updateQuery.prepare(order);
     for (const auto &[type, name] : fields) {
-        if (type == QVariant::DateTime) {
+        if (type == QMetaType::QDateTime) {
             QDateTime dt = QDateTime::fromString(todoData.value(name).toString(), Qt::ISODate);
             updateQuery.addBindValue(dt.toString(Qt::ISODate));
-        } else if (type == QVariant::Date) {
+        } else if (type == QMetaType::QDate) {
             QDate d = QDate::fromString(todoData.value(name).toString(), Qt::ISODate);
             updateQuery.addBindValue(d.toString(Qt::ISODate));
         } else {
@@ -713,26 +711,25 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
                 updatedAt = createdAt;
 
             // 构造临时 incoming 对象（不立即放入列表）
-            TodoItem incoming(                          //
-                -1,                                     //
-                uuid,                                   //
-                userUuid,                               //
-                title,                                  //
-                description,                            //
-                category,                               //
-                important,                              //
-                deadline,                               //
-                recurrenceInterval,                     //
-                recurrenceCount,                        //
-                recurrenceStartDate,                    //
-                isCompleted,                            //
-                completedAt,                            //
-                isDeleted,                              //
-                deletedAt,                              //
-                createdAt,                              //
-                updatedAt,                              //
-                source == ImportSource::Server ? 0 : 1, //
-                this                                    //
+            TodoItem incoming(                         //
+                -1,                                    //
+                uuid,                                  //
+                userUuid,                              //
+                title,                                 //
+                description,                           //
+                category,                              //
+                important,                             //
+                deadline,                              //
+                recurrenceInterval,                    //
+                recurrenceCount,                       //
+                recurrenceStartDate,                   //
+                isCompleted,                           //
+                completedAt,                           //
+                isDeleted,                             //
+                deletedAt,                             //
+                createdAt,                             //
+                updatedAt,                             //
+                source == ImportSource::Server ? 0 : 1 //
             );
 
             // 查找现有
@@ -745,12 +742,26 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
             }
 
             if (action == ConflictResolution::Insert) {
-                auto newItem = std::make_unique<TodoItem>(
-                    incoming.id(), incoming.uuid(), incoming.userUuid(), incoming.title(), incoming.description(),
-                    incoming.category(), incoming.important(), incoming.deadline(), incoming.recurrenceInterval(),
-                    incoming.recurrenceCount(), incoming.recurrenceStartDate(), incoming.isCompleted(),
-                    incoming.completedAt(), incoming.isDeleted(), incoming.deletedAt(), incoming.createdAt(),
-                    incoming.updatedAt(), incoming.synced(), this);
+                auto newItem = std::make_unique<TodoItem>( //
+                    incoming.id(),                         //
+                    incoming.uuid(),                       //
+                    incoming.userUuid(),                   //
+                    incoming.title(),                      //
+                    incoming.description(),                //
+                    incoming.category(),                   //
+                    incoming.important(),                  //
+                    incoming.deadline(),                   //
+                    incoming.recurrenceInterval(),         //
+                    incoming.recurrenceCount(),            //
+                    incoming.recurrenceStartDate(),        //
+                    incoming.isCompleted(),                //
+                    incoming.completedAt(),                //
+                    incoming.isDeleted(),                  //
+                    incoming.deletedAt(),                  //
+                    incoming.createdAt(),                  //
+                    incoming.updatedAt(),                  //
+                    incoming.synced()                      //
+                );
                 TodoItem *itemPtr = newItem.get();
                 success = 新增待办(todos, std::move(newItem));
                 // 更新索引

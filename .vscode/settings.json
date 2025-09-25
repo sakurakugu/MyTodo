@@ -114,7 +114,8 @@
         "qjsonobject": "cpp",
         "quuid": "cpp",
         "qjsonarray": "cpp",
-        "qsortfilterproxymodel": "cpp"
+        "qsortfilterproxymodel": "cpp",
+        "qstring": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "search.useIgnoreFiles": false, // 禁用git忽略文件

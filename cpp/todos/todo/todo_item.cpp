@@ -21,9 +21,8 @@
  *
  * @param parent 父对象指针，用于Qt的对象树管理
  */
-TodoItem::TodoItem(QObject *parent)
-    : QObject(parent),                           // 初始化父对象
-      m_id(0),                                   // 初始化待办事项ID为0
+TodoItem::TodoItem()
+    : m_id(0),                                   // 初始化待办事项ID为0
       m_uuid(QUuid::createUuid()),               // 初始化UUID
       m_userUuid(""),                            // 初始化用户UUID为空字符串
       m_important(false),                        // 初始化重要程度为false
@@ -61,11 +60,8 @@ TodoItem::TodoItem(int id,                           ///< 待办事项唯一标�
                    const QDateTime &deletedAt,       ///< 删除时间
                    const QDateTime &createdAt,       ///< 创建时间
                    const QDateTime &updatedAt,       ///< 最后更新时间
-                   int synced,                       ///< 是否已与服务器同步
-                   QObject *parent)                  ///< 父对象指针
-                                                     //
-    : QObject(parent),                               ///< 初始化父对象
-      m_id(id),                                      ///< 初始化待办事项ID
+                   int synced)                       ///< 是否已与服务器同步
+    : m_id(id),                                      ///< 初始化待办事项ID
       m_uuid(uuid),                                  ///< 初始化待办事项UUID
       m_userUuid(userUuid),                          ///< 初始化用户UUID
       m_title(title),                                ///< 初始化待办事项标题
@@ -90,7 +86,9 @@ TodoItem::TodoItem(int id,                           ///< 待办事项唯一标�
  * @param id 新的待办事项ID
  */
 void TodoItem::setId(int id) {
-    setProperty(m_id, id, &TodoItem::idChanged);
+    if (m_id != id) {
+        m_id = id;
+    }
 }
 
 /**
@@ -98,7 +96,9 @@ void TodoItem::setId(int id) {
  * @param uuid 新的UUID
  */
 void TodoItem::setUuid(const QUuid &uuid) {
-    setProperty(m_uuid, uuid, &TodoItem::uuidChanged);
+    if (m_uuid != uuid) {
+        m_uuid = uuid;
+    }
 }
 
 /**
@@ -106,7 +106,9 @@ void TodoItem::setUuid(const QUuid &uuid) {
  * @param userUuid 新的用户UUID
  */
 void TodoItem::setUserUuid(const QUuid &userUuid) {
-    setProperty(m_userUuid, userUuid, &TodoItem::userUuidChanged);
+    if (m_userUuid != userUuid) {
+        m_userUuid = userUuid;
+    }
 }
 
 /**
@@ -120,7 +122,9 @@ void TodoItem::setTitle(const QString &title) {
     } else [[likely]] {
         title_ = title;
     }
-    setProperty(m_title, title_, &TodoItem::titleChanged);
+    if (m_title != title_) {
+        m_title = title_;
+    }
 }
 
 /**
@@ -128,7 +132,9 @@ void TodoItem::setTitle(const QString &title) {
  * @param description 新的待办事项描述
  */
 void TodoItem::setDescription(const QString &description) {
-    setProperty(m_description, description, &TodoItem::descriptionChanged);
+    if (m_description != description) {
+        m_description = description;
+    }
 }
 
 /**
@@ -142,7 +148,9 @@ void TodoItem::setCategory(const QString &category) {
     } else [[likely]] {
         category_ = category;
     }
-    setProperty(m_category, category_, &TodoItem::categoryChanged);
+    if (m_category != category_) {
+        m_category = category_;
+    }
 }
 
 /**
@@ -150,7 +158,9 @@ void TodoItem::setCategory(const QString &category) {
  * @param important 新的重要程度
  */
 void TodoItem::setImportant(bool important) {
-    setProperty(m_important, important, &TodoItem::importantChanged);
+    if (m_important != important) {
+        m_important = important;
+    }
 }
 
 /**
@@ -158,7 +168,9 @@ void TodoItem::setImportant(bool important) {
  * @param deadline 新的截止日期
  */
 void TodoItem::setDeadline(const QDateTime &deadline) {
-    setProperty(m_deadline, deadline, &TodoItem::deadlineChanged);
+    if (m_deadline != deadline) {
+        m_deadline = deadline;
+    }
 }
 
 /**
@@ -173,7 +185,9 @@ void TodoItem::setRecurrenceInterval(int recurrenceInterval) {
             interval_ = 0;
         }
     }
-    setProperty(m_recurrenceInterval, interval_, &TodoItem::recurrenceIntervalChanged);
+    if (m_recurrenceInterval != interval_) {
+        m_recurrenceInterval = interval_;
+    }
 }
 
 /**
@@ -181,7 +195,9 @@ void TodoItem::setRecurrenceInterval(int recurrenceInterval) {
  * @param recurrenceCount 新的循环次数
  */
 void TodoItem::setRecurrenceCount(int recurrenceCount) {
-    setProperty(m_recurrenceCount, recurrenceCount, &TodoItem::recurrenceCountChanged);
+    if (m_recurrenceCount != recurrenceCount) {
+        m_recurrenceCount = recurrenceCount;
+    }
 }
 
 /**
@@ -189,7 +205,9 @@ void TodoItem::setRecurrenceCount(int recurrenceCount) {
  * @param recurrenceStartDate 新的循环开始日期
  */
 void TodoItem::setRecurrenceStartDate(const QDate &recurrenceStartDate) {
-    setProperty(m_recurrenceStartDate, recurrenceStartDate, &TodoItem::recurrenceStartDateChanged);
+    if (m_recurrenceStartDate != recurrenceStartDate) {
+        m_recurrenceStartDate = recurrenceStartDate;
+    }
 }
 
 /**
@@ -197,7 +215,9 @@ void TodoItem::setRecurrenceStartDate(const QDate &recurrenceStartDate) {
  * @param completed 新的完成状态
  */
 void TodoItem::setIsCompleted(bool completed) {
-    setProperty(m_isCompleted, completed, &TodoItem::isCompletedChanged);
+    if (m_isCompleted != completed) {
+        m_isCompleted = completed;
+    }
 }
 
 /**
@@ -205,7 +225,9 @@ void TodoItem::setIsCompleted(bool completed) {
  * @param completedAt 新的完成时间
  */
 void TodoItem::setCompletedAt(const QDateTime &completedAt) {
-    setProperty(m_completedAt, completedAt, &TodoItem::completedAtChanged);
+    if (m_completedAt != completedAt) {
+        m_completedAt = completedAt;
+    }
 }
 
 /**
@@ -213,7 +235,9 @@ void TodoItem::setCompletedAt(const QDateTime &completedAt) {
  * @param deleted 新的删除状态
  */
 void TodoItem::setIsDeleted(bool deleted) {
-    setProperty(m_isDeleted, deleted, &TodoItem::isDeletedChanged);
+    if (m_isDeleted != deleted) {
+        m_isDeleted = deleted;
+    }
 }
 
 /**
@@ -221,7 +245,9 @@ void TodoItem::setIsDeleted(bool deleted) {
  * @param deletedAt 新的删除时间
  */
 void TodoItem::setDeletedAt(const QDateTime &deletedAt) {
-    setProperty(m_deletedAt, deletedAt, &TodoItem::deletedAtChanged);
+    if (m_deletedAt != deletedAt) {
+        m_deletedAt = deletedAt;
+    }
 }
 
 /**
@@ -229,7 +255,9 @@ void TodoItem::setDeletedAt(const QDateTime &deletedAt) {
  * @param createdAt 新的创建时间
  */
 void TodoItem::setCreatedAt(const QDateTime &createdAt) {
-    setProperty(m_createdAt, createdAt, &TodoItem::createdAtChanged);
+    if (m_createdAt != createdAt) {
+        m_createdAt = createdAt;
+    }
 }
 
 /**
@@ -237,7 +265,9 @@ void TodoItem::setCreatedAt(const QDateTime &createdAt) {
  * @param updatedAt 新的更新时间
  */
 void TodoItem::setUpdatedAt(const QDateTime &updatedAt) {
-    setProperty(m_updatedAt, updatedAt, &TodoItem::updatedAtChanged);
+    if (m_updatedAt != updatedAt) {
+        m_updatedAt = updatedAt;
+    }
 }
 
 /**
@@ -245,7 +275,14 @@ void TodoItem::setUpdatedAt(const QDateTime &updatedAt) {
  * @param synced 新的同步状态
  */
 void TodoItem::setSynced(int synced) {
-    setProperty(m_synced, synced, &TodoItem::syncedChanged);
+    if (m_synced == synced)
+        return;
+
+    // 如果之前是新建(1)，现在要改为更新(2)，保持不变
+    if (m_synced == 1 && synced == 2)
+        return;
+
+    m_synced = synced;
 }
 
 // 便利方法实现

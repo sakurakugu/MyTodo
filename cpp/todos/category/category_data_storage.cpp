@@ -77,8 +77,7 @@ bool CategoryDataStorage::加载类别(CategorieList &categories) {
                 userUuid,                                // 用户UUID
                 createdAt,                               // 创建时间
                 updatedAt,                               // 更新时间
-                synced,                                  // 是否已同步
-                this                                     // 父对象
+                synced                                   // 是否已同步
             );
             categories.push_back(std::move(item));
         }
@@ -143,8 +142,7 @@ std::unique_ptr<CategorieItem> CategoryDataStorage::新增类别( //
             userUuid,                                   // 用户UUID
             createdAt,                                  // 创建时间
             createdAt,                                  // 更新时间
-            source == ImportSource::Server ? 0 : 1,     // 默认未同步，插入
-            this                                        //
+            source == ImportSource::Server ? 0 : 1      // 默认未同步，插入
         );
 
         // 添加到内存列表
@@ -437,8 +435,7 @@ bool CategoryDataStorage::创建默认类别(CategorieList &categories, const QU
             userUuid,                                   // 用户UUID
             createdAt,                                  // 创建时间
             createdAt,                                  // 更新时间
-            0,                                          // 已同步（默认内置）
-            this                                        //
+            0                                           // 已同步（默认内置）
         );
 
         // 添加到内存列表
@@ -532,7 +529,7 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
 
             // 构造临时 incoming 对象（不立即放入列表）
             CategorieItem incoming(-1, uuid, name, userUuid, createdAt, updatedAt,
-                                   source == ImportSource::Server ? 0 : 1, this);
+                                   source == ImportSource::Server ? 0 : 1);
 
             // 查找现有
             CategorieItem *existing = uuidIndex.value(uuid.toString(QUuid::WithoutBraces), nullptr);
