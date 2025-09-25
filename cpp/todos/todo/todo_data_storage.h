@@ -21,7 +21,8 @@
 #include <vector>
 
 #include "../../foundation/database.h"
-#include "todo_item.h"
+
+class TodoItem;
 
 /**
  * @class TodoDataStorage

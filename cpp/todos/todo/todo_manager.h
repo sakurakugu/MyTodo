@@ -13,16 +13,19 @@
 
 #include <QObject>
 #include <QVariant>
+#include <QDate>
 
-#include "../category/category_manager.h" // 类别管理器
-#include "foundation/network_request.h"   // 网络请求
-#include "todo_data_storage.h"            // 数据管理器
-#include "todo_item.h"                    // 待办事项数据结构
+// 要不声明这些类型为不透明指针，用于Qt MOC；要不直接用头文件
 #include "todo_model.h"                   // 数据模型
 #include "todo_queryer.h"                 // 筛选管理器
-#include "todo_sync_server.h"             // 服务器同步管理器
 
-class GlobalState; // 前向声明
+class UserAuth;
+class GlobalState;
+class NetworkRequest;
+class CategoryManager;
+class TodoItem;
+class TodoSyncServer;
+class TodoDataStorage;
 
 /**
  * @class TodoManager

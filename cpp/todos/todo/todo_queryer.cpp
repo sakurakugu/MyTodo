@@ -10,6 +10,7 @@
  */
 
 #include "todo_queryer.h"
+#include "todo_item.h"
 
 TodoQueryer::TodoQueryer(QObject *parent)
     : QObject(parent),               //

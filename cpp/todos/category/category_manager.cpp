@@ -12,7 +12,12 @@
 
 #include "category_manager.h"
 #include "default_value.h"
-#include <QDebug>
+#include "categorie_item.h"
+#include "category_data_storage.h"
+#include "category_model.h"
+#include "category_sync_server.h"
+#include "user_auth.h"
+
 #include <QJsonDocument>
 #include <algorithm>
 

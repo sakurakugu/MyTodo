@@ -11,6 +11,8 @@
 
 #include "base_sync_server.h"
 #include "global_state.h"
+#include "user_auth.h"
+#include "foundation/config.h"
 
 #include <QDateTime>
 

@@ -17,12 +17,11 @@
 #include <memory>
 #include <vector>
 
-#include "categorie_item.h"
-#include "category_data_storage.h"
-#include "category_model.h"
-#include "category_sync_server.h"
-#include "setting.h"
-#include "user_auth.h"
+class UserAuth;
+class CategorySyncServer;
+class CategoryDataStorage;
+class CategoryModel;
+class CategorieItem;
 
 /**
  * @class CategoryManager
@@ -67,8 +66,8 @@ class CategoryManager : public QObject {
     void loadCategories();                                                        ///< 加载类别
 
     // 同步相关方法
-    Q_INVOKABLE void syncWithServer();  ///< 与服务器同步类别
-    Q_INVOKABLE bool isSyncing() const; ///< 检查是否正在同步
+    Q_INVOKABLE void syncWithServer();                          ///< 与服务器同步类别
+    Q_INVOKABLE bool isSyncing() const;                         ///< 检查是否正在同步
     Q_INVOKABLE bool categoryExists(const QString &name) const; ///< 检查类别名称是否已存在
 
   signals:

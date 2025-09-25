@@ -11,11 +11,11 @@
 
 #pragma once
 
-#include "todo_item.h"
-
 #include <QDate>
 #include <QObject>
 #include <QString>
+
+class TodoItem;
 
 /**
  * @class TodoQueryer

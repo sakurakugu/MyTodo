@@ -11,6 +11,8 @@
 
 #include "category_sync_server.h"
 #include "default_value.h"
+#include "foundation/config.h"
+#include "categorie_item.h"
 
 #include <QJsonArray>
 #include <QJsonObject>

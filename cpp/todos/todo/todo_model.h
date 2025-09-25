@@ -14,13 +14,12 @@
 
 #include <QAbstractListModel>
 #include <QVariant>
+#include <QDateTime>
 
-#include "todo_data_storage.h"
-#include "todo_item.h"
-#include "todo_queryer.h"
-#include "todo_sync_server.h"
-
-class TodoManager; // 前向声明
+class TodoDataStorage;
+class TodoSyncServer;
+class TodoQueryer;
+class TodoItem;
 
 /**
  * @class TodoModel

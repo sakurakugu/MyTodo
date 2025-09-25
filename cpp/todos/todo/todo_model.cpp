@@ -13,6 +13,11 @@
 #include "todo_model.h"
 #include "global_state.h"
 
+#include "todo_data_storage.h"
+#include "todo_item.h"
+#include "todo_queryer.h"
+#include "todo_sync_server.h"
+
 TodoModel::TodoModel(TodoDataStorage &dataStorage, TodoSyncServer &syncServer, TodoQueryer &queryer, QObject *parent)
     : QAbstractListModel(parent), //
       m_filterCacheDirty(true),   //

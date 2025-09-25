@@ -10,6 +10,7 @@
  */
 
 #include "todo_data_storage.h"
+#include "todo_item.h"
 
 #include <QDateTime>
 #include <QJsonArray>
@@ -1123,11 +1124,10 @@ bool TodoDataStorage::导出到JSON(QJsonObject &output) {
     }
 
     QSqlQuery query(db);
-    const QString queryString =
-        "SELECT id, uuid, user_uuid, title, description, category, important, deadline, "
-        "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, "
-        "completed_at, is_deleted, deleted_at, created_at, updated_at, synced FROM todos";
-    
+    const QString queryString = "SELECT id, uuid, user_uuid, title, description, category, important, deadline, "
+                                "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, "
+                                "completed_at, is_deleted, deleted_at, created_at, updated_at, synced FROM todos";
+
     if (!query.exec(queryString)) {
         qWarning() << "查询待办数据失败:" << query.lastError().text();
         return false;
@@ -1140,36 +1140,36 @@ bool TodoDataStorage::导出到JSON(QJsonObject &output) {
         todoObj["uuid"] = query.value("uuid").toString();
         todoObj["user_uuid"] = query.value("user_uuid").toString();
         todoObj["title"] = query.value("title").toString();
-        
+
         QVariant desc = query.value("description");
         todoObj["description"] = desc.isNull() ? QJsonValue() : desc.toString();
-        
+
         todoObj["category"] = query.value("category").toString();
         todoObj["important"] = query.value("important").toInt();
-        
+
         QVariant deadline = query.value("deadline");
         todoObj["deadline"] = deadline.isNull() ? QJsonValue() : deadline.toString();
-        
+
         todoObj["recurrence_interval"] = query.value("recurrence_interval").toInt();
         todoObj["recurrence_count"] = query.value("recurrence_count").toInt();
-        
+
         QVariant recStartDate = query.value("recurrence_start_date");
         todoObj["recurrence_start_date"] = recStartDate.isNull() ? QJsonValue() : recStartDate.toString();
-        
+
         todoObj["is_completed"] = query.value("is_completed").toInt();
-        
+
         QVariant completedAt = query.value("completed_at");
         todoObj["completed_at"] = completedAt.isNull() ? QJsonValue() : completedAt.toString();
-        
+
         todoObj["is_deleted"] = query.value("is_deleted").toInt();
-        
+
         QVariant deletedAt = query.value("deleted_at");
         todoObj["deleted_at"] = deletedAt.isNull() ? QJsonValue() : deletedAt.toString();
-        
+
         todoObj["created_at"] = query.value("created_at").toString();
         todoObj["updated_at"] = query.value("updated_at").toString();
         todoObj["synced"] = query.value("synced").toInt();
-        
+
         todosArray.append(todoObj);
     }
 
@@ -1206,12 +1206,12 @@ bool TodoDataStorage::导入从JSON(const QJsonObject &input, bool replaceAll) {
     QJsonArray todosArray = input["todos"].toArray();
     for (const auto &todoValue : todosArray) {
         QJsonObject todoObj = todoValue.toObject();
-        
+
         query.prepare(
             "INSERT OR REPLACE INTO todos (id, uuid, user_uuid, title, description, category, important, deadline, "
             "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, is_deleted, "
             "deleted_at, created_at, updated_at, synced) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-        
+
         query.addBindValue(todoObj.value("id").toVariant());
         query.addBindValue(todoObj.value("uuid").toString());
         query.addBindValue(todoObj.value("user_uuid").toString());
@@ -1230,7 +1230,7 @@ bool TodoDataStorage::导入从JSON(const QJsonObject &input, bool replaceAll) {
         query.addBindValue(todoObj.value("created_at").toString());
         query.addBindValue(todoObj.value("updated_at").toString());
         query.addBindValue(todoObj.value("synced").toInt());
-        
+
         if (!query.exec()) {
             qWarning() << "导入待办数据失败:" << query.lastError().text();
             return false;

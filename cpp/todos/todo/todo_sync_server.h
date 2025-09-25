@@ -17,7 +17,8 @@
 #include <QList>
 
 #include "../base_sync_server.h"
-#include "todo_item.h"
+
+class TodoItem;
 
 /**
  * @class TodoSyncServer

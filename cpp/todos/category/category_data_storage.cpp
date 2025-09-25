@@ -12,6 +12,7 @@
 
 #include "category_data_storage.h"
 #include "../../foundation/config.h"
+#include "categorie_item.h"
 #include <QJsonObject>
 #include <QSqlError>
 

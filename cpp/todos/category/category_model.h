@@ -16,11 +16,10 @@
 #include <QStringList>
 #include <QVariant>
 
-#include "categorie_item.h"
 #include "category_data_storage.h"
-#include "category_sync_server.h"
 
-class CategoryManager; // 前向声明
+class CategorySyncServer;
+class CategorieItem;
 
 /**
  * @class CategoryModel

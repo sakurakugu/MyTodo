@@ -10,6 +10,12 @@
 #include "todo_manager.h"
 #include "global_state.h"
 #include "user_auth.h"
+#include "../category/category_manager.h" // 类别管理器
+#include "foundation/network_request.h"   // 网络请求
+#include "todo_data_storage.h"            // 数据管理器
+#include "todo_item.h"                    // 待办事项数据结构
+
+#include "todo_sync_server.h"             // 服务器同步管理器
 
 #include <QDateTime>
 

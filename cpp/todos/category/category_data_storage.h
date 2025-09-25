@@ -13,9 +13,9 @@
 #pragma once
 
 #include "../../foundation/database.h"
-#include "categorie_item.h"
 
 class Config;
+class CategorieItem;
 
 /**
  * @class CategoryDataStorage

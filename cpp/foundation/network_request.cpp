@@ -10,7 +10,6 @@
 #include "network_proxy.h"
 
 #include <QCoreApplication>
-#include <QDebug>
 #include <QJsonParseError>
 #include <QNetworkRequest>
 #include <QSslError>
