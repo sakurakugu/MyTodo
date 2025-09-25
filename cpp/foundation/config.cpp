@@ -362,7 +362,6 @@ void Config::findExistingConfigFile() {
         }
     }
 
-    // 如果没有找到现有配置文件，使用默认位置
     qDebug() << "未找到现有配置文件，使用默认位置";
 }
 

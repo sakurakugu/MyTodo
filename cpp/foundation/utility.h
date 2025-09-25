@@ -10,7 +10,6 @@
 
 #include <QDateTime>
 #include <QObject>
-#include <QtQml/qqmlregistration.h>
 
 // 定义DateType概念，限制模板参数为QDate或QDateTime
 template <typename T>

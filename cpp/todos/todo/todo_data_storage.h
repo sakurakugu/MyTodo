@@ -16,14 +16,11 @@
 #include <QJsonObject>
 #include <QObject>
 #include <QString>
-#include <QVariantList>
 #include <QVariantMap>
 #include <memory>
-#include <toml++/toml.hpp>
 #include <vector>
 
 #include "../../foundation/database.h"
-#include "setting.h"
 #include "todo_item.h"
 
 /**
@@ -137,6 +134,5 @@ class TodoDataStorage : public QObject, public IDataExporter {
     bool 创建待办表(); // 创建todos表
 
     // 成员变量
-    Setting &m_setting;   ///< 设置对象引用
     Database &m_database; ///< 数据库管理器引用
 };

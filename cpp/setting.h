@@ -13,7 +13,7 @@
 
 #include "foundation/logger.h"
 
-#include <QJsonValue>
+#include <QVariant>
 #include <QObject>
 
 class Config;

@@ -12,12 +12,8 @@
 #include "category_sync_server.h"
 #include "default_value.h"
 
-#include <QDateTime>
-#include <QDebug>
 #include <QJsonArray>
-#include <QJsonDocument>
 #include <QJsonObject>
-#include <QTimer>
 #include <QUuid>
 
 CategorySyncServer::CategorySyncServer(UserAuth &userAuth, QObject *parent) : BaseSyncServer(userAuth, parent) {

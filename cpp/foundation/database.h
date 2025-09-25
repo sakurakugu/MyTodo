@@ -14,10 +14,8 @@
 #include "default_value.h"
 
 #include <QJsonArray>
-#include <QJsonObject>
 #include <QObject>
 #include <QSqlDatabase>
-#include <QSqlError>
 #include <QSqlQuery>
 #include <QString>
 #include <QStandardPaths>

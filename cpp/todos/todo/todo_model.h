@@ -13,9 +13,7 @@
 #pragma once
 
 #include <QAbstractListModel>
-#include <QObject>
 #include <QVariant>
-#include <QVariantMap>
 
 #include "todo_data_storage.h"
 #include "todo_item.h"

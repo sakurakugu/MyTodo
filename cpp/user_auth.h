@@ -17,15 +17,12 @@
 #include <QString>
 #include <QTimer>
 #include <QUuid>
-#include <memory>
 
 #include "./foundation/network_request.h"
 #include "./foundation/database.h"
-#include "default_value.h"
 
 // 前向声明
 class Setting;
-class Database;
 
 /**
  * @class UserAuth
@@ -137,7 +134,7 @@ class UserAuth : public QObject, public IDataExporter {
     bool m_isRefreshing;             ///< 是否正在刷新令牌
     bool m_firstAuthEmitted = false; ///< 首次认证信号是否已经发出
 
-    static const int TOKEN_REFRESH_THRESHOLD = DefaultValues::令牌刷新间隔; // (秒)
+    static const int TOKEN_REFRESH_THRESHOLD = 3600; // 令牌刷新间隔 (秒)
 
     // 服务器配置
     QString m_authApiEndpoint; ///< 认证API端点

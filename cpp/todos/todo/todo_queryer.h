@@ -12,8 +12,8 @@
 #pragma once
 
 #include "todo_item.h"
+
 #include <QDate>
-#include <QList>
 #include <QObject>
 #include <QString>
 

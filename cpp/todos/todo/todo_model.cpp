@@ -12,8 +12,6 @@
 
 #include "todo_model.h"
 #include "global_state.h"
-#include "todo_manager.h"
-#include <QDebug>
 
 TodoModel::TodoModel(TodoDataStorage &dataStorage, TodoSyncServer &syncServer, TodoQueryer &queryer, QObject *parent)
     : QAbstractListModel(parent), //
@@ -244,7 +242,6 @@ bool TodoModel::更新待办(int index, const QVariantMap &todoData) {
 }
 
 bool TodoModel::标记完成(int index, bool completed) {
-    completed = !completed;
     // 通过过滤后的索引获取实际的任务项
     auto todoItem = 获取过滤后的待办(index);
     QModelIndex modelIndex = 获取内容在待办列表中的索引(todoItem);

@@ -12,10 +12,8 @@
 #pragma once
 
 #include <QJsonArray>
-#include <QJsonObject>
 #include <QObject>
 #include <QStringList>
-#include <QTimer>
 #include <memory>
 #include <vector>
 

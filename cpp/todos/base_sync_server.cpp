@@ -13,7 +13,6 @@
 #include "global_state.h"
 
 #include <QDateTime>
-#include <QDebug>
 
 BaseSyncServer::BaseSyncServer(UserAuth &userAuth, QObject *parent)
     : QObject(parent),                                 // 父对象

@@ -11,8 +11,6 @@
  */
 
 #include "category_model.h"
-#include "category_manager.h"
-#include <QDebug>
 
 CategoryModel::CategoryModel(CategoryDataStorage &dataStorage, CategorySyncServer &syncServer, QObject *parent)
     : QAbstractListModel(parent), //

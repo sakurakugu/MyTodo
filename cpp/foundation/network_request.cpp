@@ -12,11 +12,8 @@
 #include <QCoreApplication>
 #include <QDebug>
 #include <QJsonParseError>
-#include <QNetworkProxy>
-#include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QSslError>
-#include <QTimer>
 #include <QUrl>
 
 /**

@@ -10,28 +10,17 @@
  */
 
 #include "todo_data_storage.h"
-#include "user_auth.h"
 
-#include "foundation/config.h"
 #include <QDateTime>
-#include <QDebug>
-#include <QDir>
-#include <QFile>
-#include <QFileInfo>
 #include <QJsonArray>
-#include <QJsonDocument>
 #include <QJsonObject>
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QUuid>
 #include <QVariant>
-#include <algorithm>
-#include <optional>
-#include <unordered_map>
 
 TodoDataStorage::TodoDataStorage(QObject *parent)
     : QObject(parent),                    // 父对象
-      m_setting(Setting::GetInstance()),  // 设置
       m_database(Database::GetInstance()) // 数据库管理器
 {
     // 初始化TODO表

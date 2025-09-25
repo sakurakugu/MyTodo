@@ -12,13 +12,8 @@
 
 #include "category_data_storage.h"
 #include "../../foundation/config.h"
-#include <QDebug>
-#include <QJsonArray>
 #include <QJsonObject>
-#include <QJsonValue>
 #include <QSqlError>
-#include <QSqlQuery>
-#include <QVariant>
 
 CategoryDataStorage::CategoryDataStorage(QObject *parent)
     : QObject(parent),                    // 父对象

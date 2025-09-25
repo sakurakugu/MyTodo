@@ -10,7 +10,6 @@
  */
 
 #include "todo_queryer.h"
-#include <QDebug>
 
 TodoQueryer::TodoQueryer(QObject *parent)
     : QObject(parent),               //

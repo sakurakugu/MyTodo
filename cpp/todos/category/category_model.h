@@ -13,9 +13,7 @@
 #pragma once
 
 #include <QAbstractListModel>
-#include <QObject>
 #include <QStringList>
-#include <QTimer>
 #include <QVariant>
 
 #include "categorie_item.h"

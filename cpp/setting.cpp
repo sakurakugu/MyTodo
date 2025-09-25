@@ -14,12 +14,6 @@
 #include "foundation/network_proxy.h"
 #include "foundation/network_request.h"
 
-#include <QFile>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonParseError>
-#include <string>
-
 Setting::Setting(QObject *parent)
     : QObject(parent),                 //
       m_logger(Logger::GetInstance()), //

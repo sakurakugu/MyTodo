@@ -14,7 +14,6 @@
 
 #include "../../foundation/database.h"
 #include "categorie_item.h"
-#include <toml++/toml.hpp>
 
 class Config;
 

@@ -8,24 +8,11 @@
  * @change 2025-09-24 03:10:10(UTC+8) 周三
  */
 #include "todo_manager.h"
-#include "../category/category_data_storage.h"
-#include "../category/category_manager.h"
-#include "../category/category_sync_server.h"
-#include "foundation/network_request.h"
 #include "global_state.h"
-#include "todo_queryer.h"
 #include "user_auth.h"
 
 #include <QDateTime>
-#include <QDir>
-#include <QFile>
-#include <QFileInfo>
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QNetworkProxy>
-#include <QProcess>
-#include <QUuid>
+
 
 TodoManager::TodoManager(UserAuth &userAuth, CategoryManager &categoryManager,
                          QObject *parent)

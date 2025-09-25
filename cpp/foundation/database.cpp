@@ -14,16 +14,10 @@
 
 #include <QCoreApplication>
 #include <QDateTime>
-#include <QDebug>
 #include <QFile>
-#include <QJsonArray>
-#include <QJsonDocument>
 #include <QJsonObject>
 #include <QSaveFile>
 #include <QSqlError>
-#include <QSqlQuery>
-#include <QVariant>
-#include <mutex>
 
 Database::Database(QObject *parent) : QObject(parent), m_initialized(false) {
     // 初始化数据库

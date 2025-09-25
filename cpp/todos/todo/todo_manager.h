@@ -11,25 +11,16 @@
 
 #pragma once
 
-#include <QDebug>
-#include <QJsonArray>
-#include <QJsonObject>
-#include <QList>
 #include <QObject>
-#include <QSortFilterProxyModel>
-#include <QVariantMap>
-#include <memory>
-#include <unordered_map>
-#include <vector>
+#include <QVariant>
 
 #include "../category/category_manager.h" // 类别管理器
-#include "foundation/network_request.h"
-#include "setting.h"
-#include "todo_data_storage.h" // 数据管理器
-#include "todo_item.h"
-#include "todo_model.h"       // 数据模型
-#include "todo_queryer.h"     // 筛选管理器
-#include "todo_sync_server.h" // 服务器同步管理器
+#include "foundation/network_request.h"   // 网络请求
+#include "todo_data_storage.h"            // 数据管理器
+#include "todo_item.h"                    // 待办事项数据结构
+#include "todo_model.h"                   // 数据模型
+#include "todo_queryer.h"                 // 筛选管理器
+#include "todo_sync_server.h"             // 服务器同步管理器
 
 class GlobalState; // 前向声明
 
@@ -81,7 +72,7 @@ class TodoManager : public QObject {
                              const QString &deadline = QString(), int recurrenceInterval = 0,      //
                              int recurrenceCount = 0, const QDate &recurrenceStartDate = QDate()); // 添加新的待办事项
     Q_INVOKABLE bool updateTodo(int index, const QString &roleName, const QVariant &value);        // 更新现有待办事项
-    Q_INVOKABLE bool updateTodo();                                                            // 更新现有待办事项（使用全局状态中的选中待办）
+    Q_INVOKABLE bool updateTodo();                                // 更新现有待办事项（使用全局状态中的选中待办）
     Q_INVOKABLE bool markAsRemove(int index, bool remove = true); // 标记待办事项为删除状态
     Q_INVOKABLE bool markAsDone(int index, bool remove = true);   // 标记待办为已完成或未完成
     Q_INVOKABLE bool permanentlyDeleteTodo(int index);            // 删除待办事项

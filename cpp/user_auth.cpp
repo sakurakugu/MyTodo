@@ -10,11 +10,9 @@
  */
 
 #include "user_auth.h"
-#include "foundation/database.h"
 #include "setting.h"
 
 #include <QDateTime>
-#include <QDebug>
 #include <QJsonObject>
 #include <QSqlError>
 #include <QSqlQuery>

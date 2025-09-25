@@ -17,10 +17,9 @@
 #include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
-#include <QSettings>
 #include <QSurfaceFormat>
-#include <QTimer>
 #include <QtQuickControls2/QQuickStyle>
+#include <QDirIterator>
 // Windows 相关头文件
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -32,16 +31,11 @@
 #include "cpp/foundation/utility.h"
 #include "cpp/global_state.h"
 #include "cpp/setting.h"
-#include "cpp/todos/category/category_data_storage.h"
 #include "cpp/todos/category/category_manager.h"
-#include "cpp/todos/category/category_sync_server.h"
 #include "cpp/todos/todo/todo_manager.h"
-#include "cpp/todos/todo/todo_queryer.h"
 #include "cpp/user_auth.h"
 #include "version.h"
 
-#include <QDebug>
-#include <QDirIterator>
 void printResources(const QString &path = ":/") {
     QDirIterator it(path, QDirIterator::Subdirectories);
     while (it.hasNext()) {
@@ -86,9 +80,6 @@ int main(int argc, char *argv[]) {
     QGuiApplication::setApplicationName("MyTodo");              // 设置应用名称（不设置组织名）
     QGuiApplication::setApplicationVersion(APP_VERSION_STRING); // 设置应用版本
 
-    GlobalState &globalState = GlobalState::GetInstance(); // 创建GlobalState实例
-    Setting &setting = Setting::GetInstance();             // 创建Setting实例
-
     UserAuth userAuth;                                  // 获取UserAuth实例
     CategoryManager categoryManager(userAuth);          // 创建CategoryManager实例
     TodoManager todoManager(userAuth, categoryManager); // 创建TodoManager实例
@@ -97,20 +88,18 @@ int main(int argc, char *argv[]) {
     QStringList arguments = app.arguments();
     if (arguments.contains("--autostart")) {
         // 如果是开机自启动，默认设置为小组件模式
-        globalState.setIsDesktopWidget(true);
+        GlobalState::GetInstance().setIsDesktopWidget(true);
     }
 
     QQmlApplicationEngine engine;
 
     // 将类注册到QML上下文
+    engine.rootContext()->setContextProperty("globalState", &GlobalState::GetInstance());
     engine.rootContext()->setContextProperty("utility", &Utility::GetInstance());
-    engine.rootContext()->setContextProperty("setting", &setting);
+    engine.rootContext()->setContextProperty("setting", &Setting::GetInstance());
     engine.rootContext()->setContextProperty("userAuth", &userAuth);
     engine.rootContext()->setContextProperty("categoryManager", &categoryManager);
     engine.rootContext()->setContextProperty("todoManager", &todoManager);
-    engine.rootContext()->setContextProperty("todoQueryer",
-                                             todoManager.queryer()); // TODO:到时候暴露的部分全改到todoManager中
-    engine.rootContext()->setContextProperty("globalState", &globalState);
 
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app, []() { QCoreApplication::exit(-1); },

@@ -12,12 +12,7 @@
 #include "todo_sync_server.h"
 #include "default_value.h"
 
-#include <QDateTime>
-#include <QDebug>
-#include <QJsonArray>
 #include <QJsonDocument>
-#include <QJsonObject>
-#include <QTimer>
 #include <QUuid>
 
 TodoSyncServer::TodoSyncServer(UserAuth &userAuth, QObject *parent)

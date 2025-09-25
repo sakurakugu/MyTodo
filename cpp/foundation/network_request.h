@@ -62,7 +62,7 @@ enum RequestType {
     CreateCategory,  // 创建类别请求
     UpdateCategory,  // 更新类别请求
     DeleteCategory,  // 删除类别请求
-    Other = 99,     // 其他请求
+    Other = 99,      // 其他请求
 };
 } // namespace Network
 

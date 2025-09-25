@@ -15,7 +15,6 @@
 #include <QGuiApplication>
 #include <QPalette>
 #include <QSettings>
-#include <QStandardPaths>
 
 GlobalState::GlobalState(QObject *parent)
     : QObject(parent),                                                  // 初始化父对象
