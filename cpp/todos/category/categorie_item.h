@@ -34,6 +34,10 @@ class CategorieItem {
   public:
     CategorieItem(const CategorieItem &) = delete;
     CategorieItem &operator=(const CategorieItem &) = delete;
+    CategorieItem &operator=(CategorieItem &&other) noexcept;
+    bool operator==(const CategorieItem &other) const;
+    bool operator!=(const CategorieItem &other) const;
+
     explicit CategorieItem();
     CategorieItem(int id,                     ///< 分类唯一标识符
                   const QUuid &uuid,          ///< 分类唯一标识符（UUID）
@@ -71,10 +75,6 @@ class CategorieItem {
     bool isSystemDefault() const noexcept; // 检查是否为系统默认分类
     QString displayName() const noexcept;  // 获取显示名称
     bool canBeDeleted() const noexcept;    // 检查是否可以被删除
-
-    // 比较操作符
-    bool operator==(const CategorieItem &other) const;
-    bool operator!=(const CategorieItem &other) const;
 
   private:
     // 成员变量

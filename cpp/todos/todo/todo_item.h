@@ -36,6 +36,10 @@ class TodoItem {
   public:
     TodoItem(const TodoItem &) = delete;
     TodoItem &operator=(const TodoItem &) = delete;
+    TodoItem &operator=(TodoItem &&other) noexcept;
+    bool operator==(const TodoItem &other) const noexcept;
+    bool operator!=(const TodoItem &other) const noexcept;
+
     explicit TodoItem();
     TodoItem(int id,                           ///< 唯一标识符
              const QUuid &uuid,                ///< 唯一标识符（UUID）
@@ -119,9 +123,7 @@ class TodoItem {
     bool isInRecurrencePeriod(
         const QDate &checkDate = QDate::currentDate()) const noexcept; // 检查指定日期是否在重复周期内
 
-    // 比较操作符
-    bool operator==(const TodoItem &other) const;
-    bool operator!=(const TodoItem &other) const;
+
 
   private:
     // 成员变量

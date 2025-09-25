@@ -169,6 +169,24 @@ bool CategorieItem::canBeDeleted() const noexcept {
 }
 
 /**
+ * @brief 移动赋值运算符
+ * @param other 要移动的CategorieItem对象
+ * @return 当前对象的引用
+ */
+CategorieItem &CategorieItem::operator=(CategorieItem &&other) noexcept {
+    if (this != &other) {
+        m_id = std::move(other.m_id);
+        m_uuid = std::move(other.m_uuid);
+        m_name = std::move(other.m_name);
+        m_userUuid = std::move(other.m_userUuid);
+        m_createdAt = std::move(other.m_createdAt);
+        m_updatedAt = std::move(other.m_updatedAt);
+        m_synced = std::move(other.m_synced);
+    }
+    return *this;
+}
+
+/**
  * @brief 比较两个CategorieItem是否相等
  * @param other 另一个CategorieItem对象
  * @return 如果相等返回true，否则返回false

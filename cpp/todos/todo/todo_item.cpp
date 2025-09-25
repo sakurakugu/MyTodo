@@ -418,11 +418,41 @@ bool TodoItem::isInRecurrencePeriod(const QDate &checkDate) const noexcept {
 }
 
 /**
+ * @brief 移动赋值运算符
+ * @param other 要移动的TodoItem对象
+ * @return 当前对象的引用
+ */
+TodoItem &TodoItem::operator=(TodoItem &&other) noexcept {
+    if (this != &other) {
+        // 移动所有成员变量
+        m_id = std::move(other.m_id);
+        m_uuid = std::move(other.m_uuid);
+        m_userUuid = std::move(other.m_userUuid);
+        m_title = std::move(other.m_title);
+        m_description = std::move(other.m_description);
+        m_category = std::move(other.m_category);
+        m_important = std::move(other.m_important);
+        m_deadline = std::move(other.m_deadline);
+        m_recurrenceInterval = std::move(other.m_recurrenceInterval);
+        m_recurrenceCount = std::move(other.m_recurrenceCount);
+        m_recurrenceStartDate = std::move(other.m_recurrenceStartDate);
+        m_isCompleted = std::move(other.m_isCompleted);
+        m_completedAt = std::move(other.m_completedAt);
+        m_isDeleted = std::move(other.m_isDeleted);
+        m_deletedAt = std::move(other.m_deletedAt);
+        m_createdAt = std::move(other.m_createdAt);
+        m_updatedAt = std::move(other.m_updatedAt);
+        m_synced = std::move(other.m_synced);
+    }
+    return *this;
+}
+
+/**
  * @brief 比较两个TodoItem是否相等
  * @param other 另一个TodoItem对象
  * @return 如果相等返回true，否则返回false
  */
-bool TodoItem::operator==(const TodoItem &other) const {
+bool TodoItem::operator==(const TodoItem &other) const noexcept {
     return m_id == other.m_id &&                                   // 主键ID
            m_uuid == other.m_uuid &&                               // 唯一标识符
            m_userUuid == other.m_userUuid &&                       // 用户ID
@@ -448,6 +478,6 @@ bool TodoItem::operator==(const TodoItem &other) const {
  * @param other 另一个TodoItem对象
  * @return 如果不相等返回true，否则返回false
  */
-bool TodoItem::operator!=(const TodoItem &other) const {
+bool TodoItem::operator!=(const TodoItem &other) const noexcept {
     return !(*this == other);
 }
