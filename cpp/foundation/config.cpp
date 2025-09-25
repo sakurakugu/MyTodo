@@ -15,19 +15,16 @@
 #include <QCoreApplication>
 #include <QDesktopServices>
 #include <QDir>
-#include <QFile>
 #include <QJsonArray>
 #include <QJsonObject>
-#include <QSaveFile>
 #include <QStandardPaths>
 #include <QUrl>
-#include <cmath>
+#include <fstream>
 #include <functional>
 #include <limits>
 
-Config::Config(QObject *parent)
-    : QObject(parent),        //
-      m_config(toml::table{}) //
+Config::Config()
+    : m_config(toml::table{}) //
 {
     findExistingConfigFile();            // 先查找是否有现有配置文件，确定配置位置
     m_filePath = getDefaultConfigPath(); // 设置配置文件路径
@@ -595,11 +592,11 @@ void Config::saveBatch(const QVariantMap &values) {
  * @param excludeKeys 要排除的键列表
  * @return JSON字符串
  */
-std::string Config::exportToJson(const QStringList &excludeKeys) const {
+std::string Config::exportToJson(const std::vector<std::string> &excludeKeys) const {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     try {
-        if (excludeKeys.isEmpty()) {
+        if (excludeKeys.empty()) {
             // 如果没有排除键，直接转换
             std::ostringstream oss;
             oss << toml::json_formatter{m_config};
@@ -609,14 +606,13 @@ std::string Config::exportToJson(const QStringList &excludeKeys) const {
             toml::table filteredConfig;
 
             // 递归复制配置，排除指定键
-            std::function<void(const toml::table &, toml::table &, const QString &)> copyTable =
-                [&](const toml::table &source, toml::table &dest, const QString &prefix) {
+            std::function<void(const toml::table &, toml::table &, const std::string &)> copyTable =
+                [&](const toml::table &source, toml::table &dest, const std::string &prefix) {
                     for (auto &[key, value] : source) {
-                        QString fullKey = prefix.isEmpty() ? QString::fromStdString(std::string(key))
-                                                           : prefix + "/" + QString::fromStdString(std::string(key));
+                        std::string fullKey = prefix.empty() ? std::string(key) : prefix + "/" + std::string(key);
 
                         // 检查是否在排除列表中
-                        if (excludeKeys.contains(fullKey)) {
+                        if (std::find(excludeKeys.begin(), excludeKeys.end(), fullKey) != excludeKeys.end()) {
                             continue;
                         }
 
@@ -649,6 +645,66 @@ std::string Config::exportToJson(const QStringList &excludeKeys) const {
     } catch (const std::exception &e) {
         qCritical() << "导出JSON失败:" << e.what();
         return "{}";
+    }
+}
+
+/**
+ * @brief 导出配置到JSON文件
+ * @param filePath JSON文件路径
+ * @return 操作是否成功
+ */
+bool Config::exportToJsonFile(const std::string &filePath, const std::vector<std::string> &excludeKeys) {
+    std::string jsonString = exportToJson(excludeKeys);
+
+    try {
+        std::ofstream file(filePath, std::ios::binary);
+        if (!file.is_open()) {
+            qCritical() << "保存配置JSON失败，无法打开文件:" << filePath;
+            return false;
+        }
+
+        file << jsonString;
+        file.close();
+
+        if (file.fail()) {
+            qCritical() << "保存配置JSON失败，写入失败:" << filePath;
+            return false;
+        }
+
+        return true;
+    } catch (const std::exception &e) {
+        qCritical() << "保存配置JSON失败:" << filePath << "异常:" << e.what();
+        return false;
+    }
+}
+
+/**
+ * @brief 从JSON文件导入配置
+ * @param filePath JSON文件路径
+ * @param replaceAll 是否替换整个配置（true 替换；false 合并/覆盖键）
+ * @return 操作是否成功
+ */
+bool Config::importFromJsonFile(const std::string &filePath, bool replaceAll) {
+    try {
+        std::ifstream file(filePath, std::ios::binary);
+        if (!file.is_open()) {
+            qCritical() << "无法打开配置JSON文件:" << filePath;
+            return false;
+        }
+
+        // 读取文件内容
+        std::string data((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+        file.close();
+
+        if (data.empty()) {
+            qCritical() << "配置JSON文件为空:" << filePath;
+            return false;
+        }
+
+        return importFromJson(data, replaceAll);
+    } catch (const std::exception &e) {
+        qCritical() << "读取配置JSON文件失败:" << filePath << "异常:" << e.what();
+        return false;
     }
 }
 

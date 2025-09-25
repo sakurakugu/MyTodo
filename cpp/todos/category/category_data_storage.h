@@ -47,7 +47,7 @@ class Config;
  */
 using CategorieList = std::vector<std::unique_ptr<CategorieItem>>;
 
-class CategoryDataStorage : public QObject {
+class CategoryDataStorage : public QObject, public IDataExporter {
     Q_OBJECT
 
   public:
@@ -71,6 +71,9 @@ class CategoryDataStorage : public QObject {
     explicit CategoryDataStorage(QObject *parent = nullptr);
     ~CategoryDataStorage();
 
+    // 数据库初始化
+    bool 初始化类别表(); // 初始化Category表
+
     // 本地存储功能
     bool 加载类别(CategorieList &categorieList);
 
@@ -87,11 +90,18 @@ class CategoryDataStorage : public QObject {
                         ImportSource source = ImportSource::Server,
                         ConflictResolution resolution = ConflictResolution::Merge);
 
+    // IDataExporter接口实现
+    bool 导出到JSON(QJsonObject &output) override;
+    bool 导入从JSON(const QJsonObject &input, bool replaceAll) override;
+
   private:
     // 辅助方法
     ConflictResolution 评估冲突(const CategorieItem *existing, const CategorieItem &incoming,
                                 ConflictResolution resolution) const; // 返回应执行的动作
     int 获取最后插入行ID(QSqlDatabase &db) const;                     // 获取自增ID
+
+    // 数据库操作
+    bool 创建类别表(); // 创建categories表
 
     // 成员变量
     Database &m_database; ///< 数据库管理器引用

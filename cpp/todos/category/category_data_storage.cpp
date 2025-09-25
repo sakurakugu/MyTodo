@@ -24,13 +24,18 @@ CategoryDataStorage::CategoryDataStorage(QObject *parent)
     : QObject(parent),                    // 父对象
       m_database(Database::GetInstance()) // 数据库管理器
 {
-    // 确保数据库已初始化
-    if (!m_database.initializeDatabase()) {
-        qCritical() << "数据库初始化失败";
+    if (!初始化类别表()) {
+        qCritical() << "Category表初始化失败";
     }
+
+    // 注册到数据库导出器
+    m_database.registerDataExporter("categories", this);
 }
 
-CategoryDataStorage::~CategoryDataStorage() {}
+CategoryDataStorage::~CategoryDataStorage() {
+    // 从数据库导出器中注销
+    m_database.unregisterDataExporter("categories");
+}
 
 /**
  * @brief 加载类别
@@ -652,4 +657,147 @@ int CategoryDataStorage::获取最后插入行ID(QSqlDatabase &db) const {
         return idQuery.value(0).toInt();
     }
     return -1;
+}
+
+/**
+ * @brief 初始化Category表
+ * @return 初始化是否成功
+ */
+bool CategoryDataStorage::初始化类别表() {
+    // 确保数据库连接已建立
+    QSqlDatabase db = m_database.getDatabase();
+    if (!db.isOpen()) {
+        qCritical() << "数据库未打开，无法初始化Category表";
+        return false;
+    }
+
+    return 创建类别表();
+}
+
+/**
+ * @brief 创建categories表
+ * @return 创建是否成功
+ */
+bool CategoryDataStorage::创建类别表() {
+    const QString createTableQuery = R"(
+        CREATE TABLE IF NOT EXISTS categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            uuid TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            user_uuid TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            synced INTEGER NOT NULL DEFAULT 1
+        )
+    )";
+
+    QSqlDatabase db = m_database.getDatabase();
+    QSqlQuery query(db);
+    if (!query.exec(createTableQuery)) {
+        qCritical() << "创建categories表失败:" << query.lastError().text();
+        return false;
+    }
+
+    // 创建索引
+    const QStringList indexes = //
+        {"CREATE INDEX IF NOT EXISTS idx_categories_uuid ON categories(uuid)",
+         "CREATE INDEX IF NOT EXISTS idx_categories_user_uuid ON categories(user_uuid)",
+         "CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name)"};
+
+    for (const QString &indexQuery : indexes) {
+        if (!query.exec(indexQuery)) {
+            qWarning() << "创建categories表索引失败:" << query.lastError().text();
+        }
+    }
+
+    qDebug() << "categories表初始化成功";
+    return true;
+}
+
+/**
+ * @brief 导出类别数据到JSON对象
+ */
+bool CategoryDataStorage::导出到JSON(QJsonObject &output) {
+    QSqlDatabase db = m_database.getDatabase();
+    if (!db.isOpen()) {
+        qWarning() << "数据库未打开，无法导出类别数据";
+        return false;
+    }
+
+    QSqlQuery query(db);
+    const QString queryString =
+        "SELECT id, uuid, name, user_uuid, created_at, updated_at, synced FROM categories";
+    
+    if (!query.exec(queryString)) {
+        qWarning() << "查询类别数据失败:" << query.lastError().text();
+        return false;
+    }
+
+    QJsonArray categoriesArray;
+    while (query.next()) {
+        QJsonObject categoryObj;
+        categoryObj["id"] = query.value("id").toInt();
+        categoryObj["uuid"] = query.value("uuid").toString();
+        categoryObj["name"] = query.value("name").toString();
+        categoryObj["user_uuid"] = query.value("user_uuid").toString();
+        categoryObj["created_at"] = query.value("created_at").toString();
+        categoryObj["updated_at"] = query.value("updated_at").toString();
+        categoryObj["synced"] = query.value("synced").toInt();
+        
+        categoriesArray.append(categoryObj);
+    }
+
+    output["categories"] = categoriesArray;
+    return true;
+}
+
+/**
+ * @brief 从JSON对象导入类别数据
+ */
+bool CategoryDataStorage::导入从JSON(const QJsonObject &input, bool replaceAll) {
+    QSqlDatabase db = m_database.getDatabase();
+    if (!db.isOpen()) {
+        qWarning() << "数据库未打开，无法导入类别数据";
+        return false;
+    }
+
+    if (!input.contains("categories") || !input["categories"].isArray()) {
+        // 没有类别数据或格式错误，但不视为错误
+        return true;
+    }
+
+    QSqlQuery query(db);
+
+    // 如果是替换模式，先清空表
+    if (replaceAll) {
+        if (!query.exec("DELETE FROM categories")) {
+            qWarning() << "清空类别表失败:" << query.lastError().text();
+            return false;
+        }
+    }
+
+    // 导入类别数据
+    QJsonArray categoriesArray = input["categories"].toArray();
+    for (const auto &categoryValue : categoriesArray) {
+        QJsonObject categoryObj = categoryValue.toObject();
+        
+        query.prepare("INSERT OR REPLACE INTO categories (id, uuid, name, user_uuid, created_at, updated_at, synced) "
+                      "VALUES (?, ?, ?, ?, ?, ?, ?)");
+        
+        query.addBindValue(categoryObj.value("id").toVariant());
+        query.addBindValue(categoryObj.value("uuid").toString());
+        query.addBindValue(categoryObj.value("name").toString());
+        query.addBindValue(categoryObj.value("user_uuid").toString());
+        query.addBindValue(categoryObj.value("created_at").toString());
+        query.addBindValue(categoryObj.value("updated_at").toString());
+        query.addBindValue(categoryObj.value("synced").toInt());
+        
+        if (!query.exec()) {
+            qWarning() << "导入类别数据失败:" << query.lastError().text();
+            return false;
+        }
+    }
+
+    qInfo() << "成功导入" << categoriesArray.size() << "条类别记录";
+    return true;
 }

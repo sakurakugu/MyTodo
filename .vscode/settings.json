@@ -115,7 +115,15 @@
         "quuid": "cpp",
         "qjsonarray": "cpp",
         "qsortfilterproxymodel": "cpp",
-        "qstring": "cpp"
+        "qstring": "cpp",
+        "qdir": "cpp",
+        "qdesktopservices": "cpp",
+        "qfile": "cpp",
+        "qstandardpaths": "cpp",
+        "qurl": "cpp",
+        "qvariant": "cpp",
+        "qsavefile": "cpp",
+        "qsqlquery": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "search.useIgnoreFiles": false, // 禁用git忽略文件

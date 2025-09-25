@@ -9,13 +9,11 @@
  * @change 2025-09-10 16:24:14(UTC+8) 周三
  */
 #pragma once
-
-#include <QObject>
 #include <toml++/toml.hpp>
+#include <QString>
+#include <QVariant>
 
-class Config : public QObject {
-    Q_OBJECT
-
+class Config {
   public:
     // 单例模式
     static Config &GetInstance() {
@@ -41,9 +39,12 @@ class Config : public QObject {
     void saveBatch(const QVariantMap &values); // 批量保存配置项
 
     // JSON 相关功能
-    std::string exportToJson(const QStringList &excludeKeys = QStringList()) const; // 导出配置到JSON字符串
-    bool importFromJson(const std::string &jsonContent, bool replaceAll);           // 从JSON字符串导入到当前配置
-    bool JsonToToml(const std::string &jsonContent, toml::table *table);            // JSON字符串 转换为 TOML
+    std::string exportToJson(const std::vector<std::string> &excludeKeys = {}) const; // 导出配置到JSON字符串
+    bool importFromJson(const std::string &jsonContent, bool replaceAll);             // 从JSON字符串导入到当前配置
+    bool exportToJsonFile(const std::string &filePath,
+                          const std::vector<std::string> &excludeKeys = {}); // 导出配置到JSON文件
+    bool importFromJsonFile(const std::string &filePath, bool replaceAll);   // 从JSON文件导入到当前配置
+    bool JsonToToml(const std::string &jsonContent, toml::table *table);     // JSON字符串 转换为 TOML
 
     // 配置文件位置切换
     enum class ConfigLocation {
@@ -60,8 +61,8 @@ class Config : public QObject {
     QString getConfigFilePath() const; // 获取配置文件路径
 
   private:
-    explicit Config(QObject *parent = nullptr);
-    ~Config() noexcept override;
+    explicit Config();
+    ~Config() noexcept;
 
     // 辅助方法
     void loadFromFile();                                              // 从文件加载配置

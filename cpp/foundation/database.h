@@ -13,13 +13,44 @@
 
 #include "default_value.h"
 
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QObject>
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QString>
+#include <QStandardPaths>
+#include <QDir>
+#include <map>
 #include <memory>
 #include <mutex>
+
+/**
+ * @brief 数据导入导出接口
+ *
+ * 各个数据管理类（如UserAuth、TodoDataStorage、CategoryDataStorage）
+ * 需要实现此接口以支持统一的导入导出功能
+ */
+class IDataExporter {
+  public:
+    virtual ~IDataExporter() = default;
+
+    /**
+     * @brief 导出数据到JSON对象
+     * @param output 输出的JSON对象，各类将自己的数据填入对应的键
+     * @return 导出是否成功
+     */
+    virtual bool 导出到JSON(QJsonObject &output) = 0;
+
+    /**
+     * @brief 从JSON对象导入数据
+     * @param input 输入的JSON对象
+     * @param replaceAll 是否替换所有数据
+     * @return 导入是否成功
+     */
+    virtual bool 导入从JSON(const QJsonObject &input, bool replaceAll) = 0;
+};
 
 /**
  * @class Database
@@ -79,36 +110,42 @@ class Database : public QObject {
     int getDatabaseVersion() const;  ///< 获取数据库版本
     QString getSqliteVersion();      ///< 查询sqlite版本
 
-    // JSON 相关功能
-    QString exportToJson(const QStringList &excludeKeys = QStringList()) const; // 导出配置到JSON字符串
-    bool importFromJson(const std::string &jsonContent, bool replaceAll);           // 从JSON字符串导入到当前配置
-    bool exportDatabaseToJsonFile(const QString &filePath);                         ///< 导出数据库所有表到JSON文件
-    bool importDatabaseFromJsonFile(const QString &filePath, bool replaceAll);      ///< 从JSON文件导入数据库
+    // 数据导出器管理
+    void registerDataExporter(const QString &name, IDataExporter *exporter); ///< 注册数据导出器
+    void unregisterDataExporter(const QString &name);                        ///< 注销数据导出器
+
+    // 通用的数据库导入导出接口
+    bool exportDataToJson(QJsonObject &output);                         ///< 导出所有表数据到JSON对象
+    bool importDataFromJson(const QJsonObject &input, bool replaceAll); ///< 从JSON对象导入数据到数据库
+
+    bool exportDatabaseToJsonFile(const QString &filePath);                    ///< 导出数据库所有表到JSON文件
+    bool importDatabaseFromJsonFile(const QString &filePath, bool replaceAll); ///< 从JSON文件导入数据库
 
   private:
     explicit Database(QObject *parent = nullptr);
     ~Database();
 
     // 数据库初始化相关
-    bool createTables();          ///< 创建数据库表
-    bool createUsersTable();      ///< 创建users表
-    bool createCategoriesTable(); ///< 创建categories表
-    bool createTodosTable();      ///< 创建todos表
-    bool createVersionTable();    ///< 创建版本信息表
+    bool createVersionTable(); ///< 创建版本信息表
 
     // 数据库迁移
     bool migrateDatabase(int fromVersion, int toVersion); ///< 数据库版本迁移
     bool updateDatabaseVersion(int version);              ///< 更新数据库版本
 
     // 辅助方法
-    bool tableExists(const QString &tableName); ///< 检查表是否存在
+    bool tableExists(const QString &tableName);                               ///< 检查表是否存在
+    QJsonArray exportTable(const QString &table, const QStringList &columns); ///< 导出指定表到JSON数组
 
     // 成员变量
     mutable std::mutex m_mutex; ///< 线程安全保护
     QSqlDatabase m_database;    ///< 数据库连接对象
-    QString m_databasePath;     ///< 数据库文件路径
     QString m_lastError;        ///< 最后一次错误信息
     bool m_initialized;         ///< 是否已初始化
+    QString m_databasePath = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
+                                 .absoluteFilePath(QString(DefaultValues::appName) + ".db"); ///< 数据库文件路径
+
+    // 数据导出器管理
+    std::map<QString, IDataExporter *> m_dataExporters; ///< 注册的数据导出器
 
     static constexpr int DATABASE_VERSION = 1;                                                   ///< 当前数据库版本
     static inline const QString CONNECTION_NAME = QString(DefaultValues::appName) + "_Database"; ///< 数据库连接名称

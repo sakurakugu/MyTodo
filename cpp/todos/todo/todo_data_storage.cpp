@@ -34,13 +34,19 @@ TodoDataStorage::TodoDataStorage(QObject *parent)
       m_setting(Setting::GetInstance()),  // 设置
       m_database(Database::GetInstance()) // 数据库管理器
 {
-    // 确保数据库已初始化
-    if (!m_database.initializeDatabase()) {
-        qCritical() << "数据库初始化失败";
+    // 初始化TODO表
+    if (!初始化待办表()) {
+        qCritical() << "TODO表初始化失败";
     }
+
+    // 注册到数据库导出器
+    m_database.registerDataExporter("todos", this);
 }
 
-TodoDataStorage::~TodoDataStorage() {}
+TodoDataStorage::~TodoDataStorage() {
+    // 从数据库导出器中注销
+    m_database.unregisterDataExporter("todos");
+}
 
 /**
  * @brief 加载待办事项
@@ -1045,4 +1051,203 @@ QList<int> TodoDataStorage::查询待办ID列表(const QueryOptions &opt) {
         indexs << query.value(0).toInt();
     }
     return indexs;
+}
+
+/**
+ * @brief 初始化TODO表
+ * @return 初始化是否成功
+ */
+bool TodoDataStorage::初始化待办表() {
+    // 确保数据库连接已建立
+    QSqlDatabase db = m_database.getDatabase();
+    if (!db.isOpen()) {
+        qCritical() << "数据库未打开，无法初始化TODO表";
+        return false;
+    }
+
+    return 创建待办表();
+}
+
+/**
+ * @brief 创建todos表
+ * @return 创建是否成功
+ */
+bool TodoDataStorage::创建待办表() {
+    const QString createTableQuery = R"(
+        CREATE TABLE IF NOT EXISTS todos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            uuid TEXT UNIQUE NOT NULL,
+            user_uuid TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT,
+            category TEXT NOT NULL DEFAULT '未分类',
+            important INTEGER NOT NULL DEFAULT 0,
+            deadline TEXT,
+            recurrence_interval INTEGER NOT NULL DEFAULT 0,
+            recurrence_count INTEGER NOT NULL DEFAULT 0,
+            recurrence_start_date TEXT,
+            is_completed INTEGER NOT NULL DEFAULT 0,
+            completed_at TEXT,
+            is_deleted INTEGER NOT NULL DEFAULT 0,
+            deleted_at TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            synced INTEGER NOT NULL DEFAULT 1
+        )
+    )";
+
+    QSqlDatabase db = m_database.getDatabase();
+    QSqlQuery query(db);
+    if (!query.exec(createTableQuery)) {
+        qCritical() << "创建todos表失败:" << query.lastError().text();
+        return false;
+    }
+
+    // 创建索引
+    const QStringList indexes = //
+        {"CREATE INDEX IF NOT EXISTS idx_todos_uuid ON todos(uuid)",
+         "CREATE INDEX IF NOT EXISTS idx_todos_user_uuid ON todos(user_uuid)",
+         "CREATE INDEX IF NOT EXISTS idx_todos_category ON todos(category)",
+         "CREATE INDEX IF NOT EXISTS idx_todos_deadline ON todos(deadline)",
+         "CREATE INDEX IF NOT EXISTS idx_todos_completed ON todos(is_completed)",
+         "CREATE INDEX IF NOT EXISTS idx_todos_deleted ON todos(is_deleted)",
+         "CREATE INDEX IF NOT EXISTS idx_todos_synced ON todos(synced)"};
+
+    for (const QString &indexQuery : indexes) {
+        if (!query.exec(indexQuery)) {
+            qWarning() << "创建todos表索引失败:" << query.lastError().text();
+        }
+    }
+
+    qDebug() << "todos表初始化成功";
+    return true;
+}
+
+/**
+ * @brief 导出待办数据到JSON对象
+ */
+bool TodoDataStorage::导出到JSON(QJsonObject &output) {
+    QSqlDatabase db = m_database.getDatabase();
+    if (!db.isOpen()) {
+        qWarning() << "数据库未打开，无法导出待办数据";
+        return false;
+    }
+
+    QSqlQuery query(db);
+    const QString queryString =
+        "SELECT id, uuid, user_uuid, title, description, category, important, deadline, "
+        "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, "
+        "completed_at, is_deleted, deleted_at, created_at, updated_at, synced FROM todos";
+    
+    if (!query.exec(queryString)) {
+        qWarning() << "查询待办数据失败:" << query.lastError().text();
+        return false;
+    }
+
+    QJsonArray todosArray;
+    while (query.next()) {
+        QJsonObject todoObj;
+        todoObj["id"] = query.value("id").toInt();
+        todoObj["uuid"] = query.value("uuid").toString();
+        todoObj["user_uuid"] = query.value("user_uuid").toString();
+        todoObj["title"] = query.value("title").toString();
+        
+        QVariant desc = query.value("description");
+        todoObj["description"] = desc.isNull() ? QJsonValue() : desc.toString();
+        
+        todoObj["category"] = query.value("category").toString();
+        todoObj["important"] = query.value("important").toInt();
+        
+        QVariant deadline = query.value("deadline");
+        todoObj["deadline"] = deadline.isNull() ? QJsonValue() : deadline.toString();
+        
+        todoObj["recurrence_interval"] = query.value("recurrence_interval").toInt();
+        todoObj["recurrence_count"] = query.value("recurrence_count").toInt();
+        
+        QVariant recStartDate = query.value("recurrence_start_date");
+        todoObj["recurrence_start_date"] = recStartDate.isNull() ? QJsonValue() : recStartDate.toString();
+        
+        todoObj["is_completed"] = query.value("is_completed").toInt();
+        
+        QVariant completedAt = query.value("completed_at");
+        todoObj["completed_at"] = completedAt.isNull() ? QJsonValue() : completedAt.toString();
+        
+        todoObj["is_deleted"] = query.value("is_deleted").toInt();
+        
+        QVariant deletedAt = query.value("deleted_at");
+        todoObj["deleted_at"] = deletedAt.isNull() ? QJsonValue() : deletedAt.toString();
+        
+        todoObj["created_at"] = query.value("created_at").toString();
+        todoObj["updated_at"] = query.value("updated_at").toString();
+        todoObj["synced"] = query.value("synced").toInt();
+        
+        todosArray.append(todoObj);
+    }
+
+    output["todos"] = todosArray;
+    return true;
+}
+
+/**
+ * @brief 从JSON对象导入待办数据
+ */
+bool TodoDataStorage::导入从JSON(const QJsonObject &input, bool replaceAll) {
+    QSqlDatabase db = m_database.getDatabase();
+    if (!db.isOpen()) {
+        qWarning() << "数据库未打开，无法导入待办数据";
+        return false;
+    }
+
+    if (!input.contains("todos") || !input["todos"].isArray()) {
+        // 没有待办数据或格式错误，但不视为错误
+        return true;
+    }
+
+    QSqlQuery query(db);
+
+    // 如果是替换模式，先清空表
+    if (replaceAll) {
+        if (!query.exec("DELETE FROM todos")) {
+            qWarning() << "清空待办表失败:" << query.lastError().text();
+            return false;
+        }
+    }
+
+    // 导入待办数据
+    QJsonArray todosArray = input["todos"].toArray();
+    for (const auto &todoValue : todosArray) {
+        QJsonObject todoObj = todoValue.toObject();
+        
+        query.prepare(
+            "INSERT OR REPLACE INTO todos (id, uuid, user_uuid, title, description, category, important, deadline, "
+            "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, is_deleted, "
+            "deleted_at, created_at, updated_at, synced) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+        
+        query.addBindValue(todoObj.value("id").toVariant());
+        query.addBindValue(todoObj.value("uuid").toString());
+        query.addBindValue(todoObj.value("user_uuid").toString());
+        query.addBindValue(todoObj.value("title").toString());
+        query.addBindValue(todoObj.value("description").toVariant());
+        query.addBindValue(todoObj.value("category").toString());
+        query.addBindValue(todoObj.value("important").toInt());
+        query.addBindValue(todoObj.value("deadline").toVariant());
+        query.addBindValue(todoObj.value("recurrence_interval").toInt());
+        query.addBindValue(todoObj.value("recurrence_count").toInt());
+        query.addBindValue(todoObj.value("recurrence_start_date").toVariant());
+        query.addBindValue(todoObj.value("is_completed").toInt());
+        query.addBindValue(todoObj.value("completed_at").toVariant());
+        query.addBindValue(todoObj.value("is_deleted").toInt());
+        query.addBindValue(todoObj.value("deleted_at").toVariant());
+        query.addBindValue(todoObj.value("created_at").toString());
+        query.addBindValue(todoObj.value("updated_at").toString());
+        query.addBindValue(todoObj.value("synced").toInt());
+        
+        if (!query.exec()) {
+            qWarning() << "导入待办数据失败:" << query.lastError().text();
+            return false;
+        }
+    }
+
+    qInfo() << "成功导入" << todosArray.size() << "条待办记录";
+    return true;
 }

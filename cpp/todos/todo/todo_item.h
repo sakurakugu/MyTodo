@@ -25,10 +25,7 @@
  * - 状态信息：当前状态、创建时间、更新时间
  * - 同步信息：是否已与服务器同步
  *
- * 该类继承自QObject，支持Qt的属性系统和信号槽机制，
- * 可以直接在QML中使用，实现数据绑定和自动更新UI。
- *
- * @note 所有属性都有对应的getter、setter方法和change信号
+ * @note 所有属性都有对应的getter、setter方法
  * @see TodoManager
  */
 class TodoItem {

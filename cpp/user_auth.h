@@ -20,6 +20,7 @@
 #include <memory>
 
 #include "./foundation/network_request.h"
+#include "./foundation/database.h"
 #include "default_value.h"
 
 // 前向声明
@@ -48,7 +49,7 @@ class Database;
  * @note 该类是线程安全的，所有网络操作都通过NetworkRequest处理
  * @see NetworkRequest, Setting
  */
-class UserAuth : public QObject {
+class UserAuth : public QObject, public IDataExporter {
     Q_OBJECT
     Q_PROPERTY(QString username READ getUsername NOTIFY usernameChanged)
     Q_PROPERTY(QString email READ getEmail NOTIFY emailChanged)
@@ -68,6 +69,13 @@ class UserAuth : public QObject {
     QString getUsername() const; // 获取用户名
     QString getEmail() const;    // 获取邮箱
     QUuid getUuid() const;       // 获取用户UUID
+
+    // 数据库初始化相关
+    bool 初始化用户表();
+
+    // IDataExporter接口实现
+    bool 导出到JSON(QJsonObject &output) override;
+    bool 导入从JSON(const QJsonObject &input, bool replaceAll) override;
 
   signals:
     void usernameChanged();                        // 用户名变化信号
@@ -108,6 +116,9 @@ class UserAuth : public QObject {
     // 令牌管理
     void 刷新访问令牌();               // 刷新访问令牌
     bool 访问令牌是否即将过期() const; // 检查令牌是否即将过期
+
+    // 数据库操作
+    bool 创建用户表();
 
     // 成员变量
     NetworkRequest &m_networkRequest; ///< 网络管理器引用

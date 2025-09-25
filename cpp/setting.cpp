@@ -15,7 +15,9 @@
 #include "foundation/network_request.h"
 
 #include <QFile>
-#include <QSaveFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonParseError>
 #include <string>
 
 Setting::Setting(QObject *parent)
@@ -66,31 +68,12 @@ QString Setting::getConfigFilePath() const {
 }
 
 bool Setting::exportConfigToJsonFile(const QString &filePath) {
-    QStringList excludeKeys;
-    excludeKeys << "proxy";
-    std::string jsonString = m_config.exportToJson(excludeKeys);
-    QSaveFile out(filePath);
-    if (!out.open(QIODevice::WriteOnly)) {
-        qCritical() << "保存配置JSON失败:" << filePath << out.errorString();
-        return false;
-    }
-    out.write(QByteArray::fromStdString(jsonString));
-    if (!out.commit()) {
-        qCritical() << "提交保存配置JSON失败:" << filePath << out.errorString();
-        return false;
-    }
-    return true;
+    std::vector<std::string> excludeKeys = {"proxy"};
+    return m_config.exportToJsonFile(filePath.toStdString(), excludeKeys);
 }
 
 bool Setting::importConfigFromJsonFile(const QString &filePath, bool replaceAll) {
-    QFile f(filePath);
-    if (!f.open(QIODevice::ReadOnly)) {
-        qCritical() << "无法打开配置JSON文件:" << filePath << f.errorString();
-        return false;
-    }
-    QByteArray data = f.readAll();
-    f.close();
-    return m_config.importFromJson(data.toStdString(), replaceAll);
+    return m_config.importFromJsonFile(filePath.toStdString(), replaceAll);
 }
 
 bool Setting::exportDatabaseToJsonFile(const QString &filePath) {

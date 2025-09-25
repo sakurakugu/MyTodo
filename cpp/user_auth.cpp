@@ -16,6 +16,8 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QJsonObject>
+#include <QSqlError>
+#include <QSqlQuery>
 
 UserAuth::UserAuth(QObject *parent)
     : QObject(parent),                                 //
@@ -26,9 +28,9 @@ UserAuth::UserAuth(QObject *parent)
       m_tokenExpiryTime(0),                            //
       m_isRefreshing(false)                            //
 {
-    // 确保数据库已初始化
-    if (!m_database.initializeDatabase()) {
-        qCritical() << "数据库未初始化";
+    // 初始化用户表
+    if (!初始化用户表()) {
+        qCritical() << "用户表初始化失败";
     }
 
     // 连接网络请求信号
@@ -47,6 +49,9 @@ UserAuth::UserAuth(QObject *parent)
 
     // 初始化服务器配置
     加载数据();
+
+    // 注册到数据库导出器
+    m_database.registerDataExporter("users", this);
 }
 
 void UserAuth::加载数据() {
@@ -83,6 +88,9 @@ void UserAuth::加载数据() {
 
 UserAuth::~UserAuth() {
     停止令牌过期计时器();
+    
+    // 从数据库导出器中注销
+    m_database.unregisterDataExporter("users");
 }
 
 /**
@@ -489,4 +497,120 @@ void UserAuth::停止令牌过期计时器() {
 
 void UserAuth::onBaseUrlChanged() {
     logout();
+}
+
+/**
+ * @brief 初始化用户表
+ * @return 初始化是否成功
+ */
+bool UserAuth::初始化用户表() {
+    // 确保数据库连接已建立
+    QSqlDatabase db = m_database.getDatabase();
+    if (!db.isOpen()) {
+        qCritical() << "数据库未打开，无法初始化用户表";
+        return false;
+    }
+
+    return 创建用户表();
+}
+
+/**
+ * @brief 创建用户表
+ * @return 创建是否成功
+ */
+bool UserAuth::创建用户表() {
+    const QString createTableQuery = R"(
+        CREATE TABLE IF NOT EXISTS users (
+            uuid TEXT PRIMARY KEY NOT NULL,
+            username TEXT NOT NULL,
+            email TEXT NOT NULL,
+            refreshToken TEXT NOT NULL
+        )
+    )";
+
+    QSqlDatabase db = m_database.getDatabase();
+    QSqlQuery query(db);
+    if (!query.exec(createTableQuery)) {
+        qCritical() << "创建用户表失败:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "用户表初始化成功";
+    return true;
+}
+
+/**
+ * @brief 导出用户数据到JSON对象
+ */
+bool UserAuth::导出到JSON(QJsonObject &output) {
+    QSqlDatabase db = m_database.getDatabase();
+    if (!db.isOpen()) {
+        qWarning() << "数据库未打开，无法导出用户数据";
+        return false;
+    }
+
+    QSqlQuery query(db);
+    query.prepare("SELECT uuid, username, email FROM users");
+    
+    if (!query.exec()) {
+        qWarning() << "查询用户数据失败:" << query.lastError().text();
+        return false;
+    }
+
+    QJsonArray usersArray;
+    while (query.next()) {
+        QJsonObject userObj;
+        userObj["uuid"] = query.value("uuid").toString();
+        userObj["username"] = query.value("username").toString();
+        userObj["email"] = query.value("email").toString();
+        usersArray.append(userObj);
+    }
+
+    output["users"] = usersArray;
+    return true;
+}
+
+/**
+ * @brief 从JSON对象导入用户数据
+ */
+bool UserAuth::导入从JSON(const QJsonObject &input, bool replaceAll) {
+    QSqlDatabase db = m_database.getDatabase();
+    if (!db.isOpen()) {
+        qWarning() << "数据库未打开，无法导入用户数据";
+        return false;
+    }
+
+    if (!input.contains("users") || !input["users"].isArray()) {
+        // 没有用户数据或格式错误，但不视为错误
+        return true;
+    }
+
+    QSqlQuery query(db);
+
+    // 如果是替换模式，先清空表
+    if (replaceAll) {
+        if (!query.exec("DELETE FROM users")) {
+            qWarning() << "清空用户表失败:" << query.lastError().text();
+            return false;
+        }
+    }
+
+    // 导入用户数据
+    QJsonArray usersArray = input["users"].toArray();
+    for (const auto &userValue : usersArray) {
+        QJsonObject userObj = userValue.toObject();
+        
+        query.prepare("INSERT OR REPLACE INTO users (uuid, username, email) VALUES (?, ?, ?, ?)");
+        query.addBindValue(userObj.value("uuid").toString());
+        query.addBindValue(userObj.value("username").toString());
+        query.addBindValue(userObj.value("email").toString());
+        
+        if (!query.exec()) {
+            qWarning() << "导入用户数据失败:" << query.lastError().text();
+            return false;
+        }
+    }
+
+    qInfo() << "成功导入" << usersArray.size() << "条用户记录";
+    return true;
 }

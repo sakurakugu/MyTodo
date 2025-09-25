@@ -51,7 +51,7 @@
  * @note 该类是线程安全的，所有文件操作都有异常处理
  * @see TodoItem, Setting
  */
-class TodoDataStorage : public QObject {
+class TodoDataStorage : public QObject, public IDataExporter {
     Q_OBJECT
 
   public:
@@ -94,6 +94,9 @@ class TodoDataStorage : public QObject {
     explicit TodoDataStorage(QObject *parent = nullptr);
     ~TodoDataStorage();
 
+    // 数据库初始化
+    bool 初始化待办表(); // 初始化TODO表
+
     // 本地存储功能
     bool 加载待办(TodoList &todos);
 
@@ -120,11 +123,18 @@ class TodoDataStorage : public QObject {
     // 数据库侧过滤 + 排序查询（仅返回符合条件的 id 列表，后续由上层映射为对象）
     QList<int> 查询待办ID列表(const QueryOptions &options);
 
+    // IDataExporter接口实现
+    bool 导出到JSON(QJsonObject &output) override;
+    bool 导入从JSON(const QJsonObject &input, bool replaceAll) override;
+
   private:
     ConflictResolution 评估冲突(const TodoItem *existing, const TodoItem &incoming,
                                 ConflictResolution resolution) const; // 返回应执行的动作
     int 获取最后插入行ID(QSqlDatabase &db) const;                     // 获取自增ID
     static QString 构建SQL排序语句(int sortType, bool descending);    // 构建查询SQL
+
+    // 数据库操作
+    bool 创建待办表(); // 创建todos表
 
     // 成员变量
     Setting &m_setting;   ///< 设置对象引用
