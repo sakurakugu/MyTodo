@@ -221,12 +221,13 @@ bool TodoModel::更新待办(int index, const QVariantMap &todoData) {
     QModelIndex modelIndex = 获取内容在待办列表中的索引(todoItem);
 
     TodoItem *item = m_todos[modelIndex.row()].get();
-    QVector<int> changedRoles;
+    QVector<int> changedRoles; // TODO: 计算实际更改的角色
 
     try {
         beginResetModel();
         m_dataManager.更新待办(m_todos, item->uuid(), todoData);
         需要重新筛选();
+        // TODO: 这里是要过滤后的索引还是过滤前的，到时候都试一下
         emit dataChanged(modelIndex, modelIndex, changedRoles);
         endResetModel();
         与服务器同步();

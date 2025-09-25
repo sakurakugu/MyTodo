@@ -63,6 +63,7 @@ class GlobalState; // 前向声明
  */
 class TodoManager : public QObject {
     Q_OBJECT
+    Q_PROPERTY(TodoQueryer *queryer READ queryer CONSTANT)
     Q_PROPERTY(TodoModel *todoModel READ todoModel CONSTANT)
 
   public:
@@ -80,6 +81,7 @@ class TodoManager : public QObject {
                              const QString &deadline = QString(), int recurrenceInterval = 0,      //
                              int recurrenceCount = 0, const QDate &recurrenceStartDate = QDate()); // 添加新的待办事项
     Q_INVOKABLE bool updateTodo(int index, const QString &roleName, const QVariant &value);        // 更新现有待办事项
+    Q_INVOKABLE bool updateTodo();                                                            // 更新现有待办事项（使用全局状态中的选中待办）
     Q_INVOKABLE bool markAsRemove(int index, bool remove = true); // 标记待办事项为删除状态
     Q_INVOKABLE bool markAsDone(int index, bool remove = true);   // 标记待办为已完成或未完成
     Q_INVOKABLE bool permanentlyDeleteTodo(int index);            // 删除待办事项

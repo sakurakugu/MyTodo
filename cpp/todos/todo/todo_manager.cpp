@@ -79,6 +79,25 @@ bool TodoManager::updateTodo(int index, const QString &roleName, const QVariant 
 }
 
 /**
+ * @brief 更新现有待办事项（使用全局状态中的选中待办）
+ * @return 更新是否成功
+ */
+bool TodoManager::updateTodo() {
+    const QVariant selectedTodo = m_globalState.selectedTodo();
+    if (!selectedTodo.isValid()) {
+        return false;
+    }
+
+    const QVariantMap todoMap = selectedTodo.toMap();
+    const int index = todoMap.value("index", -1).toInt();
+    if (index < 0 || index >= m_todoModel->rowCount()) {
+        return false;
+    }
+
+    return m_todoModel->更新待办(index, std::move(todoMap));
+}
+
+/**
  * @brief 删除或从回收站恢复待办事项
  * @param index 待删除事项的索引
  * @return 操作是否成功

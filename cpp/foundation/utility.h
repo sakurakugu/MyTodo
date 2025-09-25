@@ -32,7 +32,7 @@ class Utility : public QObject {
     Utility(Utility &&) = delete;
     Utility &operator=(Utility &&) = delete;
 
-    Q_INVOKABLE QString formatDateTime(const QDateTime &dt) const;
+    Q_INVOKABLE QString formatDateTime(const QVariant &dateTime) const; // 格式化日期时间
     template <typename DateType> DateType nullTime() const noexcept;                 // 获取空时间
     template <typename DateType> bool isNullTime(const DateType &dt) const noexcept; // 检查时间是否为空
     template <typename DateType> void setNullTime(DateType &dt) const noexcept;      // 设置时间为空

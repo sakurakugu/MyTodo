@@ -71,7 +71,7 @@ Item {
             visible: root.isFilterMode
             height: visible ? implicitHeight : 0  // 解决不显示时的空白高度问题
             onTriggered: {
-                todoQueryer.currentCategory = "";
+                todoManager.queryer.currentCategory = "";
             }
             contentItem: Rectangle {
                 anchors.fill: parent
@@ -110,7 +110,7 @@ Item {
                 onTriggered: {
                     if (!root.categoryMultiSelectMode) {
                         if (root.isFilterMode) {
-                            todoQueryer.currentCategory = modelData;
+                            todoManager.queryer.currentCategory = modelData;
                         } else {
                             if (globalState.selectedTodo && globalState.selectedTodo.index !== null) {
                                 todoManager.updateTodo(globalState.selectedTodo.index, "category", modelData);
@@ -172,7 +172,7 @@ Item {
                                 }
                             } else {
                                 if (root.isFilterMode) {
-                                    todoQueryer.currentCategory = modelData;
+                                    todoManager.queryer.currentCategory = modelData;
                                 } else {
                                     if (globalState.selectedTodo && globalState.selectedTodo.index !== null) {
                                         todoManager.updateTodo(globalState.selectedTodo.index, "category", modelData);

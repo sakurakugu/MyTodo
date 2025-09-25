@@ -28,7 +28,15 @@ Utility::~Utility() noexcept {}
  * @param dt 输入的日期时间对象
  * @return 格式化后的字符串表示
  */
-QString Utility::formatDateTime(const QDateTime &dt) const {
+QString Utility::formatDateTime(const QVariant &dateTime) const {
+    // 确保输入是有效的QDateTime
+    QDateTime dt;
+    if (!dateTime.canConvert<QDateTime>()) {
+        return "";
+    } else {
+        dt = dateTime.toDateTime();
+    }
+    
     if (!dt.isValid()) {
         return "";
     }

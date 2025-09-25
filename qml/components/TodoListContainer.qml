@@ -113,9 +113,11 @@ ListView {
             globalState.refreshing = false;
             // 使用动画平滑重置下拉距离
             pullDistanceAnimation.start();
-            // 强制刷新ListView以确保显示最新数据
-            root.model = null;
-            root.model = todoManager.todoModel;
+            if (result === 0) {  // 成功
+                // 强制刷新ListView以确保显示最新数据
+                root.model = null;
+                root.model = todoManager.todoModel;
+            }
         }
     }
 
@@ -156,6 +158,14 @@ ListView {
                             multiSelectMode = false;
                         }
                     } else {
+                        // 如果 index 不同，保存当前选中待办的更改
+                        // if (globalState.selectedTodo && globalState.selectedTodo.index !== null) {
+                        //     console.info(index, globalState.selectedTodo.index);
+                        //     if (globalState.selectedTodo.index !== index) {
+                        //         console.info("切换选中待办，保存当前选中待办的更改");
+                        //         todoManager.updateTodo(); // 保存当前选中待办的更改
+                        //     }
+                        // }
                         globalState.selectedTodo = {
                             index: index,
                             uuid: model.uuid,
@@ -174,10 +184,7 @@ ListView {
                             createdAt: model.createdAt,
                             updatedAt: model.updatedAt
                         };
-                        console.info("选中待办项：");
-                        console.info(index);
-                        console.info(globalState.selectedTodo.index);
-                        console.info(globalState.selectedTodo.title);
+                        console.info("选中待办项：index =", index, ", title =", model.title);
                         // 普通模式下切换添加任务窗口显示状态
                         // 如果点击的是同一个待办项，则切换isShowAddTask状态
                         if (globalState.isDesktopWidget) {
@@ -250,7 +257,7 @@ ListView {
 
                             // 待办标题
                             Label {
-                                text: model.title
+                                text: model.title || ""
                                 font.strikeout: model.isCompleted || false
                                 color: (model.isCompleted || false) ? ThemeManager.secondaryTextColor : ThemeManager.textColor
                                 Layout.fillWidth: true
@@ -278,7 +285,7 @@ ListView {
                             }
                             // 部分内容
                             Label {
-                                text: model.description
+                                text: model.description || ""
                                 font.pixelSize: 12
                                 color: ThemeManager.secondaryTextColor
                                 Layout.fillWidth: true
@@ -382,7 +389,7 @@ ListView {
                     itemMouseArea.enabled = false; // 先禁用以防多次点
 
                     // 检查是否在回收站中
-                    if (todoQueryer.currentFilter === "recycle") {
+                    if (todoManager.queryer.currentFilter === "recycle") {
                         // 在回收站中，弹出确认弹窗进行硬删除
                         confirmDeleteDialog.selectedIndices = [index];
                         confirmDeleteDialog.open();
@@ -586,7 +593,7 @@ ListView {
                 fontSize: 12
                 onClicked: {
                     // 检查是否在回收站中
-                    if (todoQueryer.currentFilter === "recycle") {
+                    if (todoManager.queryer.currentFilter === "recycle") {
                         // 在回收站中，弹出确认弹窗进行硬删除
                         confirmDeleteDialog.selectedIndices = selectedItems.slice();
                         confirmDeleteDialog.open();
