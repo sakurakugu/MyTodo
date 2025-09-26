@@ -252,7 +252,6 @@ void TodoSyncServer::pushBatchToServer(const QList<TodoItem *> &batch) {
         QJsonArray jsonArray;
         for (TodoItem *item : std::as_const(batch)) {
             QJsonObject obj;
-            obj["id"] = item->id();
             obj["uuid"] = item->uuid().toString(QUuid::WithoutBraces);
             obj["user_uuid"] = item->userUuid().toString(QUuid::WithoutBraces);
             obj["title"] = item->title();
@@ -269,6 +268,7 @@ void TodoSyncServer::pushBatchToServer(const QList<TodoItem *> &batch) {
             obj["deleted_at"] = item->deletedAt().toString(Qt::ISODate);
             obj["created_at"] = item->createdAt().toString(Qt::ISODate);
             obj["updated_at"] = item->updatedAt().toString(Qt::ISODate);
+            obj["synced"] = item->synced();
 
             jsonArray.append(obj);
         }
@@ -386,32 +386,57 @@ void TodoSyncServer::handlePushChangesSuccess(const QJsonObject &response) {
 
     // 验证服务器响应
     bool shouldMarkAsSynced = true;
-    if (response.contains("summary")) {
-        QJsonObject summary = response["summary"].toObject();
-        int created = summary["created"].toInt();
-        int updated = summary["updated"].toInt();
-        int errors = summary["errors"].toArray().size();
 
-        qInfo() << QString("服务器处理结果: 创建=%1, 更新=%2, 错误=%3").arg(created).arg(updated).arg(errors);
-
-        // 如果有错误，记录详细信息
-        if (errors > 0) {
-            QJsonArray errorArray = summary["errors"].toArray();
-            for (const auto &errorValue : errorArray) {
-                QJsonObject error = errorValue.toObject();
-                qWarning()
-                    << QString("项目 %1 处理失败: %2").arg(error["index"].toInt()).arg(error["error"].toString());
-            }
-            shouldMarkAsSynced = false;
-            qWarning() << "由于服务器处理错误，不标记项目为已同步";
-        }
+    QJsonObject summary = response["summary"].toObject();
+    int created = summary.value("created").toInt();
+    int updated = summary.value("updated").toInt();
+    // 新结构: conflicts, error_count, conflict_details
+    int conflicts = summary.contains("conflicts") ? summary.value("conflicts").toInt() : 0;
+    int errorCount = 0;
+    if (summary.contains("error_count")) {
+        errorCount = summary.value("error_count").toInt();
     } else {
-        // 兼容旧的响应格式
-        qWarning() << "服务器响应格式不标准，假设操作成功";
-        if (response.contains("updated_count")) {
-            int updatedCount = response["updated_count"].toInt();
-            qDebug() << "已更新" << updatedCount << "个待办事项";
+        // 兼容旧结构: 通过 errors 数组大小统计
+        errorCount = summary.value("errors").toArray().size();
+    }
+
+    qInfo() << QString("服务器处理结果: 创建=%1, 更新=%2, 冲突=%3, 错误=%4")
+                   .arg(created)
+                   .arg(updated)
+                   .arg(conflicts)
+                   .arg(errorCount);
+
+    // 记录冲突详情（如果有）
+    if (conflicts > 0) {
+        QJsonArray conflictArray = summary.value("conflict_details").toArray();
+        int idx = 0;
+        for (const auto &cVal : conflictArray) {
+            QJsonObject cObj = cVal.toObject();
+            qWarning() << QString("冲突 %1: index=%2, reason=%3, server_version=%4")
+                              .arg(++idx)
+                              .arg(cObj.value("index").toInt())
+                              .arg(cObj.value("reason").toString())
+                              .arg(QString::fromUtf8(QJsonDocument(cObj.value("server_item").toObject()).toJson(QJsonDocument::Compact)));
         }
+    }
+
+    // 如果有错误，记录详细信息
+    if (errorCount > 0) {
+        QJsonArray errorArray = summary.value("errors").toArray();
+        int idx = 0;
+        for (const auto &errorValue : errorArray) {
+            QJsonObject error = errorValue.toObject();
+            qWarning() << QString("错误 %1: 项目序号=%2, 描述=%3")
+                              .arg(++idx)
+                              .arg(error.value("index").toInt())
+                              .arg(error.value("error").toString());
+        }
+    }
+
+    if (conflicts > 0 || errorCount > 0) {
+        shouldMarkAsSynced = false;
+        qWarning() << "由于存在" << (conflicts > 0 ? "冲突" : "") << ((conflicts > 0 && errorCount > 0) ? "和" : "")
+                   << (errorCount > 0 ? "错误" : "") << "，不标记项目为已同步";
     }
 
     // 只有在验证通过时才标记当前批次的项目为已同步
@@ -499,7 +524,7 @@ void TodoSyncServer::pushSingleItem(TodoItem *item) {
     if (item->id() > 0) {
         // 已存在的项目，使用PATCH更新
         config.method = "PATCH";
-        itemData["id"] = item->id();
+        itemData["uuid"] = item->uuid().toString(QUuid::WithoutBraces);
         qInfo() << "使用PATCH方法更新已存在项目，ID:" << item->id();
     } else {
         // 新项目，使用POST创建

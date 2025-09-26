@@ -316,7 +316,7 @@ void UserAuth::onAuthTokenExpired() {
 }
 
 void UserAuth::处理登录成功(const QJsonObject &response) {
-    // 验证响应中包含必要的字段
+    // 验证响应中包含必要的字段（允许 user.email 缺失）
     if (!response.contains("access_token") || !response.contains("refresh_token") || !response.contains("user")) {
         emit loginFailed("服务器响应缺少必要字段");
         return;
@@ -327,9 +327,23 @@ void UserAuth::处理登录成功(const QJsonObject &response) {
     m_refreshToken = response["refresh_token"].toString();
 
     QJsonObject userObj = response["user"].toObject();
-    m_username = userObj["username"].toString();
+    m_username = userObj.value("username").toString();
+    if (m_username.isEmpty()) {
+        emit loginFailed("服务器响应缺少用户名");
+        return;
+    }
+
+    // email 允许为空
+    if (!userObj.contains("email")) {
+        qWarning() << "登录响应中缺少 email 字段，使用空字符串";
+    }
     m_email = userObj.value("email").toString();
     m_uuid = QUuid::fromString(userObj.value("uuid").toString());
+
+    if (m_uuid.isNull()) {
+        emit loginFailed("服务器响应缺少有效的用户UUID");
+        return;
+    }
 
     // 设置令牌过期时间
     if (response.contains("expires_in")) {
@@ -337,16 +351,12 @@ void UserAuth::处理登录成功(const QJsonObject &response) {
         m_tokenExpiryTime = QDateTime::currentSecsSinceEpoch() + expiresIn;
     }
 
-    // 设置网络管理器的认证令牌
     m_networkRequest.setAuthToken(m_accessToken);
-
     开启令牌过期计时器();
-
     保存凭据();
 
-    qDebug() << "用户" << m_username << "登录成功";
+    qDebug() << "用户" << m_username << "登录成功 (email=" << m_email << ")";
 
-    // 发出信号
     emit isLoggedInChanged();
     emit loginSuccessful(m_username);
     是否发送首次认证信号();

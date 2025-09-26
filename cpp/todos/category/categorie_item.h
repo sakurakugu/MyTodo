@@ -42,8 +42,8 @@ class CategorieItem {
                   const QUuid &userUuid,      ///< 用户UUID
                   const QDateTime &createdAt, ///< 创建时间
                   const QDateTime &updatedAt, ///< 更新时间
-                  int synced                  ///< 是否已与服务器同步（是否要上传）
-                                              ///< 0表示已同步，1表示插入，2表示更新，3表示删除
+                  int synced                  ///< 是否已与服务器同步
+                  ///< 0表示已同步，1表示插入，2表示更新，3表示删除
     );
 
     int id() const noexcept { return m_id; } // 获取ID

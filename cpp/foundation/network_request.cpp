@@ -226,17 +226,35 @@ void NetworkRequest::onReplyFinished() {
 
             // 如果是401错误，可能是认证问题
             if (httpStatus == 401) {
-                qWarning() << "认证失败，可能需要重新登录";
-                emit authTokenExpired();
-            }
-            // 如果是400错误，检查是否是认证相关
-            else if (httpStatus == 400) {
-                QByteArray responseBody = reply->readAll();
-                QString responseText = QString::fromUtf8(responseBody);
-                if (responseText.contains("认证") || responseText.contains("令牌") || responseText.contains("token")) {
-                    qWarning() << "400错误可能与认证相关:" << responseText;
+                // 尝试解析响应体以确认错误码
+                QByteArray body = reply->readAll();
+                QJsonParseError perr; QJsonDocument pdoc = QJsonDocument::fromJson(body, &perr);
+                if (perr.error == QJsonParseError::NoError && pdoc.isObject()) {
+                    QJsonObject o = pdoc.object();
+                    QString code;
+                    if (o.contains("error")) {
+                        if (o.value("error").isObject()) {
+                            code = o.value("error").toObject().value("code").toString();
+                        } else if (o.value("error").isString()) {
+                            code = o.value("error").toString();
+                        }
+                    }
+                    if (code.compare("UNAUTHORIZED", Qt::CaseInsensitive) == 0 ||
+                        code.compare("AUTHENTICATION_ERROR", Qt::CaseInsensitive) == 0) {
+                        qWarning() << "认证失败(标准错误码):" << code;
+                        emit authTokenExpired();
+                    } else {
+                        qWarning() << "401返回但未识别标准认证错误码，仍触发认证失效";
+                        emit authTokenExpired();
+                    }
+                } else {
+                    qWarning() << "401且响应非JSON，触发认证失效";
                     emit authTokenExpired();
                 }
+            }
+            // 如果是400错误，这里不再做中文/关键词匹配，保持业务语义清晰
+            else if (httpStatus == 400) {
+                // 可选：若未来需要根据 error.code 精细化处理，可在此添加解析逻辑
             }
 
             // 检查是否需要重试
@@ -460,7 +478,7 @@ QNetworkRequest NetworkRequest::createNetworkRequest(const RequestConfig &config
 void NetworkRequest::setupDefaultHeaders(QNetworkRequest &request) const {
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     // TODO: 应用名 / 版本 (平台)
-    request.setRawHeader("User-Agent", "MyTodoApp/1.0 (Qt)");
+    request.setRawHeader("User-Agent", "MyTodoApp/v1.0 (Qt)");
     request.setRawHeader("Accept", "application/json");
     request.setRawHeader("Origin", "app://MyTodoApp(Windows)");
 }

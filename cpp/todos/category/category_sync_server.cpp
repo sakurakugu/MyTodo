@@ -10,9 +10,9 @@
  */
 
 #include "category_sync_server.h"
+#include "categorie_item.h"
 #include "default_value.h"
 #include "foundation/config.h"
-#include "categorie_item.h"
 
 #include <QJsonArray>
 #include <QJsonObject>
@@ -367,32 +367,22 @@ void CategorySyncServer::处理推送更改成功(const QJsonObject &response) {
 
     // 验证服务器响应
     bool shouldMarkAsSynced = true;
-    if (response.contains("summary")) {
-        QJsonObject summary = response["summary"].toObject();
-        int created = summary["created"].toInt();
-        int updated = summary["updated"].toInt();
-        int errors = summary["errors"].toArray().size();
+    QJsonObject summary = response["summary"].toObject();
+    int created = summary["created"].toInt();
+    int updated = summary["updated"].toInt();
+    int errors = summary["errors"].toArray().size();
 
-        qInfo() << QString("服务器处理结果: 创建=%1, 更新=%2, 错误=%3").arg(created).arg(updated).arg(errors);
+    qInfo() << QString("服务器处理结果: 创建=%1, 更新=%2, 错误=%3").arg(created).arg(updated).arg(errors);
 
-        // 如果有错误，记录详细信息
-        if (errors > 0) {
-            QJsonArray errorArray = summary["errors"].toArray();
-            for (const auto &errorValue : errorArray) {
-                QJsonObject error = errorValue.toObject();
-                qWarning()
-                    << QString("类别 %1 处理失败: %2").arg(error["index"].toInt()).arg(error["error"].toString());
-            }
-            shouldMarkAsSynced = false;
-            qWarning() << "由于服务器处理错误，不标记类别为已同步";
+    // 如果有错误，记录详细信息
+    if (errors > 0) {
+        QJsonArray errorArray = summary["errors"].toArray();
+        for (const auto &errorValue : errorArray) {
+            QJsonObject error = errorValue.toObject();
+            qWarning() << QString("类别 %1 处理失败: %2").arg(error["index"].toInt()).arg(error["error"].toString());
         }
-    } else {
-        // 兼容旧的响应格式
-        qWarning() << "服务器响应格式不标准，假设操作成功";
-        if (response.contains("updated_count")) {
-            int updatedCount = response["updated_count"].toInt();
-            qDebug() << "已更新" << updatedCount << "个类别";
-        }
+        shouldMarkAsSynced = false;
+        qWarning() << "由于服务器处理错误，不标记类别为已同步";
     }
 
     // 只有在验证通过时才标记当前批次的类别为已同步

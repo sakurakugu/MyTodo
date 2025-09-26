@@ -55,7 +55,7 @@ bool CategoryDataStorage::加载类别(CategorieList &categories) {
         QSqlQuery query(db);
         const QString queryString = //
             "SELECT id, uuid, name, user_uuid, created_at, updated_at, "
-            "synced FROM categories ORDER BY id"; // 按id排序
+            "synced FROM categories ORDER BY updated_at"; // 按更新时间排序
 
         if (!query.exec(queryString)) {
             qCritical() << "加载类别查询失败:" << query.lastError().text();
