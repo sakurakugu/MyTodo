@@ -13,13 +13,13 @@
  * @change 2025-09-24 00:55:58(UTC+8) 周三
  */
 // Qt 相关头文件
+#include <QDirIterator>
 #include <QGuiApplication>
 #include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QSurfaceFormat>
 #include <QtQuickControls2/QQuickStyle>
-#include <QDirIterator>
 // Windows 相关头文件
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -36,8 +36,6 @@
 #include "cpp/todos/todo/todo_manager.h"
 #include "cpp/user_auth.h"
 #include "version.h"
-
-
 
 int main(int argc, char *argv[]) {
 #if defined(Q_OS_WIN) && defined(QT_DEBUG)
@@ -91,7 +89,6 @@ int main(int argc, char *argv[]) {
 
     // 将类注册到QML上下文
     engine.rootContext()->setContextProperty("globalState", &GlobalState::GetInstance());
-    engine.rootContext()->setContextProperty("utility", &Utility::GetInstance());
     engine.rootContext()->setContextProperty("setting", &Setting::GetInstance());
     engine.rootContext()->setContextProperty("userAuth", &userAuth);
     engine.rootContext()->setContextProperty("categoryManager", &categoryManager);

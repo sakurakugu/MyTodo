@@ -273,7 +273,7 @@ ListView {
                             spacing: 4
                             // 时间
                             Label {
-                                text: utility.formatDateTime(model.updatedAt)
+                                text: globalState.formatDateTime(model.updatedAt)
                                 font.pixelSize: 12
                                 color: ThemeManager.secondaryTextColor
                             }

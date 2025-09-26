@@ -9,15 +9,12 @@
 #pragma once
 
 #include <QDateTime>
-#include <QObject>
 
 // 定义DateType概念，限制模板参数为QDate或QDateTime
 template <typename T>
 concept DateType = std::same_as<T, QDate> || std::same_as<T, QDateTime>;
 
-class Utility : public QObject {
-    Q_OBJECT
-
+class Utility{
   public:
     // 单例模式
     static Utility &GetInstance() {
@@ -31,14 +28,13 @@ class Utility : public QObject {
     Utility(Utility &&) = delete;
     Utility &operator=(Utility &&) = delete;
 
-    Q_INVOKABLE QString formatDateTime(const QVariant &dateTime) const; // 格式化日期时间
     template <typename DateType> DateType nullTime() const noexcept;                 // 获取空时间
     template <typename DateType> bool isNullTime(const DateType &dt) const noexcept; // 检查时间是否为空
     template <typename DateType> void setNullTime(DateType &dt) const noexcept;      // 设置时间为空
 
   private:
-    explicit Utility(QObject *parent = nullptr);
-    ~Utility() noexcept override;
+    explicit Utility();
+    ~Utility() noexcept;
 };
 
 // 模板函数实现移到类外部

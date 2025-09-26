@@ -86,6 +86,9 @@ class GlobalState : public QObject {
 
     bool isSystemInDarkMode() const;
 
+    // 从QML移动过来的函数
+    Q_INVOKABLE QString formatDateTime(const QVariant &dateTime) const; // 格式化日期时间
+
   public slots:
     // 从QML移动过来的函数
     void toggleWidgetMode();
