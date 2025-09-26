@@ -25,6 +25,7 @@
 #include <windows.h>
 #endif
 // 自定义头文件
+#include "cpp/foundation/QtDebug.h"
 #include "cpp/foundation/database.h"
 #include "cpp/foundation/logger.h"
 #include "cpp/foundation/network_request.h"
@@ -36,12 +37,7 @@
 #include "cpp/user_auth.h"
 #include "version.h"
 
-void printResources(const QString &path = ":/") {
-    QDirIterator it(path, QDirIterator::Subdirectories);
-    while (it.hasNext()) {
-        qDebug() << it.next();
-    }
-}
+
 
 int main(int argc, char *argv[]) {
 #if defined(Q_OS_WIN) && defined(QT_DEBUG)
@@ -50,7 +46,7 @@ int main(int argc, char *argv[]) {
     SetConsoleOutputCP(CP_UTF8);
 #endif
 
-    // printResources();
+    打印资源路径();
 
     QGuiApplication app(argc, argv);
 

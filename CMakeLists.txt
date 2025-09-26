@@ -165,6 +165,8 @@ set(CORE_SOURCES
     # 其他代码
     cpp/todos/base_sync_server.cpp
     cpp/todos/base_sync_server.h
+    cpp/foundation/QtDebug.cpp
+    cpp/foundation/QtDebug.h
 )
 
 set(NETWORK_SOURCES
@@ -255,14 +257,13 @@ set_target_properties(MyTodo PROPERTIES
 )
 
 # 新增 QML 模块
-# TODO: 到时候将qml/components和qml/分开
 qt_add_qml_module(MyTodo
     URI MyTodo                      # QML 模块 URI
     VERSION 1.0                     # 模块版本
     QML_FILES ${QML_FILES}          # QML 文件列表
     SOURCES ${PROJECT_SOURCES}      # C++ 源文件
     RESOURCES ${RESOURCE_FILES}     # 资源文件
-    OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml/MyTodo  # 输出目录  # TODO: 到时候这个地址要改，至少MyTodo要没有
+    OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml  # 输出目录
 )
 
 # 国际化翻译配置
