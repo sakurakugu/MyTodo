@@ -263,7 +263,7 @@ void Database::registerDataExporter(const QString &name, IDataExporter *exporter
     std::lock_guard<std::mutex> locker(m_mutex);
     if (exporter) {
         m_dataExporters[name] = exporter;
-        qInfo() << "注册数据导出器:" << name;
+        qDebug() << "注册数据导出器:" << name;
     }
 }
 

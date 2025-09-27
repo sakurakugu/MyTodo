@@ -165,7 +165,9 @@ void Setting::initializeDefaultServerConfig() {
     // 检查并设置默认的服务器基础URL
     if (!m_config.contains("server/baseUrl")) {
         m_config.save("server/baseUrl", QString(DefaultValues::baseUrl));
-        NetworkRequest::GetInstance().setServerConfig(QString(DefaultValues::baseUrl));
+        m_config.save("server/apiVersion", QString(DefaultValues::apiVersion));
+        NetworkRequest::GetInstance().setServerConfig(QString(DefaultValues::baseUrl),
+                                                     QString(DefaultValues::apiVersion));
     } else {
         // 如果已经存在配置，确保NetworkRequest也同步更新
         QString existingUrl = m_config.get("server/baseUrl").toString();

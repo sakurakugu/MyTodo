@@ -195,25 +195,17 @@ void NetworkRequest::onReplyFinished() {
 
             QJsonObject fullResponse = doc.object();
 
-            // 检查是否是标准响应格式（包含success字段）
-            if (fullResponse.contains("success")) {
-                bool serverSuccess = fullResponse["success"].toBool();
-                if (serverSuccess) {
-                    // 成功响应，提取data字段作为响应数据
-                    responseData = fullResponse.contains("data") ? fullResponse["data"].toObject() : fullResponse;
-                    success = true;
-                    qDebug() << "请求成功:" << request.type;
-                } else {
-                    // 服务器返回错误
-                    QString serverMessage = fullResponse.contains("error") ? fullResponse["error"].toString()
-                                                                           : fullResponse["message"].toString();
-                    throw QString("服务器错误: %1").arg(serverMessage);
-                }
-            } else {
-                // 非标准响应格式，直接作为成功响应处理
-                responseData = fullResponse;
+            bool serverSuccess = fullResponse["success"].toBool();
+            if (serverSuccess) {
+                // 成功响应，提取data字段作为响应数据
+                responseData = fullResponse.contains("data") ? fullResponse["data"].toObject() : fullResponse;
                 success = true;
-                qWarning() << "请求成功（非标准格式）:" << request.type;
+                qDebug() << "请求成功:" << request.type;
+            } else {
+                // 服务器返回错误
+                QString serverMessage = fullResponse.contains("error") ? fullResponse["error"].toString()
+                                                                       : fullResponse["message"].toString();
+                throw QString("服务器错误: %1").arg(serverMessage);
             }
 
         } else {
@@ -228,7 +220,8 @@ void NetworkRequest::onReplyFinished() {
             if (httpStatus == 401) {
                 // 尝试解析响应体以确认错误码
                 QByteArray body = reply->readAll();
-                QJsonParseError perr; QJsonDocument pdoc = QJsonDocument::fromJson(body, &perr);
+                QJsonParseError perr;
+                QJsonDocument pdoc = QJsonDocument::fromJson(body, &perr);
                 if (perr.error == QJsonParseError::NoError && pdoc.isObject()) {
                     QJsonObject o = pdoc.object();
                     QString code;
