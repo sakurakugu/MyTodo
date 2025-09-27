@@ -258,16 +258,29 @@ void TodoSyncServer::pushBatchToServer(const QList<TodoItem *> &batch) {
             obj["description"] = item->description();
             obj["category"] = item->category();
             obj["important"] = item->important();
-            obj["deadline"] = item->deadline().toString(Qt::ISODate);
+            if (item->deadline().isValid()) {
+                obj["deadline"] = static_cast<qint64>(item->deadline().toUTC().toMSecsSinceEpoch());
+            } else {
+                obj["deadline"] = QJsonValue();
+            }
             obj["recurrenceInterval"] = item->recurrenceInterval();
             obj["recurrenceCount"] = item->recurrenceCount();
+            // recurrenceStartDate 仍保留为仅日期 ISO 字符串（业务语义：重复计划起始日期）
             obj["recurrenceStartDate"] = item->recurrenceStartDate().toString(Qt::ISODate);
             obj["is_completed"] = item->isCompleted();
-            obj["completed_at"] = item->completedAt().toString(Qt::ISODate);
+            if (item->completedAt().isValid()) {
+                obj["completed_at"] = static_cast<qint64>(item->completedAt().toUTC().toMSecsSinceEpoch());
+            } else {
+                obj["completed_at"] = QJsonValue();
+            }
             obj["is_deleted"] = item->isDeleted();
-            obj["deleted_at"] = item->deletedAt().toString(Qt::ISODate);
-            obj["created_at"] = item->createdAt().toString(Qt::ISODate);
-            obj["updated_at"] = item->updatedAt().toString(Qt::ISODate);
+            if (item->deletedAt().isValid()) {
+                obj["deleted_at"] = static_cast<qint64>(item->deletedAt().toUTC().toMSecsSinceEpoch());
+            } else {
+                obj["deleted_at"] = QJsonValue();
+            }
+            obj["created_at"] = static_cast<qint64>(item->createdAt().toUTC().toMSecsSinceEpoch());
+            obj["updated_at"] = static_cast<qint64>(item->updatedAt().toUTC().toMSecsSinceEpoch());
             obj["synced"] = item->synced();
 
             jsonArray.append(obj);
@@ -509,14 +522,13 @@ void TodoSyncServer::pushSingleItem(TodoItem *item) {
     itemData["is_completed"] = item->isCompleted();
 
     // 处理可选的日期时间字段
-    if (item->deadline().isValid()) {
-        itemData["deadline"] = item->deadline().date().toString(Qt::ISODate);
-    }
+    itemData["deadline"] = item->deadline().isValid() ? QJsonValue(static_cast<qint64>(item->deadline().toUTC().toMSecsSinceEpoch())) : QJsonValue();
+    
     if (item->recurrenceInterval() > 0) {
         itemData["recurrenceInterval"] = item->recurrenceInterval();
         itemData["recurrenceCount"] = item->recurrenceCount();
         if (item->recurrenceStartDate().isValid()) {
-            itemData["recurrenceStartDate"] = item->recurrenceStartDate().toString(Qt::ISODate);
+            itemData["recurrenceStartDate"] = item->recurrenceStartDate().toString(Qt::ISODate); // 仍使用日期
         }
     }
 

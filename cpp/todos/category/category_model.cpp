@@ -264,12 +264,10 @@ bool CategoryModel::加载类别(const QUuid &userUuid) {
 
     开始更新模型();
     bool success = m_dataStorage.加载类别(m_categoryItems);
+    m_dataStorage.创建默认类别(m_categoryItems, userUuid);
 
     if (success) {
         m_syncServer.设置未同步的对象(m_categoryItems);
-    } else {
-        qWarning() << "从存储加载类别失败";
-        m_dataStorage.创建默认类别(m_categoryItems, userUuid);
     }
 
     结束更新模型();

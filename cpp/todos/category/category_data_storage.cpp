@@ -15,6 +15,7 @@
 #include "categorie_item.h"
 #include <QJsonObject>
 #include <QSqlError>
+#include <QTimeZone>
 
 CategoryDataStorage::CategoryDataStorage(QObject *parent)
     : QObject(parent),                    // 父对象
@@ -40,7 +41,6 @@ CategoryDataStorage::~CategoryDataStorage() {
  */
 bool CategoryDataStorage::加载类别(CategorieList &categories) {
     bool success = true;
-
     try {
         // 清除当前数据
         categories.clear();
@@ -53,10 +53,8 @@ bool CategoryDataStorage::加载类别(CategorieList &categories) {
         }
 
         QSqlQuery query(db);
-        const QString queryString = //
-            "SELECT id, uuid, name, user_uuid, created_at, updated_at, "
-            "synced FROM categories ORDER BY updated_at"; // 按更新时间排序
-
+        const QString queryString =
+            "SELECT id, uuid, name, user_uuid, created_at, updated_at, synced FROM categories ORDER BY updated_at";
         if (!query.exec(queryString)) {
             qCritical() << "加载类别查询失败:" << query.lastError().text();
             return false;
@@ -67,8 +65,20 @@ bool CategoryDataStorage::加载类别(CategorieList &categories) {
             QUuid uuid = QUuid::fromString(query.value("uuid").toString());
             QString name = query.value("name").toString();
             QUuid userUuid = QUuid::fromString(query.value("user_uuid").toString());
-            QDateTime createdAt = QDateTime::fromString(query.value("created_at").toString(), Qt::ISODate);
-            QDateTime updatedAt = QDateTime::fromString(query.value("updated_at").toString(), Qt::ISODate);
+            // 兼容两种存储格式：首选整数UTC毫秒，其次旧的ISO文本
+            auto parseMs = [](const QVariant &v) {
+                if (v.isNull())
+                    return QDateTime();
+                // bool ok = false;
+                // qint64 ms = v.toLongLong(&ok);
+                qint64 ms = v.toLongLong();
+                // if (ok)
+                    return QDateTime::fromMSecsSinceEpoch(ms, QTimeZone::UTC);
+                // QDateTime dt = QDateTime::fromString(v.toString(), Qt::ISODate);
+                // return dt.isValid() ? dt.toUTC() : QDateTime();
+            };
+            QDateTime createdAt = parseMs(query.value("created_at"));
+            QDateTime updatedAt = parseMs(query.value("updated_at"));
             int synced = query.value("synced").toInt();
 
             auto item = std::make_unique<CategorieItem>( //
@@ -105,7 +115,6 @@ bool CategoryDataStorage::加载类别(CategorieList &categories) {
  */
 std::unique_ptr<CategorieItem> CategoryDataStorage::新增类别( //
     CategorieList &categories, const QString &name, const QUuid &userUuid, ImportSource source) {
-
     try {
         QSqlDatabase db = m_database.getDatabase();
         if (!db.isOpen()) {
@@ -115,18 +124,18 @@ std::unique_ptr<CategorieItem> CategoryDataStorage::新增类别( //
 
         // 创建新的类别项
         QUuid newUuid = QUuid::createUuid();
-        QDateTime createdAt = QDateTime::currentDateTime();
+        QDateTime createdAt = QDateTime::currentDateTimeUtc();
 
         // 插入到数据库
         QSqlQuery insertQuery(db);
-        const QString insertString = //
-            "INSERT INTO categories (uuid, name, user_uuid, created_at, updated_at, synced) VALUES (?, ?, ?, ?, ?, ?)";
+        const QString insertString =
+            "INSERT INTO categories (uuid, name, user_uuid, created_at, updated_at, synced) VALUES (?,?,?,?,?,?)";
         insertQuery.prepare(insertString);
         insertQuery.addBindValue(newUuid.toString());
         insertQuery.addBindValue(name);
         insertQuery.addBindValue(userUuid.toString());
-        insertQuery.addBindValue(createdAt.toString(Qt::ISODate));
-        insertQuery.addBindValue(createdAt.toString(Qt::ISODate));
+        insertQuery.addBindValue(createdAt.toMSecsSinceEpoch());
+        insertQuery.addBindValue(createdAt.toMSecsSinceEpoch());
         insertQuery.addBindValue(source == ImportSource::Server ? 0 : 1);
 
         if (!insertQuery.exec()) {
@@ -168,63 +177,37 @@ std::unique_ptr<CategorieItem> CategoryDataStorage::新增类别( //
  * @return 更新成功返回true，否则返回false
  */
 bool CategoryDataStorage::更新类别(CategorieList &categories, const QString &name, const QString &newName) {
-    bool success = false;
-
-    try {
-        QSqlDatabase db = m_database.getDatabase();
-        if (!db.isOpen()) {
-            qCritical() << "数据库未打开，无法更新类别";
-            return false;
-        }
-
-        // 更新数据库中的类别
-        QSqlQuery updateQuery(db);
-        const QString updateString = "UPDATE categories SET name = ?, updated_at = ?, synced = ? WHERE name = ?";
-        updateQuery.prepare(updateString);
-        QString currentTime = QDateTime::currentDateTime().toString(Qt::ISODate);
-        updateQuery.addBindValue(newName);
-        updateQuery.addBindValue(currentTime); // updated_at
-        updateQuery.addBindValue(2);           // 标记为未同步，待更新
-        updateQuery.addBindValue(name);        // WHERE条件
-
-        if (!updateQuery.exec()) {
-            qCritical() << "更新数据库中的类别失败:" << updateQuery.lastError().text();
-            return false;
-        }
-
-        if (updateQuery.numRowsAffected() == 0) {
-            qWarning() << "未找到要更新的类别，名称:" << name;
-            return false;
-        }
-
-        // 更新内存中的类别
-        auto it = std::find_if(categories.begin(), categories.end(),
-                               [name](const std::unique_ptr<CategorieItem> &item) { return item->name() == name; });
-
-        if (it != categories.end()) {
-            (*it)->setName(newName);
-            if ((*it)->synced() != 1) { // 如果之前是插入状态，不要改成更新状态
-                (*it)->setSynced(2);    // 标记为未同步，待更新
-            } else if ((*it)->synced() == 1) {
-                // 如果之前是插入状态，保持为插入状态
-                updateQuery.addBindValue(1);
-            }
-            (*it)->setUpdatedAt(QDateTime::fromString(currentTime, Qt::ISODate));
-            success = true;
-        }
-
-        if (success) {
-            qDebug() << "成功更新类别:" << name;
-        }
-    } catch (const std::exception &e) {
-        qCritical() << "更新类别时发生异常:" << e.what();
-        success = false;
-    } catch (...) {
-        qCritical() << "更新类别时发生未知异常";
-        success = false;
+    QSqlDatabase db = m_database.getDatabase();
+    if (!db.isOpen()) {
+        qCritical() << "数据库未打开，无法更新类别";
+        return false;
     }
-
-    return success;
+    QSqlQuery updateQuery(db);
+    const QString updateString = "UPDATE categories SET name = ?, updated_at = ?, synced = ? WHERE name = ?";
+    updateQuery.prepare(updateString);
+    QDateTime now = QDateTime::currentDateTimeUtc();
+    updateQuery.addBindValue(newName);
+    updateQuery.addBindValue(now.toMSecsSinceEpoch());
+    updateQuery.addBindValue(2);
+    updateQuery.addBindValue(name);
+    if (!updateQuery.exec()) {
+        qCritical() << "更新数据库中的类别失败:" << updateQuery.lastError().text();
+        return false;
+    }
+    if (updateQuery.numRowsAffected() == 0) {
+        qWarning() << "未找到要更新的类别，名称:" << name;
+        return false;
+    }
+    auto it = std::find_if(categories.begin(), categories.end(),
+                           [name](const std::unique_ptr<CategorieItem> &i) { return i->name() == name; });
+    if (it != categories.end()) {
+        (*it)->setName(newName);
+        if ((*it)->synced() != 1) // 如果之前是插入状态，不要改成更新状态
+            (*it)->setSynced(2); // 标记为未同步，待更新
+        (*it)->setUpdatedAt(now);
+    }
+    qDebug() << "成功更新类别:" << name;
+    return true;
 }
 
 /**
@@ -319,53 +302,34 @@ bool CategoryDataStorage::软删除类别(CategorieList &categories, const QStri
  * @return 成功返回item在待办类别中的指针，否则返回nullptr
  */
 bool CategoryDataStorage::更新同步状态(CategorieList &categories, const QString &name, int synced) {
-    bool success = false;
-
-    try {
-        QSqlDatabase db = m_database.getDatabase();
-        if (!db.isOpen()) {
-            qCritical() << "数据库未打开，无法更新类别";
-            return false;
-        }
-
-        // 更新数据库中的类别
-        QSqlQuery updateQuery(db);
-        const QString updateString = "UPDATE categories SET synced = ?, updated_at = ? WHERE name = ?";
-        updateQuery.prepare(updateString);
-        QString currentTime = QDateTime::currentDateTime().toString(Qt::ISODate);
-        updateQuery.addBindValue(synced);      // 目标同步状态（调用者给）
-        updateQuery.addBindValue(currentTime); // updated_at
-        updateQuery.addBindValue(name);        // WHERE条件
-
-        if (!updateQuery.exec()) {
-            qCritical() << "更新数据库中的类别同步状态失败:" << updateQuery.lastError().text();
-            return false;
-        }
-
-        if (updateQuery.numRowsAffected() == 0) {
-            qWarning() << "未找到要更新的类别，名称:" << name;
-            return false;
-        }
-
-        // 更新内存中的类别
-        auto it = std::find_if(categories.begin(), categories.end(),
-                               [name](const std::unique_ptr<CategorieItem> &item) { return item->name() == name; });
-
-        if (it != categories.end()) {
-            (*it)->setSynced(synced); // 同步为调用者指定的状态
-            (*it)->setUpdatedAt(QDateTime::fromString(currentTime, Qt::ISODate));
-            success = true;
-            qDebug() << "成功更新类别:" << (*it)->name() << "的同步状态 ->" << synced;
-        }
-    } catch (const std::exception &e) {
-        qCritical() << "更新类别时发生异常:" << e.what();
-        success = false;
-    } catch (...) {
-        qCritical() << "更新类别时发生未知异常";
-        success = false;
+    QSqlDatabase db = m_database.getDatabase();
+    if (!db.isOpen()) {
+        qCritical() << "数据库未打开，无法更新类别";
+        return false;
     }
-
-    return success;
+    QSqlQuery updateQuery(db);
+    const QString updateString = "UPDATE categories SET synced = ?, updated_at = ? WHERE name = ?";
+    updateQuery.prepare(updateString);
+    QDateTime now = QDateTime::currentDateTimeUtc();
+    updateQuery.addBindValue(synced);
+    updateQuery.addBindValue(now.toMSecsSinceEpoch());
+    updateQuery.addBindValue(name);
+    if (!updateQuery.exec()) {
+        qCritical() << "更新数据库中的类别同步状态失败:" << updateQuery.lastError().text();
+        return false;
+    }
+    if (updateQuery.numRowsAffected() == 0) {
+        qWarning() << "未找到要更新的类别，名称:" << name;
+        return false;
+    }
+    auto it = std::find_if(categories.begin(), categories.end(),
+                           [name](const std::unique_ptr<CategorieItem> &i) { return i->name() == name; });
+    if (it != categories.end()) {
+        (*it)->setSynced(synced);
+        (*it)->setUpdatedAt(now);
+        qDebug() << "成功更新类别:" << (*it)->name() << "的同步状态 ->" << synced;
+    }
+    return true;
 }
 
 /**
@@ -374,85 +338,69 @@ bool CategoryDataStorage::更新同步状态(CategorieList &categories, const QS
  * @param userUuid 用户UUID
  */
 bool CategoryDataStorage::创建默认类别(CategorieList &categories, const QUuid &userUuid) {
-
-    bool success = true;
     QSqlDatabase db = m_database.getDatabase();
-
-    try {
-        if (!db.isOpen()) {
-            qCritical() << "数据库未打开，无法创建默认类别";
-            return false;
-        }
-
-        // 开始事务
-        if (!db.transaction()) {
-            qCritical() << "无法开始数据库事务:" << db.lastError().text();
-            return false;
-        }
-
-        // 清除现有数据
-        QSqlQuery deleteQuery(db);
-        if (!deleteQuery.exec("DELETE FROM categories")) {
-            qCritical() << "清除类别数据失败:" << deleteQuery.lastError().text();
-            db.rollback();
-            return false;
-        }
-
-        categories.clear();
-        QUuid newUuid = QUuid::createUuid();
-        QDateTime createdAt = QDateTime::currentDateTime();
-
-        // 插入到数据库
-        QSqlQuery insertQuery(db);
-        const QString insertString = //
-            "INSERT INTO categories (id, uuid, name, user_uuid, created_at, updated_at, synced) VALUES (?, ?, ?, ?, ?, "
-            "?, ?)";
-        insertQuery.prepare(insertString);
-        insertQuery.addBindValue(1);
-        insertQuery.addBindValue(newUuid.toString());
-        insertQuery.addBindValue("未分类");
-        insertQuery.addBindValue(userUuid.toString());
-        insertQuery.addBindValue(createdAt.toString(Qt::ISODate));
-        insertQuery.addBindValue(createdAt.toString(Qt::ISODate));
-        insertQuery.addBindValue(0); // 已同步（不需要同步）
-
-        if (!insertQuery.exec()) {
-            qCritical() << "插入类别到数据库失败:" << insertQuery.lastError().text();
-            db.rollback();
-            return false;
-        }
-
-        // 提交事务
-        if (!db.commit()) {
-            qCritical() << "提交数据库事务失败:" << db.lastError().text();
-            return false;
-        }
-
-        // 添加默认的"未分类"选项
-        auto newItem = std::make_unique<CategorieItem>( //
-            1,                                          // 占位ID，自增后回填
-            newUuid,                                    // 新的UUID
-            "未分类",                                   // 类别名称
-            userUuid,                                   // 用户UUID
-            createdAt,                                  // 创建时间
-            createdAt,                                  // 更新时间
-            0                                           // 已同步（默认内置）
-        );
-
-        // 添加到内存列表
-        categories.push_back(std::move(newItem));
-        qDebug() << "成功添加默认类别";
-    } catch (const std::exception &e) {
-        qCritical() << "添加默认类别时发生异常:" << e.what();
-        db.rollback();
-        success = false;
-    } catch (...) {
-        qCritical() << "添加默认类别时发生未知异常";
-        db.rollback();
-        success = false;
+    if (!db.isOpen()) {
+        qCritical() << "数据库未打开，无法创建默认类别";
+        return false;
     }
-
-    return success;
+    for (const auto &item : categories)
+        if (item && item->id() == 1) {
+            qDebug() << "内存中已存在默认类别";
+            return true;
+        }
+    QUuid defaultUuid = QUuid::fromString("{00000000-0000-0000-0000-000000000001}");
+    QDateTime createdAt = QDateTime::currentDateTimeUtc();
+    if (!db.transaction()) {
+        qCritical() << "无法开始数据库事务:" << db.lastError().text();
+        return false;
+    }
+    QSqlQuery insertQuery(db);
+    insertQuery.prepare("INSERT OR IGNORE INTO categories (id, uuid, name, user_uuid, created_at, updated_at, synced) "
+                        "VALUES (?,?,?,?,?,?,?)");
+    insertQuery.addBindValue(1);
+    insertQuery.addBindValue(defaultUuid.toString());
+    insertQuery.addBindValue("未分类");
+    insertQuery.addBindValue(userUuid.toString());
+    insertQuery.addBindValue(createdAt.toMSecsSinceEpoch());
+    insertQuery.addBindValue(createdAt.toMSecsSinceEpoch());
+    insertQuery.addBindValue(0);
+    if (!insertQuery.exec()) {
+        qCritical() << "插入默认类别失败:" << insertQuery.lastError().text();
+        db.rollback();
+        return false;
+    }
+    bool wasInserted = insertQuery.numRowsAffected() > 0;
+    if (!db.commit()) {
+        qCritical() << "提交数据库事务失败:" << db.lastError().text();
+        return false;
+    }
+    QSqlQuery selectQuery(db);
+    selectQuery.prepare(
+        "SELECT id, uuid, name, user_uuid, created_at, updated_at, synced FROM categories WHERE id=1 AND user_uuid=?");
+    selectQuery.addBindValue(userUuid.toString());
+    if (selectQuery.exec() && selectQuery.next()) {
+        auto parse = [](const QVariant &v) {
+            if (v.isNull())
+                return QDateTime();
+            bool ok = false;
+            qint64 ms = v.toLongLong(&ok);
+            return ok ? QDateTime::fromMSecsSinceEpoch(ms, QTimeZone::UTC) : QDateTime();
+        };
+        int id = selectQuery.value("id").toInt();
+        QUuid uuid = QUuid::fromString(selectQuery.value("uuid").toString());
+        QString name = selectQuery.value("name").toString();
+        QUuid dbUserUuid = QUuid::fromString(selectQuery.value("user_uuid").toString());
+        QDateTime createdAt = parse(selectQuery.value("created_at"));
+        QDateTime updatedAt = parse(selectQuery.value("updated_at"));
+        int synced = selectQuery.value("synced").toInt();
+        auto defaultItem = std::make_unique<CategorieItem>(id, uuid, name, dbUserUuid, createdAt, updatedAt, synced);
+        categories.push_back(std::move(defaultItem));
+        qDebug() << (wasInserted ? "成功创建默认类别" : "默认类别已存在，已加载到内存");
+    } else {
+        qWarning() << "无法从数据库加载默认类别:" << selectQuery.lastError().text();
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -555,8 +503,8 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
                                     "synced = ? WHERE uuid = ? OR name = ?");
                 updateQuery.addBindValue(name);
                 updateQuery.addBindValue(userUuid.toString());
-                updateQuery.addBindValue(createdAt.toString(Qt::ISODate));
-                updateQuery.addBindValue(updatedAt.toString(Qt::ISODate));
+                updateQuery.addBindValue(createdAt.toUTC().toMSecsSinceEpoch());
+                updateQuery.addBindValue(updatedAt.toUTC().toMSecsSinceEpoch());
                 updateQuery.addBindValue(source == ImportSource::Server ? 0 : (existing->synced() == 1 ? 1 : 2));
                 updateQuery.addBindValue(existing->uuid().toString());
                 updateQuery.addBindValue(existing->name());
@@ -681,12 +629,11 @@ bool CategoryDataStorage::创建类别表() {
             uuid TEXT UNIQUE NOT NULL,
             name TEXT NOT NULL,
             user_uuid TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
             synced INTEGER NOT NULL DEFAULT 1
         )
     )";
-
     QSqlDatabase db = m_database.getDatabase();
     QSqlQuery query(db);
     if (!query.exec(createTableQuery)) {
@@ -699,19 +646,17 @@ bool CategoryDataStorage::创建类别表() {
         {"CREATE INDEX IF NOT EXISTS idx_categories_uuid ON categories(uuid)",
          "CREATE INDEX IF NOT EXISTS idx_categories_user_uuid ON categories(user_uuid)",
          "CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name)"};
-
-    for (const QString &indexQuery : indexes) {
-        if (!query.exec(indexQuery)) {
+    for (const QString &idx : indexes)
+        if (!query.exec(idx))
             qWarning() << "创建categories表索引失败:" << query.lastError().text();
-        }
-    }
-
     qDebug() << "categories表初始化成功";
     return true;
 }
 
 /**
  * @brief 导出类别数据到JSON对象
+ * @param output 输出的JSON对象引用
+ * @return 导出成功返回true，否则返回false
  */
 bool CategoryDataStorage::导出到JSON(QJsonObject &output) {
     QSqlDatabase db = m_database.getDatabase();
@@ -719,36 +664,42 @@ bool CategoryDataStorage::导出到JSON(QJsonObject &output) {
         qWarning() << "数据库未打开，无法导出类别数据";
         return false;
     }
-
     QSqlQuery query(db);
-    const QString queryString =
-        "SELECT id, uuid, name, user_uuid, created_at, updated_at, synced FROM categories";
-    
+    const QString queryString = "SELECT id, uuid, name, user_uuid, created_at, updated_at, synced FROM categories";
     if (!query.exec(queryString)) {
         qWarning() << "查询类别数据失败:" << query.lastError().text();
         return false;
     }
-
-    QJsonArray categoriesArray;
+    auto toIso = [&](const QVariant &v) -> QJsonValue {
+        if (v.isNull())
+            return QJsonValue();
+        bool ok = false;
+        qint64 ms = v.toLongLong(&ok);
+        if (!ok)
+            return QJsonValue();
+        return QDateTime::fromMSecsSinceEpoch(ms, QTimeZone::UTC).toString(Qt::ISODateWithMs);
+    };
+    QJsonArray arr;
     while (query.next()) {
-        QJsonObject categoryObj;
-        categoryObj["id"] = query.value("id").toInt();
-        categoryObj["uuid"] = query.value("uuid").toString();
-        categoryObj["name"] = query.value("name").toString();
-        categoryObj["user_uuid"] = query.value("user_uuid").toString();
-        categoryObj["created_at"] = query.value("created_at").toString();
-        categoryObj["updated_at"] = query.value("updated_at").toString();
-        categoryObj["synced"] = query.value("synced").toInt();
-        
-        categoriesArray.append(categoryObj);
+        QJsonObject obj;
+        obj["id"] = query.value("id").toInt();
+        obj["uuid"] = query.value("uuid").toString();
+        obj["name"] = query.value("name").toString();
+        obj["user_uuid"] = query.value("user_uuid").toString();
+        obj["created_at"] = toIso(query.value("created_at"));
+        obj["updated_at"] = toIso(query.value("updated_at"));
+        obj["synced"] = query.value("synced").toInt();
+        arr.append(obj);
     }
-
-    output["categories"] = categoriesArray;
+    output["categories"] = arr;
     return true;
 }
 
 /**
  * @brief 从JSON对象导入类别数据
+ * @param input 输入的JSON对象引用
+ * @param replaceAll 是否替换现有数据
+ * @return 导入成功返回true，否则返回false
  */
 bool CategoryDataStorage::导入从JSON(const QJsonObject &input, bool replaceAll) {
     QSqlDatabase db = m_database.getDatabase();
@@ -758,8 +709,7 @@ bool CategoryDataStorage::导入从JSON(const QJsonObject &input, bool replaceAl
     }
 
     if (!input.contains("categories") || !input["categories"].isArray()) {
-        // 没有类别数据或格式错误，但不视为错误
-        return true;
+        return true; // 没有类别数据可导入
     }
 
     QSqlQuery query(db);
@@ -773,27 +723,32 @@ bool CategoryDataStorage::导入从JSON(const QJsonObject &input, bool replaceAl
     }
 
     // 导入类别数据
-    QJsonArray categoriesArray = input["categories"].toArray();
-    for (const auto &categoryValue : categoriesArray) {
-        QJsonObject categoryObj = categoryValue.toObject();
-        
+    QJsonArray arr = input["categories"].toArray();
+    for (const auto &v : arr) {
+        QJsonObject obj = v.toObject();
+
         query.prepare("INSERT OR REPLACE INTO categories (id, uuid, name, user_uuid, created_at, updated_at, synced) "
-                      "VALUES (?, ?, ?, ?, ?, ?, ?)");
-        
-        query.addBindValue(categoryObj.value("id").toVariant());
-        query.addBindValue(categoryObj.value("uuid").toString());
-        query.addBindValue(categoryObj.value("name").toString());
-        query.addBindValue(categoryObj.value("user_uuid").toString());
-        query.addBindValue(categoryObj.value("created_at").toString());
-        query.addBindValue(categoryObj.value("updated_at").toString());
-        query.addBindValue(categoryObj.value("synced").toInt());
-        
+                      "VALUES (?,?,?,?,?,?,?)");
+        query.addBindValue(obj.value("id").toVariant());
+        query.addBindValue(obj.value("uuid").toString());
+        query.addBindValue(obj.value("name").toString());
+        query.addBindValue(obj.value("user_uuid").toString());
+        auto bindIso = [&](const char *k) {
+            if (obj.contains(k) && !obj.value(k).isNull()) {
+                QDateTime dt = QDateTime::fromString(obj.value(k).toString(), Qt::ISODate);
+                query.addBindValue(dt.isValid() ? QVariant(dt.toUTC().toMSecsSinceEpoch()) : QVariant());
+            } else
+                query.addBindValue(QVariant());
+        };
+        bindIso("created_at");
+        bindIso("updated_at");
+        query.addBindValue(obj.value("synced").toInt());
         if (!query.exec()) {
             qWarning() << "导入类别数据失败:" << query.lastError().text();
             return false;
         }
     }
 
-    qInfo() << "成功导入" << categoriesArray.size() << "条类别记录";
+    qInfo() << "成功导入" << arr.size() << "条类别记录";
     return true;
 }

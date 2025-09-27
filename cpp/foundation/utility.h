@@ -36,9 +36,9 @@ template <typename DateType> void Utility::setNullTime(DateType &dt) noexcept {
 
 // ================== 模板特化 ==================
 template <> inline QDateTime Utility::nullTime<QDateTime>() noexcept {
-    return QDateTime::fromString("1970-01-01T00:00:00", Qt::ISODate);
+    return QDateTime{}; // 已经改成时间戳了
 }
 
 template <> inline QDate Utility::nullTime<QDate>() noexcept {
-    return QDate::fromString("1970-01-01", Qt::ISODate);
+    return QDate{}; // 已经改成时间戳了
 }

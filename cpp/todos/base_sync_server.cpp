@@ -10,9 +10,9 @@
  */
 
 #include "base_sync_server.h"
+#include "foundation/config.h"
 #include "global_state.h"
 #include "user_auth.h"
-#include "foundation/config.h"
 
 #include <QDateTime>
 
@@ -73,15 +73,13 @@ void BaseSyncServer::取消同步() {
 }
 
 // 网络请求处理（默认实现）
-void BaseSyncServer::onNetworkRequestCompleted(Network::RequestType type, const QJsonObject &response) {
-    Q_UNUSED(type)
-    Q_UNUSED(response)
+void BaseSyncServer::onNetworkRequestCompleted([[maybe_unused]] Network::RequestType type,
+                                               [[maybe_unused]] const QJsonObject &response) {
     // 子类应该重写此方法来处理具体的响应
 }
 
-void BaseSyncServer::onNetworkRequestFailed(Network::RequestType type, NetworkRequest::NetworkError error,
-                                            const QString &message) {
-    Q_UNUSED(type)
+void BaseSyncServer::onNetworkRequestFailed([[maybe_unused]] Network::RequestType type,
+                                            NetworkRequest::NetworkError error, const QString &message) {
 
     if (m_isSyncing) {
         m_isSyncing = false;

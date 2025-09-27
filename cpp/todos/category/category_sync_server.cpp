@@ -312,8 +312,8 @@ void CategorySyncServer::推送类别() {
             QJsonObject obj;
             obj["uuid"] = item->uuid().toString(QUuid::WithoutBraces);
             obj["name"] = item->name();
-            obj["created_at"] = item->createdAt().toString(Qt::ISODate);
-            obj["updated_at"] = item->updatedAt().toString(Qt::ISODate);
+            obj["created_at"] = static_cast<qint64>(item->createdAt().toUTC().toMSecsSinceEpoch());
+            obj["updated_at"] = static_cast<qint64>(item->updatedAt().toUTC().toMSecsSinceEpoch());
             obj["synced"] = item->synced();
 
             jsonArray.append(obj);

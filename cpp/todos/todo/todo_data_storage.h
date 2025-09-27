@@ -17,6 +17,7 @@
 #include <QObject>
 #include <QString>
 #include <QVariantMap>
+#include <algorithm>
 #include <memory>
 #include <vector>
 
@@ -99,10 +100,9 @@ class TodoDataStorage : public QObject, public IDataExporter {
     bool 加载待办(TodoList &todos);
 
     // CRUD操作
-    bool 新增待办(TodoList &todos, const QString &title, const QString &description,
-                                       const QString &category, bool important, const QDateTime &deadline,
-                                       int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate,
-                                       QUuid userUuid);
+    bool 新增待办(TodoList &todos, const QString &title, const QString &description, const QString &category,
+                  bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount,
+                  const QDate &recurrenceStartDate, QUuid userUuid);
     bool 新增待办(TodoList &todos, std::unique_ptr<TodoItem> item);
     bool 更新待办(TodoList &todos, const QUuid &uuid, const QVariantMap &todoData);
     bool 更新待办(TodoList &todos, TodoItem &item);
@@ -113,7 +113,7 @@ class TodoDataStorage : public QObject, public IDataExporter {
     // 退出登录操作
     bool 删除所有待办(TodoList &todos);
     bool 更新所有待办用户UUID(TodoList &todos, const QUuid &newUserUuid, int synced);
-    
+
     bool 导入待办事项从JSON(TodoList &todos, const QJsonArray &todosArray, //
                             ImportSource source = ImportSource::Server,    //
                             ConflictResolution resolution = ConflictResolution::Merge);
