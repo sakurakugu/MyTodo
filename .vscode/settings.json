@@ -140,7 +140,8 @@
         "qpalette": "cpp",
         "qqmlapplicationengine": "cpp",
         "qqmlcontext": "cpp",
-        "qdiriterator": "cpp"
+        "qdiriterator": "cpp",
+        "qregularexpression": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "search.useIgnoreFiles": false, // 禁用git忽略文件

@@ -10,5 +10,3 @@
  */
 #include "utility.h"
 
-Utility::Utility() {}
-Utility::~Utility() noexcept {}
