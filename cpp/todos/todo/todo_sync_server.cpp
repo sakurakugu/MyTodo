@@ -455,7 +455,8 @@ void TodoSyncServer::处理推送更改成功(const QJsonObject &response) {
     // 只有在验证通过时才标记当前批次的项目为已同步
     if (shouldMarkAsSynced) {
         for (TodoItem *item : m_pendingUnsyncedItems) {
-            item->setSynced(0);
+            if (item->synced() != 3)
+                item->setSynced(0);
         }
         // 发出本地更改已上传信号
         emit localChangesUploaded(m_pendingUnsyncedItems);

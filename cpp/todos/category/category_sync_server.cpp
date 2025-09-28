@@ -438,8 +438,18 @@ void CategorySyncServer::处理推送更改成功(const QJsonObject &response) {
             // 保留其 synced 状态，留给下次重试
             continue;
         }
-        qInfo() << "类别条目" << item->name() << "同步成功，更新状态为 synced=0";
-        item->setSynced(0);
+        // 如果是删除操作 (synced == 3)，不要在这里把状态重置为0。
+        // 逻辑链：
+        // 1. 本地删除 -> 软删除时设置 synced=3 或直接物理删除(若尚未同步插入)。
+        // 2. 批量推送发送该条目，服务器删除成功。
+        // 3. 这里如果改成 0，会使 CategoryModel::更新同步成功状态 无法识别其为删除，从而不会调用物理删除，导致 UI 仍显示。
+        // 4. 保持为3，随后 emit localChangesUploaded() 后 CategoryModel 会调用 m_dataStorage.删除类别 进行最终移除。
+        if (item->synced() != 3) {
+            qInfo() << "类别条目" << item->name() << "同步成功，更新状态为 synced=0";
+            item->setSynced(0);
+        } else {
+            qInfo() << "类别条目" << item->name() << "删除同步成功，保持 synced=3 以便模型层移除";
+        }
         item->setUpdatedAt(nowUtc);
         actuallySynced.push_back(item);
         ++changed;
