@@ -11,11 +11,11 @@
  */
 
 #include "category_manager.h"
-#include "default_value.h"
 #include "categorie_item.h"
 #include "category_data_storage.h"
 #include "category_model.h"
 #include "category_sync_server.h"
+#include "default_value.h"
 #include "user_auth.h"
 
 #include <QJsonDocument>
@@ -32,12 +32,37 @@ CategoryManager::CategoryManager(UserAuth &userAuth, QObject *parent)
     // 连接同步服务器信号
     connect(m_syncServer, &CategorySyncServer::categoriesUpdatedFromServer, this,
             &CategoryManager::onCategoriesUpdatedFromServer);
+    // 关键：同步成功后需要写回数据库（更新 synced=0），之前缺少该连接导致只改内存未持久化
+    connect(m_syncServer, &CategorySyncServer::localChangesUploaded, this,
+            &CategoryManager::onLocalChangesUploaded);
 
     // 桥接模型变化到管理器的属性通知：确保 QML 对 categoryManager.categories 的绑定会更新
     connect(m_categoryModel, &CategoryModel::categoriesChanged, this, &CategoryManager::categoriesChanged);
 
-    // 从存储加载类别数据
+    // 从存储加载类别数据（本地缓存）
     loadCategories();
+
+    // 自动同步逻辑：
+    // 1. 监听首次认证完成（包含自动 refresh token 成功 或 手动登录成功后第一次）
+    // 2. 监听显式 loginSuccessful（保证如果 firstAuthCompleted 因某种异常未发出仍可触发）
+    // 3. 仅当当前未在同步、且用户处于登录状态时触发一次双向同步
+    // auto triggerInitialSync = [this]() {
+    //     if (!m_userAuth.isLoggedIn()) {
+    //         return; // 未登录不触发
+    //     }
+    //     if (m_syncServer && !m_syncServer->isSyncing()) {
+    //         // 双向同步：服务器数据优先拉取，再推送本地未同步更改
+    //         m_categoryModel->与服务器同步();
+    //     }
+    // };
+
+    // connect(&m_userAuth, &UserAuth::firstAuthCompleted, this, 与服务器同步());
+    // // connect(&m_userAuth, &UserAuth::loginSuccessful, this, triggerInitialSync);
+
+    // // 如果应用启动时已经有有效 session（例如刷新令牌成功并立即拿到 access token），也做一次延迟触发
+    // if (m_userAuth.isLoggedIn()) {
+    //     QMetaObject::invokeMethod(this, [triggerInitialSync]() { triggerInitialSync(); }, Qt::QueuedConnection);
+    // }
 }
 
 CategoryManager::~CategoryManager() {}

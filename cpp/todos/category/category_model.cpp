@@ -229,7 +229,7 @@ bool CategoryModel::更新类别(const QString &name, const QString &newName) {
 }
 
 bool CategoryModel::删除类别(const QString &name) {
-    qDebug() << "=== 开始本地类别 ===" << name;
+    qDebug() << "=== 开始删除本地类别 ===" << name;
 
     if (name == "未分类") {
         return false;

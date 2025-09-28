@@ -74,8 +74,6 @@ class TodoSyncServer : public BaseSyncServer {
     // 数据操作接口
     void setTodoItems(const QList<TodoItem *> &items); // 设置待同步的待办事项列表
     QList<TodoItem *> getUnsyncedItems() const;        // 获取未同步的项目
-    void markItemAsSynced(TodoItem *item);             // 标记项目为已同步
-    void markItemAsUnsynced(TodoItem *item);           // 标记项目为未同步
 
   signals:
     // 数据更新信号（待办事项特有）
@@ -91,17 +89,17 @@ class TodoSyncServer : public BaseSyncServer {
 
   protected:
     // 同步操作实现（重写基类方法）
-    void 执行同步(SyncDirection direction) override;            // 执行同步操作
-    void fetchTodosFromServer();                                // 从服务器获取待办事项
-    void pushLocalChangesToServer();                            // 推送本地更改到服务器
-    void pushSingleItem(TodoItem *item);                        // 推送单个待办事项
-    void pushNextItem();                                        // 推送下一个待办事项
-    void handleSingleItemPushSuccess();                         // 处理单个项目推送成功
-    void handleSyncSuccess(const QJsonObject &response);        // 处理同步成功
-    void handleFetchTodosSuccess(const QJsonObject &response);  // 处理获取待办事项成功
-    void handlePushChangesSuccess(const QJsonObject &response); // 处理推送更改成功
-    void pushBatchToServer(const QList<TodoItem *> &batch);     // 推送批次到服务器
-    void pushNextBatch();                                       // 推送下一个批次
+    void 执行同步(SyncDirection direction) override;           // 执行同步操作
+    void 拉取待办();                                           // 从服务器获取待办事项
+    void 推送待办();                                           // 推送本地更改到服务器
+    void 推送单个项目(TodoItem *item);                         // 推送单个待办事项
+    void 推送下个项目();                                       // 推送下一个待办事项
+    void handleSingleItemPushSuccess();                        // 处理单个项目推送成功
+    void handleSyncSuccess(const QJsonObject &response);       // 处理同步成功
+    void handleFetchTodosSuccess(const QJsonObject &response); // 处理获取待办事项成功
+    void 处理推送更改成功(const QJsonObject &response);        // 处理推送更改成功
+    void pushBatchToServer(const QList<TodoItem *> &batch);    // 推送批次到服务器
+    void pushNextBatch();                                      // 推送下一个批次
 
   private:
     // 数据管理

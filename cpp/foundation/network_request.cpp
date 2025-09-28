@@ -72,12 +72,18 @@ bool NetworkRequest::hasValidAuth() const {
  * @param apiVersion API版本，默认为"v1"
  */
 void NetworkRequest::setServerConfig(const QString &baseUrl, const QString &apiVersion) {
+    // 更新基础 URL
     m_serverBaseUrl = baseUrl;
-    m_apiVersion = apiVersion;
-
-    // 确保URL以斜杠结尾
     if (!m_serverBaseUrl.endsWith('/')) {
         m_serverBaseUrl += '/';
+    }
+
+    // 仅当调用方提供了非空 apiVersion 时才覆盖；否则保持已有值，若仍为空则回退默认 v1
+    if (!apiVersion.isEmpty()) {
+        m_apiVersion = apiVersion;
+    }
+    if (m_apiVersion.isEmpty()) {
+        m_apiVersion = "v1"; // 安全回退，防止出现缺少版本前缀导致 404
     }
 }
 
@@ -200,7 +206,7 @@ void NetworkRequest::onReplyFinished() {
                 // 成功响应，提取data字段作为响应数据
                 responseData = fullResponse.contains("data") ? fullResponse["data"].toObject() : fullResponse;
                 success = true;
-                qDebug() << "请求成功:" << request.type;
+                qDebug() << "请求成功:" << RequestTypeToString(request.type);
             } else {
                 // 服务器返回错误
                 QString serverMessage = fullResponse.contains("error") ? fullResponse["error"].toString()
@@ -209,62 +215,100 @@ void NetworkRequest::onReplyFinished() {
             }
 
         } else {
-            // 处理网络错误
+            // 处理网络错误（包括HTTP状态码非2xx的情况）
             int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
             NetworkError networkError = mapQNetworkError(reply->error());
-            errorMessage = getErrorMessage(networkError, reply->errorString());
 
-            qWarning() << "网络请求失败:" << request.type << "- HTTP状态码:" << httpStatus << "-" << errorMessage;
+            // 读取响应体（最多预览前 256 字节，避免日志污染）
+            QByteArray body = reply->readAll();
+            QByteArray bodyPreview = body.left(256);
+            QString bodyText = QString::fromUtf8(bodyPreview);
 
-            // 如果是401错误，可能是认证问题
-            if (httpStatus == 401) {
-                // 尝试解析响应体以确认错误码
-                QByteArray body = reply->readAll();
-                QJsonParseError perr;
-                QJsonDocument pdoc = QJsonDocument::fromJson(body, &perr);
-                if (perr.error == QJsonParseError::NoError && pdoc.isObject()) {
-                    QJsonObject o = pdoc.object();
-                    QString code;
-                    if (o.contains("error")) {
-                        if (o.value("error").isObject()) {
-                            code = o.value("error").toObject().value("code").toString();
-                        } else if (o.value("error").isString()) {
-                            code = o.value("error").toString();
+            // 预设默认错误信息（含 Qt 原生错误串）
+            QString baseMsg = getErrorMessage(networkError); // 不立即拼接 reply->errorString()，留给后续覆盖
+            QString qtDetail = reply->errorString();
+
+            // 尝试解析服务端 JSON 以抽取业务错误文案
+            QString serverCode;
+            QString serverMessage; // 优先候选
+            QJsonParseError jsonErr;
+            QJsonDocument jdoc = QJsonDocument::fromJson(body, &jsonErr);
+            if (jsonErr.error == QJsonParseError::NoError && jdoc.isObject()) {
+                QJsonObject o = jdoc.object();
+                // 结构: { success:false, message:"...", error:{ code:"...", message:"..." } }
+                if (o.contains("error")) {
+                    const QJsonValue v = o.value("error");
+                    if (v.isObject()) {
+                        QJsonObject eo = v.toObject();
+                        serverCode = eo.value("code").toString();
+                        if (serverMessage.isEmpty()) {
+                            serverMessage = eo.value("message").toString();
                         }
+                    } else if (v.isString()) {
+                        // 若直接把 error 作为字符串错误码
+                        serverCode = v.toString();
                     }
-                    if (code.compare("UNAUTHORIZED", Qt::CaseInsensitive) == 0 ||
-                        code.compare("AUTHENTICATION_ERROR", Qt::CaseInsensitive) == 0) {
-                        qWarning() << "认证失败(标准错误码):" << code;
-                        emit authTokenExpired();
-                    } else {
-                        qWarning() << "401返回但未识别标准认证错误码，仍触发认证失效";
-                        emit authTokenExpired();
-                    }
-                } else {
-                    qWarning() << "401且响应非JSON，触发认证失效";
-                    emit authTokenExpired();
+                }
+                if (serverMessage.isEmpty() && o.value("message").isString()) {
+                    serverMessage = o.value("message").toString();
                 }
             }
-            // 如果是400错误，这里不再做中文/关键词匹配，保持业务语义清晰
-            else if (httpStatus == 400) {
-                // 可选：若未来需要根据 error.code 精细化处理，可在此添加解析逻辑
+
+            // 归一化 serverMessage：去除前后空白
+            serverMessage = serverMessage.trimmed();
+
+            // 组装对上层暴露的 errorMessage：
+            // 规则：
+            // 1. 若有 serverMessage，优先使用其作为核心业务文案
+            // 2. 保留分类关键字前缀（如 "认证失败"），以维持现有上层关键字检测逻辑
+            if (!serverMessage.isEmpty()) {
+                errorMessage = getErrorMessage(networkError, serverMessage);
+            } else {
+                // 没有服务端文案则退回原逻辑：分类前缀 + Qt 细节
+                errorMessage = baseMsg;
+                if (!qtDetail.isEmpty()) {
+                    errorMessage += ": " + qtDetail;
+                }
             }
 
-            // 检查是否需要重试
+// 日志输出（含 HTTP 状态与预览体）
+#ifdef QT_DEBUG
+            if (!bodyText.isEmpty())
+                qWarning() << "网络请求失败:" << RequestTypeToString(request.type) << "- HTTP状态码:" << httpStatus
+                           << "-" << errorMessage << "-" << "错误码:" << serverCode << "响应体预览:" << bodyText;
+            else
+#endif
+                qWarning() << "网络请求失败:" << RequestTypeToString(request.type) << "- HTTP状态码:" << httpStatus
+                           << "-" << errorMessage << "-" << "错误码:" << serverCode;
+
+            // 专门的 401 认证处理（沿用原逻辑，但复用已经解析的 JSON 信息）
+            if (httpStatus == 401) {
+                QString normCode = serverCode.toUpper();
+                if (normCode == "UNAUTHORIZED") {
+                    emit authTokenExpired();
+                } else if (normCode == "LOGIN_FAILED") {
+                } else {
+                    emit authTokenExpired(); // 兜底，防止服务端未按规范返回 UNAUTHORIZED
+                }
+            } else if (httpStatus == 400) {
+                // 未来可在此扩展针对 400 的细分处理
+            }
+
+            // 重试逻辑：仅在没有业务语义的“可恢复”技术性错误时重试
             if (shouldRetry(networkError) && request.currentRetry < request.config.maxRetries) {
-                request.currentRetry++;
-                qDebug() << "重试请求:" << request.type << "(" << request.currentRetry << "/"
-                         << request.config.maxRetries << ")";
-
-                // 延迟重试
-                QTimer::singleShot(1000 * request.currentRetry, [this, requestId]() {
-                    if (m_pendingRequests.contains(requestId)) {
-                        executeRequest(m_pendingRequests[requestId]);
-                    }
-                });
-
-                reply->deleteLater();
-                return;
+                // 若服务器明确给出业务错误（如密码错误），不再重试
+                if (serverMessage.isEmpty()) {
+                    request.currentRetry++;
+                    qDebug() << "重试请求:" << RequestTypeToString(request.type) << "(" << request.currentRetry << "/"
+                             << request.config.maxRetries << ")";
+                    QTimer::singleShot(1000 * request.currentRetry, [this, requestId]() {
+                        if (m_pendingRequests.contains(requestId)) {
+                            executeRequest(m_pendingRequests[requestId]);
+                        }
+                    });
+                    reply->deleteLater();
+                    return;
+                }
             }
         }
     } catch (const QString &error) {
@@ -301,7 +345,7 @@ void NetworkRequest::onRequestTimeout() {
 
     PendingRequest &request = m_pendingRequests[requestId];
 
-    qWarning() << "请求超时:" << request.type;
+    qWarning() << "请求超时:" << RequestTypeToString(request.type);
 
     // 取消网络请求
     if (request.reply) {
@@ -311,8 +355,8 @@ void NetworkRequest::onRequestTimeout() {
     // 检查是否需要重试
     if (request.currentRetry < request.config.maxRetries) {
         request.currentRetry++;
-        qDebug() << "超时重试:" << request.type << "(" << request.currentRetry << "/" << request.config.maxRetries
-                 << ")";
+        qDebug() << "超时重试:" << RequestTypeToString(request.type) << "(" << request.currentRetry << "/"
+                 << request.config.maxRetries << ")";
 
         // 延迟重试
         QTimer::singleShot(2000 * request.currentRetry, [this, requestId]() {
@@ -345,7 +389,7 @@ void NetworkRequest::onSslErrors(const QList<QSslError> &errors) {
 void NetworkRequest::executeRequest(PendingRequest &request) {
     QNetworkRequest networkRequest = createNetworkRequest(request.config);
 
-    qDebug() << "发送网络请求:" << request.type << "到" << networkRequest.url().toString();
+    qDebug() << "发送网络请求:" << RequestTypeToString(request.type) << "到" << networkRequest.url().toString();
 
     // 准备请求数据
     QByteArray requestData;
@@ -480,7 +524,7 @@ void NetworkRequest::addAuthHeader(QNetworkRequest &request) const {
     if (!m_authToken.isEmpty()) {
         QString authHeader = QString("Bearer %1").arg(m_authToken);
         request.setRawHeader("Authorization", authHeader.toUtf8());
-        qDebug() << "添加认证头部:" << authHeader.left(20) + "..."; // 只显示前20个字符
+        // qDebug() << "添加认证头部:" << authHeader.left(20) + "..."; // 只显示前20个字符
     } else {
         qWarning() << "认证令牌为空，无法添加认证头部";
     }
@@ -533,6 +577,14 @@ QString NetworkRequest::getErrorMessage(NetworkError error, const QString &detai
         return QString("%1: %2").arg(baseMessage, details);
     }
     return baseMessage;
+}
+
+QString NetworkRequest::RequestTypeToString(Network::RequestType type) const {
+    auto it = Network::RequestTypeNameMap.find(type);
+    if (it != Network::RequestTypeNameMap.end()) {
+        return it->second;
+    }
+    return "未知请求";
 }
 
 bool NetworkRequest::shouldRetry(NetworkError error) const {

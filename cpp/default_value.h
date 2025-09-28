@@ -23,7 +23,4 @@ constexpr const char *todoApiEndpoint{"/todos"};            // 待办事项 API 
 constexpr const char *userAuthApiEndpoint{"/auth"};         // 用户认证 API 端点
 constexpr const char *categoriesApiEndpoint{"/categories"}; // 分类 API 端点
 
-// constexpr const int 令牌刷新间隔{3600}; // (秒)
-// constexpr const int auto_sync_interval{30};        // 自动同步间隔（分钟）
-
 } // namespace DefaultValues

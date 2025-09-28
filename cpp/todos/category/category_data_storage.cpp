@@ -73,7 +73,7 @@ bool CategoryDataStorage::加载类别(CategorieList &categories) {
                 // qint64 ms = v.toLongLong(&ok);
                 qint64 ms = v.toLongLong();
                 // if (ok)
-                    return QDateTime::fromMSecsSinceEpoch(ms, QTimeZone::UTC);
+                return QDateTime::fromMSecsSinceEpoch(ms, QTimeZone::UTC);
                 // QDateTime dt = QDateTime::fromString(v.toString(), Qt::ISODate);
                 // return dt.isValid() ? dt.toUTC() : QDateTime();
             };
@@ -182,13 +182,15 @@ bool CategoryDataStorage::更新类别(CategorieList &categories, const QString 
         qCritical() << "数据库未打开，无法更新类别";
         return false;
     }
+    auto it = std::find_if(categories.begin(), categories.end(),
+                           [name](const std::unique_ptr<CategorieItem> &i) { return i->name() == name; });
     QSqlQuery updateQuery(db);
     const QString updateString = "UPDATE categories SET name = ?, updated_at = ?, synced = ? WHERE name = ?";
     updateQuery.prepare(updateString);
     QDateTime now = QDateTime::currentDateTimeUtc();
     updateQuery.addBindValue(newName);
     updateQuery.addBindValue(now.toMSecsSinceEpoch());
-    updateQuery.addBindValue(2);
+    updateQuery.addBindValue((*it)->synced() != 1 ? 2 : 1); // 如果之前是插入状态，不要改成更新状态
     updateQuery.addBindValue(name);
     if (!updateQuery.exec()) {
         qCritical() << "更新数据库中的类别失败:" << updateQuery.lastError().text();
@@ -198,12 +200,9 @@ bool CategoryDataStorage::更新类别(CategorieList &categories, const QString 
         qWarning() << "未找到要更新的类别，名称:" << name;
         return false;
     }
-    auto it = std::find_if(categories.begin(), categories.end(),
-                           [name](const std::unique_ptr<CategorieItem> &i) { return i->name() == name; });
     if (it != categories.end()) {
         (*it)->setName(newName);
-        if ((*it)->synced() != 1) // 如果之前是插入状态，不要改成更新状态
-            (*it)->setSynced(2); // 标记为未同步，待更新
+        (*it)->setSynced(2); // 标记为未同步，待更新
         (*it)->setUpdatedAt(now);
     }
     qDebug() << "成功更新类别:" << name;
@@ -518,7 +517,7 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
                 existing->setUserUuid(userUuid);
                 existing->setCreatedAt(createdAt);
                 existing->setUpdatedAt(updatedAt);
-                existing->setSynced(source == ImportSource::Server ? 0 : (existing->synced() == 1 ? 1 : 2));
+                existing->setSynced(source == ImportSource::Server ? 0 : 2);
                 ++updateCount;
             }
         }

@@ -171,7 +171,8 @@ void Setting::initializeDefaultServerConfig() {
     } else {
         // 如果已经存在配置，确保NetworkRequest也同步更新
         QString existingUrl = m_config.get("server/baseUrl").toString();
-        NetworkRequest::GetInstance().setServerConfig(existingUrl);
+        QString existingVersion = m_config.get("server/apiVersion", QString(DefaultValues::apiVersion)).toString();
+        NetworkRequest::GetInstance().setServerConfig(existingUrl, existingVersion);
     }
 
     // 检查并设置默认的待办事项API端点

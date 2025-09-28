@@ -121,7 +121,7 @@ class BaseSyncServer : public QObject {
     bool 是否可以执行同步() const;
     void 开启自动同步计时器();
     void 停止自动同步计时器();
-    void 检查同步前置条件();
+    void 检查同步前置条件(bool allowOngoingPhase = false);
 
     // 成员变量
     NetworkRequest &m_networkRequest; ///< 网络请求管理器
@@ -130,11 +130,13 @@ class BaseSyncServer : public QObject {
     QTimer *m_autoSyncTimer;          ///< 自动同步定时器
 
     // 同步状态
-
     bool m_isSyncing;                     ///< 当前是否正在同步
     QString m_lastSyncTime;               ///< 最后同步时间
     int m_autoSyncInterval;               ///< 自动同步间隔（分钟）
     SyncDirection m_currentSyncDirection; ///< 当前同步方向
+
+    // 策略标志：在双向同步且存在本地未同步更改时，先推送再拉取，避免先拉取造成改名被当作新增
+    bool m_pushFirstInBidirectional = false;
 
     // 服务器配置
     QString m_apiEndpoint; ///< API端点

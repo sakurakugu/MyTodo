@@ -34,7 +34,7 @@ Item {
         }
 
         function onLoginFailed(errorMessage) {
-            loginDialog.setErrorMessage(qsTr("登录失败：%1").arg(errorMessage));
+            loginDialog.setErrorMessage(errorMessage);
         }
 
         function onLogoutSuccessful() {

@@ -14,8 +14,10 @@
 #include "default_value.h"
 #include "foundation/config.h"
 
+#include <QDateTime>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QSet>
 #include <QUuid>
 
 CategorySyncServer::CategorySyncServer(UserAuth &userAuth, QObject *parent) : BaseSyncServer(userAuth, parent) {
@@ -161,6 +163,9 @@ void CategorySyncServer::onNetworkRequestCompleted(Network::RequestType type, co
     case Network::RequestType::CreateCategory:
         处理创建类别成功(response);
         break;
+    case Network::RequestType::PushCategories:
+        处理推送更改成功(response);
+        break;
     case Network::RequestType::UpdateCategory:
         处理更新类别成功(response);
         break;
@@ -189,6 +194,15 @@ void CategorySyncServer::onNetworkRequestFailed(Network::RequestType type, Netwo
         qInfo() << "失败详情:" << message;
         emit categoryCreated(m_currentOperationName, false, message);
         return;
+    case Network::RequestType::PushCategories:
+        typeStr = "批量同步类别";
+        qInfo() << "批量类别同步失败！错误类型:" << static_cast<int>(error);
+        qInfo() << "失败详情:" << message;
+        // 批量失败视为同步失败
+        m_isSyncing = false;
+        emit syncingChanged();
+        emit syncCompleted(NetworkError, message);
+        return;
     case Network::RequestType::UpdateCategory:
         typeStr = "更新类别";
         qInfo() << "类别更新失败！错误类型:" << static_cast<int>(error);
@@ -202,8 +216,6 @@ void CategorySyncServer::onNetworkRequestFailed(Network::RequestType type, Netwo
         emit categoryDeleted(m_currentOperationName, false, message);
         return;
     default:
-        // 其他类型的请求不在类别同步管理器的处理范围内
-        qInfo() << "未知请求类型失败:" << static_cast<int>(type) << "错误:" << message;
         return;
     }
 
@@ -242,8 +254,15 @@ void CategorySyncServer::执行同步(SyncDirection direction) {
     // 根据同步方向执行不同的操作
     switch (direction) {
     case Bidirectional:
-        // 双向同步：先获取服务器数据，然后在 处理获取类别成功() 中推送本地更改
-        拉取类别();
+        // 若存在本地未同步更改，先推送再拉取，避免拉取阶段把旧名称再插入成重复
+        if (!m_unsyncedItems.empty()) {
+            m_pushFirstInBidirectional = true;
+            推送类别();
+        } else {
+            // 没有本地更改仍按旧逻辑直接拉取
+            m_pushFirstInBidirectional = false;
+            拉取类别();
+        }
         break;
     case UploadOnly:
         // 仅上传：只推送本地更改
@@ -257,7 +276,8 @@ void CategorySyncServer::执行同步(SyncDirection direction) {
 }
 
 void CategorySyncServer::拉取类别() {
-    检查同步前置条件();
+    // 第一阶段（拉取）严格检查
+    检查同步前置条件(false);
     m_isSyncing = true;
 
     qDebug() << "从服务器获取类别...";
@@ -286,7 +306,8 @@ void CategorySyncServer::拉取类别() {
 }
 
 void CategorySyncServer::推送类别() {
-    检查同步前置条件();
+    // 第二阶段（推送）允许前一阶段已占用同步状态，避免误判
+    检查同步前置条件(true);
     m_isSyncing = true;
 
     if (m_unsyncedItems.empty()) {
@@ -312,10 +333,20 @@ void CategorySyncServer::推送类别() {
             QJsonObject obj;
             obj["uuid"] = item->uuid().toString(QUuid::WithoutBraces);
             obj["name"] = item->name();
-            obj["created_at"] = static_cast<qint64>(item->createdAt().toUTC().toMSecsSinceEpoch());
-            obj["updated_at"] = static_cast<qint64>(item->updatedAt().toUTC().toMSecsSinceEpoch());
+            // 服务端 SyncCategoryItem.CreatedAt/UpdatedAt 期望 *time.Time (RFC3339/ISO8601 字符串)
+            // 原实现发送 int64 毫秒时间戳，Go 端 Unmarshal 失败，fallback 导致 name 为空验证错误
+            const auto createdUtc = item->createdAt().toUTC();
+            const auto updatedUtc = item->updatedAt().toUTC();
+            // Qt::ISODateWithMs 生成 2025-09-28T06:12:34.123Z 形式（需补 Z 表示 UTC）
+            auto createdStr = createdUtc.toString(Qt::ISODateWithMs);
+            auto updatedStr = updatedUtc.toString(Qt::ISODateWithMs);
+            if (!createdStr.endsWith('Z'))
+                createdStr += 'Z';
+            if (!updatedStr.endsWith('Z'))
+                updatedStr += 'Z';
+            obj["created_at"] = createdStr;
+            obj["updated_at"] = updatedStr;
             obj["synced"] = item->synced();
-
             jsonArray.append(obj);
         }
 
@@ -325,7 +356,15 @@ void CategorySyncServer::推送类别() {
         config.requiresAuth = true;
         config.data["categories"] = jsonArray;
 
-        m_networkRequest.sendRequest(Network::RequestType::CreateCategory, config);
+#ifdef QT_DEBUG
+        // 调试日志：打印payload（截断防止过长）
+        QJsonDocument payloadDoc(config.data);
+        QByteArray payloadBytes = payloadDoc.toJson(QJsonDocument::Compact);
+        qDebug() << "批量类别同步Payload:" << QString::fromUtf8(payloadBytes.left(512));
+#endif
+
+        // 批量推送本地未同步类别应使用 PushCategories 类型，以便回调进入 处理推送更改成功()
+        m_networkRequest.sendRequest(Network::RequestType::PushCategories, config);
     } catch (const std::exception &e) {
         qCritical() << "推送类别更改时发生异常:" << e.what();
 
@@ -350,8 +389,8 @@ void CategorySyncServer::处理获取类别成功(const QJsonObject &response) {
         emit categoriesUpdatedFromServer(categoriesArray);
     }
 
-    // 如果是双向同步，成功获取数据后推送本地更改
-    if (m_currentSyncDirection == Bidirectional) {
+    // 双向同步旧逻辑：拉取后再推送；但当 push-first 策略启用时，此处不再推送
+    if (m_currentSyncDirection == Bidirectional && !m_pushFirstInBidirectional) {
         推送类别();
     } else {
         // 仅下载模式，直接完成同步
@@ -365,41 +404,79 @@ void CategorySyncServer::处理获取类别成功(const QJsonObject &response) {
 void CategorySyncServer::处理推送更改成功(const QJsonObject &response) {
     qDebug() << "推送类别更改成功";
 
-    // 验证服务器响应
-    bool shouldMarkAsSynced = true;
+    // 验证服务器响应（部分失败支持）
     QJsonObject summary = response["summary"].toObject();
     int created = summary["created"].toInt();
     int updated = summary["updated"].toInt();
-    int errors = summary["errors"].toArray().size();
+    QJsonArray errorArray = summary["errors"].toArray();
+    int errors = errorArray.size();
 
     qInfo() << QString("服务器处理结果: 创建=%1, 更新=%2, 错误=%3").arg(created).arg(updated).arg(errors);
 
     // 如果有错误，记录详细信息
+    QSet<int> failedIndexes;
     if (errors > 0) {
-        QJsonArray errorArray = summary["errors"].toArray();
         for (const auto &errorValue : errorArray) {
-            QJsonObject error = errorValue.toObject();
-            qWarning() << QString("类别 %1 处理失败: %2").arg(error["index"].toInt()).arg(error["error"].toString());
+            QJsonObject errObj = errorValue.toObject();
+            int idx = errObj["index"].toInt(-1);
+            QString errMsg = errObj["error"].toString();
+            qWarning() << QString("类别条目 index=%1 处理失败: %2").arg(idx).arg(errMsg);
+            if (idx >= 0)
+                failedIndexes.insert(idx);
         }
-        shouldMarkAsSynced = false;
-        qWarning() << "由于服务器处理错误，不标记类别为已同步";
     }
 
-    // 只有在验证通过时才标记当前批次的类别为已同步
-    if (shouldMarkAsSynced) {
-        // 发出本地更改已上传信号
-        emit localChangesUploaded(m_unsyncedItems);
+    const auto nowUtc = QDateTime::currentDateTimeUtc();
+    int changed = 0;
+    std::vector<CategorieItem *> actuallySynced;
+    actuallySynced.reserve(m_unsyncedItems.size());
+    for (int i = 0; i < static_cast<int>(m_unsyncedItems.size()); ++i) {
+        auto *item = m_unsyncedItems[i];
+        if (!item)
+            continue;
+        if (failedIndexes.contains(i)) {
+            // 保留其 synced 状态，留给下次重试
+            continue;
+        }
+        qInfo() << "类别条目" << item->name() << "同步成功，更新状态为 synced=0";
+        item->setSynced(0);
+        item->setUpdatedAt(nowUtc);
+        actuallySynced.push_back(item);
+        ++changed;
+    }
+    qDebug() << "成功同步并标记" << changed << "个类别为 synced=0, 失败" << failedIndexes.size();
+    if (!actuallySynced.empty()) {
+        emit localChangesUploaded(actuallySynced);
     }
 
     emit syncProgress(100, "类别更改推送完成");
 
-    // 清空待同步类别列表
-    m_unsyncedItems.clear();
+    // 移除已成功的条目, 保留失败的以便下次重试
+    if (!m_unsyncedItems.empty()) {
+        std::vector<CategorieItem *> remaining;
+        remaining.reserve(failedIndexes.size());
+        for (int i = 0; i < static_cast<int>(m_unsyncedItems.size()); ++i) {
+            if (failedIndexes.contains(i)) {
+                remaining.push_back(m_unsyncedItems[i]);
+            }
+        }
+        m_unsyncedItems.swap(remaining);
+    }
 
-    m_isSyncing = false;
-    emit syncingChanged();
-    更新最后同步时间();
-    emit syncCompleted(Success, "类别更改推送完成");
+    // 如果是双向同步且采用了 push-first 策略，则在推送成功后继续拉取服务器最新（此时本地改名等已写入服务器）
+    if (m_currentSyncDirection == Bidirectional && m_pushFirstInBidirectional) {
+        qDebug() << "推送阶段完成（push-first），继续执行拉取阶段";
+        // 清空标志，避免递归
+        m_pushFirstInBidirectional = false;
+        // 继续拉取（此时保持 m_isSyncing=true 防止外部再触发）
+        拉取类别();
+        return;
+    } else {
+        m_isSyncing = false;
+        emit syncingChanged();
+        更新最后同步时间();
+        emit syncCompleted(Success, "类别更改推送完成");
+    }
 }
 
 void CategorySyncServer::处理创建类别成功(const QJsonObject &response) {

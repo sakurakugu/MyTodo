@@ -169,9 +169,8 @@ bool TodoModel::setData(const QModelIndex &index, const QVariant &value, int rol
 
     if (changed) {
         item->setUpdatedAt(QDateTime::currentDateTime());
-        if (item->synced() != 1) { // 如果之前不是未同步+新建状态
-            item->setSynced(2);
-        }
+        item->setSynced(2); // 标记为未同步，待更新
+
         需要重新筛选();
         emit dataChanged(index, index, QVector<int>() << role);
         m_dataManager.更新待办(m_todos, *item);

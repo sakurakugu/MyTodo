@@ -400,8 +400,7 @@ bool TodoDataStorage::更新待办(TodoList &todos, const QUuid &uuid, const QVa
         return false;
     }
     (*it)->setUpdatedAt(now);
-    if ((*it)->synced() != 1)
-        (*it)->setSynced(2);
+    (*it)->setSynced(2);
     qDebug() << "成功更新待办事项，UUID:" << uuid;
     return true;
 }
@@ -837,7 +836,7 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
                 existing->setDeletedAt(deletedAt);
                 existing->setCreatedAt(createdAt);
                 existing->setUpdatedAt(updatedAt);
-                existing->setSynced(source == ImportSource::Server ? 0 : (existing->synced() == 1 ? 1 : 2));
+                existing->setSynced(source == ImportSource::Server ? 0 : 2);
                 ++updateCount;
                 continue;
             }

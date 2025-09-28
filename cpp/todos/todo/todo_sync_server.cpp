@@ -34,7 +34,8 @@ void TodoSyncServer::与服务器同步(SyncDirection direction) {
     qDebug() << "开始同步待办事项，方向:" << direction;
     qDebug() << "同步请求前状态检查: m_isSyncing =" << m_isSyncing;
 
-    检查同步前置条件();
+    // 入口调用：严格检查（不允许已有同步）
+    检查同步前置条件(false);
 
     m_isSyncing = true;
     m_currentSyncDirection = direction;
@@ -113,18 +114,6 @@ QList<TodoItem *> TodoSyncServer::getUnsyncedItems() const {
     return unsyncedItems;
 }
 
-void TodoSyncServer::markItemAsSynced(TodoItem *item) {
-    if (item) {
-        item->setSynced(true);
-    }
-}
-
-void TodoSyncServer::markItemAsUnsynced(TodoItem *item) {
-    if (item) {
-        item->setSynced(false);
-    }
-}
-
 // 网络请求回调处理 - 重写基类方法
 void TodoSyncServer::onNetworkRequestCompleted(Network::RequestType type, const QJsonObject &response) {
     switch (type) {
@@ -132,7 +121,7 @@ void TodoSyncServer::onNetworkRequestCompleted(Network::RequestType type, const 
         handleFetchTodosSuccess(response);
         break;
     case Network::RequestType::PushTodos:
-        handlePushChangesSuccess(response);
+        处理推送更改成功(response);
         break;
     default:
         // 调用基类的默认处理
@@ -160,21 +149,28 @@ void TodoSyncServer::执行同步(SyncDirection direction) {
     // 根据同步方向执行不同的操作
     switch (direction) {
     case Bidirectional:
-        // 双向同步：先获取服务器数据，然后在handleFetchTodosSuccess中推送本地更改
-        fetchTodosFromServer();
+        // 若存在本地未同步更改，先推送再拉取，避免拉取阶段把旧名称再插入成重复
+        if (!getUnsyncedItems().isEmpty()) {
+            m_pushFirstInBidirectional = true;
+            推送待办();
+        } else {
+            // 没有本地更改仍按旧逻辑直接拉取
+            m_pushFirstInBidirectional = false;
+            拉取待办();
+        }
         break;
     case UploadOnly:
         // 仅上传：只推送本地更改
-        pushLocalChangesToServer();
+        推送待办();
         break;
     case DownloadOnly:
         // 仅下载：只获取服务器数据
-        fetchTodosFromServer();
+        拉取待办();
         break;
     }
 }
 
-void TodoSyncServer::fetchTodosFromServer() {
+void TodoSyncServer::拉取待办() {
     qDebug() << "从服务器获取待办事项...";
     emit syncProgress(25, "正在从服务器获取数据...");
 
@@ -200,8 +196,11 @@ void TodoSyncServer::fetchTodosFromServer() {
     }
 }
 
-void TodoSyncServer::pushLocalChangesToServer() {
+void TodoSyncServer::推送待办() {
     qInfo() << "开始推送本地更改到服务器...";
+
+    // 第二阶段（双向同步 fetch 之后）允许继续沿用 m_isSyncing，占用状态不视为冲突
+    检查同步前置条件(true);
 
     // 找出所有未同步的项目
     QList<TodoItem *> unsyncedItems = getUnsyncedItems();
@@ -369,8 +368,8 @@ void TodoSyncServer::handleFetchTodosSuccess(const QJsonObject &response) {
         emit todosUpdatedFromServer(todosArray);
     }
 
-    // 如果是双向同步，成功获取数据后推送本地更改
-    if (m_currentSyncDirection == Bidirectional) {
+    // 如果是双向同步，成功获取数据后推送本地更改；但当 push-first 策略启用时，此处不再推送
+    if (m_currentSyncDirection == Bidirectional && !m_pushFirstInBidirectional) {
         // 检查是否有未同步的项目
         QList<TodoItem *> unsyncedItems = getUnsyncedItems();
         if (unsyncedItems.isEmpty()) {
@@ -383,7 +382,7 @@ void TodoSyncServer::handleFetchTodosSuccess(const QJsonObject &response) {
         } else {
             // 有本地更改需要推送
             qInfo() << "双向同步：检测到" << unsyncedItems.size() << "个本地更改，开始推送";
-            pushLocalChangesToServer();
+            推送待办();
         }
     } else {
         // 仅下载模式，直接完成同步
@@ -394,7 +393,7 @@ void TodoSyncServer::handleFetchTodosSuccess(const QJsonObject &response) {
     }
 }
 
-void TodoSyncServer::handlePushChangesSuccess(const QJsonObject &response) {
+void TodoSyncServer::处理推送更改成功(const QJsonObject &response) {
     qDebug() << "推送更改成功";
 
     // 验证服务器响应
@@ -429,7 +428,8 @@ void TodoSyncServer::handlePushChangesSuccess(const QJsonObject &response) {
                               .arg(++idx)
                               .arg(cObj.value("index").toInt())
                               .arg(cObj.value("reason").toString())
-                              .arg(QString::fromUtf8(QJsonDocument(cObj.value("server_item").toObject()).toJson(QJsonDocument::Compact)));
+                              .arg(QString::fromUtf8(
+                                  QJsonDocument(cObj.value("server_item").toObject()).toJson(QJsonDocument::Compact)));
         }
     }
 
@@ -455,7 +455,7 @@ void TodoSyncServer::handlePushChangesSuccess(const QJsonObject &response) {
     // 只有在验证通过时才标记当前批次的项目为已同步
     if (shouldMarkAsSynced) {
         for (TodoItem *item : m_pendingUnsyncedItems) {
-            item->setSynced(true);
+            item->setSynced(0);
         }
         // 发出本地更改已上传信号
         emit localChangesUploaded(m_pendingUnsyncedItems);
@@ -490,18 +490,27 @@ void TodoSyncServer::handlePushChangesSuccess(const QJsonObject &response) {
             m_totalBatches = 0;
         }
 
-        m_isSyncing = false;
-        emit syncingChanged();
-        更新最后同步时间();
-        emit syncCompleted(Success, "更改推送完成");
+        if (m_currentSyncDirection == Bidirectional && m_pushFirstInBidirectional) {
+            qDebug() << "推送阶段完成（push-first），继续执行拉取阶段";
+            // 清空标志，避免递归
+            m_pushFirstInBidirectional = false;
+            // 继续拉取（此时保持 m_isSyncing=true 防止外部再触发）
+            拉取待办();
+            return;
+        } else {
+            m_isSyncing = false;
+            emit syncingChanged();
+            更新最后同步时间();
+            emit syncCompleted(Success, "待办事项更改推送完成");
+        }
     }
 }
 
-void TodoSyncServer::pushSingleItem(TodoItem *item) {
+void TodoSyncServer::推送单个项目(TodoItem *item) {
     if (!item) {
         // 如果项目无效，跳到下一个
         qInfo() << "跳过无效项目，继续推送下一个";
-        pushNextItem();
+        推送下个项目();
         return;
     }
 
@@ -522,8 +531,10 @@ void TodoSyncServer::pushSingleItem(TodoItem *item) {
     itemData["is_completed"] = item->isCompleted();
 
     // 处理可选的日期时间字段
-    itemData["deadline"] = item->deadline().isValid() ? QJsonValue(static_cast<qint64>(item->deadline().toUTC().toMSecsSinceEpoch())) : QJsonValue();
-    
+    itemData["deadline"] = item->deadline().isValid()
+                               ? QJsonValue(static_cast<qint64>(item->deadline().toUTC().toMSecsSinceEpoch()))
+                               : QJsonValue();
+
     if (item->recurrenceInterval() > 0) {
         itemData["recurrenceInterval"] = item->recurrenceInterval();
         itemData["recurrenceCount"] = item->recurrenceCount();
@@ -560,22 +571,22 @@ void TodoSyncServer::handleSingleItemPushSuccess() {
     if (m_currentPushIndex < m_pendingUnsyncedItems.size()) {
         TodoItem *item = m_pendingUnsyncedItems[m_currentPushIndex];
         if (item) {
-            item->setSynced(true);
+            item->setSynced(0);
         }
     }
 
     // 推送下一个项目
     qInfo() << "继续推送队列中的下一个项目...";
-    pushNextItem();
+    推送下个项目();
 }
 
-void TodoSyncServer::pushNextItem() {
+void TodoSyncServer::推送下个项目() {
     m_currentPushIndex++;
 
     if (m_currentPushIndex < m_pendingUnsyncedItems.size()) {
         // 还有更多项目需要推送
         TodoItem *nextItem = m_pendingUnsyncedItems[m_currentPushIndex];
-        pushSingleItem(nextItem);
+        推送单个项目(nextItem);
 
         // 更新进度
         int progress = 75 + (25 * m_currentPushIndex / m_pendingUnsyncedItems.size());

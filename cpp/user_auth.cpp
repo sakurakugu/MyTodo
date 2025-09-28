@@ -41,9 +41,7 @@ UserAuth::UserAuth(QObject *parent)
 
     // 连接令牌过期检查定时器
     connect(m_tokenExpiryTimer, &QTimer::timeout, this, &UserAuth::onTokenExpiryCheck);
-
-    m_tokenExpiryTimer->setSingleShot(false); // 非单次触发
-    m_tokenExpiryTimer->setInterval(60000);   // 每分钟检查一次
+    m_tokenExpiryTimer->setSingleShot(true); // 单次触发；触发后如需继续会在逻辑里重新安排
 
     // 初始化服务器配置
     加载数据();
@@ -86,7 +84,7 @@ void UserAuth::加载数据() {
 
 UserAuth::~UserAuth() {
     停止令牌过期计时器();
-    
+
     // 从数据库导出器中注销
     m_database.unregisterDataExporter("users");
 }
@@ -202,16 +200,6 @@ void UserAuth::刷新访问令牌() {
     m_networkRequest.sendRequest(Network::RequestType::RefreshToken, config);
 }
 
-bool UserAuth::访问令牌是否即将过期() const {
-    if (m_tokenExpiryTime == 0) {
-        return false;
-    }
-
-    qint64 currentTime = QDateTime::currentSecsSinceEpoch();
-    qint64 timeUntilExpiry = m_tokenExpiryTime - currentTime;
-
-    return timeUntilExpiry <= TOKEN_REFRESH_THRESHOLD;
-}
 
 void UserAuth::onNetworkRequestCompleted(Network::RequestType type, const QJsonObject &response) {
     switch (type) {
@@ -240,7 +228,7 @@ void UserAuth::onNetworkRequestFailed(Network::RequestType type, NetworkRequest:
 
     switch (type) {
     case Network::RequestType::Login:
-        qWarning() << "登录失败:" << message;
+        qWarning() << message;
         emit loginFailed(message);
         break;
     case Network::RequestType::RefreshToken:
@@ -326,6 +314,8 @@ void UserAuth::处理登录成功(const QJsonObject &response) {
     m_accessToken = response["access_token"].toString();
     m_refreshToken = response["refresh_token"].toString();
 
+
+
     QJsonObject userObj = response["user"].toObject();
     m_username = userObj.value("username").toString();
     if (m_username.isEmpty()) {
@@ -345,17 +335,23 @@ void UserAuth::处理登录成功(const QJsonObject &response) {
         return;
     }
 
-    // 设置令牌过期时间
+    // 设置令牌过期时间（若服务端未返回，使用默认访问令牌生命周期） // TODO: 从服务端返回过期时间
     if (response.contains("expires_in")) {
         qint64 expiresIn = response["expires_in"].toInt();
+        if (expiresIn <= 0 || expiresIn > ACCESS_TOKEN_LIFETIME) {
+            expiresIn = ACCESS_TOKEN_LIFETIME; // 防御：限制在预期范围
+        }
         m_tokenExpiryTime = QDateTime::currentSecsSinceEpoch() + expiresIn;
+    } else {
+        m_tokenExpiryTime = QDateTime::currentSecsSinceEpoch() + ACCESS_TOKEN_LIFETIME;
     }
 
     m_networkRequest.setAuthToken(m_accessToken);
     开启令牌过期计时器();
     保存凭据();
 
-    qDebug() << "用户" << m_username << "登录成功 (email=" << m_email << ")";
+    // qDebug() << "用户" << m_username << "登录成功 (email=" << m_email << ")";
+    qDebug() << "用户" << m_username;
 
     emit isLoggedInChanged();
     emit loginSuccessful(m_username);
@@ -379,11 +375,17 @@ void UserAuth::处理令牌刷新成功(const QJsonObject &response) {
         m_refreshToken = refreshToken;
     }
 
-    // 设置令牌过期时间
+    // 设置令牌过期时间（若服务端未返回，用默认访问令牌生命周期）
     if (response.contains("expires_in")) {
         qint64 expiresIn = response["expires_in"].toInt();
+        if (expiresIn <= 0 || expiresIn > ACCESS_TOKEN_LIFETIME) {
+            expiresIn = ACCESS_TOKEN_LIFETIME;
+        }
         m_tokenExpiryTime = QDateTime::currentSecsSinceEpoch() + expiresIn;
         qDebug() << "令牌过期时间已更新:" << m_tokenExpiryTime << "有效期:" << expiresIn << "秒";
+    } else {
+        m_tokenExpiryTime = QDateTime::currentSecsSinceEpoch() + ACCESS_TOKEN_LIFETIME;
+        qDebug() << "令牌过期时间使用默认生命周期 ACCESS_TOKEN_LIFETIME:" << ACCESS_TOKEN_LIFETIME;
     }
 
     // 更新刷新令牌（如果提供）
@@ -400,6 +402,7 @@ void UserAuth::处理令牌刷新成功(const QJsonObject &response) {
     开启令牌过期计时器();
 
     qDebug() << "访问令牌刷新成功，定时器已重新启动";
+    emit isLoggedInChanged();
     emit tokenRefreshSuccessful();
     是否发送首次认证信号();
 }
@@ -486,19 +489,61 @@ void UserAuth::是否发送首次认证信号() {
 }
 
 void UserAuth::onTokenExpiryCheck() {
-    if (访问令牌是否即将过期() && !m_isRefreshing) {
-        刷新访问令牌();
+    // 到达预定刷新窗口，若仍未刷新则执行刷新；若已经刷新，计时器会在刷新成功里重新安排
+    if (!m_isRefreshing) {
+        qint64 now = QDateTime::currentSecsSinceEpoch();
+        if (m_tokenExpiryTime > 0 && m_tokenExpiryTime - now <= ACCESS_TOKEN_REFRESH_AHEAD) {
+            qDebug() << "到达访问令牌预刷新窗口，执行刷新";
+            刷新访问令牌();
+        } else if (m_tokenExpiryTime <= now) {
+            qWarning() << "访问令牌已过期，触发过期处理";
+            emit authTokenExpired();
+        } else {
+            // 未到窗口（极少出现，除非外部直接调用 start 了一个不匹配的计时），重新调度
+            开启令牌过期计时器();
+        }
+    } else {
+        qDebug() << "刷新进行中，忽略本次 onTokenExpiryCheck";
     }
 }
 
 void UserAuth::开启令牌过期计时器() {
-    if (m_tokenExpiryTimer && !m_tokenExpiryTimer->isActive()) {
-        m_tokenExpiryTimer->start(60000); // 每分钟检查一次
+    if (!m_tokenExpiryTimer) return;
+
+    m_tokenExpiryTimer->stop(); // 重置任何旧的调度
+
+    if (m_tokenExpiryTime == 0) {
+        qDebug() << "未设置 token 过期时间，不安排刷新";
+        return;
     }
+
+    qint64 now = QDateTime::currentSecsSinceEpoch();
+    qint64 timeUntilExpiry = m_tokenExpiryTime - now;
+    if (timeUntilExpiry <= 0) {
+        qWarning() << "访问令牌已过期或时间异常，立即尝试刷新";
+        onTokenExpiryCheck();
+        return;
+    }
+
+    qint64 refreshDelaySec = timeUntilExpiry - ACCESS_TOKEN_REFRESH_AHEAD;
+    if (refreshDelaySec < 0) {
+        // 已经进入预刷新窗口，立即（稍微延迟 100ms）刷新，避免紧贴事件循环造成阻塞
+        refreshDelaySec = 0;
+    }
+
+    int delayMs;
+    // 防御：最大不超过 24h 单次（Qt int 限制），但这里 1h 足够
+    if (refreshDelaySec > 24 * 3600) {
+        refreshDelaySec = 24 * 3600;
+    }
+    delayMs = static_cast<int>(refreshDelaySec * 1000);
+
+    m_tokenExpiryTimer->start(delayMs);
+    // qDebug() << "计划在" << refreshDelaySec << "秒后进入预刷新窗口 (token 剩余" << timeUntilExpiry << "秒)";
 }
 
 void UserAuth::停止令牌过期计时器() {
-    if (m_tokenExpiryTimer && m_tokenExpiryTimer->isActive()) {
+    if (m_tokenExpiryTimer) {
         m_tokenExpiryTimer->stop();
     }
 }
@@ -559,7 +604,7 @@ bool UserAuth::导出到JSON(QJsonObject &output) {
 
     QSqlQuery query(db);
     query.prepare("SELECT uuid, username, email FROM users");
-    
+
     if (!query.exec()) {
         qWarning() << "查询用户数据失败:" << query.lastError().text();
         return false;
@@ -607,12 +652,12 @@ bool UserAuth::导入从JSON(const QJsonObject &input, bool replaceAll) {
     QJsonArray usersArray = input["users"].toArray();
     for (const auto &userValue : usersArray) {
         QJsonObject userObj = userValue.toObject();
-        
+
         query.prepare("INSERT OR REPLACE INTO users (uuid, username, email) VALUES (?, ?, ?, ?)");
         query.addBindValue(userObj.value("uuid").toString());
         query.addBindValue(userObj.value("username").toString());
         query.addBindValue(userObj.value("email").toString());
-        
+
         if (!query.exec()) {
             qWarning() << "导入用户数据失败:" << query.lastError().text();
             return false;

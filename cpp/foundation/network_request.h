@@ -15,6 +15,7 @@
 #include <QNetworkReply>
 #include <QObject>
 #include <QTimer>
+#include <map>
 
 // 前向声明
 class NetworkProxy;
@@ -60,10 +61,26 @@ enum RequestType {
     RefreshToken,    // 刷新令牌请求
     FetchCategories, // 获取类别列表请求
     CreateCategory,  // 创建类别请求
+    PushCategories,  // 批量同步类别请求
     UpdateCategory,  // 更新类别请求
     DeleteCategory,  // 删除类别请求
     Other = 99,      // 其他请求
 };
+
+// 请求类型的中文名称映射
+static const std::map<RequestType, QString> RequestTypeNameMap = //
+    {{Login, "登录请求"},
+     {Sync, "同步请求"},
+     {FetchTodos, "获取待办事项请求"},
+     {PushTodos, "推送待办事项请求"},
+     {Logout, "退出登录请求"},
+     {RefreshToken, "刷新令牌请求"},
+     {FetchCategories, "获取类别列表请求"},
+     {CreateCategory, "创建类别请求"},
+     {PushCategories, "批量类别同步请求"},
+     {UpdateCategory, "更新类别请求"},
+     {DeleteCategory, "删除类别请求"},
+     {Other, "其他请求"}};
 } // namespace Network
 
 class NetworkRequest : public QObject {
@@ -170,6 +187,8 @@ class NetworkRequest : public QObject {
     bool isDuplicateRequest(Network::RequestType type) const;           // 检查是否为重复请求
     void addActiveRequest(Network::RequestType type, qint64 requestId); // 添加活跃请求
     void removeActiveRequest(Network::RequestType type);                // 移除活跃请求
+
+    QString RequestTypeToString(Network::RequestType type) const; // 请求类型转字符串
 
     // 成员变量
     QNetworkAccessManager *m_networkRequest; // 网络访问管理器

@@ -111,8 +111,7 @@ class UserAuth : public QObject, public IDataExporter {
     void 是否发送首次认证信号();
 
     // 令牌管理
-    void 刷新访问令牌();               // 刷新访问令牌
-    bool 访问令牌是否即将过期() const; // 检查令牌是否即将过期
+  void 刷新访问令牌();               // 刷新访问令牌
 
     // 数据库操作
     bool 创建用户表();
@@ -134,7 +133,13 @@ class UserAuth : public QObject, public IDataExporter {
     bool m_isRefreshing;             ///< 是否正在刷新令牌
     bool m_firstAuthEmitted = false; ///< 首次认证信号是否已经发出
 
-    static const int TOKEN_REFRESH_THRESHOLD = 3600; // 令牌刷新间隔 (秒)
+    // ===== 令牌策略常量 =====
+    // 访问令牌总有效期（秒）—— 服务端约定：1 小时
+    static const int ACCESS_TOKEN_LIFETIME = 3600;
+    // 刷新令牌总有效期（秒）—— 服务端约定：14 天
+    static const int REFRESH_TOKEN_LIFETIME = 14 * 24 * 3600; // 1209600 秒
+    // 在访问令牌过期前多少秒刷新（预刷新提前量）
+    static const int ACCESS_TOKEN_REFRESH_AHEAD = 300; // 5 分钟，可根据需要调整
 
     // 服务器配置
     QString m_authApiEndpoint; ///< 认证API端点
