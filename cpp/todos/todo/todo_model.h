@@ -113,14 +113,11 @@ class TodoModel : public QAbstractListModel {
 
   signals:
     void dataUpdated();                                                        ///< 数据更新信号
-    void syncStarted();                                                        // 同步操作开始信号
-    void syncCompleted(bool success, const QString &errorMessage = QString()); // 同步操作完成信号
 
   public slots:
     void onDataChanged();                                        ///< 处理数据变化
     void onRowsInserted();                                       ///< 处理行插入
     void onRowsRemoved();                                        ///< 处理行删除
-    void onSyncStarted();                                        // 处理同步开始
     void onTodosUpdatedFromServer(const QJsonArray &todosArray); // 处理从服务器更新的待办事项
 
   private:

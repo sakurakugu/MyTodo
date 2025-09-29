@@ -83,6 +83,9 @@ class TodoManager : public QObject {
     Q_INVOKABLE void syncWithServer();                            // 与服务器同步
 
   signals:
+    // 转发同步相关信号供 QML 使用（底层由 TodoSyncServer/BaseSyncServer 发出）
+    void syncStarted();
+    void syncCompleted(int result, const QString &message = QString());
 
   private slots:
     void onFirstAuthCompleted(); // 处理首次认证完成信号

@@ -87,6 +87,7 @@ class BaseSyncServer : public QObject {
 
     // 属性访问器
     Q_INVOKABLE bool isSyncing() const; // 获取当前是否正在同步
+    void setIsSyncing(bool syncing);  // 设置当前同步状态
 
     // 同步操作（纯虚函数，由子类实现）
     virtual void 与服务器同步(SyncDirection direction = Bidirectional) = 0;

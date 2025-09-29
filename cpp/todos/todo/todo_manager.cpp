@@ -8,17 +8,16 @@
  * @change 2025-09-24 03:10:10(UTC+8) 周三
  */
 #include "todo_manager.h"
-#include "global_state.h"
-#include "user_auth.h"
 #include "../category/category_manager.h" // 类别管理器
 #include "foundation/network_request.h"   // 网络请求
-#include "todo_data_storage.h"            // 数据管理器
-#include "todo_item.h"                    // 待办事项数据结构
+#include "global_state.h"
+#include "todo_data_storage.h" // 数据管理器
+#include "todo_item.h"         // 待办事项数据结构
+#include "user_auth.h"
 
-#include "todo_sync_server.h"             // 服务器同步管理器
+#include "todo_sync_server.h" // 服务器同步管理器
 
 #include <QDateTime>
-
 
 TodoManager::TodoManager(UserAuth &userAuth, CategoryManager &categoryManager,
                          QObject *parent)
@@ -32,6 +31,9 @@ TodoManager::TodoManager(UserAuth &userAuth, CategoryManager &categoryManager,
       m_queryer(new TodoQueryer(this)),                                            //
       m_todoModel(new TodoModel(*m_dataManager, *m_syncManager, *m_queryer, this)) //
 {
+    // 转发底层同步信号到自身，供 QML 的 Connections 使用
+    connect(m_syncManager, &BaseSyncServer::syncStarted, this, &TodoManager::syncStarted);
+    connect(m_syncManager, &BaseSyncServer::syncCompleted, this, &TodoManager::syncCompleted);
     loadTodo();
 }
 

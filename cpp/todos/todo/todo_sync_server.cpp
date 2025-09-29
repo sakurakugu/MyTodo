@@ -37,9 +37,8 @@ void TodoSyncServer::与服务器同步(SyncDirection direction) {
     // 入口调用：严格检查（不允许已有同步）
     检查同步前置条件(false);
 
-    m_isSyncing = true;
+    setIsSyncing(false);
     m_currentSyncDirection = direction;
-    emit syncingChanged();
     emit syncStarted();
 
     执行同步(direction);
@@ -184,14 +183,12 @@ void TodoSyncServer::拉取待办() {
     } catch (const std::exception &e) {
         qCritical() << "获取服务器数据时发生异常:" << e.what();
 
-        m_isSyncing = false;
-        emit syncingChanged();
+        setIsSyncing(false);
         emit syncCompleted(UnknownError, QString("获取服务器数据失败: %1").arg(e.what()));
     } catch (...) {
         qCritical() << "获取服务器数据时发生未知异常";
 
-        m_isSyncing = false;
-        emit syncingChanged();
+        setIsSyncing(false);
         emit syncCompleted(UnknownError, "获取服务器数据失败：未知错误");
     }
 }
@@ -211,8 +208,7 @@ void TodoSyncServer::推送待办() {
 
         // 如果是双向同步且没有本地更改，直接完成
         if (m_currentSyncDirection == Bidirectional || m_currentSyncDirection == UploadOnly) {
-            m_isSyncing = false;
-            emit syncingChanged();
+            setIsSyncing(false);
             更新最后同步时间();
             emit syncCompleted(Success, "同步完成");
         }
@@ -298,14 +294,12 @@ void TodoSyncServer::pushBatchToServer(const QList<TodoItem *> &batch) {
     } catch (const std::exception &e) {
         qCritical() << "推送更改时发生异常:" << e.what();
 
-        m_isSyncing = false;
-        emit syncingChanged();
+        setIsSyncing(false);
         emit syncCompleted(UnknownError, QString("推送更改失败: %1").arg(e.what()));
     } catch (...) {
         qCritical() << "推送更改时发生未知异常";
 
-        m_isSyncing = false;
-        emit syncingChanged();
+        setIsSyncing(false);
         emit syncCompleted(UnknownError, "推送更改失败：未知错误");
     }
 }
@@ -318,8 +312,7 @@ void TodoSyncServer::pushNextBatch() {
     if (startIndex >= m_allUnsyncedItems.size()) {
         // 所有批次都已推送完成
         qDebug() << "所有批次推送完成";
-        m_isSyncing = false;
-        emit syncingChanged();
+        setIsSyncing(false);
         更新最后同步时间();
         emit syncCompleted(Success, QString("分批同步完成，共推送 %1 个项目").arg(m_allUnsyncedItems.size()));
 
@@ -353,8 +346,7 @@ void TodoSyncServer::handleSyncSuccess(const QJsonObject &response) {
         emit todosUpdatedFromServer(todosArray);
     }
 
-    m_isSyncing = false;
-    emit syncingChanged();
+    setIsSyncing(false);
     更新最后同步时间();
     emit syncCompleted(Success, "同步完成");
 }
@@ -375,8 +367,7 @@ void TodoSyncServer::handleFetchTodosSuccess(const QJsonObject &response) {
         if (unsyncedItems.isEmpty()) {
             // 没有本地更改需要推送，直接完成同步
             qInfo() << "双向同步：没有本地更改需要推送，同步完成";
-            m_isSyncing = false;
-            emit syncingChanged();
+            setIsSyncing(false);
             更新最后同步时间();
             emit syncCompleted(Success, "双向同步完成");
         } else {
@@ -386,8 +377,7 @@ void TodoSyncServer::handleFetchTodosSuccess(const QJsonObject &response) {
         }
     } else {
         // 仅下载模式，直接完成同步
-        m_isSyncing = false;
-        emit syncingChanged();
+        setIsSyncing(false);
         更新最后同步时间();
         emit syncCompleted(Success, "数据获取完成");
     }
@@ -499,8 +489,7 @@ void TodoSyncServer::处理推送更改成功(const QJsonObject &response) {
             拉取待办();
             return;
         } else {
-            m_isSyncing = false;
-            emit syncingChanged();
+            setIsSyncing(false);
             更新最后同步时间();
             emit syncCompleted(Success, "待办事项更改推送完成");
         }
@@ -597,8 +586,7 @@ void TodoSyncServer::推送下个项目() {
         // 所有项目都已推送完成
         qDebug() << "所有项目推送完成";
 
-        m_isSyncing = false;
-        emit syncingChanged();
+        setIsSyncing(false);
         更新最后同步时间();
         emit syncCompleted(Success, "同步完成");
 

@@ -60,6 +60,13 @@ bool BaseSyncServer::isSyncing() const {
     return m_isSyncing;
 }
 
+void BaseSyncServer::setIsSyncing(bool syncing) {
+    if (m_isSyncing != syncing) {
+        m_isSyncing = syncing;
+        emit syncingChanged();
+    }
+}
+
 // 默认的同步操作实现
 void BaseSyncServer::重置同步状态() {
     m_isSyncing = false;
@@ -70,8 +77,7 @@ void BaseSyncServer::重置同步状态() {
 
 void BaseSyncServer::取消同步() {
     if (m_isSyncing) {
-        m_isSyncing = false;
-        emit syncingChanged();
+        setIsSyncing(false);
         emit syncCompleted(UnknownError, "同步已取消");
     }
     m_pushFirstInBidirectional = false;
@@ -87,8 +93,7 @@ void BaseSyncServer::onNetworkRequestFailed([[maybe_unused]] Network::RequestTyp
                                             NetworkRequest::NetworkError error, const QString &message) {
 
     if (m_isSyncing) {
-        m_isSyncing = false;
-        emit syncingChanged();
+        setIsSyncing(false);
 
         SyncResult result = NetworkError;
         if (error == NetworkRequest::AuthenticationError) {

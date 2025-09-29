@@ -33,7 +33,6 @@ TodoModel::TodoModel(TodoDataStorage &dataStorage, TodoSyncServer &syncServer, T
     });
 
     // 连接同步管理器信号
-    connect(&m_syncManager, &TodoSyncServer::syncStarted, this, &TodoModel::onSyncStarted);
     connect(&m_syncManager, &TodoSyncServer::todosUpdatedFromServer, this, &TodoModel::onTodosUpdatedFromServer);
 }
 
@@ -512,11 +511,6 @@ void TodoModel::与服务器同步() {
     }
     更新同步管理器的数据();
     m_syncManager.与服务器同步();
-}
-
-// 同步管理器信号处理槽函数
-void TodoModel::onSyncStarted() {
-    emit syncStarted();
 }
 
 void TodoModel::onTodosUpdatedFromServer(const QJsonArray &todosArray) {

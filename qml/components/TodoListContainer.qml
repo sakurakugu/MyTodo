@@ -39,7 +39,7 @@ ListView {
             console.info("下拉刷新触发");
             globalState.refreshing = true;
             todoManager.syncWithServer();
-        } else {}
+        }
     }
 
     header: Item {
@@ -101,7 +101,7 @@ ListView {
     }
 
     Connections {
-        target: todoManager.todoModel
+        target: todoManager
         function onSyncStarted() {
             console.info("开始同步");
             if (!globalState.refreshing && root.atYBeginning) {
@@ -113,7 +113,8 @@ ListView {
             globalState.refreshing = false;
             // 使用动画平滑重置下拉距离
             pullDistanceAnimation.start();
-            if (result === 0) {  // 成功
+            if (result === 0) {
+                // 成功
                 // 强制刷新ListView以确保显示最新数据
                 root.model = null;
                 root.model = todoManager.todoModel;

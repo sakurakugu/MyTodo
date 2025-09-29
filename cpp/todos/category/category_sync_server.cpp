@@ -199,8 +199,7 @@ void CategorySyncServer::onNetworkRequestFailed(Network::RequestType type, Netwo
         qInfo() << "批量类别同步失败！错误类型:" << static_cast<int>(error);
         qInfo() << "失败详情:" << message;
         // 批量失败视为同步失败
-        m_isSyncing = false;
-        emit syncingChanged();
+        setIsSyncing(false);
         emit syncCompleted(NetworkError, message);
         return;
     case Network::RequestType::UpdateCategory:
@@ -236,8 +235,7 @@ void CategorySyncServer::onNetworkRequestFailed(Network::RequestType type, Netwo
     }
 
     qInfo() << "类别同步状态更新: isSyncing = false";
-    m_isSyncing = false;
-    emit syncingChanged();
+    setIsSyncing(false);
     emit syncCompleted(result, message);
 
     qWarning() << typeStr << "失败:" << message;
@@ -278,7 +276,7 @@ void CategorySyncServer::执行同步(SyncDirection direction) {
 void CategorySyncServer::拉取类别() {
     // 第一阶段（拉取）严格检查
     检查同步前置条件(false);
-    m_isSyncing = true;
+    setIsSyncing(false);
 
     qDebug() << "从服务器获取类别...";
     emit syncProgress(25, "正在从服务器获取类别数据...");
@@ -293,14 +291,12 @@ void CategorySyncServer::拉取类别() {
     } catch (const std::exception &e) {
         qCritical() << "获取服务器类别数据时发生异常:" << e.what();
 
-        m_isSyncing = false;
-        emit syncingChanged();
+        setIsSyncing(false);
         emit syncCompleted(UnknownError, QString("获取服务器类别数据失败: %1").arg(e.what()));
     } catch (...) {
         qCritical() << "获取服务器类别数据时发生未知异常";
 
-        m_isSyncing = false;
-        emit syncingChanged();
+        setIsSyncing(false);
         emit syncCompleted(UnknownError, "获取服务器类别数据失败：未知错误");
     }
 }
@@ -308,15 +304,14 @@ void CategorySyncServer::拉取类别() {
 void CategorySyncServer::推送类别() {
     // 第二阶段（推送）允许前一阶段已占用同步状态，避免误判
     检查同步前置条件(true);
-    m_isSyncing = true;
+    setIsSyncing(true);
 
     if (m_unsyncedItems.empty()) {
         qInfo() << "没有需要同步的类别，上传流程完成";
 
         // 如果是双向同步且没有本地更改，直接完成
         if (m_currentSyncDirection == Bidirectional || m_currentSyncDirection == UploadOnly) {
-            m_isSyncing = false;
-            emit syncingChanged();
+            setIsSyncing(false);
             更新最后同步时间();
             emit syncCompleted(Success, "类别同步完成");
         }
@@ -368,14 +363,12 @@ void CategorySyncServer::推送类别() {
     } catch (const std::exception &e) {
         qCritical() << "推送类别更改时发生异常:" << e.what();
 
-        m_isSyncing = false;
-        emit syncingChanged();
+        setIsSyncing(false);
         emit syncCompleted(UnknownError, QString("推送类别更改失败: %1").arg(e.what()));
     } catch (...) {
         qCritical() << "推送类别更改时发生未知异常";
 
-        m_isSyncing = false;
-        emit syncingChanged();
+        setIsSyncing(false);
         emit syncCompleted(UnknownError, "推送类别更改失败：未知错误");
     }
 }
@@ -394,8 +387,7 @@ void CategorySyncServer::处理获取类别成功(const QJsonObject &response) {
         推送类别();
     } else {
         // 仅下载模式，直接完成同步
-        m_isSyncing = false;
-        emit syncingChanged();
+        setIsSyncing(false);
         更新最后同步时间();
         emit syncCompleted(Success, "类别数据获取完成");
     }
@@ -442,7 +434,8 @@ void CategorySyncServer::处理推送更改成功(const QJsonObject &response) {
         // 逻辑链：
         // 1. 本地删除 -> 软删除时设置 synced=3 或直接物理删除(若尚未同步插入)。
         // 2. 批量推送发送该条目，服务器删除成功。
-        // 3. 这里如果改成 0，会使 CategoryModel::更新同步成功状态 无法识别其为删除，从而不会调用物理删除，导致 UI 仍显示。
+        // 3. 这里如果改成 0，会使 CategoryModel::更新同步成功状态 无法识别其为删除，从而不会调用物理删除，导致 UI
+        // 仍显示。
         // 4. 保持为3，随后 emit localChangesUploaded() 后 CategoryModel 会调用 m_dataStorage.删除类别 进行最终移除。
         if (item->synced() != 3) {
             qInfo() << "类别条目" << item->name() << "同步成功，更新状态为 synced=0";
@@ -482,8 +475,7 @@ void CategorySyncServer::处理推送更改成功(const QJsonObject &response) {
         拉取类别();
         return;
     } else {
-        m_isSyncing = false;
-        emit syncingChanged();
+        setIsSyncing(false);
         更新最后同步时间();
         emit syncCompleted(Success, "类别更改推送完成");
     }
