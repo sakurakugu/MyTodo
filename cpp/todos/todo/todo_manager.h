@@ -11,13 +11,13 @@
 
 #pragma once
 
+#include <QDate>
 #include <QObject>
 #include <QVariant>
-#include <QDate>
 
 // 要不声明这些类型为不透明指针，用于Qt MOC；要不直接用头文件
-#include "todo_model.h"                   // 数据模型
-#include "todo_queryer.h"                 // 筛选管理器
+#include "todo_model.h"   // 数据模型
+#include "todo_queryer.h" // 筛选管理器
 
 class UserAuth;
 class GlobalState;
@@ -81,6 +81,7 @@ class TodoManager : public QObject {
     Q_INVOKABLE bool permanentlyDeleteTodo(int index);            // 删除待办事项
     Q_INVOKABLE void deleteAllTodos(bool deleteLocal);            // 删除所有待办事项
     Q_INVOKABLE void syncWithServer();                            // 与服务器同步
+    Q_INVOKABLE void forceSyncWithServer();                       // 强制与服务器同步
 
   signals:
     // 转发同步相关信号供 QML 使用（底层由 TodoSyncServer/BaseSyncServer 发出）

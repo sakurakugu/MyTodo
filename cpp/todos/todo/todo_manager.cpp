@@ -117,6 +117,10 @@ void TodoManager::syncWithServer() {
     m_todoModel->与服务器同步();
 }
 
+void TodoManager::forceSyncWithServer() {
+    m_todoModel->强制与服务器同步();
+}
+
 /**
  * @brief 处理首次认证完成信号
  * 当用户首次认证完成时，触发此槽函数，用于同步待办事项。

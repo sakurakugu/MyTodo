@@ -513,6 +513,11 @@ void TodoModel::与服务器同步() {
     m_syncManager.与服务器同步();
 }
 
+void TodoModel::强制与服务器同步() {
+    更新同步管理器的数据();
+    m_syncManager.与服务器同步();
+}
+
 void TodoModel::onTodosUpdatedFromServer(const QJsonArray &todosArray) {
     qDebug() << "从服务器更新" << todosArray.size() << "个待办事项，当前本地有" << m_todos.size() << "个待办事项";
 

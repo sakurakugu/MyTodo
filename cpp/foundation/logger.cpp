@@ -24,11 +24,11 @@ Logger::Logger(QObject *parent) noexcept
       m_logToConsole(true),               // 初始化是否记录到控制台为true
       m_maxLogFileSize(10 * 1024 * 1024), // 初始化最大日志文件大小为10MB
       m_maxLogFiles(5),                   // 初始化最大日志文件数量为5
-      m_appName(DefaultValues::appName)   // 初始化应用程序名称
+      m_appName(APP_NAME)                 // 初始化应用程序名称
 {
     // 编译时检查应用名
-    static_assert(std::string_view(DefaultValues::appName).empty() == false, "应用名不能为空");
-    static_assert(std::string_view(DefaultValues::appName).size() > 0, "应用名长度必须大于0");
+    static_assert(std::string_view(APP_NAME).empty() == false, "应用名不能为空");
+    static_assert(std::string_view(APP_NAME).size() > 0, "应用名长度必须大于0");
 
     // 设置日志目录
     try {
@@ -323,7 +323,7 @@ std::expected<void, LogError> Logger::initLogFile() noexcept {
 
         // 启动标记
         const auto now = std::chrono::system_clock::now();
-        const auto startMsg = std::format("\n=== {} ({}) 应用启动 [{:%Y-%m-%d %H:%M:%S}] ===\n", DefaultValues::appName,
+        const auto startMsg = std::format("\n=== {} ({}) 应用启动 [{:%Y-%m-%d %H:%M:%S}] ===\n", APP_NAME,
                                           APP_VERSION_STRING, std::chrono::floor<std::chrono::seconds>(now));
 
         *m_logFile << startMsg;

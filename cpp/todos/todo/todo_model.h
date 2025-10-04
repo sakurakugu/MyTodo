@@ -13,8 +13,8 @@
 #pragma once
 
 #include <QAbstractListModel>
-#include <QVariant>
 #include <QDateTime>
+#include <QVariant>
 
 class TodoDataStorage;
 class TodoSyncServer;
@@ -109,10 +109,11 @@ class TodoModel : public QAbstractListModel {
     void 更新同步管理器的数据();
 
     // 网络同步操作
-    void 与服务器同步(); // 与服务器同步待办事项数据
+    void 与服务器同步();     // 与服务器同步待办事项数据
+    void 强制与服务器同步(); // 强制与服务器同步待办事项数据
 
   signals:
-    void dataUpdated();                                                        ///< 数据更新信号
+    void dataUpdated(); ///< 数据更新信号
 
   public slots:
     void onDataChanged();                                        ///< 处理数据变化

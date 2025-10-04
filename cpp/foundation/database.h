@@ -11,15 +11,15 @@
 
 #pragma once
 
-#include "default_value.h"
+#include "version.h"
 
+#include <QDir>
 #include <QJsonArray>
 #include <QObject>
 #include <QSqlDatabase>
 #include <QSqlQuery>
-#include <QString>
 #include <QStandardPaths>
-#include <QDir>
+#include <QString>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -140,11 +140,11 @@ class Database : public QObject {
     QString m_lastError;        ///< 最后一次错误信息
     bool m_initialized;         ///< 是否已初始化
     QString m_databasePath = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
-                                 .absoluteFilePath(QString(DefaultValues::appName) + ".db"); ///< 数据库文件路径
+                                 .absoluteFilePath(QString(APP_NAME) + ".db"); ///< 数据库文件路径
 
     // 数据导出器管理
     std::map<QString, IDataExporter *> m_dataExporters; ///< 注册的数据导出器
 
-    static constexpr int DATABASE_VERSION = 1;                                                   ///< 当前数据库版本
-    static inline const QString CONNECTION_NAME = QString(DefaultValues::appName) + "_Database"; ///< 数据库连接名称
+    static constexpr int DATABASE_VERSION = 1;                                     ///< 当前数据库版本
+    static inline const QString CONNECTION_NAME = QString(APP_NAME) + "_Database"; ///< 数据库连接名称
 };

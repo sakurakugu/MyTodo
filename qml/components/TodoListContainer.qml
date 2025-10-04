@@ -38,7 +38,7 @@ ListView {
         if (contentY < -pullThreshold && atYBeginning && !globalState.refreshing) {
             console.info("下拉刷新触发");
             globalState.refreshing = true;
-            todoManager.syncWithServer();
+            todoManager.forceSyncWithServer();
         }
     }
 

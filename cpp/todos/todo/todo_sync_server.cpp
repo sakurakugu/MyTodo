@@ -201,7 +201,7 @@ void TodoSyncServer::推送待办() {
 
     // 找出所有未同步的项目
     QList<TodoItem *> unsyncedItems = getUnsyncedItems();
-    qInfo() << "检测到" << unsyncedItems.size() << "个未同步的项目";
+    // qInfo() << "检测到" << unsyncedItems.size() << "个未同步的项目";
 
     if (unsyncedItems.isEmpty()) {
         qInfo() << "没有需要同步的项目，上传流程完成";
