@@ -11,7 +11,7 @@
 
 #include "category_sync_server.h"
 #include "category_item.h"
-#include "default_value.h"
+#include "foundation/default_value.h"
 #include "foundation/config.h"
 
 #include <QDateTime>

@@ -16,7 +16,7 @@
 #include <QJsonObject>
 #include <QList>
 
-#include "../base_sync_server.h"
+#include "domain_base/base_sync_server.h"
 
 class TodoItem;
 

@@ -8,7 +8,7 @@
  * @change 2025-09-24 00:55:58(UTC+8) 周三
  */
 #include "setting.h"
-#include "default_value.h"
+#include "foundation/default_value.h"
 #include "foundation/config.h"
 #include "foundation/database.h"
 #include "foundation/network_proxy.h"

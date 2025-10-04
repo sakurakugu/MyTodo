@@ -141,7 +141,8 @@
         "qqmlapplicationengine": "cpp",
         "qqmlcontext": "cpp",
         "qdiriterator": "cpp",
-        "qregularexpression": "cpp"
+        "qregularexpression": "cpp",
+        "qsqldatabase": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "search.useIgnoreFiles": false, // 禁用git忽略文件

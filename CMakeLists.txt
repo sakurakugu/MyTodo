@@ -18,6 +18,7 @@ project(MyTodo
     LANGUAGES CXX
 )
 
+
 # C++ 标准设置
 set(CMAKE_CXX_STANDARD 23)                 # 使用 C++23 标准
 set(CMAKE_CXX_STANDARD_REQUIRED ON)        # 强制要求 C++23
@@ -28,6 +29,11 @@ set(CMAKE_AUTORCC ON)                      # 自动处理资源文件
 set(CMAKE_AUTOMOC ON)                      # 自动处理 MOC
 set(CMAKE_AUTOUIC ON)                      # 自动处理 UIC
 
+add_subdirectory(cpp/foundation)
+# add_subdirectory(cpp/domain_base)
+# add_subdirectory(cpp/todos/category)
+# add_subdirectory(cpp/todos/todo)
+# add_subdirectory(cpp/app)
 
 # 构建类型优化
 if(NOT CMAKE_BUILD_TYPE)
@@ -50,15 +56,6 @@ else()
     endif()
 endif()
 
-# 添加外部库 toml++
-include(FetchContent)
-FetchContent_Declare(
-    tomlplusplus
-    GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
-    GIT_TAG        v3.4.0
-)
-FetchContent_MakeAvailable(tomlplusplus)
-
 # Qt6 组件配置
 set(QT_COMPONENTS 
     Core                # 核心功能
@@ -72,13 +69,10 @@ set(QT_COMPONENTS
 
 # 链接库配置
 set(PRIVATE_LIBRARIES
-    Qt6::Core
+    mytodo_foundation
     Qt6::Widgets
     Qt6::Quick
-    Qt6::Network
     Qt6::Concurrent
-    Qt6::Sql
-    tomlplusplus::tomlplusplus
 )
 
 # QML 文件配置
@@ -163,20 +157,14 @@ set(CATEGORY_SOURCES
 
 set(CORE_SOURCES
     # 其他代码
-    cpp/todos/base_sync_server.cpp
-    cpp/todos/base_sync_server.h
-    cpp/todos/base_data_storage.cpp
-    cpp/todos/base_data_storage.h
-    cpp/foundation/QtDebug.cpp
-    cpp/foundation/QtDebug.h
+    cpp/domain_base/base_sync_server.cpp
+    cpp/domain_base/base_sync_server.h
+    cpp/domain_base/base_data_storage.cpp
+    cpp/domain_base/base_data_storage.h
 )
 
 set(NETWORK_SOURCES
     # 网络通信模块
-    cpp/foundation/network_request.cpp
-    cpp/foundation/network_request.h
-    cpp/foundation/network_proxy.cpp
-    cpp/foundation/network_proxy.h
     cpp/app/user_auth.cpp
     cpp/app/user_auth.h
 )
@@ -189,17 +177,9 @@ set(UI_SOURCES
 
 set(UTILITY_SOURCES
     # 工具和配置模块
-    cpp/foundation/config.cpp
-    cpp/foundation/config.h
-    cpp/foundation/logger.cpp
-    cpp/foundation/logger.h
-    cpp/foundation/utility.h
-    cpp/foundation/utility.cpp
     cpp/app/setting.cpp
     cpp/app/setting.h
-    cpp/foundation/database.cpp
-    cpp/foundation/database.h
-    cpp/default_value.h
+    # cpp/default_value.h
 )
 
 # 合并所有源文件

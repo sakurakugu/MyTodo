@@ -14,7 +14,7 @@
 #include <QObject>
 #include <QSqlDatabase>
 #include <QUuid>
-#include "../foundation/database.h"
+#include "foundation/database.h"
 
 /**
  * @class BaseDataStorage
