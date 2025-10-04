@@ -10,7 +10,7 @@
  */
 
 #include "category_sync_server.h"
-#include "categorie_item.h"
+#include "category_item.h"
 #include "default_value.h"
 #include "foundation/config.h"
 

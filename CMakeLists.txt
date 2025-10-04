@@ -148,8 +148,8 @@ set(TODO_SOURCES
 
 set(CATEGORY_SOURCES
     # 待办事项分类
-    cpp/todos/category/categorie_item.cpp
-    cpp/todos/category/categorie_item.h
+    cpp/todos/category/category_item.cpp
+    cpp/todos/category/category_item.h
     cpp/todos/category/category_manager.h
     cpp/todos/category/category_manager.cpp
     cpp/todos/category/category_model.h
@@ -165,6 +165,8 @@ set(CORE_SOURCES
     # 其他代码
     cpp/todos/base_sync_server.cpp
     cpp/todos/base_sync_server.h
+    cpp/todos/base_data_storage.cpp
+    cpp/todos/base_data_storage.h
     cpp/foundation/QtDebug.cpp
     cpp/foundation/QtDebug.h
 )
@@ -175,14 +177,14 @@ set(NETWORK_SOURCES
     cpp/foundation/network_request.h
     cpp/foundation/network_proxy.cpp
     cpp/foundation/network_proxy.h
-    cpp/user_auth.cpp
-    cpp/user_auth.h
+    cpp/app/user_auth.cpp
+    cpp/app/user_auth.h
 )
 
 set(UI_SOURCES
     # 用户界面模块
-    cpp/global_state.cpp
-    cpp/global_state.h
+    cpp/app/global_state.cpp
+    cpp/app/global_state.h
 )
 
 set(UTILITY_SOURCES
@@ -193,8 +195,8 @@ set(UTILITY_SOURCES
     cpp/foundation/logger.h
     cpp/foundation/utility.h
     cpp/foundation/utility.cpp
-    cpp/setting.cpp
-    cpp/setting.h
+    cpp/app/setting.cpp
+    cpp/app/setting.h
     cpp/foundation/database.cpp
     cpp/foundation/database.h
     cpp/default_value.h

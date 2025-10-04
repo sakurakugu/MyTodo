@@ -1,5 +1,5 @@
 /**
- * @file categorie_item.h
+ * @file category_item.h
  * @brief CategorieItem类的头文件
  *
  * 该文件定义了CategorieItem类，用于表示分类的数据模型。

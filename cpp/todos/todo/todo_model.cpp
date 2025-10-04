@@ -11,7 +11,7 @@
  */
 
 #include "todo_model.h"
-#include "global_state.h"
+#include "cpp/app/global_state.h"
 
 #include "todo_data_storage.h"
 #include "todo_item.h"

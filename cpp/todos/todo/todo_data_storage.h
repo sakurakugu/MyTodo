@@ -21,7 +21,7 @@
 #include <memory>
 #include <vector>
 
-#include "../../foundation/database.h"
+#include "../base_data_storage.h"
 
 class TodoItem;
 
@@ -50,7 +50,7 @@ class TodoItem;
  * @note 该类是线程安全的，所有文件操作都有异常处理
  * @see TodoItem, Setting
  */
-class TodoDataStorage : public QObject, public IDataExporter {
+class TodoDataStorage : public BaseDataStorage {
     Q_OBJECT
 
   public:
@@ -73,28 +73,12 @@ class TodoDataStorage : public QObject, public IDataExporter {
         int offset{0};          // 偏移量            // TODO: 未来可支持分页，目前数据量不大
     };
 
-    // 定义导入冲突的解决策略
-    enum ConflictResolution {
-        Skip = 0,      // 跳过冲突项目
-        Overwrite = 1, // 覆盖现有项目
-        Merge = 2,     // 合并（保留较新的版本）
-        Insert = 3     // 插入新项目
-    };
-    Q_ENUM(ConflictResolution)
-
-    // 定义导入来源
-    enum ImportSource {
-        Server = 0, // 服务器
-        Local = 1   // 本地/本地备份
-    };
-    Q_ENUM(ImportSource)
-
     // 构造函数
     explicit TodoDataStorage(QObject *parent = nullptr);
-    ~TodoDataStorage();
+    ~TodoDataStorage() override;
 
     // 数据库初始化
-    bool 初始化待办表(); // 初始化TODO表
+    bool 初始化数据表() override;
 
     // 本地存储功能
     bool 加载待办(TodoList &todos);
@@ -128,12 +112,8 @@ class TodoDataStorage : public QObject, public IDataExporter {
   private:
     ConflictResolution 评估冲突(const TodoItem *existing, const TodoItem &incoming,
                                 ConflictResolution resolution) const; // 返回应执行的动作
-    int 获取最后插入行ID(QSqlDatabase &db) const;                     // 获取自增ID
     static QString 构建SQL排序语句(int sortType, bool descending);    // 构建查询SQL
 
     // 数据库操作
-    bool 创建待办表(); // 创建todos表
-
-    // 成员变量
-    Database &m_database; ///< 数据库管理器引用
+    bool 创建数据表() override; // 创建todos表
 };

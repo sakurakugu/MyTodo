@@ -253,29 +253,23 @@ void TodoSyncServer::pushBatchToServer(const QList<TodoItem *> &batch) {
             obj["description"] = item->description();
             obj["category"] = item->category();
             obj["important"] = item->important();
-            if (item->deadline().isValid()) {
-                obj["deadline"] = static_cast<qint64>(item->deadline().toUTC().toMSecsSinceEpoch());
-            } else {
-                obj["deadline"] = QJsonValue();
-            }
+            // 统一使用 RFC3339 (UTC, 带毫秒, 末尾 Z) 字符串传递时间，避免 Go 端 time.Time 反序列化失败
+            auto toRfc3339 = [](const QDateTime &dt) -> QJsonValue {
+                if (!dt.isValid())
+                    return QJsonValue();
+                return dt.toUTC().toString("yyyy-MM-dd'T'HH:mm:ss.zzz'Z'");
+            };
+            obj["deadline"] = toRfc3339(item->deadline());
             obj["recurrenceInterval"] = item->recurrenceInterval();
             obj["recurrenceCount"] = item->recurrenceCount();
             // recurrenceStartDate 仍保留为仅日期 ISO 字符串（业务语义：重复计划起始日期）
             obj["recurrenceStartDate"] = item->recurrenceStartDate().toString(Qt::ISODate);
             obj["is_completed"] = item->isCompleted();
-            if (item->completedAt().isValid()) {
-                obj["completed_at"] = static_cast<qint64>(item->completedAt().toUTC().toMSecsSinceEpoch());
-            } else {
-                obj["completed_at"] = QJsonValue();
-            }
+            obj["completed_at"] = toRfc3339(item->completedAt());
             obj["is_deleted"] = item->isDeleted();
-            if (item->deletedAt().isValid()) {
-                obj["deleted_at"] = static_cast<qint64>(item->deletedAt().toUTC().toMSecsSinceEpoch());
-            } else {
-                obj["deleted_at"] = QJsonValue();
-            }
-            obj["created_at"] = static_cast<qint64>(item->createdAt().toUTC().toMSecsSinceEpoch());
-            obj["updated_at"] = static_cast<qint64>(item->updatedAt().toUTC().toMSecsSinceEpoch());
+            obj["deleted_at"] = toRfc3339(item->deletedAt());
+            obj["created_at"] = toRfc3339(item->createdAt());
+            obj["updated_at"] = toRfc3339(item->updatedAt());
             obj["synced"] = item->synced();
 
             jsonArray.append(obj);

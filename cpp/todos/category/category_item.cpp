@@ -1,5 +1,5 @@
 /**
- * @file categorie_item.cpp
+ * @file category_item.cpp
  * @brief CategorieItem类的实现文件
  *
  * 该文件实现了CategorieItem类，用于表示分类的数据模型。
@@ -11,7 +11,7 @@
  * @change 2025-09-22 19:36:18(UTC+8) 周一
  */
 
-#include "categorie_item.h"
+#include "category_item.h"
 
 /**
  * @brief 默认构造函数

@@ -23,21 +23,13 @@
 #include <algorithm>
 
 TodoDataStorage::TodoDataStorage(QObject *parent)
-    : QObject(parent),                    // 父对象
-      m_database(Database::GetInstance()) // 数据库管理器
+    : BaseDataStorage("todos", parent) // 调用基类构造函数
 {
-    // 初始化TODO表
-    if (!初始化待办表()) {
-        qCritical() << "TODO表初始化失败";
-    }
-
-    // 注册到数据库导出器
-    m_database.registerDataExporter("todos", this);
+    // 在子类构造完成后初始化数据表
+    初始化();
 }
 
 TodoDataStorage::~TodoDataStorage() {
-    // 从数据库导出器中注销
-    m_database.unregisterDataExporter("todos");
 }
 
 /**
@@ -896,24 +888,6 @@ TodoDataStorage::ConflictResolution TodoDataStorage::评估冲突( //
 }
 
 /**
- * @brief 获取最后插入行ID
- * @param db 数据库连接引用
- * @return 最后插入行ID，失败返回-1
- */
-int TodoDataStorage::获取最后插入行ID(QSqlDatabase &db) const {
-    if (!db.isOpen())
-        return -1;
-    QSqlQuery idQuery(db);
-    if (!idQuery.exec("SELECT last_insert_rowid()")) {
-        qWarning() << "执行 last_insert_rowid 查询失败:" << idQuery.lastError().text();
-        return -1;
-    }
-    if (idQuery.next())
-        return idQuery.value(0).toInt();
-    return -1;
-}
-
-/**
  * @brief 根据排序类型和顺序生成SQL的ORDER BY子句
  * @param sortType 排序类型（0-创建时间，1-截止日期，2-重要性，3-标题，4-修改时间，5-完成时间）
  * @param descending 是否降序
@@ -1022,16 +996,17 @@ QList<int> TodoDataStorage::查询待办ID列表(const QueryOptions &opt) {
  * @brief 初始化TODO表
  * @return 初始化是否成功
  */
-bool TodoDataStorage::初始化待办表() {
+bool TodoDataStorage::初始化数据表() {
     QSqlDatabase db = m_database.getDatabase();
     if (!db.isOpen()) {
         qCritical() << "数据库未打开，无法初始化TODO表";
         return false;
     }
-    return 创建待办表();
+
+    return 创建数据表();
 }
 
-bool TodoDataStorage::创建待办表() {
+bool TodoDataStorage::创建数据表() {
     const QString createTableQuery = R"(
         CREATE TABLE IF NOT EXISTS todos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1054,12 +1029,8 @@ bool TodoDataStorage::创建待办表() {
             synced INTEGER NOT NULL DEFAULT 1
         )
     )";
-    QSqlDatabase db = m_database.getDatabase();
-    QSqlQuery q(db);
-    if (!q.exec(createTableQuery)) {
-        qCritical() << "创建todos表失败:" << q.lastError().text();
-        return false;
-    }
+    执行SQL查询(createTableQuery);
+
     const QStringList indexes = {"CREATE INDEX IF NOT EXISTS idx_todos_uuid ON todos(uuid)",
                                  "CREATE INDEX IF NOT EXISTS idx_todos_user_uuid ON todos(user_uuid)",
                                  "CREATE INDEX IF NOT EXISTS idx_todos_category ON todos(category)",
@@ -1068,8 +1039,7 @@ bool TodoDataStorage::创建待办表() {
                                  "CREATE INDEX IF NOT EXISTS idx_todos_deleted ON todos(is_deleted)",
                                  "CREATE INDEX IF NOT EXISTS idx_todos_synced ON todos(synced)"};
     for (const QString &ix : indexes) {
-        if (!q.exec(ix))
-            qWarning() << "创建todos表索引失败:" << q.lastError().text();
+        执行SQL查询(ix);
     }
     qDebug() << "todos表初始化成功";
     return true;

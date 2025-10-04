@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include "../../foundation/database.h"
+#include "../base_data_storage.h"
 
 class Config;
 class CategorieItem;
@@ -46,32 +46,16 @@ class CategorieItem;
  */
 using CategorieList = std::vector<std::unique_ptr<CategorieItem>>;
 
-class CategoryDataStorage : public QObject, public IDataExporter {
+class CategoryDataStorage : public BaseDataStorage {
     Q_OBJECT
 
   public:
-    // 定义导入冲突的解决策略
-    enum ConflictResolution {
-        Skip = 0,      // 跳过冲突项目
-        Overwrite = 1, // 覆盖现有项目
-        Merge = 2,     // 合并（保留较新的版本）
-        Insert = 3     // 插入新项目
-    };
-    Q_ENUM(ConflictResolution)
-
-    // 定义导入来源
-    enum ImportSource {
-        Server = 0, // 服务器
-        Local = 1   // 本地/本地备份
-    };
-    Q_ENUM(ImportSource)
-
     // 构造函数
     explicit CategoryDataStorage(QObject *parent = nullptr);
-    ~CategoryDataStorage();
+    ~CategoryDataStorage() override;
 
-    // 数据库初始化
-    bool 初始化类别表(); // 初始化Category表
+    // 基类纯虚函数实现
+    bool 初始化数据表() override; // 初始化Category表
 
     // 本地存储功能
     bool 加载类别(CategorieList &categorieList);
@@ -93,15 +77,12 @@ class CategoryDataStorage : public QObject, public IDataExporter {
     bool 导出到JSON(QJsonObject &output) override;
     bool 导入从JSON(const QJsonObject &input, bool replaceAll) override;
 
+  protected:
+    // 基类虚函数实现
+    bool 创建数据表() override; // 创建categories表
+
   private:
     // 辅助方法
     ConflictResolution 评估冲突(const CategorieItem *existing, const CategorieItem &incoming,
                                 ConflictResolution resolution) const; // 返回应执行的动作
-    int 获取最后插入行ID(QSqlDatabase &db) const;                     // 获取自增ID
-
-    // 数据库操作
-    bool 创建类别表(); // 创建categories表
-
-    // 成员变量
-    Database &m_database; ///< 数据库管理器引用
 };

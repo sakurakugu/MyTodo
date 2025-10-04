@@ -30,11 +30,11 @@
 #include "cpp/foundation/logger.h"
 #include "cpp/foundation/network_request.h"
 #include "cpp/foundation/utility.h"
-#include "cpp/global_state.h"
-#include "cpp/setting.h"
+#include "cpp/app/global_state.h"
+#include "cpp/app/setting.h"
 #include "cpp/todos/category/category_manager.h"
 #include "cpp/todos/todo/todo_manager.h"
-#include "cpp/user_auth.h"
+#include "cpp/app/user_auth.h"
 #include "version.h"
 
 int main(int argc, char *argv[]) {

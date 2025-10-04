@@ -11,7 +11,7 @@
  */
 
 #include "category_model.h"
-#include "categorie_item.h"
+#include "category_item.h"
 #include "category_sync_server.h"
 
 CategoryModel::CategoryModel(CategoryDataStorage &dataStorage, CategorySyncServer &syncServer, QObject *parent)

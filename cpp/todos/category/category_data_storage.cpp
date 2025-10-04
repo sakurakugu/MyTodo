@@ -12,26 +12,20 @@
 
 #include "category_data_storage.h"
 #include "../../foundation/config.h"
-#include "categorie_item.h"
+#include "category_item.h"
 #include <QJsonObject>
 #include <QSqlError>
 #include <QTimeZone>
 
 CategoryDataStorage::CategoryDataStorage(QObject *parent)
-    : QObject(parent),                    // 父对象
-      m_database(Database::GetInstance()) // 数据库管理器
+    : BaseDataStorage("categories", parent) // 调用基类构造函数
 {
-    if (!初始化类别表()) {
-        qCritical() << "Category表初始化失败";
-    }
-
-    // 注册到数据库导出器
-    m_database.registerDataExporter("categories", this);
+    // 在子类构造完成后初始化数据表
+    初始化();
 }
 
 CategoryDataStorage::~CategoryDataStorage() {
-    // 从数据库导出器中注销
-    m_database.unregisterDataExporter("categories");
+    // 基类析构函数会自动处理注销
 }
 
 /**
@@ -584,29 +578,10 @@ CategoryDataStorage::ConflictResolution CategoryDataStorage::评估冲突(const 
 }
 
 /**
- * @brief 获取最后插入行ID
- * @param db 数据库连接引用
- * @return 最后插入行ID，失败返回-1
- */
-int CategoryDataStorage::获取最后插入行ID(QSqlDatabase &db) const {
-    if (!db.isOpen())
-        return -1;
-    QSqlQuery idQuery(db);
-    if (!idQuery.exec("SELECT last_insert_rowid()")) {
-        qWarning() << "执行 last_insert_rowid 查询失败:" << idQuery.lastError().text();
-        return -1;
-    }
-    if (idQuery.next()) {
-        return idQuery.value(0).toInt();
-    }
-    return -1;
-}
-
-/**
  * @brief 初始化Category表
  * @return 初始化是否成功
  */
-bool CategoryDataStorage::初始化类别表() {
+bool CategoryDataStorage::初始化数据表() {
     // 确保数据库连接已建立
     QSqlDatabase db = m_database.getDatabase();
     if (!db.isOpen()) {
@@ -614,14 +589,14 @@ bool CategoryDataStorage::初始化类别表() {
         return false;
     }
 
-    return 创建类别表();
+    return 创建数据表();
 }
 
 /**
  * @brief 创建categories表
  * @return 创建是否成功
  */
-bool CategoryDataStorage::创建类别表() {
+bool CategoryDataStorage::创建数据表() {
     const QString createTableQuery = R"(
         CREATE TABLE IF NOT EXISTS categories (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
