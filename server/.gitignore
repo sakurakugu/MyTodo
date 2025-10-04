@@ -1,0 +1,37 @@
+# 忽略文件
+.env.local
+.env.production
+.DS_Store
+*.log
+*.tmp
+*.swp
+*.swo
+
+# 构建文件
+/build/
+/dist/
+/tmp/
+/bin/
+
+# IDE文件
+.vscode/
+.idea/
+*.iml
+
+# Go相关
+vendor/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+go.work.sum
+
+# Docker相关
+.dockerignore
+
+# 其他
+.env
