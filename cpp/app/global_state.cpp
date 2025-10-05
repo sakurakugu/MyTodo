@@ -1,7 +1,8 @@
 /**
- * @brief 全局状态类
+ * @file global_state.cpp
+ * @brief GlobalState类的实现文件
  *
- * 该类负责管理应用程序的全局状态，包括窗口属性、显示状态和系统主题监听。
+ * 该文件实现了GlobalState类，负责管理应用程序的全局状态，包括窗口属性、显示状态和系统主题监听。
  *
  * @author Sakurakugu
  * @date 2025-08-16 20:05:55(UTC+8) 周六

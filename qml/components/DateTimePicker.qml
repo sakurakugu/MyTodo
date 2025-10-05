@@ -1,5 +1,5 @@
 /**
- * @file DatePicker.qml
+ * @file DateTimePicker.qml
  * @brief 日期时间选择器组件
  *
  * 提供日期和时间选择功能的对话框组件，支持：

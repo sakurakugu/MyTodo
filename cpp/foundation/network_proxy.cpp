@@ -1,6 +1,10 @@
 /**
  * @file network_proxy.cpp
  * @brief 网络代理类实现
+ *
+ * 该文件实现了NetworkProxy类，提供网络代理的配置、管理和应用功能，
+ * 支持多种代理类型（HTTP、SOCKS5等）和代理认证。
+ *
  * @author Sakurakugu
  * @date 2025-08-22 23:04:19(UTC+8) 周五
  * @change 2025-09-21 18:19:31(UTC+8) 周日

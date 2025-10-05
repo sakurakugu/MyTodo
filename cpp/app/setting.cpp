@@ -1,9 +1,10 @@
 /**
- * @brief 构造函数
+ * @file setting.cpp
+ * @brief Setting类的实现文件
  *
- * 初始化Setting对象，设置父对象为parent。
+ * 该文件实现了Setting类，用于管理应用程序的设置和配置。
  *
- * @param parent 父对象指针，默认值为nullptr。
+ * @author Sakurakugu
  * @date 2025-08-21 21:31:41(UTC+8) 周四
  * @change 2025-09-24 00:55:58(UTC+8) 周三
  */

@@ -1,4 +1,5 @@
 /**
+ * @file WindowResizeHandler.qml
  * @brief 窗口边框调整大小处理组件
  *
  * 该组件用于创建窗口边框和角落的拖拽调整大小功能。

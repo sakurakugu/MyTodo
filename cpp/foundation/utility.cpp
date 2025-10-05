@@ -1,6 +1,6 @@
 /**
  * @file utility.cpp
- * @brief 工具类实现文件
+ * @brief Utility工具类的实现文件
  *
  * 该文件包含Utility类的实现，提供了一些通用的工具函数。
  *

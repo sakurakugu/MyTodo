@@ -1,6 +1,10 @@
 /**
  * @file config.cpp
  * @brief 配置类实现
+ *
+ * 该文件实现了Config类，提供基于TOML格式的配置文件管理功能，
+ * 支持配置的读取、保存、导入导出以及JSON格式转换。
+ *
  * @author sakurakugu
  * @date 2025-08-16 20:05:55(UTC+8) 周六
  * @change 2025-09-10 16:24:14(UTC+8) 周三

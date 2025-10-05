@@ -1,4 +1,15 @@
 
+/**
+ * @file QtDebug.cpp
+ * @brief Qt调试工具类的实现文件
+ *
+ * 该文件实现了QtDebug命名空间中的调试辅助功能。
+ *
+ * @author Sakurakugu
+ * @date 2025-08-16 20:05:55(UTC+8) 周六x
+ * @change 2025-08-16 20:05:55(UTC+8) 周六x
+ */
+
 #include "QtDebug.h"
 #include <QDirIterator>
 

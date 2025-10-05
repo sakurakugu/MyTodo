@@ -1,6 +1,10 @@
 /**
  * @file network_request.cpp
  * @brief 网络请求类实现
+ *
+ * 该文件实现了NetworkRequest类，提供统一的HTTP网络请求管理功能，
+ * 支持请求超时、错误处理、SSL验证、请求重试和并发控制。
+ *
  * @author Sakurakugu
  * @date 2025-08-17 07:17:29(UTC+8) 周日
  * @change 2025-09-21 18:19:31(UTC+8) 周日

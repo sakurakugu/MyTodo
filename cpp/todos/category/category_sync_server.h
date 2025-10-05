@@ -87,12 +87,6 @@ class CategorySyncServer : public BaseSyncServer {
     void localChangesUploaded(const std::vector<CategorieItem *> &m_unsyncedItems); // 本地更改已上传
     void syncConflictDetected(const QJsonArray &conflictItems);                     // 检测到同步冲突
 
-    // 类别操作信号
-    void categoryCreated(const QString &name, bool success, const QString &message); // 类别创建完成
-    void categoryUpdated(const QString &oldName, const QString &newName, bool success,
-                         const QString &message);                                    // 类别更新完成
-    void categoryDeleted(const QString &name, bool success, const QString &message); // 类别删除完成
-
   protected slots:
     void onNetworkRequestCompleted(Network::RequestType type,
                                    const QJsonObject &response) override; // 网络请求完成

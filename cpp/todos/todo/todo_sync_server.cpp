@@ -37,7 +37,7 @@ void TodoSyncServer::与服务器同步(SyncDirection direction) {
     // 入口调用：严格检查（不允许已有同步）
     检查同步前置条件(false);
 
-    setIsSyncing(false);
+    setIsSyncing(true);
     m_currentSyncDirection = direction;
     emit syncStarted();
 

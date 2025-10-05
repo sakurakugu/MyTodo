@@ -63,7 +63,6 @@ void CategorySyncServer::取消同步() {
 // 类别操作接口实现
 void CategorySyncServer::新增类别(const QString &name) {
     if (!是否可以执行同步()) {
-        emit categoryCreated(name, false, "无法新增类别：未登录");
         return;
     }
 
@@ -80,13 +79,11 @@ void CategorySyncServer::新增类别(const QString &name) {
         m_networkRequest.sendRequest(Network::RequestType::CreateCategory, config);
     } catch (const std::exception &e) {
         qCritical() << "新增类别时发生异常:" << e.what();
-        emit categoryCreated(name, false, QString("新增类别失败: %1").arg(e.what()));
     }
 }
 
 void CategorySyncServer::更新类别(const QString &name, const QString &newName) {
     if (!是否可以执行同步()) {
-        emit categoryUpdated(name, newName, false, "无法更新类别：未登录");
         return;
     }
 
@@ -105,13 +102,11 @@ void CategorySyncServer::更新类别(const QString &name, const QString &newNam
         m_networkRequest.sendRequest(Network::RequestType::UpdateCategory, config);
     } catch (const std::exception &e) {
         qCritical() << "更新类别时发生异常:" << e.what();
-        emit categoryUpdated(name, newName, false, QString("更新类别失败: %1").arg(e.what()));
     }
 }
 
 void CategorySyncServer::删除类别(const QString &name) {
     if (!是否可以执行同步()) {
-        emit categoryDeleted(name, false, "无法删除类别：未登录");
         return;
     }
 
@@ -128,7 +123,6 @@ void CategorySyncServer::删除类别(const QString &name) {
         m_networkRequest.sendRequest(Network::RequestType::DeleteCategory, config);
     } catch (const std::exception &e) {
         qCritical() << "删除类别时发生异常:" << e.what();
-        emit categoryDeleted(name, false, QString("删除类别失败: %1").arg(e.what()));
     }
 }
 
@@ -192,7 +186,6 @@ void CategorySyncServer::onNetworkRequestFailed(Network::RequestType type, Netwo
         typeStr = "新建类别";
         qInfo() << "类别创建失败！错误类型:" << static_cast<int>(error);
         qInfo() << "失败详情:" << message;
-        emit categoryCreated(m_currentOperationName, false, message);
         return;
     case Network::RequestType::PushCategories:
         typeStr = "批量同步类别";
@@ -206,13 +199,11 @@ void CategorySyncServer::onNetworkRequestFailed(Network::RequestType type, Netwo
         typeStr = "更新类别";
         qInfo() << "类别更新失败！错误类型:" << static_cast<int>(error);
         qInfo() << "失败详情:" << message;
-        emit categoryUpdated(m_currentOperationName, m_currentOperationNewName, false, message);
         return;
     case Network::RequestType::DeleteCategory:
         typeStr = "删除类别";
         qInfo() << "类别删除失败！错误类型:" << static_cast<int>(error);
         qInfo() << "失败详情:" << message;
-        emit categoryDeleted(m_currentOperationName, false, message);
         return;
     default:
         return;
@@ -499,8 +490,6 @@ void CategorySyncServer::处理更新类别成功(const QJsonObject &response) {
     if (response.contains("message")) {
         message = response["message"].toString();
     }
-
-    emit categoryUpdated(m_currentOperationName, m_currentOperationNewName, true, message);
 }
 
 void CategorySyncServer::处理删除类别成功(const QJsonObject &response) {
@@ -510,6 +499,4 @@ void CategorySyncServer::处理删除类别成功(const QJsonObject &response) {
     if (response.contains("message")) {
         message = response["message"].toString();
     }
-
-    emit categoryDeleted(m_currentOperationName, true, message);
 }

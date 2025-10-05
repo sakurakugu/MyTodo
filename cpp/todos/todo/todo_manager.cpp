@@ -1,9 +1,10 @@
 /**
- * @brief 构造函数
+ * @file todo_manager.cpp
+ * @brief TodoManager类的实现文件
  *
- * 初始化TodoManager对象，设置父对象为parent。
+ * 该文件实现了TodoManager类，用于管理待办事项的增删改查和同步操作。
  *
- * @param parent 父对象指针，默认值为nullptr。
+ * @author Sakurakugu
  * @date 2025-08-16 20:05:55(UTC+8) 周六
  * @change 2025-09-24 03:10:10(UTC+8) 周三
  */

@@ -1,4 +1,5 @@
 /**
+ * @file TodoCategoryManager.qml
  * @brief 待办事项分类选择菜单组件
  *
  * 该组件用于创建待办事项分类选择菜单，用于修改待办事项的分类。

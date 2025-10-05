@@ -1,5 +1,5 @@
 /**
- * @file networkrequest.h
+ * @file network_request.h
  * @brief NetworkRequest类的头文件
  *
  * 该文件定义了NetworkRequest类，用于管理应用程序的网络请求。
