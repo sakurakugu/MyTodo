@@ -13,9 +13,9 @@
 #include "global_state.h"
 #include "user_auth.h"
 #include "network_request.h"              // 网络请求
-#include "todos/todo/todo_data_storage.h" // 数据管理器
-#include "todos/todo/todo_item.h"         // 待办事项数据结构
-#include "todos/todo/todo_sync_server.h"  // 服务器同步管理器
+#include "modules/todo/todo_data_storage.h" // 数据管理器
+#include "modules/todo/todo_item.h"         // 待办事项数据结构
+#include "modules/todo/todo_sync_server.h"  // 服务器同步管理器
 
 #include <QDateTime>
 

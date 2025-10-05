@@ -17,6 +17,7 @@
 #include "user_auth.h"
 #include "default_value.h"
 #include "setting.h"
+#include "config.h"
 
 #include <QDateTime>
 #include <QJsonObject>
@@ -26,7 +27,6 @@
 UserAuth::UserAuth(QObject *parent)
     : QObject(parent),                                 //
       m_networkRequest(NetworkRequest::GetInstance()), //
-      m_setting(Setting::GetInstance()),               //
       m_database(Database::GetInstance()),             //
       m_tokenExpiryTimer(new QTimer(this)),            //
       m_tokenExpiryTime(0),                            //
@@ -43,7 +43,7 @@ UserAuth::UserAuth(QObject *parent)
     connect(&m_networkRequest, &NetworkRequest::authTokenExpired, this, &UserAuth::onAuthTokenExpired);
 
     // 监听服务器配置变化
-    connect(&m_setting, &Setting::baseUrlChanged, this, &UserAuth::onBaseUrlChanged);
+    connect(&Setting::GetInstance(), &Setting::baseUrlChanged, this, &UserAuth::onBaseUrlChanged);
 
     // 连接令牌过期检查定时器
     connect(m_tokenExpiryTimer, &QTimer::timeout, this, &UserAuth::onTokenExpiryCheck);
@@ -58,7 +58,7 @@ UserAuth::UserAuth(QObject *parent)
 
 void UserAuth::加载数据() {
     // 从设置中加载服务器配置
-    m_authApiEndpoint = m_setting.get("server/authApiEndpoint", QString(DefaultValues::userAuthApiEndpoint)).toString();
+    m_authApiEndpoint = Config::GetInstance().get("server/authApiEndpoint", QString(DefaultValues::userAuthApiEndpoint)).toString();
 
     // 尝试从数据库中加载存储的凭据
     QSqlDatabase db = m_database.getDatabase();

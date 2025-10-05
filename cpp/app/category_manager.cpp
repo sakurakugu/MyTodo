@@ -11,10 +11,10 @@
  */
 
 #include "category_manager.h"
-#include "todos/category/category_item.h"
-#include "todos/category/category_data_storage.h"
-#include "todos/category/category_model.h"
-#include "todos/category/category_sync_server.h"
+#include "modules/category/category_item.h"
+#include "modules/category/category_data_storage.h"
+#include "modules/category/category_model.h"
+#include "modules/category/category_sync_server.h"
 #include "default_value.h"
 #include "user_auth.h"
 

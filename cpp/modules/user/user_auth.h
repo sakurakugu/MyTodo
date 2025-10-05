@@ -24,9 +24,6 @@
 #include "database.h"
 #include "network_request.h"
 
-// 前向声明
-class Setting;
-
 /**
  * @class UserAuth
  * @brief 用户认证管理类
@@ -117,7 +114,6 @@ class UserAuth : public QObject, public IDataExporter {
 
     // 成员变量
     NetworkRequest &m_networkRequest; ///< 网络管理器引用
-    Setting &m_setting;               ///< 应用设置引用
     Database &m_database;             ///< 数据库管理器引用
 
     QString m_accessToken;  ///< 访问令牌

@@ -16,8 +16,8 @@
 #include <QVariant>
 
 // 要不声明这些类型为不透明指针，用于Qt MOC；要不直接用头文件
-#include "todos/todo/todo_model.h"   // 数据模型
-#include "todos/todo/todo_queryer.h" // 筛选管理器
+#include "modules/todo/todo_model.h"   // 数据模型
+#include "modules/todo/todo_queryer.h" // 筛选管理器
 
 class UserAuth;
 class GlobalState;

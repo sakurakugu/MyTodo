@@ -33,8 +33,10 @@ set(CMAKE_AUTOUIC ON)                      # 自动处理 UIC
 
 add_subdirectory(cpp/foundation)
 add_subdirectory(cpp/domain)
-add_subdirectory(cpp/todos/category)
-add_subdirectory(cpp/todos/todo)
+add_subdirectory(cpp/modules/category)
+add_subdirectory(cpp/modules/todo)
+add_subdirectory(cpp/modules/setting)
+add_subdirectory(cpp/modules/user)
 # add_subdirectory(cpp/app)
 
 # 构建类型优化
@@ -75,6 +77,8 @@ set(PRIVATE_LIBRARIES
     mytodo_domain
     mytodo_category
     mytodo_todo
+    mytodo_setting
+    mytodo_user
     Qt6::Widgets
     Qt6::Quick
     Qt6::Concurrent
@@ -132,14 +136,10 @@ set(PROJECT_SOURCES
     cpp/app/todo_manager.h
     cpp/app/category_manager.h
     cpp/app/category_manager.cpp
-    cpp/app/user_auth.cpp
-    cpp/app/user_auth.h
     cpp/app/user_auth_manager.cpp
     cpp/app/user_auth_manager.h
     cpp/app/global_state.cpp
     cpp/app/global_state.h
-    cpp/app/setting.cpp
-    cpp/app/setting.h
     cpp/app/setting_manager.cpp
     cpp/app/setting_manager.h
 )
@@ -245,8 +245,10 @@ target_link_libraries(MyTodo PRIVATE ${PRIVATE_LIBRARIES})
 target_include_directories(MyTodo PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp     # 根 cpp（放置全局头）
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/domain_base  # 领域基类
-    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/todos/category
-    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/todos/todo
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/modules/category
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/modules/todo
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/modules/setting
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/modules/user
 )
 
 # 安装配置

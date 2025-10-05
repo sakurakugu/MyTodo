@@ -27,7 +27,7 @@
 
 #include "app/global_state.h"
 #include "app/setting_manager.h"
-#include "app/user_auth.h"
+#include "modules/user/user_auth.h"
 #include "app/user_auth_manager.h"
 #include "logger.h"
 #include "qt_debug.h"
