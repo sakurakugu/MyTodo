@@ -30,7 +30,8 @@ type Todo struct {
 	UserUUID            string     `json:"user_uuid" db:"user_uuid"`
 	CreatedAt           time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt           time.Time  `json:"updated_at" db:"updated_at"`
-	IsDeleted           bool       `json:"is_deleted" db:"is_deleted"`
+	IsTrashed           bool       `json:"is_trashed" db:"is_trashed"`
+	TrashedAt           *time.Time `json:"trashed_at" db:"trashed_at"`
 }
 
 // Category 分类模型
@@ -78,6 +79,7 @@ type RefreshTokenRequest struct {
 
 // CreateTodoRequest 创建待办事项请求
 type CreateTodoRequest struct {
+	UUID                string     `json:"uuid"`
 	Title               string     `json:"title" binding:"required"`
 	Description         *string    `json:"description"`
 	Category            string     `json:"category"`
@@ -87,10 +89,13 @@ type CreateTodoRequest struct {
 	RecurrenceCount     *int       `json:"recurrence_count"`
 	RecurrenceStartDate *time.Time `json:"recurrence_start_date"`
 	IsCompleted         bool       `json:"is_completed"`
+	IsTrashed           bool       `json:"is_trashed" db:"is_trashed"`
+	TrashedAt           *time.Time `json:"trashed_at" db:"trashed_at"`
 }
 
 // UpdateTodoRequest 更新待办事项请求
 type UpdateTodoRequest struct {
+	UUID                string     `json:"uuid"`
 	Title               *string    `json:"title"`
 	Description         *string    `json:"description"`
 	Category            *string    `json:"category"`
@@ -100,11 +105,13 @@ type UpdateTodoRequest struct {
 	RecurrenceCount     *int       `json:"recurrence_count"`
 	RecurrenceStartDate *time.Time `json:"recurrence_start_date"`
 	IsCompleted         *bool      `json:"is_completed"`
+	IsTrashed           *bool      `json:"is_trashed" db:"is_trashed"`
+	TrashedAt           *time.Time `json:"trashed_at" db:"trashed_at"`
 }
 
 // CreateCategoryRequest 创建分类请求
 type CreateCategoryRequest struct {
-	UUID string `json:"uuid"`
+	UUID string `json:"uuid" binding:"required"`
 	Name string `json:"name" binding:"required"`
 }
 
@@ -141,8 +148,8 @@ type SyncTodoItem struct {
 	RecurrenceStartDate *string    `json:"recurrenceStartDate"`
 	IsCompleted         bool       `json:"is_completed"`
 	CompletedAt         *time.Time `json:"completed_at"`
-	IsDeleted           bool       `json:"is_deleted"`
-	DeletedAt           *time.Time `json:"deleted_at"`
+	IsTrashed           bool       `json:"is_trashed"`
+	TrashedAt           *time.Time `json:"trashed_at"`
 	CreatedAt           *time.Time `json:"created_at"`
 	UpdatedAt           *time.Time `json:"updated_at"`
 	Synced              *int       `json:"synced"` // 1=新增 2=更新 3=删除 其它/空=自动判断

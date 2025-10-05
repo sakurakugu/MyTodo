@@ -217,6 +217,12 @@ func (th *TodoHandler) CreateTodo(w http.ResponseWriter, r *http.Request, userUU
 		return
 	}
 
+	// 强制要求客户端提供 UUID
+	if strings.TrimSpace(req.UUID) == "" {
+		th.response.ValidationError(w, "uuid 不能为空，需由客户端生成")
+		return
+	}
+
 	// 验证必填字段
 	if strings.TrimSpace(req.Title) == "" {
 		th.response.ValidationError(w, "标题不能为空")
@@ -435,6 +441,14 @@ func (th *TodoHandler) handleBatchSync(w http.ResponseWriter, userUUID string, r
 	var conflictDetails []map[string]interface{}
 
 	for i, syncItem := range req.Todos {
+		// 所有同步项统一要求提供 uuid
+		if strings.TrimSpace(syncItem.UUID) == "" {
+			errors++
+			errorDetails = append(errorDetails, map[string]interface{}{
+				"index": i, "error": "uuid 不能为空", "code": "MISSING_UUID", "uuid": syncItem.UUID,
+			})
+			continue
+		}
 		// 验证用户权限
 		if syncItem.UserUUID != userUUID {
 			errors++
@@ -716,13 +730,15 @@ func (th *TodoHandler) convertToCreateRequest(syncItem *models.SyncTodoItem) *mo
 		Important:   syncItem.Important,
 		IsCompleted: syncItem.IsCompleted,
 	}
+	// 携带客户端 uuid
+	if syncItem.UUID != "" {
+		req.UUID = syncItem.UUID
+	}
 
 	// 处理时间字段（支持毫秒或字符串，由 time.Time 解析）
 	if syncItem.Deadline != nil {
-		if syncItem.Deadline != nil {
-			deadline := *syncItem.Deadline
-			req.Deadline = &deadline
-		}
+		deadline := *syncItem.Deadline
+		req.Deadline = &deadline
 	}
 
 	if syncItem.RecurrenceStartDate != nil && *syncItem.RecurrenceStartDate != "" {

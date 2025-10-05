@@ -84,6 +84,12 @@ func (ch *CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// 强制要求客户端提供 UUID
+	if strings.TrimSpace(req.UUID) == "" {
+		ch.response.ValidationError(w, "uuid 不能为空，需由客户端生成")
+		return
+	}
+
 	// 验证输入
 	if strings.TrimSpace(req.Name) == "" {
 		ch.response.ValidationError(w, "分类名称不能为空")

@@ -8,7 +8,6 @@ import (
 
 	"MyTodo/internal/config"
 	"MyTodo/internal/models"
-	"MyTodo/internal/utils"
 )
 
 // TodoRepository 待办事项仓库
@@ -25,17 +24,22 @@ func NewTodoRepository() *TodoRepository {
 
 // CreateTodo 创建待办事项
 func (tr *TodoRepository) CreateTodo(userUUID string, req *models.CreateTodoRequest) (*models.Todo, error) {
-	uuid := utils.GenerateUUID()
+	// 强制要求客户端生成 UUID
+	if strings.TrimSpace(req.UUID) == "" {
+		return nil, fmt.Errorf("uuid 不能为空，需由客户端生成")
+	}
+	uuid := strings.TrimSpace(req.UUID)
 
 	query := `
 		INSERT INTO todos (uuid, title, description, category, important, is_completed, deadline, 
-			recurrence_interval, recurrence_count, recurrence_start_date, user_uuid, created_at, updated_at) 
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+			recurrence_interval, recurrence_count, recurrence_start_date, user_uuid, , is_trashed, trashed_at, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
 	`
 
 	_, err := tr.db.Exec(query, uuid, req.Title, req.Description, req.Category, req.Important,
 		req.IsCompleted, req.Deadline, req.RecurrenceInterval, req.RecurrenceCount,
-		req.RecurrenceStartDate, userUUID)
+		req.RecurrenceStartDate, userUUID, req.IsTrashed, req.TrashedAt,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -48,9 +52,9 @@ func (tr *TodoRepository) GetTodoByUUID(uuid, userUUID string) (*models.Todo, er
 	query := `
 		SELECT uuid, title, description, category, important, is_completed, deadline,
 			recurrence_interval, recurrence_count, recurrence_start_date, user_uuid,
-			created_at, updated_at, is_deleted
+			created_at, updated_at, is_trashed, trashed_at
 		FROM todos 
-		WHERE uuid = ? AND user_uuid = ? AND is_deleted = FALSE
+		WHERE uuid = ? AND user_uuid = ? AND is_trashed = FALSE
 	`
 
 	var todo models.Todo
@@ -58,7 +62,7 @@ func (tr *TodoRepository) GetTodoByUUID(uuid, userUUID string) (*models.Todo, er
 		&todo.UUID, &todo.Title, &todo.Description, &todo.Category,
 		&todo.Important, &todo.IsCompleted, &todo.Deadline, &todo.RecurrenceInterval,
 		&todo.RecurrenceCount, &todo.RecurrenceStartDate, &todo.UserUUID,
-		&todo.CreatedAt, &todo.UpdatedAt, &todo.IsDeleted,
+		&todo.CreatedAt, &todo.UpdatedAt, &todo.IsTrashed, &todo.TrashedAt,
 	)
 
 	if err != nil {
@@ -76,7 +80,7 @@ func (tr *TodoRepository) GetTodos(userUUID string, filters map[string]interface
 	// 基本条件
 	conditions = append(conditions, "user_uuid = ?")
 	args = append(args, userUUID)
-	conditions = append(conditions, "is_deleted = FALSE")
+	conditions = append(conditions, "is_trashed = FALSE")
 
 	// 添加筛选条件
 	if completed, ok := filters["is_completed"].(bool); ok {
@@ -118,7 +122,7 @@ func (tr *TodoRepository) GetTodos(userUUID string, filters map[string]interface
 	query := `
 		SELECT uuid, title, description, category, important, is_completed, deadline,
 			recurrence_interval, recurrence_count, recurrence_start_date, user_uuid,
-			created_at, updated_at, is_deleted
+			created_at, updated_at, is_trashed, trashed_at
 		FROM todos 
 		WHERE ` + strings.Join(conditions, " AND ")
 
@@ -157,7 +161,7 @@ func (tr *TodoRepository) GetTodos(userUUID string, filters map[string]interface
 			&todo.UUID, &todo.Title, &todo.Description, &todo.Category,
 			&todo.Important, &todo.IsCompleted, &todo.Deadline, &todo.RecurrenceInterval,
 			&todo.RecurrenceCount, &todo.RecurrenceStartDate, &todo.UserUUID,
-			&todo.CreatedAt, &todo.UpdatedAt, &todo.IsDeleted,
+			&todo.CreatedAt, &todo.UpdatedAt, &todo.IsTrashed, &todo.TrashedAt,
 		)
 		if err != nil {
 			return nil, err
@@ -209,6 +213,14 @@ func (tr *TodoRepository) UpdateTodo(uuid, userUUID string, req *models.UpdateTo
 		setParts = append(setParts, "recurrence_start_date = ?")
 		args = append(args, *req.RecurrenceStartDate)
 	}
+	if req.IsTrashed != nil {
+		setParts = append(setParts, "is_trashed = ?")
+		args = append(args, req.IsTrashed)
+	}
+	if req.TrashedAt != nil {
+		setParts = append(setParts, "trashed_at = ?")
+		args = append(args, req.TrashedAt)
+	}
 
 	if len(setParts) == 0 {
 		return fmt.Errorf("没有字段需要更新")
@@ -221,7 +233,7 @@ func (tr *TodoRepository) UpdateTodo(uuid, userUUID string, req *models.UpdateTo
 	query := fmt.Sprintf(`
 		UPDATE todos 
 		SET %s 
-		WHERE uuid = ? AND user_uuid = ? AND is_deleted = FALSE
+		WHERE uuid = ? AND user_uuid = ? AND is_trashed = FALSE
 	`, strings.Join(setParts, ", "))
 
 	result, err := tr.db.Exec(query, args...)
@@ -245,8 +257,8 @@ func (tr *TodoRepository) UpdateTodo(uuid, userUUID string, req *models.UpdateTo
 func (tr *TodoRepository) SoftDeleteTodo(uuid, userUUID string) error {
 	query := `
 		UPDATE todos 
-		SET is_deleted = TRUE, updated_at = NOW() 
-		WHERE uuid = ? AND user_uuid = ? AND is_deleted = FALSE
+		SET is_trashed = TRUE, trashed_at = NOW(), updated_at = NOW() 
+		WHERE uuid = ? AND user_uuid = ? AND is_trashed = FALSE
 	`
 
 	result, err := tr.db.Exec(query, uuid, userUUID)
@@ -323,8 +335,8 @@ func (tr *TodoRepository) batchSoftDelete(userUUID string, uuids []string) error
 
 	query := fmt.Sprintf(`
 		UPDATE todos 
-		SET is_deleted = TRUE, updated_at = NOW()
-		WHERE user_uuid = ? AND uuid IN (%s) AND is_deleted = FALSE
+		SET is_trashed = TRUE, trashed_at = NOW(), updated_at = NOW()
+		WHERE user_uuid = ? AND uuid IN (%s) AND is_trashed = FALSE
 	`, placeholders)
 
 	args := []interface{}{userUUID}
@@ -358,7 +370,7 @@ func (tr *TodoRepository) batchUpdateCompleted(userUUID string, uuids []string, 
 	query := fmt.Sprintf(`
 		UPDATE todos 
 		SET is_completed = ?, updated_at = NOW()
-		WHERE user_uuid = ? AND uuid IN (%s) AND is_deleted = FALSE
+		WHERE user_uuid = ? AND uuid IN (%s) AND is_trashed = FALSE
 	`, placeholders)
 
 	args := []interface{}{completed, userUUID}
@@ -377,7 +389,7 @@ func (tr *TodoRepository) batchUpdateCategory(userUUID string, uuids []string, c
 	query := fmt.Sprintf(`
 		UPDATE todos 
 		SET category = ?, updated_at = NOW()
-		WHERE user_uuid = ? AND uuid IN (%s) AND is_deleted = FALSE
+		WHERE user_uuid = ? AND uuid IN (%s) AND is_trashed = FALSE
 	`, placeholders)
 
 	args := []interface{}{category, userUUID}
@@ -396,7 +408,7 @@ func (tr *TodoRepository) batchUpdateImportant(userUUID string, uuids []string, 
 	query := fmt.Sprintf(`
 		UPDATE todos 
 		SET important = ?, updated_at = NOW()
-		WHERE user_uuid = ? AND uuid IN (%s) AND is_deleted = FALSE
+		WHERE user_uuid = ? AND uuid IN (%s) AND is_trashed = FALSE
 	`, placeholders)
 
 	args := []interface{}{important, userUUID}

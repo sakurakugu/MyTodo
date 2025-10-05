@@ -7,7 +7,6 @@ import (
 
 	"MyTodo/internal/config"
 	"MyTodo/internal/models"
-	"MyTodo/internal/utils"
 )
 
 // CategoryRepository 分类仓库
@@ -39,9 +38,10 @@ func (cr *CategoryRepository) CreateCategory(userUUID, uuidStr, name string) (*m
 		return nil, fmt.Errorf("分类名称已存在")
 	}
 
-	uuidToUse := uuidStr
-	if strings.TrimSpace(uuidToUse) == "" {
-		uuidToUse = utils.GenerateUUID()
+	// 现在强制要求客户端提供 uuid
+	uuidToUse := strings.TrimSpace(uuidStr)
+	if uuidToUse == "" {
+		return nil, fmt.Errorf("uuid 不能为空，需由客户端生成")
 	}
 
 	// 直接尝试插入（uuid 唯一约束由 DB 保证）
