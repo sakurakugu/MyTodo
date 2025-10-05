@@ -9,11 +9,11 @@
  * @change 2025-09-24 00:55:58(UTC+8) 周三
  */
 #include "setting.h"
-#include "foundation/default_value.h"
-#include "foundation/config.h"
-#include "foundation/database.h"
-#include "foundation/network_proxy.h"
-#include "foundation/network_request.h"
+#include "default_value.h"
+#include "config.h"
+#include "database.h"
+#include "network_proxy.h"
+#include "network_request.h"
 
 Setting::Setting(QObject *parent)
     : QObject(parent),                 //

@@ -1,6 +1,6 @@
 
 /**
- * @file QtDebug.cpp
+ * @file qt_debug.cpp
  * @brief Qt调试工具类的实现文件
  *
  * 该文件实现了QtDebug命名空间中的调试辅助功能。
@@ -10,7 +10,7 @@
  * @change 2025-08-16 20:05:55(UTC+8) 周六x
  */
 
-#include "QtDebug.h"
+#include "qt_debug.h"
 #include <QDirIterator>
 
 // Windows 相关头文件
@@ -26,7 +26,7 @@ void QtDebug::打印资源路径(const QString &path) {
 }
 
 void QtDebug::设置终端编码() {
-#if defined(Q_OS_WIN) && defined(QT_DEBUG)
+#ifdef Q_OS_WIN
     // Windows平台，设置控制台编码
     SetConsoleCP(CP_UTF8);
     SetConsoleOutputCP(CP_UTF8);

@@ -204,7 +204,7 @@ Page {
                             toggle();
                             settingPage.loginStatusDialogs.showLoginRequired();
                         } else {
-                            globalState.setIsAutoSyncEnabled(checked);
+                            globalState.isAutoSyncEnabled = checked;
                         }
                     }
                 }

@@ -3,6 +3,11 @@
 # 提供以下目标：
 # - check_headers: 校验 C/C++ 文件头规范
 # - fix_headers: 自动修复简单的文件头规范问题
+#
+# 使用方法：
+# 1. 先包含本模块：include(tools/检查文件头/check_headers.cmake)
+# 2. 构建校验目标：cmake --build build --target check_headers
+# 3. 构建修复目标：cmake --build build --target fix_headers
 
 # 查找Python3解释器
 find_package(Python3 COMPONENTS Interpreter REQUIRED)

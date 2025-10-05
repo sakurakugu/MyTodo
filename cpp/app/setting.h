@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "foundation/logger.h"
+#include "logger.h"
 
 #include <QVariant>
 #include <QObject>

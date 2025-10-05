@@ -19,7 +19,7 @@
 #include <QSaveFile>
 #include <QSqlError>
 
-Database::Database(QObject *parent) : QObject(parent), m_initialized(false) {
+Database::Database() : m_initialized(false) {
     // 初始化数据库
     if (!initializeDatabase()) {
         qCritical() << "数据库初始化失败";

@@ -44,9 +44,6 @@ class GlobalState : public QObject {
     GlobalState(GlobalState &&) = delete;
     GlobalState &operator=(GlobalState &&) = delete;
 
-    explicit GlobalState(QObject *parent = nullptr);
-    ~GlobalState();
-
     // 属性访问器
     bool isDarkMode() const;
     void setIsDarkMode(bool value);
@@ -103,6 +100,9 @@ class GlobalState : public QObject {
 
   private:
     void updateWidgetHeight(); // 动态更新小组件模式高度
+
+    explicit GlobalState(QObject *parent = nullptr);
+    ~GlobalState();
 
   signals:
     void isDarkModeChanged();

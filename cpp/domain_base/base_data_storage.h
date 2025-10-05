@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "foundation/database.h"
+#include "database.h"
 #include <QObject>
 #include <QSqlDatabase>
 #include <QUuid>

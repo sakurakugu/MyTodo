@@ -11,7 +11,7 @@
 
 #include "todo_data_storage.h"
 #include "todo_item.h"
-#include "foundation/utility.h"
+#include "utility.h"
 
 #include <QDateTime>
 #include <QJsonArray>

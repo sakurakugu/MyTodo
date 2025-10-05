@@ -25,25 +25,27 @@
 #include <QSurfaceFormat>
 #include <QtQuickControls2/QQuickStyle>
 
-#include "QtDebug.h"
 #include "app/global_state.h"
 #include "app/setting.h"
 #include "app/user_auth.h"
-#include "foundation/logger.h"
+#include "logger.h"
+#include "qt_debug.h"
 #include "todos/category/category_manager.h"
 #include "todos/todo/todo_manager.h"
 #include "version.h"
 
 int main(int argc, char *argv[]) {
+#ifdef QT_DEBUG
     QtDebug::设置终端编码();
     QtDebug::打印资源路径();
+#endif
 
     QGuiApplication app(argc, argv);
 
     // 初始化日志系统
     qInstallMessageHandler(Logger::messageHandler);
 // 应用日志设置
-#if defined(QT_DEBUG)
+#ifdef QT_DEBUG
     Logger::GetInstance().setLogLevel(LogLevel::Debug); // 默认 Info，调试模式下设为 Debug
 #endif
 

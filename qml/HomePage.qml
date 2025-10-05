@@ -1178,7 +1178,7 @@ Page {
                                 toggle();
                                 homePage.loginStatusDialogs.showLoginRequired();
                             } else {
-                                globalState.setIsAutoSyncEnabled(checked);
+                                globalState.isAutoSyncEnabled = checked;
                             }
                         }
                     }

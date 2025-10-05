@@ -10,7 +10,7 @@
  */
 
 #include "base_sync_server.h"
-#include "foundation/config.h"
+#include "config.h"
 #include "cpp/app/global_state.h"
 #include "cpp/app/user_auth.h"
 

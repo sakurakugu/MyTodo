@@ -10,9 +10,9 @@
  */
 
 #include "todo_sync_server.h"
-#include "foundation/default_value.h"
-#include "foundation/config.h"
-#include "foundation/utility.h"
+#include "default_value.h"
+#include "config.h"
+#include "utility.h"
 #include "todo_item.h"
 
 #include <QJsonDocument>

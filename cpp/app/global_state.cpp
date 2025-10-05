@@ -9,7 +9,7 @@
  * @change 2025-09-13 22:46:17(UTC+8) 周六
  */
 #include "global_state.h"
-#include "foundation/config.h"
+#include "config.h"
 
 #include <QCoreApplication>
 #include <QDir>

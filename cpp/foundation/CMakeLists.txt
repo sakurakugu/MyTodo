@@ -11,8 +11,8 @@ add_library(mytodo_foundation STATIC
     network_proxy.h
     network_request.cpp
     network_request.h
-    QtDebug.cpp
-    QtDebug.h
+    qt_debug.cpp
+    qt_debug.h
     utility.cpp
     utility.h
 )

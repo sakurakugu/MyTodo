@@ -21,8 +21,8 @@
 #include <QTimer>
 #include <QUuid>
 
-#include "./foundation/network_request.h"
-#include "./foundation/database.h"
+#include "network_request.h"
+#include "database.h"
 
 // 前向声明
 class Setting;

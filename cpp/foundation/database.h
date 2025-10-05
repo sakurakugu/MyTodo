@@ -72,12 +72,10 @@ class IDataExporter {
  * - 应用程序启动时初始化数据库
  * - 数据库版本升级和迁移
  *
- * @note 该类是线程安全的，使用QMutex保护数据库操作
+ * @note 该类是线程安全的，使用std::mutex保护数据库操作
  * @see CategoryDataStorage, TodoDataStorage
  */
-class Database : public QObject {
-    Q_OBJECT
-
+class Database {
   public:
     // 单例模式
     static Database &GetInstance() {
@@ -120,7 +118,7 @@ class Database : public QObject {
     bool importDatabaseFromJsonFile(const QString &filePath, bool replaceAll); ///< 从JSON文件导入数据库
 
   private:
-    explicit Database(QObject *parent = nullptr);
+    explicit Database();
     ~Database();
 
     // 数据库初始化相关

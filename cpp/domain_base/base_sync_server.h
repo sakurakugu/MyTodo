@@ -18,7 +18,7 @@
 #include <QString>
 #include <QTimer>
 
-#include "foundation/network_request.h"
+#include "network_request.h"
 
 class Config;
 class UserAuth;

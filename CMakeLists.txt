@@ -322,7 +322,7 @@ if(WIN32)
     endif()
 endif()
 
-# 构建信息输出
+# ---------------- 构建信息输出 ----------------
 message(STATUS "====== MyTodo 构建配置 =====")
 message(STATUS "项目版本: ${PROJECT_VERSION}")
 message(STATUS "构建类型: ${CMAKE_BUILD_TYPE}")
@@ -333,5 +333,5 @@ message(STATUS "安装前缀: ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "===========================")
 
 # ---------------- 文件头规范校验 ----------------
-include(tools/check_headers/HeaderCheck.cmake)
+include(tools/检查文件头/check_headers.cmake)
 message(STATUS "===========================")

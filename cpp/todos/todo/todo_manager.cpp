@@ -10,7 +10,7 @@
  */
 #include "todo_manager.h"
 #include "../category/category_manager.h" // 类别管理器
-#include "foundation/network_request.h"   // 网络请求
+#include "network_request.h"   // 网络请求
 #include "cpp/app/global_state.h"
 #include "todo_data_storage.h" // 数据管理器
 #include "todo_item.h"         // 待办事项数据结构
