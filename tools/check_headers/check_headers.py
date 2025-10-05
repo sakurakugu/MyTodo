@@ -25,8 +25,8 @@
         cmake --build build --target check_headers
         cmake --build build --target fix_headers
   * 或直接调用：
-        python tools/check_headers.py --root .
-        python tools/check_headers.py --root . --fix
+        python tools/check_headers/check_headers.py --root .
+        python tools/check_headers/check_headers.py --root . --fix
 """
 from __future__ import annotations
 

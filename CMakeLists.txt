@@ -333,18 +333,5 @@ message(STATUS "安装前缀: ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "===========================")
 
 # ---------------- 文件头规范校验 ----------------
-find_package(Python3 COMPONENTS Interpreter REQUIRED)
-
-add_custom_target(check_headers
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/check_headers.py --root ${CMAKE_SOURCE_DIR}
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    COMMENT "正在校验 C/C++ 文件头规范..."
-)
-
-add_custom_target(fix_headers
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/check_headers.py --root ${CMAKE_SOURCE_DIR} --fix
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    COMMENT "正在自动修复简单的文件头规范问题..."
-)
-
-message(STATUS "可用 “cmake --build build --target check_headers / fix_headers” 校验或修复文件头规范")
+include(tools/check_headers/HeaderCheck.cmake)
+message(STATUS "===========================")
