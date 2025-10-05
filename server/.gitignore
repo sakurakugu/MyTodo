@@ -34,4 +34,4 @@ go.work.sum
 .dockerignore
 
 # 其他
-.env
+# .env

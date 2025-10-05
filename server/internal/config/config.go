@@ -53,6 +53,7 @@ func LoadConfig() (*Config, error) {
 		log.Println("未找到 .env 文件，使用默认配置")
 	}
 
+	// TODO: 不要写在代码里，改成从环境变量读取
 	config := &Config{
 		Database: DatabaseConfig{
 			Host:       getEnvOrDefault("DB_HOST", "localhost"),

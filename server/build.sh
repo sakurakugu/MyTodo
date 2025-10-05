@@ -26,7 +26,6 @@ CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bin/MyTodo-Server ./c
 
 echo "构建完成！二进制文件位于: bin/MyTodo-Server"
 
-# TODO: 是否真的关闭了服务？然后才开启
 systemctl daemon-reload
 systemctl enable mytodo
 systemctl stop mytodo
