@@ -1160,32 +1160,46 @@ Page {
         }
 
         MenuItem {
-            id: onlineToggleItem
+            id: syncNowItem
             contentItem: RowLayout {
                 spacing: 12
-                ControlRow {
-                    spacing: 8
-                    icon: "\ue8ef"
-                    text: qsTr("自动同步")
-                    Layout.alignment: Qt.AlignVCenter // 上下居中
-                    checked: globalState.isAutoSyncEnabled
-                    controlType: ControlRow.ControlType.Switch
 
-                    onCheckedChanged: {
-                        if (checked) {
-                            // 如果未登录，显示提示并重置开关
-                            if (!userAuth.isLoggedIn) {
-                                toggle();
-                                homePage.loginStatusDialogs.showLoginRequired();
-                            } else {
-                                globalState.isAutoSyncEnabled = checked;
-                            }
-                        }
+                Text {
+                    text: "\ue8ef"
+                    font.family: "iconfont"
+                    font.pixelSize: 16
+                    color: ThemeManager.textColor
+                    Layout.alignment: Qt.AlignVCenter
+
+                    RotationAnimation {
+                        id: syncRotationAnimation
+                        target: parent
+                        from: 0
+                        to: 360
+                        duration: 1000
+                        loops: Animation.Infinite
+                        running: todoManager.isSyncing()
                     }
                 }
+
+                Text {
+                    text: todoManager.isSyncing() ? qsTr("正在同步") : qsTr("立即同步")
+                    color: ThemeManager.textColor
+                    font.pixelSize: 14
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                }
             }
-            // 阻止点击整行触发默认切换
-            onTriggered: {}
+
+            enabled: userAuth.isLoggedIn && !todoManager.isSyncing()
+
+            onTriggered: {
+                if (userAuth.isLoggedIn && !todoManager.isSyncing()) {
+                    todoManager.syncWithServer();
+                } else if (!userAuth.isLoggedIn) {
+                    homePage.loginStatusDialogs.showLoginRequired();
+                }
+            }
         }
     }
 

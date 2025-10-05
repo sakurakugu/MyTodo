@@ -21,7 +21,6 @@ class GlobalState : public QObject {
     Q_PROPERTY(bool isFollowSystemDarkMode READ isFollowSystemDarkMode WRITE setIsFollowSystemDarkMode NOTIFY
                    isFollowSystemDarkModeChanged)
     Q_PROPERTY(bool isDesktopWidget READ isDesktopWidget WRITE setIsDesktopWidget NOTIFY isDesktopWidgetChanged)
-    Q_PROPERTY(bool isAutoSyncEnabled READ isAutoSyncEnabled WRITE setIsAutoSyncEnabled NOTIFY isAutoSyncEnabledChanged)
     Q_PROPERTY(bool isNew READ isNew WRITE setIsNew NOTIFY isNewChanged)
     Q_PROPERTY(bool isShowAddTask READ isShowAddTask WRITE setIsShowAddTask NOTIFY isShowAddTaskChanged)
     Q_PROPERTY(bool isShowTodos READ isShowTodos WRITE setIsShowTodos NOTIFY isShowTodosChanged)
@@ -53,9 +52,6 @@ class GlobalState : public QObject {
 
     bool isDesktopWidget() const;
     void setIsDesktopWidget(bool value);
-
-    bool isAutoSyncEnabled() const;
-    void setIsAutoSyncEnabled(bool value);
 
     bool isNew() const;
     void setIsNew(bool value);
@@ -109,7 +105,6 @@ class GlobalState : public QObject {
     void isFollowSystemDarkModeChanged();
     void isDesktopWidgetChanged();
     void isNewChanged();
-    void isAutoSyncEnabledChanged();
     void isShowAddTaskChanged();
     void isShowTodosChanged();
     void isShowSettingChanged();
@@ -129,7 +124,6 @@ class GlobalState : public QObject {
     bool m_isDarkMode;             // 深色模式
     bool m_isFollowSystemDarkMode; // 跟随系统深色模式
     bool m_preventDragging;        // 防止窗口拖动
-    bool m_isAutoSyncEnabled;      ///< 自动同步是否启用
 
     // 只在qml使用的变量
     bool m_isDesktopWidget;  // 小工具模式

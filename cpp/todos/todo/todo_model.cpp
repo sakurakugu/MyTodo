@@ -506,14 +506,6 @@ void TodoModel::onRowsRemoved() {
  * 操作结果通过syncCompleted信号通知。
  */
 void TodoModel::与服务器同步() {
-    if (!GlobalState::GetInstance().isAutoSyncEnabled()) {
-        return;
-    }
-    更新同步管理器的数据();
-    m_syncManager.与服务器同步();
-}
-
-void TodoModel::强制与服务器同步() {
     更新同步管理器的数据();
     m_syncManager.与服务器同步();
 }

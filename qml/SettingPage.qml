@@ -191,25 +191,6 @@ Page {
                 }
             }
 
-            ControlRow {
-                text: userAuth.isLoggedIn ? qsTr("自动同步") : qsTr("自动同步（未登录）")
-                checked: globalState.isAutoSyncEnabled
-                leftMargin: 10
-                controlType: ControlRow.ControlType.Switch
-
-                onCheckedChanged: {
-                    if (checked) {
-                        // 如果未登录，显示提示并重置开关
-                        if (!userAuth.isLoggedIn) {
-                            toggle();
-                            settingPage.loginStatusDialogs.showLoginRequired();
-                        } else {
-                            globalState.isAutoSyncEnabled = checked;
-                        }
-                    }
-                }
-            }
-
             Divider {}
 
             Label {

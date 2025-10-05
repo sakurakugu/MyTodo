@@ -118,8 +118,8 @@ void TodoManager::syncWithServer() {
     m_todoModel->与服务器同步();
 }
 
-void TodoManager::forceSyncWithServer() {
-    m_todoModel->强制与服务器同步();
+bool TodoManager::isSyncing() const {
+    return m_syncManager->isSyncing();
 }
 
 /**

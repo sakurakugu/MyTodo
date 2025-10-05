@@ -110,7 +110,6 @@ class TodoModel : public QAbstractListModel {
 
     // 网络同步操作
     void 与服务器同步();     // 与服务器同步待办事项数据
-    void 强制与服务器同步(); // 强制与服务器同步待办事项数据
 
   signals:
     void dataUpdated(); ///< 数据更新信号

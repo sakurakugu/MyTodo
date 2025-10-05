@@ -40,21 +40,11 @@ BaseSyncServer::BaseSyncServer(UserAuth &userAuth, QObject *parent)
     m_autoSyncInterval = m_config.get("sync/autoSyncInterval", 30).toInt();
     m_lastSyncTime = QString("1970-01-01 00:00:00");
 
-    // 如果启用了自动同步，启动定时器
-    if (GlobalState::GetInstance().isAutoSyncEnabled()) {
         开启自动同步计时器();
-    }
+    
 }
 
 BaseSyncServer::~BaseSyncServer() {}
-
-void BaseSyncServer::onAutoSyncSettingChanged() {
-    if (GlobalState::GetInstance().isAutoSyncEnabled()) {
-        开启自动同步计时器();
-    } else {
-        停止自动同步计时器();
-    }
-}
 
 bool BaseSyncServer::isSyncing() const {
     return m_isSyncing;

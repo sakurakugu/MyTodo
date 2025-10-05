@@ -108,7 +108,6 @@ class BaseSyncServer : public QObject {
     virtual void onNetworkRequestFailed(Network::RequestType type, NetworkRequest::NetworkError error,
                                         const QString &message); // 网络请求失败
     void onAutoSyncTimer();                                      // 自动同步定时器触发
-    void onAutoSyncSettingChanged();                             // 自动同步设置变化
 
   protected:
     // 同步操作实现（由子类重写）

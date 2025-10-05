@@ -46,7 +46,7 @@ Item {
     ModalDialog {
         id: loginRequiredDialog
         dialogTitle: qsTr("需要登录")
-        message: qsTr("开启自动同步功能需要先登录账户。\n请先登录后再开启自动同步。")
+        message: qsTr("同步需要先登录账户。\n请先登录后再同步。")
 
         confirmText: qsTr("去登录")
 

@@ -81,7 +81,7 @@ class TodoManager : public QObject {
     Q_INVOKABLE bool permanentlyDeleteTodo(int index);            // 删除待办事项
     Q_INVOKABLE void deleteAllTodos(bool deleteLocal);            // 删除所有待办事项
     Q_INVOKABLE void syncWithServer();                            // 与服务器同步
-    Q_INVOKABLE void forceSyncWithServer();                       // 强制与服务器同步
+    Q_INVOKABLE bool isSyncing() const;                           // 检查是否正在同步
 
   signals:
     // 转发同步相关信号供 QML 使用（底层由 TodoSyncServer/BaseSyncServer 发出）
