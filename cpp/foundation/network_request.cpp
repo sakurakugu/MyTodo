@@ -36,10 +36,6 @@ NetworkRequest::NetworkRequest(QObject *parent)
 
     // 应用代理配置到网络管理器
     m_proxyManager.applyProxyToManager(m_networkRequest);
-
-#ifdef QT_DEBUG
-    connect(this, &NetworkRequest::requestCompleted, this, &NetworkRequest::onRequestCompleted);
-#endif
 }
 
 /**
@@ -214,7 +210,12 @@ void NetworkRequest::onReplyFinished() {
                 // 成功响应，提取data字段作为响应数据
                 responseData = fullResponse.contains("data") ? fullResponse["data"].toObject() : fullResponse;
                 success = true;
+#ifdef QT_DEBUG
+                qWarning() << "请求成功:" << NetworkRequest::GetInstance().RequestTypeToString(request.type);
+                qWarning() << "响应内容:" << responseData;
+#else
                 qDebug() << "请求成功:" << RequestTypeToString(request.type);
+#endif
             } else {
                 // 服务器返回错误
                 QString serverMessage = fullResponse.contains("error") ? fullResponse["error"].toString()
@@ -393,13 +394,6 @@ void NetworkRequest::onSslErrors(const QList<QSslError> &errors) {
     // TODO: 处理SSL错误
     reply->ignoreSslErrors();
 }
-
-#ifdef QT_DEBUG
-void NetworkRequest::onRequestCompleted(Network::RequestType type, const QJsonObject &response) {
-    qWarning() << "网络请求收到响应，类型:" << NetworkRequest::GetInstance().RequestTypeToString(type);
-    qWarning() << "响应内容:" << response;
-}
-#endif
 
 void NetworkRequest::executeRequest(PendingRequest &request) {
     QNetworkRequest networkRequest = createNetworkRequest(request.config);

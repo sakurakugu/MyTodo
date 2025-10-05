@@ -152,9 +152,6 @@ void CategorySyncServer::设置未同步的对象(const std::vector<std::unique_
 
 // 网络请求回调处理
 void CategorySyncServer::onNetworkRequestCompleted(Network::RequestType type, const QJsonObject &response) {
-    // qWarning() << "类别同步服务器收到响应，类型:" << NetworkRequest::GetInstance().RequestTypeToString(type);
-    // qWarning() << "响应内容:" << response;
-
     switch (type) {
     case Network::RequestType::FetchCategories:
         处理获取类别成功(response);

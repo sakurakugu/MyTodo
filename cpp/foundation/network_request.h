@@ -154,10 +154,6 @@ class NetworkRequest : public QObject {
     void onRequestTimeout();                          // 请求超时槽函数
     void onSslErrors(const QList<QSslError> &errors); // SSL错误槽函数
 
-#ifdef QT_DEBUG
-    void onRequestCompleted(Network::RequestType type, const QJsonObject &response); // 请求完成槽函数
-#endif
-
   private:
     explicit NetworkRequest(QObject *parent = nullptr);
     ~NetworkRequest();
