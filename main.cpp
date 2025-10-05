@@ -14,8 +14,8 @@
  * @return 应用程序退出码
  *
  * @author Sakurakugu
- * @date 2025-08-16 20:05:55 (UTC+8) 周六
- * @change 2025-10-05 21:30:00 (UTC+8) 周日
+ * @date 2025-08-16 20:05:55(UTC+8) 周六
+ * @change 2025-10-06 02:13:23(UTC+8) 周一
  */
 #include <QDirIterator>
 #include <QGuiApplication>

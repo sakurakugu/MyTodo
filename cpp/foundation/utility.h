@@ -4,7 +4,7 @@
  * 该文件定义了Utility类，提供通用的实用工具函数。
  * @author Sakurakugu
  * @date 2025-09-23 18:32:17(UTC+8) 周二
- * @change 2025-09-24 00:55:58(UTC+8) 周三
+ * @change 2025-10-05 20:51:32(UTC+8) 周日
  */
 #pragma once
 

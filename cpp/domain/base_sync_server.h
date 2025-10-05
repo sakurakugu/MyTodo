@@ -6,8 +6,8 @@
  * 降低 CategorySyncServer / TodoSyncServer 的重复实现。与 UserAuth 协作，在首次认证完成后触发初始同步。
  *
  * @author Sakurakugu
- * @date 2025-09-10 22:45:52 (UTC+8) 周三
- * @change 2025-10-05 21:25:00 (UTC+8) 周日
+ * @date 2025-09-10 22:45:52(UTC+8) 周三
+ * @change 2025-10-06 01:32:19(UTC+8) 周一
  */
 
 #pragma once

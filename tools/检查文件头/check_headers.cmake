@@ -1,5 +1,8 @@
 # HeaderCheck.cmake - 文件头规范校验模块
 # 
+# 该模块提供了校验 C/C++ 文件头规范的功能，包括检查文件头是否符合预定格式，
+# 并可以自动修复一些简单的文件头规范问题。
+# 
 # 提供以下目标：
 # - check_headers: 校验 C/C++ 文件头规范
 # - fix_headers: 自动修复简单的文件头规范问题
@@ -8,6 +11,11 @@
 # 1. 先包含本模块：include(tools/检查文件头/check_headers.cmake)
 # 2. 构建校验目标：cmake --build build --target check_headers
 # 3. 构建修复目标：cmake --build build --target fix_headers
+#
+# 作者： sakurakugu
+# 创建日期： 2025-10-05 22:19:33(UTC+8) 周日
+# 修改日期： 2025-10-05 23:32:12(UTC+8) 周日
+
 
 # 查找Python3解释器
 find_package(Python3 COMPONENTS Interpreter REQUIRED)

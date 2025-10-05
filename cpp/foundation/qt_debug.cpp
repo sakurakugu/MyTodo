@@ -6,8 +6,8 @@
  * 该文件实现了QtDebug命名空间中的调试辅助功能。
  *
  * @author Sakurakugu
- * @date 2025-08-16 20:05:55(UTC+8) 周六x
- * @change 2025-08-16 20:05:55(UTC+8) 周六x
+ * @date 2025-09-26 11:31:13(UTC+8) 周五
+ * @change 2025-10-05 23:32:12(UTC+8) 周日
  */
 
 #include "qt_debug.h"

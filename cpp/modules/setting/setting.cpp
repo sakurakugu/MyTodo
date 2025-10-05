@@ -6,7 +6,7 @@
  *
  * @author Sakurakugu
  * @date 2025-08-21 21:31:41(UTC+8) 周四
- * @change 2025-09-24 00:55:58(UTC+8) 周三
+ * @change 2025-10-06 02:13:23(UTC+8) 周一
  */
 #include "setting.h"
 #include "default_value.h"

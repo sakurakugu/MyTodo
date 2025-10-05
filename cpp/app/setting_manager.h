@@ -5,6 +5,12 @@
  * 设计目的：
  * - 降低 QML 对核心 Setting 实现的直接耦合
  * - 后续可在不影响 QML 的情况下重构 Setting 内部逻辑或权限控制
+ * 
+ * 该文件定义了SettingManager类，负责管理应用程序的设置。
+ * 
+ * @author Sakurakugu
+ * @date 2025-10-06 01:32:19(UTC+8) 周一
+ * @change 2025-10-06 01:32:19(UTC+8) 周一
  */
 #pragma once
 

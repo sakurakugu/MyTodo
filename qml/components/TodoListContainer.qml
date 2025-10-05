@@ -6,7 +6,7 @@
  *
  * @author Sakurakugu
  * @date 2025-09-05 14:08:26(UTC+8) 周五
- * @change 2025-09-24 00:55:58(UTC+8) 周三
+ * @change 2025-10-05 23:50:47(UTC+8) 周日
  */
 import QtQuick
 import QtQuick.Controls

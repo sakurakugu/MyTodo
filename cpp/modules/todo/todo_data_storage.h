@@ -3,11 +3,10 @@
  * @brief TodoDataStorage类的头文件
  *
  * 该文件定义了TodoDataStorage类，专门负责待办事项的本地存储和文件导入导出功能。
- * 从TodoManager类中拆分出来，实现单一职责原则。
  *
  * @author Sakurakugu
  * @date 2025-08-25 00:54:11(UTC+8) 周一
- * @change 2025-09-24 03:10:10(UTC+8) 周三
+ * @change 2025-10-06 02:13:23(UTC+8) 周一
  */
 
 #pragma once

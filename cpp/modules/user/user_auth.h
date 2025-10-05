@@ -9,8 +9,8 @@
  * - 与 NetworkRequest 协作自动附加认证头
  *
  * @author Sakurakugu
- * @date 2025-08-24 21:43:31 (UTC+8) 周日
- * @change 2025-10-05 21:25:00 (UTC+8) 周日
+ * @date 2025-08-24 21:43:31(UTC+8) 周日
+ * @change 2025-10-06 02:13:23(UTC+8) 周一
  */
 
 #pragma once
