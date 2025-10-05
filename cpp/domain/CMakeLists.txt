@@ -6,8 +6,8 @@
 # 创建日期： 2025-10-06 00:37:00
 # ============================================================
 
-# 创建领域基础静态库
-add_library(mytodo_domain_base STATIC
+# 创建领域静态库
+add_library(mytodo_domain STATIC
     # 数据存储基类
     base_data_storage.cpp
     base_data_storage.h
@@ -25,14 +25,14 @@ find_package(Qt6 REQUIRED COMPONENTS
 )
 
 # 设置包含目录
-target_include_directories(mytodo_domain_base PUBLIC
+target_include_directories(mytodo_domain PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}                    # 当前目录
     ${CMAKE_SOURCE_DIR}/cpp/foundation             # 基础模块（database.h等）
     ${CMAKE_SOURCE_DIR}/cpp/app    # 应用层目录
 )
 
 # 链接依赖库
-target_link_libraries(mytodo_domain_base
+target_link_libraries(mytodo_domain
     PUBLIC
         Qt6::Core
         Qt6::Network

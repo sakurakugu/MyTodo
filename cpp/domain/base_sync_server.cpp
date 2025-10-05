@@ -104,6 +104,7 @@ void BaseSyncServer::更新最后同步时间() {
     m_lastSyncTime = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
 }
 
+// TODO: 和检查同步前置条件重复了
 bool BaseSyncServer::是否可以执行同步() const {
     // 检查是否可以执行同步
     if (m_isSyncing) {
@@ -123,7 +124,7 @@ bool BaseSyncServer::是否可以执行同步() const {
     }
 
     // 检查用户登录状态
-    if (!m_userAuth.isLoggedIn()) {
+    if (!m_userAuth.是否已登录()) {
         qDebug() << "同步检查失败：用户未登录或令牌已过期";
         return false;
     }
@@ -173,7 +174,7 @@ void BaseSyncServer::检查同步前置条件(bool allowOngoingPhase) {
     }
 
     // 4. 用户登录 / token 状态
-    if (!m_userAuth.isLoggedIn()) {
+    if (!m_userAuth.是否已登录()) {
         qDebug() << "同步检查失败：用户未登录或令牌已过期";
         emit syncCompleted(AuthError, "无法同步：未登录");
         return;

@@ -26,8 +26,9 @@
 #include <QtQuickControls2/QQuickStyle>
 
 #include "app/global_state.h"
-#include "app/setting.h"
+#include "app/setting_manager.h"
 #include "app/user_auth.h"
+#include "app/user_auth_manager.h"
 #include "logger.h"
 #include "qt_debug.h"
 #include "app/category_manager.h"
@@ -64,10 +65,12 @@ int main(int argc, char *argv[]) {
     // 设置应用信息
     QGuiApplication::setApplicationName(APP_NAME);              // 设置应用名称（不设置组织名）
     QGuiApplication::setApplicationVersion(APP_VERSION_STRING); // 设置应用版本
-
-    UserAuth userAuth;                                  // 获取UserAuth实例
-    CategoryManager categoryManager(userAuth);          // 创建CategoryManager实例
-    TodoManager todoManager(userAuth, categoryManager); // 创建TodoManager实例
+    
+    UserAuth userAuth;                                        // 核心认证逻辑实例
+    UserAuthManager userAuthManager(userAuth);                // QML 暴露层
+    CategoryManager categoryManager(userAuth);                // 创建CategoryManager实例
+    TodoManager todoManager(userAuth, categoryManager);       // 创建TodoManager实例
+    SettingManager settingManager; // QML 包装层实例
 
     // 检查是否通过开机自启动启动
     QStringList arguments = app.arguments();
@@ -80,8 +83,8 @@ int main(int argc, char *argv[]) {
 
     // 将类注册到QML上下文
     engine.rootContext()->setContextProperty("globalState", &GlobalState::GetInstance());
-    engine.rootContext()->setContextProperty("setting", &Setting::GetInstance());
-    engine.rootContext()->setContextProperty("userAuth", &userAuth);
+    engine.rootContext()->setContextProperty("setting", &settingManager);
+    engine.rootContext()->setContextProperty("userAuth", &userAuthManager);
     engine.rootContext()->setContextProperty("categoryManager", &categoryManager);
     engine.rootContext()->setContextProperty("todoManager", &todoManager);
 

@@ -57,7 +57,7 @@ void TodoManager::loadTodo() {
 void TodoManager::addTodo(const QString &title, const QString &description, const QString &category, bool important,
                           const QString &deadline, int recurrenceInterval, int recurrenceCount,
                           const QDate &recurrenceStartDate) {
-    m_todoModel->新增待办(title, m_userAuth.getUuid(), description, category, important, //
+    m_todoModel->新增待办(title, m_userAuth.获取UUID(), description, category, important, //
                           QDateTime::fromString(deadline, Qt::ISODate),                  //
                           recurrenceInterval, recurrenceCount, recurrenceStartDate);
 }
@@ -111,7 +111,7 @@ bool TodoManager::permanentlyDeleteTodo(int index) {
  * @param deleteLocal 是否删除本地数据
  */
 void TodoManager::deleteAllTodos(bool deleteLocal) {
-    m_todoModel->删除所有待办(deleteLocal, m_userAuth.getUuid());
+    m_todoModel->删除所有待办(deleteLocal, m_userAuth.获取UUID());
 }
 
 void TodoManager::syncWithServer() {

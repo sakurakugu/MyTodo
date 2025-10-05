@@ -211,8 +211,8 @@ void NetworkRequest::onReplyFinished() {
                 responseData = fullResponse.contains("data") ? fullResponse["data"].toObject() : fullResponse;
                 success = true;
 #ifdef QT_DEBUG
-                qWarning() << "请求成功:" << NetworkRequest::GetInstance().RequestTypeToString(request.type);
-                qWarning() << "响应内容:" << responseData;
+                qInfo() << "请求成功:" << NetworkRequest::GetInstance().RequestTypeToString(request.type);
+                qInfo() << "响应内容:" << responseData;
 #else
                 qDebug() << "请求成功:" << RequestTypeToString(request.type);
 #endif

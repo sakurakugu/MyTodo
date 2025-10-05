@@ -21,8 +21,8 @@
 #include <QTimer>
 #include <QUuid>
 
-#include "network_request.h"
 #include "database.h"
+#include "network_request.h"
 
 // 前向声明
 class Setting;
@@ -51,24 +51,20 @@ class Setting;
  */
 class UserAuth : public QObject, public IDataExporter {
     Q_OBJECT
-    Q_PROPERTY(QString username READ getUsername NOTIFY usernameChanged)
-    Q_PROPERTY(QString email READ getEmail NOTIFY emailChanged)
-    Q_PROPERTY(QUuid uuid READ getUuid NOTIFY uuidChanged)
-    Q_PROPERTY(bool isLoggedIn READ isLoggedIn NOTIFY isLoggedInChanged)
 
   public:
     explicit UserAuth(QObject *parent = nullptr);
     ~UserAuth();
 
     // 认证操作
-    Q_INVOKABLE void login(const QString &account, const QString &password); // 使用用户凭据登录服务器
-    Q_INVOKABLE void logout();                                               // 注销当前用户
-    Q_INVOKABLE bool isLoggedIn() const;                                     // 检查用户是否已登录
+    void 登录(const QString &account, const QString &password);
+    void 注销();
+    bool 是否已登录() const;
 
     // 用户信息获取
-    QString getUsername() const; // 获取用户名
-    QString getEmail() const;    // 获取邮箱
-    QUuid getUuid() const;       // 获取用户UUID
+    QString 获取用户名() const;
+    QString 获取邮箱() const;
+    QUuid 获取UUID() const;
 
     // 数据库初始化相关
     bool 初始化用户表();
@@ -114,7 +110,7 @@ class UserAuth : public QObject, public IDataExporter {
     void 是否发送首次认证信号();
 
     // 令牌管理
-  void 刷新访问令牌();               // 刷新访问令牌
+    void 刷新访问令牌(); // 刷新访问令牌
 
     // 数据库操作
     bool 创建用户表();

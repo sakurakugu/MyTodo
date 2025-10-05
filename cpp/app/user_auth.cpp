@@ -102,7 +102,7 @@ UserAuth::~UserAuth() {
  *
  * 登录结果会通过loginSuccessful或loginFailed信号通知。
  */
-void UserAuth::login(const QString &account, const QString &password) {
+void UserAuth::登录(const QString &account, const QString &password) {
     if (password.isEmpty()) {
         emit loginFailed("密码不能为空");
         return;
@@ -146,12 +146,12 @@ void UserAuth::login(const QString &account, const QString &password) {
  *
  * 清除存储的凭据并将所有项标记为未同步。
  */
-void UserAuth::logout() {
+void UserAuth::注销() {
     清除凭据();
     emit logoutSuccessful();
 }
 
-bool UserAuth::isLoggedIn() const {
+bool UserAuth:: 是否已登录() const {
     // 检查访问令牌是否存在
     if (m_accessToken.isEmpty()) {
         return false;
@@ -160,15 +160,15 @@ bool UserAuth::isLoggedIn() const {
     }
 }
 
-QString UserAuth::getUsername() const {
+QString UserAuth::获取用户名() const {
     return m_username;
 }
 
-QString UserAuth::getEmail() const {
+QString UserAuth::获取邮箱() const {
     return m_email;
 }
 
-QUuid UserAuth::getUuid() const {
+QUuid UserAuth::获取UUID() const {
     return m_uuid;
 }
 
@@ -555,7 +555,7 @@ void UserAuth::停止令牌过期计时器() {
 }
 
 void UserAuth::onBaseUrlChanged() {
-    logout();
+    注销();
 }
 
 /**

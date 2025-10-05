@@ -59,7 +59,7 @@ bool CategoryManager::categoryExists(const QString &name) const {
 }
 
 void CategoryManager::createCategory(const QString &name) {
-    m_categoryModel->新增类别(name, m_userAuth.getUuid());
+    m_categoryModel->新增类别(name, m_userAuth.获取UUID());
 }
 
 void CategoryManager::updateCategory(const QString &name, const QString &newName) {
@@ -71,7 +71,7 @@ void CategoryManager::deleteCategory(const QString &name) {
 }
 
 void CategoryManager::loadCategories() {
-    m_categoryModel->加载类别(m_userAuth.getUuid());
+    m_categoryModel->加载类别(m_userAuth.获取UUID());
 }
 
 // 同步相关方法实现

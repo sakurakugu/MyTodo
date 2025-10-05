@@ -24,7 +24,7 @@ Item {
 
     anchors.centerIn: parent
 
-    // UserAuth信号连接
+    // userAuth信号连接
     Connections {
         target: userAuth
 

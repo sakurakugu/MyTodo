@@ -32,7 +32,7 @@ set(CMAKE_AUTOMOC ON)                      # 自动处理 MOC
 set(CMAKE_AUTOUIC ON)                      # 自动处理 UIC
 
 add_subdirectory(cpp/foundation)
-add_subdirectory(cpp/domain_base)
+add_subdirectory(cpp/domain)
 add_subdirectory(cpp/todos/category)
 add_subdirectory(cpp/todos/todo)
 # add_subdirectory(cpp/app)
@@ -72,7 +72,7 @@ set(QT_COMPONENTS
 # 链接库配置
 set(PRIVATE_LIBRARIES
     mytodo_foundation
-    mytodo_domain_base
+    mytodo_domain
     mytodo_category
     mytodo_todo
     Qt6::Widgets
@@ -134,10 +134,14 @@ set(PROJECT_SOURCES
     cpp/app/category_manager.cpp
     cpp/app/user_auth.cpp
     cpp/app/user_auth.h
+    cpp/app/user_auth_manager.cpp
+    cpp/app/user_auth_manager.h
     cpp/app/global_state.cpp
     cpp/app/global_state.h
     cpp/app/setting.cpp
     cpp/app/setting.h
+    cpp/app/setting_manager.cpp
+    cpp/app/setting_manager.h
 )
 
 # 合并所有 QML 文件

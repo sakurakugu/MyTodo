@@ -37,7 +37,7 @@ find_package(Qt6 REQUIRED COMPONENTS
 target_include_directories(mytodo_category PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}                    # 当前目录
     ${CMAKE_SOURCE_DIR}/cpp/foundation             # 基础模块
-    ${CMAKE_SOURCE_DIR}/cpp/domain_base            # 领域基础模块
+    ${CMAKE_SOURCE_DIR}/cpp/domain                # 领域模块
 )
 
 # 链接依赖库
@@ -48,5 +48,5 @@ target_link_libraries(mytodo_category
         Qt6::Network
         Qt6::Sql
         mytodo_foundation    # 基础模块（配置、日志、数据库等）
-        mytodo_domain_base   # 领域基础模块（BaseDataStorage等）
+        mytodo_domain        # 领域模块（BaseDataStorage等）
 )
