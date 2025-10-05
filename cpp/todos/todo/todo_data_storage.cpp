@@ -623,7 +623,7 @@ bool TodoDataStorage::删除待办([[maybe_unused]] TodoList &todos, const QUuid
  * @param resolution 冲突解决策略
  */
 bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArray &todosArray, ImportSource source,
-                                         ConflictResolution resolution) {
+                                         解决冲突方案 resolution) {
     bool success = true;
     QSqlDatabase db = m_database.getDatabase();
     if (!db.isOpen()) {
@@ -717,13 +717,13 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
             // 查找现有
             TodoItem *existing = uuidIndex.value(uuid.toString(QUuid::WithoutBraces), nullptr);
 
-            ConflictResolution action = 评估冲突(existing, incoming, resolution);
-            if (action == ConflictResolution::Skip) {
+            解决冲突方案 action = 评估冲突(existing, incoming, resolution);
+            if (action == 解决冲突方案::Skip) {
                 ++skipCount;
                 continue;
             }
 
-            if (action == ConflictResolution::Insert) {
+            if (action == 解决冲突方案::Insert) {
                 // 不能直接复制（TodoItem禁止拷贝），显式构造
                 auto newItem = std::make_unique<TodoItem>( //
                     incoming.id(),                         //
@@ -784,7 +784,7 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
                 ++insertCount;
                 continue;
             }
-            if (action == ConflictResolution::Overwrite && existing) {
+            if (action == 解决冲突方案::Overwrite && existing) {
                 QSqlQuery up(db);
                 up.prepare(
                     "UPDATE todos SET user_uuid=?, title=?, description=?, category=?, important=?, deadline=?, "
@@ -857,35 +857,6 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
 }
 
 // 私有辅助方法实现
-
-/**
- * @brief 评估冲突并决定动作
- * @param existing 现有类别指针（若无则为nullptr）
- * @param incoming 新导入的类别引用
- * @param resolution 冲突解决策略
- * @return 决定的冲突动作
- */
-TodoDataStorage::ConflictResolution TodoDataStorage::评估冲突( //
-    const TodoItem *existing,                                  //
-    const TodoItem &incoming,                                  //
-    ConflictResolution resolution) const                       //
-{
-    // 无冲突，直接插入
-    if (!existing)
-        return ConflictResolution::Insert;
-    switch (resolution) {
-    case Skip:
-        return ConflictResolution::Skip; // 直接跳过
-    case Overwrite:
-        return ConflictResolution::Overwrite;
-    case Merge:
-        return incoming.updatedAt() > existing->updatedAt() ? ConflictResolution::Overwrite : ConflictResolution::Skip;
-    case Insert:
-        return ConflictResolution::Insert;
-    default:
-        return ConflictResolution::Skip;
-    }
-}
 
 /**
  * @brief 根据排序类型和顺序生成SQL的ORDER BY子句

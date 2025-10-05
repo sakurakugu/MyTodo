@@ -10,9 +10,9 @@
  */
 
 #include "base_data_storage.h"
+#include <QDebug>
 #include <QSqlError>
 #include <QSqlQuery>
-#include <QDebug>
 
 /**
  * @brief 构造函数
@@ -20,10 +20,7 @@
  * @param parent 父对象
  */
 BaseDataStorage::BaseDataStorage(const QString &exporterName, QObject *parent)
-    : QObject(parent),
-      m_database(Database::GetInstance()),
-      m_exporterName(exporterName)
-{
+    : QObject(parent), m_database(Database::GetInstance()), m_exporterName(exporterName) {
     // 注册到数据库导出器
     m_database.registerDataExporter(m_exporterName, this);
 }
@@ -57,16 +54,16 @@ bool BaseDataStorage::初始化() {
 int BaseDataStorage::获取最后插入行ID(QSqlDatabase &db) const {
     QSqlQuery idQuery(db);
     int newId = -1;
-    
+
     if (idQuery.exec("SELECT last_insert_rowid()") && idQuery.next()) {
         newId = idQuery.value(0).toInt();
     }
-    
+
     if (newId <= 0) {
         qWarning() << "获取自增ID失败，使用临时ID -1";
         return -1;
     }
-    
+
     return newId;
 }
 
@@ -96,7 +93,7 @@ bool BaseDataStorage::执行SQL查询(const QString &queryString) {
         qCritical() << "数据库未打开，无法执行查询";
         return false;
     }
-    
+
     QSqlQuery query(db);
     return 执行SQL查询(queryString, query);
 }

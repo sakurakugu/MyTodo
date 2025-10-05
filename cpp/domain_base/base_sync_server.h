@@ -52,7 +52,6 @@ class UserAuth;
  */
 class BaseSyncServer : public QObject {
     Q_OBJECT
-    Q_PROPERTY(bool isSyncing READ isSyncing NOTIFY syncingChanged)
   public:
     /**
      * @enum SyncResult
@@ -65,7 +64,6 @@ class BaseSyncServer : public QObject {
         ConflictError = 3, // 数据冲突
         UnknownError = 4   // 未知错误
     };
-    Q_ENUM(SyncResult)
 
     /**
      * @enum SyncDirection
@@ -76,7 +74,6 @@ class BaseSyncServer : public QObject {
         UploadOnly = 1,    // 仅上传
         DownloadOnly = 2   // 仅下载
     };
-    Q_ENUM(SyncDirection)
 
     /**
      * @brief 构造函数
@@ -86,7 +83,7 @@ class BaseSyncServer : public QObject {
     virtual ~BaseSyncServer();
 
     // 属性访问器
-    Q_INVOKABLE bool isSyncing() const; // 获取当前是否正在同步
+    bool isSyncing() const; // 获取当前是否正在同步
     void setIsSyncing(bool syncing);  // 设置当前同步状态
 
     // 同步操作（纯虚函数，由子类实现）

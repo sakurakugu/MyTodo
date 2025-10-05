@@ -11,10 +11,17 @@
 
 #pragma once
 
+#include "foundation/database.h"
 #include <QObject>
 #include <QSqlDatabase>
 #include <QUuid>
-#include "foundation/database.h"
+
+// Todo和Category的Item类型概念
+template <typename T>
+concept ItemType = requires(T t) {
+    t.uuid();
+    t.updatedAt();
+};
 
 /**
  * @class BaseDataStorage
@@ -45,22 +52,20 @@
 class BaseDataStorage : public QObject, public IDataExporter {
     Q_OBJECT
 
-public:
+  public:
     // 定义导入冲突的解决策略
-    enum ConflictResolution {
+    enum 解决冲突方案 {
         Skip = 0,      // 跳过冲突项目
         Overwrite = 1, // 覆盖现有项目
         Merge = 2,     // 合并（保留较新的版本）
         Insert = 3     // 插入新项目
     };
-    Q_ENUM(ConflictResolution)
 
     // 定义导入来源
     enum ImportSource {
         Server = 0, // 服务器
         Local = 1   // 本地/本地备份
     };
-    Q_ENUM(ImportSource)
 
     // 构造函数和析构函数
     explicit BaseDataStorage(const QString &exporterName, QObject *parent = nullptr);
@@ -76,7 +81,7 @@ public:
     bool 导出到JSON(QJsonObject &output) override = 0;
     bool 导入从JSON(const QJsonObject &input, bool replaceAll) override = 0;
 
-protected:
+  protected:
     // 通用的数据库操作方法
     int 获取最后插入行ID(QSqlDatabase &db) const;
     bool 执行SQL查询(const QString &queryString, QSqlQuery &query);
@@ -85,12 +90,55 @@ protected:
     // 通用的表创建方法
     virtual bool 创建数据表() = 0;
 
-    // 成员变量
-    Database &m_database;        ///< 数据库管理器引用
-    QString m_exporterName;      ///< 导出器名称
+    // 评估冲突
+    template <ItemType T>
+    解决冲突方案 评估冲突(const T *existing, const T &incoming,
+                          解决冲突方案 resolution) const; // 返回应执行的动作
 
-private:
+    // 成员变量
+    Database &m_database;   ///< 数据库管理器引用
+    QString m_exporterName; ///< 导出器名称
+
+  private:
     // 禁用拷贝构造和赋值操作
     BaseDataStorage(const BaseDataStorage &) = delete;
     BaseDataStorage &operator=(const BaseDataStorage &) = delete;
 };
+
+/**
+ * @brief 评估冲突并决定动作
+ * @param existing 现有类别指针（若无则为nullptr）
+ * @param incoming 新导入的类别引用
+ * @param resolution 冲突解决策略
+ * @return 决定的冲突动作
+ */
+template <ItemType T>
+BaseDataStorage::解决冲突方案 BaseDataStorage::评估冲突( //
+    const T *existing,                                   //
+    const T &incoming,                                   //
+    解决冲突方案 resolution) const                       //
+
+{
+    // 无冲突，直接插入
+    if (!existing)
+        return 解决冲突方案::Insert;
+
+    switch (resolution) {
+    case Skip:
+        return 解决冲突方案::Skip; // 直接跳过
+    case Overwrite:
+        return 解决冲突方案::Overwrite; // 强制覆盖
+    case Merge: {
+        // Merge: 选择更新时间新的那条；若相等则保留旧
+        if (incoming.updatedAt() > existing->updatedAt()) {
+            return 解决冲突方案::Overwrite;
+        } else {
+            return 解决冲突方案::Skip;
+        }
+    }
+    case Insert:
+        return 解决冲突方案::Insert;
+    default:
+        return 解决冲突方案::Skip;
+    }
+}

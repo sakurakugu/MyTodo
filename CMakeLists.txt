@@ -292,7 +292,6 @@ target_link_libraries(MyTodo PRIVATE ${PRIVATE_LIBRARIES})
 # 包含目录配置
 target_include_directories(MyTodo PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp     # C++ 头文件目录
-    ${INCLUDE_DIR}                      # 由 script 自动设置的生成文件目录
 )
 
 # 安装配置

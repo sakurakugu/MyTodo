@@ -404,7 +404,7 @@ bool CategoryDataStorage::创建默认类别(CategorieList &categories, const QU
  * @param resolution 冲突解决策略
  */
 bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const QJsonArray &categoriesArray,
-                                         ImportSource source, ConflictResolution resolution) {
+                                         ImportSource source, 解决冲突方案 resolution) {
     bool success = true;
 
     QSqlDatabase db = m_database.getDatabase();
@@ -478,19 +478,19 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
             if (!existing)
                 existing = nameIndex.value(name, nullptr);
 
-            ConflictResolution action = 评估冲突(existing, incoming, resolution);
-            if (action == ConflictResolution::Skip) {
+            解决冲突方案 action = 评估冲突(existing, incoming, resolution);
+            if (action == 解决冲突方案::Skip) {
                 ++skipCount;
                 continue;
             }
 
-            if (action == ConflictResolution::Insert) {
+            if (action == 解决冲突方案::Insert) {
                 auto newPtr = 新增类别(categories, name, userUuid, source);
                 // 更新索引
                 nameIndex.insert(name, newPtr.get());
                 uuidIndex.insert(uuid.toString(QUuid::WithoutBraces), newPtr.get());
                 ++insertCount;
-            } else if (action == ConflictResolution::Overwrite && existing) {
+            } else if (action == 解决冲突方案::Overwrite && existing) {
                 QSqlQuery updateQuery(db);
                 updateQuery.prepare("UPDATE categories SET name = ?, user_uuid = ?, created_at = ?, updated_at = ?, "
                                     "synced = ? WHERE uuid = ? OR name = ?");
@@ -541,41 +541,6 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
 }
 
 // 私有辅助方法实现
-
-/**
- * @brief 评估冲突并决定动作
- * @param existing 现有类别指针（若无则为nullptr）
- * @param incoming 新导入的类别引用
- * @param resolution 冲突解决策略
- * @return 决定的冲突动作
- */
-CategoryDataStorage::ConflictResolution CategoryDataStorage::评估冲突(const CategorieItem *existing,
-                                                                      const CategorieItem &incoming,
-                                                                      ConflictResolution resolution) const {
-    // 无冲突，直接插入
-    if (!existing) {
-        return ConflictResolution::Insert;
-    }
-
-    switch (resolution) {
-    case Skip:
-        return ConflictResolution::Skip; // 直接跳过
-    case Overwrite:
-        return ConflictResolution::Overwrite; // 强制覆盖
-    case Merge: {
-        // Merge: 选择更新时间新的那条；若相等则保留旧
-        if (incoming.updatedAt() > existing->updatedAt()) {
-            return ConflictResolution::Overwrite;
-        } else {
-            return ConflictResolution::Skip;
-        }
-    }
-    case Insert:
-        return ConflictResolution::Insert;
-    default:
-        return ConflictResolution::Skip;
-    }
-}
 
 /**
  * @brief 初始化Category表

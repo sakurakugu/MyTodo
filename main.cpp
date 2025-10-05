@@ -12,7 +12,6 @@
  * @date 2025-08-16 20:05:55(UTC+8) 周六
  * @change 2025-09-24 00:55:58(UTC+8) 周三
  */
-// Qt 相关头文件
 #include <QDirIterator>
 #include <QGuiApplication>
 #include <QIcon>
@@ -20,31 +19,19 @@
 #include <QQmlContext>
 #include <QSurfaceFormat>
 #include <QtQuickControls2/QQuickStyle>
-// Windows 相关头文件
-#ifdef Q_OS_WIN
-#include <windows.h>
-#endif
-// 自定义头文件
-#include "cpp/foundation/QtDebug.h"
-#include "cpp/foundation/database.h"
-#include "cpp/foundation/logger.h"
-#include "cpp/foundation/network_request.h"
-#include "cpp/foundation/utility.h"
-#include "cpp/app/global_state.h"
-#include "cpp/app/setting.h"
-#include "cpp/todos/category/category_manager.h"
-#include "cpp/todos/todo/todo_manager.h"
-#include "cpp/app/user_auth.h"
+
+#include "QtDebug.h"
+#include "app/global_state.h"
+#include "app/setting.h"
+#include "app/user_auth.h"
+#include "foundation/logger.h"
+#include "todos/category/category_manager.h"
+#include "todos/todo/todo_manager.h"
 #include "version.h"
 
 int main(int argc, char *argv[]) {
-#if defined(Q_OS_WIN) && defined(QT_DEBUG)
-    // Windows平台，设置控制台编码
-    SetConsoleCP(CP_UTF8);
-    SetConsoleOutputCP(CP_UTF8);
-#endif
-
-    打印资源路径();
+    QtDebug::设置终端编码();
+    QtDebug::打印资源路径();
 
     QGuiApplication app(argc, argv);
 
@@ -52,13 +39,10 @@ int main(int argc, char *argv[]) {
     qInstallMessageHandler(Logger::messageHandler);
 // 应用日志设置
 #if defined(QT_DEBUG)
-    Logger::GetInstance().setLogLevel(LogLevel::Debug);
-#else
-    Logger::GetInstance().setLogLevel(LogLevel::Info);
+    Logger::GetInstance().setLogLevel(LogLevel::Debug); // 默认 Info，调试模式下设为 Debug
 #endif
 
-    // 记录应用启动
-    qInfo() << "MyTodo 应用程序启动";
+    qInfo() << APP_NAME << "应用程序启动";
 
     // 设置应用样式为Material
     qputenv("QT_QUICK_CONTROLS_STYLE", "Material");
@@ -71,7 +55,7 @@ int main(int argc, char *argv[]) {
     app.setWindowIcon(QIcon(":/image/icon.png")); // 设置窗口图标
 
     // 设置应用信息
-    QGuiApplication::setApplicationName("MyTodo");              // 设置应用名称（不设置组织名）
+    QGuiApplication::setApplicationName(APP_NAME);              // 设置应用名称（不设置组织名）
     QGuiApplication::setApplicationVersion(APP_VERSION_STRING); // 设置应用版本
 
     UserAuth userAuth;                                  // 获取UserAuth实例

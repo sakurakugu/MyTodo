@@ -71,7 +71,7 @@ class CategoryDataStorage : public BaseDataStorage {
     bool 创建默认类别(CategorieList &categories, const QUuid &userUuid);
     bool 导入类别从JSON(CategorieList &categories, const QJsonArray &categoriesArray,
                         ImportSource source = ImportSource::Server,
-                        ConflictResolution resolution = ConflictResolution::Merge);
+                        解决冲突方案 resolution = 解决冲突方案::Merge);
 
     // IDataExporter接口实现
     bool 导出到JSON(QJsonObject &output) override;
@@ -82,7 +82,4 @@ class CategoryDataStorage : public BaseDataStorage {
     bool 创建数据表() override; // 创建categories表
 
   private:
-    // 辅助方法
-    ConflictResolution 评估冲突(const CategorieItem *existing, const CategorieItem &incoming,
-                                ConflictResolution resolution) const; // 返回应执行的动作
 };

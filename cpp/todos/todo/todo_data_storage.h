@@ -100,7 +100,7 @@ class TodoDataStorage : public BaseDataStorage {
 
     bool 导入待办事项从JSON(TodoList &todos, const QJsonArray &todosArray, //
                             ImportSource source = ImportSource::Server,    //
-                            ConflictResolution resolution = ConflictResolution::Merge);
+                            解决冲突方案 resolution = 解决冲突方案::Merge);
 
     // 数据库侧过滤 + 排序查询（仅返回符合条件的 id 列表，后续由上层映射为对象）
     QList<int> 查询待办ID列表(const QueryOptions &options);
@@ -110,8 +110,6 @@ class TodoDataStorage : public BaseDataStorage {
     bool 导入从JSON(const QJsonObject &input, bool replaceAll) override;
 
   private:
-    ConflictResolution 评估冲突(const TodoItem *existing, const TodoItem &incoming,
-                                ConflictResolution resolution) const; // 返回应执行的动作
     static QString 构建SQL排序语句(int sortType, bool descending);    // 构建查询SQL
 
     // 数据库操作
