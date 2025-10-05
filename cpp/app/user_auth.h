@@ -1,13 +1,16 @@
 /**
  * @file user_auth.h
- * @brief AuthManager类的头文件
+ * @brief UserAuth 类的头文件
  *
- * 该文件定义了AuthManager类，用于管理用户认证功能。
- * 从TodoManager中拆分出来，专门负责用户登录、注销、令牌管理等认证相关操作。
+ * 定义 UserAuth 用户认证管理类，负责：
+ * - 用户登录 / 注销
+ * - 访问令牌与刷新令牌管理、过期检测与自动刷新
+ * - 本地持久化用户凭据（数据库）与首次认证信号通知
+ * - 与 NetworkRequest 协作自动附加认证头
  *
  * @author Sakurakugu
- * @date 2025-08-24 21:43:31(UTC+8) 周日
- * @change 2025-09-22 16:33:30(UTC+8) 周一
+ * @date 2025-08-24 21:43:31 (UTC+8) 周日
+ * @change 2025-10-05 21:25:00 (UTC+8) 周日
  */
 
 #pragma once

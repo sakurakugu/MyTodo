@@ -1,12 +1,12 @@
 /**
  * @file database.cpp
- * @brief DatabaseManager类的实现
+ * @brief Database 类实现文件
  *
- * 该文件实现了DatabaseManager类，用于管理应用程序的SQLite数据库连接和初始化。
+ * 实现 SQLite 数据库连接生命周期管理、版本迁移、线程安全封装、统一数据导入/导出接口注册与调度等功能。
  *
  * @author Sakurakugu
- * @date 2025-09-15 20:55:22(UTC+8) 周一
- * @change 2025-09-22 19:36:18(UTC+8) 周一
+ * @date 2025-09-15 20:55:22 (UTC+8) 周一
+ * @change 2025-10-05 21:25:00 (UTC+8) 周日
  */
 
 #include "database.h"

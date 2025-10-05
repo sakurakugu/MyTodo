@@ -1,9 +1,11 @@
+# ============================================================
 # MyTodo 项目构建配置
 # 现代化的 CMake 配置，支持 Qt6.9.2 和 C++23
 #
 # 作者： sakurakugu
 # 首次创建日期： 2025-08-16 20:05:55(UTC+8) 周六
 # 最后更新日期： 2025-09-23 18:45:36(UTC+8) 周二
+# ============================================================
 
 cmake_minimum_required(VERSION 3.16)
 
@@ -326,5 +328,23 @@ message(STATUS "项目版本: ${PROJECT_VERSION}")
 message(STATUS "构建类型: ${CMAKE_BUILD_TYPE}")
 message(STATUS "C++ 标准: ${CMAKE_CXX_STANDARD}")
 message(STATUS "Qt6 版本: ${Qt6_VERSION}")
+message(STATUS "CMake 版本: ${CMAKE_VERSION}")
 message(STATUS "安装前缀: ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "===========================")
+
+# ---------------- 文件头规范校验 ----------------
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+
+add_custom_target(check_headers
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/check_headers.py --root ${CMAKE_SOURCE_DIR}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "正在校验 C/C++ 文件头规范..."
+)
+
+add_custom_target(fix_headers
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/check_headers.py --root ${CMAKE_SOURCE_DIR} --fix
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "正在自动修复简单的文件头规范问题..."
+)
+
+message(STATUS "可用 “cmake --build build --target check_headers / fix_headers” 校验或修复文件头规范")

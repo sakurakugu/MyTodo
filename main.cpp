@@ -1,16 +1,21 @@
 /**
- * @brief 主函数
+ * @file main.cpp
+ * @brief 应用程序入口，初始化核心单例、日志、QML 引擎并启动事件循环
  *
- * 该函数是 MyTodo 应用程序的入口点。它初始化应用程序、设置日志系统、
- * 加载 QML 界面、处理命令行参数、设置应用程序信息和图标，最后启动应用程序事件循环。
+ * 主要职责：
+ * - 初始化 Qt 应用与基础图形环境（透明窗口、控件样式）
+ * - 安装日志处理器并在 Debug 模式调整日志级别
+ * - 构建并注入核心业务对象（UserAuth / CategoryManager / TodoManager / GlobalState / Setting）到 QML 上下文
+ * - 处理 --autostart 参数以设置桌面组件模式
+ * - 加载 QML 主界面并进入事件循环
  *
  * @param argc 命令行参数数量
  * @param argv 命令行参数数组
- * @return int 应用程序退出状态码
+ * @return 应用程序退出码
  *
  * @author Sakurakugu
- * @date 2025-08-16 20:05:55(UTC+8) 周六
- * @change 2025-09-24 00:55:58(UTC+8) 周三
+ * @date 2025-08-16 20:05:55 (UTC+8) 周六
+ * @change 2025-10-05 21:30:00 (UTC+8) 周日
  */
 #include <QDirIterator>
 #include <QGuiApplication>

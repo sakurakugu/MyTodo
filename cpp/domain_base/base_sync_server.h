@@ -1,13 +1,13 @@
 /**
  * @file base_sync_server.h
- * @brief BaseSyncServer基类的头文件
+ * @brief BaseSyncServer 抽象基类头文件
  *
- * 该文件定义了BaseSyncServer基类，提取CategorySyncServer和TodoSyncServer的共同功能。
- * 实现代码复用，减少重复代码，提高可维护性。
+ * 抽象出分类与待办同步逻辑的通用部分，统一自动/手动同步调度、状态管理、错误处理与网络交互入口，
+ * 降低 CategorySyncServer / TodoSyncServer 的重复实现。与 UserAuth 协作，在首次认证完成后触发初始同步。
  *
  * @author Sakurakugu
- * @date 2025-09-10 22:45:52(UTC+8) 周三
- * @change 2025-09-21 22:40:34(UTC+8) 周日
+ * @date 2025-09-10 22:45:52 (UTC+8) 周三
+ * @change 2025-10-05 21:25:00 (UTC+8) 周日
  */
 
 #pragma once
