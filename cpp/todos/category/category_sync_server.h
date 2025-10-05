@@ -84,7 +84,7 @@ class CategorySyncServer : public BaseSyncServer {
   signals:
     // 数据更新信号（类别特有）
     void categoriesUpdatedFromServer(const QJsonArray &categoriesArray);            // 从服务器更新的类别
-    void localChangesUploaded(const std::vector<CategorieItem *> &m_unsyncedItems); // 本地更改已上传
+    void localChangesUploaded(const std::vector<CategorieItem *> &m_待同步的项目列表); // 本地更改已上传
     void syncConflictDetected(const QJsonArray &conflictItems);                     // 检测到同步冲突
 
   protected slots:
@@ -110,7 +110,7 @@ class CategorySyncServer : public BaseSyncServer {
 
   private:
     // 数据管理
-    std::vector<CategorieItem *> m_unsyncedItems; ///< 待同步的类别列表
+    std::vector<CategorieItem *> m_待同步的项目列表;
 
     // 当前操作状态
     QString m_currentOperationName;    ///< 当前操作的对象的名称（用于类别CRUD操作）

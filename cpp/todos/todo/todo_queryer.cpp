@@ -176,13 +176,13 @@ bool TodoQueryer::checkStatusMatch(const TodoItem *item) const {
     // - 否则只显示未删除的项目，并根据完成状态进一步筛选
     // - 如果m_currentFilter为"all"，则显示所有项目
     if (m_currentFilter == "all") {
-        return !item->isDeleted();
+        return !item->isTrashed();
     } else if (m_currentFilter == "recycle") {
         // 回收站模式：只显示已删除的项目
-        return item->isDeleted();
+        return item->isTrashed();
     } else {
         // 正常模式：只显示未删除的项目
-        bool statusMatch = !item->isDeleted();
+        bool statusMatch = !item->isTrashed();
 
         // 在未删除的项目中进一步筛选完成状态
         if (!m_currentFilter.isEmpty()) {

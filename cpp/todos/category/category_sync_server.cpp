@@ -11,8 +11,9 @@
 
 #include "category_sync_server.h"
 #include "category_item.h"
-#include "foundation/default_value.h"
 #include "foundation/config.h"
+#include "foundation/utility.h"
+#include "foundation/default_value.h"
 
 #include <QDateTime>
 #include <QJsonArray>
@@ -27,7 +28,8 @@ CategorySyncServer::CategorySyncServer(UserAuth &userAuth, QObject *parent) : Ba
         m_config.get("server/categoriesApiEndpoint", QString(DefaultValues::categoriesApiEndpoint)).toString();
 }
 
-CategorySyncServer::~CategorySyncServer() {}
+CategorySyncServer::~CategorySyncServer() {
+}
 
 // 属性访问器已在基类中实现
 
@@ -52,12 +54,12 @@ void CategorySyncServer::与服务器同步(SyncDirection direction) {
 
 void CategorySyncServer::重置同步状态() {
     BaseSyncServer::重置同步状态();
-    m_unsyncedItems.clear();
+    m_待同步的项目列表.clear();
 }
 
 void CategorySyncServer::取消同步() {
     BaseSyncServer::取消同步();
-    m_unsyncedItems.clear();
+    m_待同步的项目列表.clear();
 }
 
 // 类别操作接口实现
@@ -128,7 +130,7 @@ void CategorySyncServer::删除类别(const QString &name) {
 
 // 数据操作接口实现
 void CategorySyncServer::设置未同步的对象(const std::vector<std::unique_ptr<CategorieItem>> &categoryItems) {
-    m_unsyncedItems.clear();
+    m_待同步的项目列表.clear();
     // 去除 “未同步” 类别
     int totalItems = -1;
     int syncedItems = -1;
@@ -136,7 +138,7 @@ void CategorySyncServer::设置未同步的对象(const std::vector<std::unique_
     for (const auto &item : categoryItems) {
         totalItems++;
         if (item->synced() > 0) { // 1=插入,2=更新,3=删除
-            m_unsyncedItems.push_back(item.get());
+            m_待同步的项目列表.push_back(item.get());
         } else {
             syncedItems++;
         }
@@ -145,11 +147,14 @@ void CategorySyncServer::设置未同步的对象(const std::vector<std::unique_
     qDebug() << QString("类别同步状态检查: 总计=%1, 已同步=%2, 未同步=%3")
                     .arg(totalItems)
                     .arg(syncedItems)
-                    .arg(m_unsyncedItems.size());
+                    .arg(m_待同步的项目列表.size());
 }
 
 // 网络请求回调处理
 void CategorySyncServer::onNetworkRequestCompleted(Network::RequestType type, const QJsonObject &response) {
+    // qWarning() << "类别同步服务器收到响应，类型:" << NetworkRequest::GetInstance().RequestTypeToString(type);
+    // qWarning() << "响应内容:" << response;
+
     switch (type) {
     case Network::RequestType::FetchCategories:
         处理获取类别成功(response);
@@ -244,7 +249,7 @@ void CategorySyncServer::执行同步(SyncDirection direction) {
     switch (direction) {
     case Bidirectional:
         // 若存在本地未同步更改，先推送再拉取，避免拉取阶段把旧名称再插入成重复
-        if (!m_unsyncedItems.empty()) {
+        if (!m_待同步的项目列表.empty()) {
             m_pushFirstInBidirectional = true;
             推送类别();
         } else {
@@ -297,7 +302,7 @@ void CategorySyncServer::推送类别() {
     检查同步前置条件(true);
     setIsSyncing(true);
 
-    if (m_unsyncedItems.empty()) {
+    if (m_待同步的项目列表.empty()) {
         qInfo() << "没有需要同步的类别，上传流程完成";
 
         // 如果是双向同步且没有本地更改，直接完成
@@ -309,29 +314,20 @@ void CategorySyncServer::推送类别() {
         return;
     }
 
-    qInfo() << "开始推送" << m_unsyncedItems.size() << "个类别到服务器";
-    emit syncProgress(75, QString("正在推送 %1 个类别更改到服务器...").arg(m_unsyncedItems.size()));
+    qInfo() << "开始推送" << m_待同步的项目列表.size() << "个类别到服务器";
+    emit syncProgress(75, QString("正在推送 %1 个类别更改到服务器...").arg(m_待同步的项目列表.size()));
 
     try {
         // 创建一个包含当前批次类别的JSON数组
         QJsonArray jsonArray;
-        for (CategorieItem *item : m_unsyncedItems) {
+        for (CategorieItem *item : m_待同步的项目列表) {
             QJsonObject obj;
             obj["uuid"] = item->uuid().toString(QUuid::WithoutBraces);
             obj["name"] = item->name();
             // 服务端 SyncCategoryItem.CreatedAt/UpdatedAt 期望 *time.Time (RFC3339/ISO8601 字符串)
-            // 原实现发送 int64 毫秒时间戳，Go 端 Unmarshal 失败，fallback 导致 name 为空验证错误
-            const auto createdUtc = item->createdAt().toUTC();
-            const auto updatedUtc = item->updatedAt().toUTC();
-            // Qt::ISODateWithMs 生成 2025-09-28T06:12:34.123Z 形式（需补 Z 表示 UTC）
-            auto createdStr = createdUtc.toString(Qt::ISODateWithMs);
-            auto updatedStr = updatedUtc.toString(Qt::ISODateWithMs);
-            if (!createdStr.endsWith('Z'))
-                createdStr += 'Z';
-            if (!updatedStr.endsWith('Z'))
-                updatedStr += 'Z';
-            obj["created_at"] = createdStr;
-            obj["updated_at"] = updatedStr;
+            // 使用统一的时间转换工具，确保格式一致性
+            obj["created_at"] = Utility::toIsoStringWithZ(item->createdAt());
+            obj["updated_at"] = Utility::toIsoStringWithZ(item->updatedAt());
             obj["synced"] = item->synced();
             jsonArray.append(obj);
         }
@@ -412,9 +408,9 @@ void CategorySyncServer::处理推送更改成功(const QJsonObject &response) {
     const auto nowUtc = QDateTime::currentDateTimeUtc();
     int changed = 0;
     std::vector<CategorieItem *> actuallySynced;
-    actuallySynced.reserve(m_unsyncedItems.size());
-    for (int i = 0; i < static_cast<int>(m_unsyncedItems.size()); ++i) {
-        auto *item = m_unsyncedItems[i];
+    actuallySynced.reserve(m_待同步的项目列表.size());
+    for (int i = 0; i < static_cast<int>(m_待同步的项目列表.size()); ++i) {
+        auto *item = m_待同步的项目列表[i];
         if (!item)
             continue;
         if (failedIndexes.contains(i)) {
@@ -446,15 +442,15 @@ void CategorySyncServer::处理推送更改成功(const QJsonObject &response) {
     emit syncProgress(100, "类别更改推送完成");
 
     // 移除已成功的条目, 保留失败的以便下次重试
-    if (!m_unsyncedItems.empty()) {
+    if (!m_待同步的项目列表.empty()) {
         std::vector<CategorieItem *> remaining;
         remaining.reserve(failedIndexes.size());
-        for (int i = 0; i < static_cast<int>(m_unsyncedItems.size()); ++i) {
+        for (int i = 0; i < static_cast<int>(m_待同步的项目列表.size()); ++i) {
             if (failedIndexes.contains(i)) {
-                remaining.push_back(m_unsyncedItems[i]);
+                remaining.push_back(m_待同步的项目列表[i]);
             }
         }
-        m_unsyncedItems.swap(remaining);
+        m_待同步的项目列表.swap(remaining);
     }
 
     // 如果是双向同步且采用了 push-first 策略，则在推送成功后继续拉取服务器最新（此时本地改名等已写入服务器）
@@ -479,8 +475,7 @@ void CategorySyncServer::处理创建类别成功(const QJsonObject &response) {
     if (response.contains("message")) {
         message = response["message"].toString();
     }
-
-    emit categoryCreated(m_currentOperationName, true, message);
+    qWarning() << message;
 }
 
 void CategorySyncServer::处理更新类别成功(const QJsonObject &response) {
@@ -490,6 +485,7 @@ void CategorySyncServer::处理更新类别成功(const QJsonObject &response) {
     if (response.contains("message")) {
         message = response["message"].toString();
     }
+    qWarning() << message;
 }
 
 void CategorySyncServer::处理删除类别成功(const QJsonObject &response) {
@@ -499,4 +495,5 @@ void CategorySyncServer::处理删除类别成功(const QJsonObject &response) {
     if (response.contains("message")) {
         message = response["message"].toString();
     }
+    qWarning() << message;
 }

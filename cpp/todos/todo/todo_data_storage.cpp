@@ -11,6 +11,7 @@
 
 #include "todo_data_storage.h"
 #include "todo_item.h"
+#include "foundation/utility.h"
 
 #include <QDateTime>
 #include <QJsonArray>
@@ -54,7 +55,7 @@ bool TodoDataStorage::加载待办(TodoList &todos) {
         QSqlQuery query(db);
         const QString queryString =
             "SELECT id, uuid, user_uuid, title, description, category, important, deadline, recurrence_interval, "
-            "recurrence_count, recurrence_start_date, is_completed, completed_at, is_deleted, deleted_at, created_at, "
+            "recurrence_count, recurrence_start_date, is_completed, completed_at, is_trashed, trashed_at, created_at, "
             "updated_at, synced FROM todos ORDER BY id";
 
         if (!query.exec(queryString)) {
@@ -99,8 +100,8 @@ bool TodoDataStorage::加载待办(TodoList &todos) {
             QDate recurrenceStartDate = QDate::fromString(query.value("recurrence_start_date").toString(), Qt::ISODate);
             bool isCompleted = query.value("is_completed").toBool();
             QDateTime completedAt = parseTimeMs(query.value("completed_at"));
-            bool isDeleted = query.value("is_deleted").toBool();
-            QDateTime deletedAt = parseTimeMs(query.value("deleted_at"));
+            bool isTrashed = query.value("is_trashed").toBool();
+            QDateTime trashedAt = parseTimeMs(query.value("trashed_at"));
             QDateTime createdAt = parseTimeMs(query.value("created_at"));
             QDateTime updatedAt = parseTimeMs(query.value("updated_at"));
             int synced = query.value("synced").toInt();
@@ -119,8 +120,8 @@ bool TodoDataStorage::加载待办(TodoList &todos) {
                 recurrenceStartDate,                // 重复开始日期
                 isCompleted,                        // 是否已完成
                 completedAt,                        // 完成时间
-                isDeleted,                          // 是否已删除
-                deletedAt,                          // 删除时间
+                isTrashed,                          // 是否已回收
+                trashedAt,                          // 回收时间
                 createdAt,                          // 创建时间
                 updatedAt,                          // 更新时间
                 synced                              // 是否已同步
@@ -181,8 +182,8 @@ bool TodoDataStorage::新增待办(TodoList &todos, const QString &title, const 
         recurrenceStartDate,                   // recurrenceStartDate
         false,                                 // isCompleted
         nullTime,                              // completedAt
-        false,                                 // isDeleted
-        nullTime,                              // deletedAt
+        false,                                 // isTrashed
+        nullTime,                              // trashedAt
         now,                                   // createdAt
         now,                                   // updatedAt
         1                                      // synced
@@ -193,7 +194,7 @@ bool TodoDataStorage::新增待办(TodoList &todos, const QString &title, const 
     const QString insertString =
         "INSERT INTO todos (uuid, user_uuid, title, description, category, important, deadline, "
         "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, "
-        "is_deleted, deleted_at, created_at, updated_at, synced) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        "is_trashed, trashed_at, created_at, updated_at, synced) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     insertQuery.prepare(insertString);
     insertQuery.addBindValue(newTodo->uuid().toString());
     insertQuery.addBindValue(newTodo->userUuid().toString());
@@ -209,8 +210,8 @@ bool TodoDataStorage::新增待办(TodoList &todos, const QString &title, const 
     insertQuery.addBindValue(newTodo->isCompleted());
     insertQuery.addBindValue(
         newTodo->completedAt().isValid() ? QVariant(newTodo->completedAt().toUTC().toMSecsSinceEpoch()) : QVariant());
-    insertQuery.addBindValue(newTodo->isDeleted());
-    insertQuery.addBindValue(newTodo->deletedAt().isValid() ? QVariant(newTodo->deletedAt().toUTC().toMSecsSinceEpoch())
+    insertQuery.addBindValue(newTodo->isTrashed());
+    insertQuery.addBindValue(newTodo->trashedAt().isValid() ? QVariant(newTodo->trashedAt().toUTC().toMSecsSinceEpoch())
                                                             : QVariant());
     insertQuery.addBindValue(newTodo->createdAt().toUTC().toMSecsSinceEpoch());
     insertQuery.addBindValue(newTodo->updatedAt().toUTC().toMSecsSinceEpoch());
@@ -251,7 +252,7 @@ bool TodoDataStorage::新增待办(TodoList &todos, std::unique_ptr<TodoItem> it
     const QString insertString =
         "INSERT INTO todos (uuid, user_uuid, title, description, category, important, deadline, "
         "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, "
-        "is_deleted, deleted_at, created_at, updated_at, synced) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        "is_trashed, trashed_at, created_at, updated_at, synced) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     insertQuery.prepare(insertString);
     insertQuery.addBindValue(item->uuid().toString());
     insertQuery.addBindValue(item->userUuid().toString());
@@ -267,8 +268,8 @@ bool TodoDataStorage::新增待办(TodoList &todos, std::unique_ptr<TodoItem> it
     insertQuery.addBindValue(item->isCompleted());
     insertQuery.addBindValue(item->completedAt().isValid() ? QVariant(item->completedAt().toUTC().toMSecsSinceEpoch())
                                                            : QVariant());
-    insertQuery.addBindValue(item->isDeleted());
-    insertQuery.addBindValue(item->deletedAt().isValid() ? QVariant(item->deletedAt().toUTC().toMSecsSinceEpoch())
+    insertQuery.addBindValue(item->isTrashed());
+    insertQuery.addBindValue(item->trashedAt().isValid() ? QVariant(item->trashedAt().toUTC().toMSecsSinceEpoch())
                                                          : QVariant());
     insertQuery.addBindValue(item->createdAt().toUTC().toMSecsSinceEpoch());
     insertQuery.addBindValue(item->updatedAt().toUTC().toMSecsSinceEpoch());
@@ -356,14 +357,14 @@ bool TodoDataStorage::更新待办(TodoList &todos, const QUuid &uuid, const QVa
         QDateTime dt = QDateTime::fromString(todoData.value("completed_at").toString(), Qt::ISODate);
         (*it)->setCompletedAt(dt);
     }
-    if (todoData.contains("is_deleted")) {
-        appendField("is_deleted", QMetaType::Bool);
-        (*it)->setIsDeleted(todoData.value("is_deleted").toBool());
+    if (todoData.contains("is_trashed")) {
+        appendField("is_trashed", QMetaType::Bool);
+        (*it)->setIsTrashed(todoData.value("is_trashed").toBool());
     }
-    if (todoData.contains("deleted_at")) {
-        appendField("deleted_at", QMetaType::QDateTime);
-        QDateTime dt = QDateTime::fromString(todoData.value("deleted_at").toString(), Qt::ISODate);
-        (*it)->setDeletedAt(dt);
+    if (todoData.contains("trashed_at")) {
+        appendField("trashed_at", QMetaType::QDateTime);
+        QDateTime dt = QDateTime::fromString(todoData.value("trashed_at").toString(), Qt::ISODate);
+        (*it)->setTrashedAt(dt);
     }
     // 始终更新这两个字段
     order += "updated_at = ?, synced = ? WHERE uuid = ?";
@@ -414,7 +415,7 @@ bool TodoDataStorage::更新待办([[maybe_unused]] TodoList &todos, TodoItem &i
     const QString updateString =
         "UPDATE todos SET title = ?, description = ?, category = ?, important = ?, deadline = ?, "
         "recurrence_interval = ?, recurrence_count = ?, recurrence_start_date = ?, is_completed = ?, "
-        "completed_at = ?, is_deleted = ?, deleted_at = ?, updated_at = ?, synced = ? WHERE uuid = ?";
+        "completed_at = ?, is_trashed = ?, trashed_at = ?, updated_at = ?, synced = ? WHERE uuid = ?";
     updateQuery.prepare(updateString);
     updateQuery.addBindValue(item.title());
     updateQuery.addBindValue(item.description());
@@ -428,8 +429,8 @@ bool TodoDataStorage::更新待办([[maybe_unused]] TodoList &todos, TodoItem &i
     updateQuery.addBindValue(item.isCompleted());
     updateQuery.addBindValue(item.completedAt().isValid() ? QVariant(item.completedAt().toUTC().toMSecsSinceEpoch())
                                                           : QVariant());
-    updateQuery.addBindValue(item.isDeleted());
-    updateQuery.addBindValue(item.deletedAt().isValid() ? QVariant(item.deletedAt().toUTC().toMSecsSinceEpoch())
+    updateQuery.addBindValue(item.isTrashed());
+    updateQuery.addBindValue(item.trashedAt().isValid() ? QVariant(item.trashedAt().toUTC().toMSecsSinceEpoch())
                                                         : QVariant());
     updateQuery.addBindValue(item.updatedAt().toUTC().toMSecsSinceEpoch());
     updateQuery.addBindValue(item.synced());
@@ -454,8 +455,8 @@ bool TodoDataStorage::更新待办([[maybe_unused]] TodoList &todos, TodoItem &i
  */
 bool TodoDataStorage::回收待办(TodoList &todos, const QUuid &uuid) {
     QVariantMap todoData;
-    todoData["is_deleted"] = true;
-    todoData["deleted_at"] = QDateTime::currentDateTimeUtc();
+    todoData["is_trashed"] = true;
+    todoData["trashed_at"] = QDateTime::currentDateTimeUtc();
     return 更新待办(todos, uuid, todoData);
 }
 
@@ -646,10 +647,6 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
     int updateCount = 0;
     int skipCount = 0;
 
-    auto parseIso = [](const QString &s) {
-        QDateTime dt = QDateTime::fromString(s, Qt::ISODate);
-        return dt.isValid() ? dt : QDateTime();
-    };
 
     try {
         for (const QJsonValue &value : todosArray) {
@@ -677,18 +674,18 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
             QString description = obj["description"].toString();
             QString category = obj["category"].toString();
             bool important = obj["important"].toBool();
-            QDateTime deadline = parseIso(obj["deadline"].toString());
+            QDateTime deadline = Utility::fromIsoString(obj["deadline"].toString());
             int recurrenceInterval = obj["recurrence_interval"].toInt();
             int recurrenceCount = obj["recurrence_count"].toInt();
             QDate recurrenceStartDate = QDate::fromString(obj["recurrence_start_date"].toString(), Qt::ISODate);
             bool isCompleted = obj["is_completed"].toBool();
-            QDateTime completedAt = parseIso(obj["completed_at"].toString());
-            bool isDeleted = obj["is_deleted"].toBool();
-            QDateTime deletedAt = parseIso(obj["deleted_at"].toString());
-            QDateTime createdAt = parseIso(obj["created_at"].toString());
+            QDateTime completedAt = Utility::fromIsoString(obj["completed_at"].toString());
+            bool isTrashed = obj["is_trashed"].toBool();
+            QDateTime trashedAt = Utility::fromIsoString(obj["trashed_at"].toString());
+            QDateTime createdAt = Utility::fromIsoString(obj["created_at"].toString());
             if (!createdAt.isValid())
                 createdAt = QDateTime::currentDateTimeUtc();
-            QDateTime updatedAt = parseIso(obj.value("updated_at").toString());
+            QDateTime updatedAt = Utility::fromIsoString(obj.value("updated_at").toString());
             if (!updatedAt.isValid())
                 updatedAt = createdAt;
 
@@ -707,8 +704,8 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
                 recurrenceStartDate,                   //
                 isCompleted,                           //
                 completedAt,                           //
-                isDeleted,                             //
-                deletedAt,                             //
+                isTrashed,                             //
+                trashedAt,                             //
                 createdAt,                             //
                 updatedAt,                             //
                 source == ImportSource::Server ? 0 : 1 //
@@ -739,8 +736,8 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
                     incoming.recurrenceStartDate(),        //
                     incoming.isCompleted(),                //
                     incoming.completedAt(),                //
-                    incoming.isDeleted(),                  //
-                    incoming.deletedAt(),                  //
+                    incoming.isTrashed(),                  //
+                    incoming.trashedAt(),                  //
                     incoming.createdAt(),                  //
                     incoming.updatedAt(),                  //
                     incoming.synced()                      //
@@ -749,7 +746,7 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
                 QSqlQuery ins(db);
                 ins.prepare("INSERT INTO todos (uuid, user_uuid, title, description, category, important, deadline, "
                             "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, "
-                            "is_deleted, deleted_at, created_at, updated_at, synced) VALUES "
+                            "is_trashed, trashed_at, created_at, updated_at, synced) VALUES "
                             "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
                 ins.addBindValue(ref.uuid().toString());
                 ins.addBindValue(ref.userUuid().toString());
@@ -765,8 +762,8 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
                 ins.addBindValue(ref.isCompleted());
                 ins.addBindValue(ref.completedAt().isValid() ? QVariant(ref.completedAt().toUTC().toMSecsSinceEpoch())
                                                              : QVariant());
-                ins.addBindValue(ref.isDeleted());
-                ins.addBindValue(ref.deletedAt().isValid() ? QVariant(ref.deletedAt().toUTC().toMSecsSinceEpoch())
+                ins.addBindValue(ref.isTrashed());
+                ins.addBindValue(ref.trashedAt().isValid() ? QVariant(ref.trashedAt().toUTC().toMSecsSinceEpoch())
                                                            : QVariant());
                 ins.addBindValue(ref.createdAt().toUTC().toMSecsSinceEpoch());
                 ins.addBindValue(ref.updatedAt().toUTC().toMSecsSinceEpoch());
@@ -789,7 +786,7 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
                 up.prepare(
                     "UPDATE todos SET user_uuid=?, title=?, description=?, category=?, important=?, deadline=?, "
                     "recurrence_interval=?, recurrence_count=?, recurrence_start_date=?, is_completed=?, "
-                    "completed_at=?, is_deleted=?, deleted_at=?, created_at=?, updated_at=?, synced=? WHERE uuid=?");
+                    "completed_at=?, is_trashed=?, trashed_at=?, created_at=?, updated_at=?, synced=? WHERE uuid=?");
                 up.addBindValue(userUuid.toString());
                 up.addBindValue(title);
                 up.addBindValue(description);
@@ -801,8 +798,8 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
                 up.addBindValue(recurrenceStartDate.toString(Qt::ISODate));
                 up.addBindValue(isCompleted);
                 up.addBindValue(completedAt.isValid() ? QVariant(completedAt.toUTC().toMSecsSinceEpoch()) : QVariant());
-                up.addBindValue(isDeleted);
-                up.addBindValue(deletedAt.isValid() ? QVariant(deletedAt.toUTC().toMSecsSinceEpoch()) : QVariant());
+                up.addBindValue(isTrashed);
+                up.addBindValue(trashedAt.isValid() ? QVariant(trashedAt.toUTC().toMSecsSinceEpoch()) : QVariant());
                 up.addBindValue(createdAt.toUTC().toMSecsSinceEpoch());
                 up.addBindValue(updatedAt.toUTC().toMSecsSinceEpoch());
                 up.addBindValue(source == ImportSource::Server ? 0 : (existing->synced() == 1 ? 1 : 2));
@@ -824,8 +821,8 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
                 existing->setRecurrenceStartDate(recurrenceStartDate);
                 existing->setIsCompleted(isCompleted);
                 existing->setCompletedAt(completedAt);
-                existing->setIsDeleted(isDeleted);
-                existing->setDeletedAt(deletedAt);
+                existing->setIsTrashed(isTrashed);
+                existing->setTrashedAt(trashedAt);
                 existing->setCreatedAt(createdAt);
                 existing->setUpdatedAt(updatedAt);
                 existing->setSynced(source == ImportSource::Server ? 0 : 2);
@@ -913,15 +910,15 @@ QList<int> TodoDataStorage::查询待办ID列表(const QueryOptions &opt) {
     if (!opt.category.isEmpty())
         sql += " AND category = :category";
     if (opt.statusFilter == "todo")
-        sql += " AND is_deleted = 0 AND is_completed = 0";
+        sql += " AND is_trashed = 0 AND is_completed = 0";
     else if (opt.statusFilter == "done")
-        sql += " AND is_deleted = 0 AND is_completed = 1";
+        sql += " AND is_trashed = 0 AND is_completed = 1";
     else if (opt.statusFilter == "recycle")
-        sql += " AND is_deleted = 1";
+        sql += " AND is_trashed = 1";
     else if (opt.statusFilter == "all") {
         // 空
     } else
-        sql += " AND is_deleted = 0"; // 默认排除已删除
+        sql += " AND is_trashed = 0"; // 默认排除已回收
 
     if (!opt.searchText.isEmpty())
         sql += " AND (title LIKE :search OR description LIKE :search OR category LIKE :search)";
@@ -993,8 +990,8 @@ bool TodoDataStorage::创建数据表() {
             recurrence_start_date TEXT,
             is_completed INTEGER NOT NULL DEFAULT 0,
             completed_at INTEGER,
-            is_deleted INTEGER NOT NULL DEFAULT 0,
-            deleted_at INTEGER,
+            is_trashed INTEGER NOT NULL DEFAULT 0,
+            trashed_at INTEGER,
             created_at INTEGER NOT NULL,
             updated_at INTEGER NOT NULL,
             synced INTEGER NOT NULL DEFAULT 1
@@ -1007,7 +1004,7 @@ bool TodoDataStorage::创建数据表() {
                                  "CREATE INDEX IF NOT EXISTS idx_todos_category ON todos(category)",
                                  "CREATE INDEX IF NOT EXISTS idx_todos_deadline ON todos(deadline)",
                                  "CREATE INDEX IF NOT EXISTS idx_todos_completed ON todos(is_completed)",
-                                 "CREATE INDEX IF NOT EXISTS idx_todos_deleted ON todos(is_deleted)",
+                                 "CREATE INDEX IF NOT EXISTS idx_todos_trashed ON todos(is_trashed)",
                                  "CREATE INDEX IF NOT EXISTS idx_todos_synced ON todos(synced)"};
     for (const QString &ix : indexes) {
         执行SQL查询(ix);
@@ -1030,21 +1027,12 @@ bool TodoDataStorage::导出到JSON(QJsonObject &output) {
     QSqlQuery query(db);
     const QString sql = "SELECT id, uuid, user_uuid, title, description, category, important, deadline, "
                         "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, "
-                        "completed_at, is_deleted, deleted_at, created_at, updated_at, synced FROM todos";
+                        "completed_at, is_trashed, trashed_at, created_at, updated_at, synced FROM todos";
     if (!query.exec(sql)) {
         qWarning() << "查询待办数据失败:" << query.lastError().text();
         return false;
     }
     QJsonArray arr;
-    auto toIso = [&](const QVariant &v) -> QJsonValue {
-        if (v.isNull())
-            return QJsonValue();
-        bool ok = false;
-        qint64 ms = v.toLongLong(&ok);
-        if (!ok)
-            return QJsonValue();
-        return QDateTime::fromMSecsSinceEpoch(ms, QTimeZone::UTC).toString(Qt::ISODateWithMs);
-    };
     while (query.next()) {
         QJsonObject obj;
         obj["id"] = query.value("id").toInt();
@@ -1055,17 +1043,17 @@ bool TodoDataStorage::导出到JSON(QJsonObject &output) {
         obj["description"] = desc.isNull() ? QJsonValue() : desc.toString();
         obj["category"] = query.value("category").toString();
         obj["important"] = query.value("important").toInt();
-        obj["deadline"] = toIso(query.value("deadline"));
+        obj["deadline"] = Utility::timestampToIsoJson(query.value("deadline"));
         obj["recurrence_interval"] = query.value("recurrence_interval").toInt();
         obj["recurrence_count"] = query.value("recurrence_count").toInt();
         QVariant rsd = query.value("recurrence_start_date");
         obj["recurrence_start_date"] = rsd.isNull() ? QJsonValue() : rsd.toString();
         obj["is_completed"] = query.value("is_completed").toInt();
-        obj["completed_at"] = toIso(query.value("completed_at"));
-        obj["is_deleted"] = query.value("is_deleted").toInt();
-        obj["deleted_at"] = toIso(query.value("deleted_at"));
-        obj["created_at"] = toIso(query.value("created_at"));
-        obj["updated_at"] = toIso(query.value("updated_at"));
+        obj["completed_at"] = Utility::timestampToIsoJson(query.value("completed_at"));
+        obj["is_trashed"] = query.value("is_trashed").toInt();
+        obj["trashed_at"] = Utility::timestampToIsoJson(query.value("trashed_at"));
+        obj["created_at"] = Utility::timestampToIsoJson(query.value("created_at"));
+        obj["updated_at"] = Utility::timestampToIsoJson(query.value("updated_at"));
         obj["synced"] = query.value("synced").toInt();
         arr.append(obj);
     }
@@ -1101,7 +1089,7 @@ bool TodoDataStorage::导入从JSON(const QJsonObject &input, bool replaceAll) {
         QJsonObject o = v.toObject();
         q.prepare("INSERT OR REPLACE INTO todos (id, uuid, user_uuid, title, description, category, "
                   "important, deadline, recurrence_interval, recurrence_count, recurrence_start_date, "
-                  "is_completed, completed_at, is_deleted, deleted_at, created_at, updated_at, synced) "
+                  "is_completed, completed_at, is_trashed, trashed_at, created_at, updated_at, synced) "
                   "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
         q.addBindValue(o.value("id").toVariant());
         q.addBindValue(o.value("uuid").toString());
@@ -1116,8 +1104,8 @@ bool TodoDataStorage::导入从JSON(const QJsonObject &input, bool replaceAll) {
         q.addBindValue(o.value("recurrence_start_date").toVariant());
         q.addBindValue(o.value("is_completed").toInt());
         bindIso(q, o, "completed_at");
-        q.addBindValue(o.value("is_deleted").toInt());
-        bindIso(q, o, "deleted_at");
+        q.addBindValue(o.value("is_trashed").toInt());
+        bindIso(q, o, "trashed_at");
         bindIso(q, o, "created_at");
         bindIso(q, o, "updated_at");
         q.addBindValue(o.value("synced").toInt());

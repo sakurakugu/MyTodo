@@ -31,7 +31,7 @@ TodoItem::TodoItem()
       m_recurrenceCount(0),                      // 初始化循环次数为0
       m_recurrenceStartDate(QDate()),            // 初始化重复开始日期为空
       m_isCompleted(false),                      // 初始化是否已完成为false
-      m_isDeleted(false),                        // 初始化是否已删除为false
+      m_isTrashed(false),                        // 初始化是否已回收为false
       m_createdAt(QDateTime::currentDateTime()), // 初始化创建时间为当前时间
       m_updatedAt(QDateTime::currentDateTime()), // 初始化更新时间为当前时间
       m_synced(1)                                // 初始化是否已同步为false
@@ -56,8 +56,8 @@ TodoItem::TodoItem(int id,                           ///< 待办事项唯一标�
                    const QDate &recurrenceStartDate, ///< 重复开始日期
                    bool isCompleted,                 ///< 是否已完成
                    const QDateTime &completedAt,     ///< 完成时间
-                   bool isDeleted,                   ///< 是否已删除
-                   const QDateTime &deletedAt,       ///< 删除时间
+                   bool isTrashed,                   ///< 是否已回收
+                   const QDateTime &trashedAt,       ///< 回收时间
                    const QDateTime &createdAt,       ///< 创建时间
                    const QDateTime &updatedAt,       ///< 最后更新时间
                    int synced)                       ///< 是否已与服务器同步
@@ -74,8 +74,8 @@ TodoItem::TodoItem(int id,                           ///< 待办事项唯一标�
       m_recurrenceStartDate(recurrenceStartDate),    ///< 初始化循环开始日期
       m_isCompleted(isCompleted),                    ///< 初始化完成状态
       m_completedAt(completedAt),                    ///< 初始化完成时间
-      m_isDeleted(isDeleted),                        ///< 初始化删除状态
-      m_deletedAt(deletedAt),                        ///< 初始化删除时间
+      m_isTrashed(isTrashed),                        ///< 初始化回收状态
+      m_trashedAt(trashedAt),                        ///< 初始化回收时间
       m_createdAt(createdAt),                        ///< 初始化待办事项创建时间
       m_updatedAt(updatedAt),                        ///< 初始化待办事项更新时间
       m_synced(synced)                               ///< 初始化待办事项同步状态
@@ -231,22 +231,22 @@ void TodoItem::setCompletedAt(const QDateTime &completedAt) {
 }
 
 /**
- * @brief 设置是否已删除
- * @param deleted 新的删除状态
+ * @brief 设置是否已回收
+ * @param trashed 新的回收状态
  */
-void TodoItem::setIsDeleted(bool deleted) {
-    if (m_isDeleted != deleted) {
-        m_isDeleted = deleted;
+void TodoItem::setIsTrashed(bool trashed) {
+    if (m_isTrashed != trashed) {
+        m_isTrashed = trashed;
     }
 }
 
 /**
- * @brief 设置删除时间
- * @param deletedAt 新的删除时间
+ * @brief 设置回收时间
+ * @param trashedAt 新的回收时间
  */
-void TodoItem::setDeletedAt(const QDateTime &deletedAt) {
-    if (m_deletedAt != deletedAt) {
-        m_deletedAt = deletedAt;
+void TodoItem::setTrashedAt(const QDateTime &trashedAt) {
+    if (m_trashedAt != trashedAt) {
+        m_trashedAt = trashedAt;
     }
 }
 
@@ -438,8 +438,8 @@ TodoItem &TodoItem::operator=(TodoItem &&other) noexcept {
         m_recurrenceStartDate = std::move(other.m_recurrenceStartDate);
         m_isCompleted = std::move(other.m_isCompleted);
         m_completedAt = std::move(other.m_completedAt);
-        m_isDeleted = std::move(other.m_isDeleted);
-        m_deletedAt = std::move(other.m_deletedAt);
+        m_isTrashed = std::move(other.m_isTrashed);
+        m_trashedAt = std::move(other.m_trashedAt);
         m_createdAt = std::move(other.m_createdAt);
         m_updatedAt = std::move(other.m_updatedAt);
         m_synced = std::move(other.m_synced);
@@ -466,8 +466,8 @@ bool TodoItem::operator==(const TodoItem &other) const noexcept {
            m_recurrenceStartDate == other.m_recurrenceStartDate && // 循环开始日期
            m_isCompleted == other.m_isCompleted &&                 // 是否已完成
            m_completedAt == other.m_completedAt &&                 // 完成时间
-           m_isDeleted == other.m_isDeleted &&                     // 是否已删除
-           m_deletedAt == other.m_deletedAt &&                     // 删除时间
+           m_isTrashed == other.m_isTrashed &&                     // 是否已删除
+           m_trashedAt == other.m_trashedAt &&                     // 删除时间
            m_createdAt == other.m_createdAt &&                     // 创建时间
            m_updatedAt == other.m_updatedAt &&                     // 最后更新时间
            m_synced == other.m_synced;                             // 同步状态

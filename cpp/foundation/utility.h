@@ -16,29 +16,26 @@ concept DateType = std::same_as<T, QDate> || std::same_as<T, QDateTime>;
 
 class Utility {
   public:
-    template <typename DateType> static DateType nullTime() noexcept;                 // 获取空时间
-    template <typename DateType> static bool isNullTime(const DateType &dt) noexcept; // 检查时间是否为空
-    template <typename DateType> static void setNullTime(DateType &dt) noexcept;      // 设置时间为空
+    Utility(const Utility &) = delete;
+    Utility &operator=(const Utility &) = delete;
+    Utility(Utility &&) = delete;
+    Utility &operator=(Utility &&) = delete;
+
+    static QString toRfc3339String(const QDateTime &dateTime);        // 将QDateTime转换为RFC 3339格式字符串
+    static QJsonValue toRfc3339Json(const QDateTime &dateTime);       // 将QDateTime转换为RFC 3339格式的QJsonValue
+    static QDateTime fromRfc3339String(const QString &rfc3339String); // 从RFC 3339格式字符串解析QDateTime
+    static QString toIsoStringWithZ(const QDateTime &dateTime); // 将QDateTime转换为ISO 8601格式字符串（带毫秒和Z后缀）
+    static QDateTime fromIsoString(const QString &isoString);   // 从ISO格式字符串解析QDateTime
+    static QJsonValue timestampToIsoJson(const QVariant &timestampMs); // 将毫秒时间戳转换为ISO格式的QJsonValue
+    static QDateTime fromJsonValue(const QJsonValue &jsonValue);       // 从QJsonValue解析时间戳并转换为QDateTime
+    static QString currentUtcRfc3339();                                // 获取当前UTC时间的RFC 3339格式字符串
+    static QString currentUtcIsoWithZ();                               // 获取当前UTC时间的ISO格式字符串（带Z后缀）
 
   private:
-    Utility() = default;
-    ~Utility() noexcept = default;
+    Utility() = delete;
+    ~Utility() noexcept = delete;
+
+    // 内部辅助方法
+    static QString ensureUtcSuffix(const QString &isoString);    // 确保ISO字符串包含Z后缀
+    static QDateTime parseFlexibleIso(const QString &isoString); // 解析ISO格式字符串，支持带或不带毫秒
 };
-
-// 模板函数实现移到类外部
-template <typename DateType> bool Utility::isNullTime(const DateType &dt) noexcept {
-    return dt == nullTime<DateType>();
-} // 检查时间是否为空
-
-template <typename DateType> void Utility::setNullTime(DateType &dt) noexcept {
-    dt = nullTime<DateType>();
-} // 设置时间为空
-
-// ================== 模板特化 ==================
-template <> inline QDateTime Utility::nullTime<QDateTime>() noexcept {
-    return QDateTime{}; // 已经改成时间戳了
-}
-
-template <> inline QDate Utility::nullTime<QDate>() noexcept {
-    return QDate{}; // 已经改成时间戳了
-}

@@ -142,6 +142,8 @@ class NetworkRequest : public QObject {
     void cancelRequest(Network::RequestType type);                            // 取消指定类型的请求
     void cancelAllRequests();                                                 // 取消所有请求
 
+    QString RequestTypeToString(Network::RequestType type) const; // 请求类型转字符串
+
   signals:
     void requestCompleted(Network::RequestType type, const QJsonObject &response);             // 请求完成信号
     void requestFailed(Network::RequestType type, NetworkError error, const QString &message); // 请求失败信号
@@ -151,6 +153,10 @@ class NetworkRequest : public QObject {
     void onReplyFinished();                           // 回复完成槽函数
     void onRequestTimeout();                          // 请求超时槽函数
     void onSslErrors(const QList<QSslError> &errors); // SSL错误槽函数
+
+#ifdef QT_DEBUG
+    void onRequestCompleted(Network::RequestType type, const QJsonObject &response); // 请求完成槽函数
+#endif
 
   private:
     explicit NetworkRequest(QObject *parent = nullptr);
@@ -187,8 +193,6 @@ class NetworkRequest : public QObject {
     bool isDuplicateRequest(Network::RequestType type) const;           // 检查是否为重复请求
     void addActiveRequest(Network::RequestType type, qint64 requestId); // 添加活跃请求
     void removeActiveRequest(Network::RequestType type);                // 移除活跃请求
-
-    QString RequestTypeToString(Network::RequestType type) const; // 请求类型转字符串
 
     // 成员变量
     QNetworkAccessManager *m_networkRequest; // 网络访问管理器

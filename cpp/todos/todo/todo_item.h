@@ -51,8 +51,8 @@ class TodoItem {
              const QDate &recurrenceStartDate, ///< 重复开始日期
              bool isCompleted,                 ///< 是否已完成
              const QDateTime &completedAt,     ///< 完成时间
-             bool isDeleted,                   ///< 是否已删除
-             const QDateTime &deletedAt,       ///< 删除时间
+             bool isTrashed,                   ///< 是否已回收
+             const QDateTime &trashedAt,       ///< 回收时间
              const QDateTime &createdAt,       ///< 创建时间
              const QDateTime &updatedAt,       ///< 最后更新时间
              int synced                        ///< 是否已与服务器同步（是否要上传）
@@ -97,11 +97,11 @@ class TodoItem {
     QDateTime completedAt() const noexcept { return m_completedAt; } // 获取完成时间
     void setCompletedAt(const QDateTime &completedAt);               // 设置完成时间
 
-    bool isDeleted() const noexcept { return m_isDeleted; } // 获取是否已删除
-    void setIsDeleted(bool deleted);                        // 设置是否已删除
+    bool isTrashed() const noexcept { return m_isTrashed; } // 获取是否已回收
+    void setIsTrashed(bool trashed);                        // 设置是否已回收
 
-    QDateTime deletedAt() const noexcept { return m_deletedAt; } // 获取删除时间
-    void setDeletedAt(const QDateTime &deletedAt);               // 设置删除时间
+    QDateTime trashedAt() const noexcept { return m_trashedAt; } // 获取回收时间
+    void setTrashedAt(const QDateTime &trashedAt);               // 设置回收时间
 
     QDateTime createdAt() const noexcept { return m_createdAt; } // 获取创建时间
     void setCreatedAt(const QDateTime &createdAt);               // 设置创建时间
@@ -137,8 +137,8 @@ class TodoItem {
     QDate m_recurrenceStartDate; // 循环开始日期
     bool m_isCompleted;          // 任务是否已完成
     QDateTime m_completedAt;     // 任务完成时间
-    bool m_isDeleted;            // 任务是否已删除
-    QDateTime m_deletedAt;       // 任务删除时间
+    bool m_isTrashed;            // 任务是否已回收
+    QDateTime m_trashedAt;       // 任务回收时间
     QDateTime m_createdAt;       // 任务创建时间
     QDateTime m_updatedAt;       // 任务更新时间
     int m_synced;                // 任务是否已同步

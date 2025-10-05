@@ -90,7 +90,7 @@ class TodoDataStorage : public BaseDataStorage {
     bool 新增待办(TodoList &todos, std::unique_ptr<TodoItem> item);
     bool 更新待办(TodoList &todos, const QUuid &uuid, const QVariantMap &todoData);
     bool 更新待办(TodoList &todos, TodoItem &item);
-    bool 回收待办(TodoList &todos, const QUuid &uuid);   // (标记isDeleted为删除)
+    bool 回收待办(TodoList &todos, const QUuid &uuid);   // (标记isTrashed为删除)
     bool 软删除待办(TodoList &todos, const QUuid &uuid); // (标记synced为删除)
     bool 删除待办(TodoList &todos, const QUuid &uuid);
 

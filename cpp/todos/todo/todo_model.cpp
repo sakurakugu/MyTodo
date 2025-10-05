@@ -101,8 +101,8 @@ QHash<int, QByteArray> TodoModel::roleNames() const {
     roles[RecurrenceStartDateRole] = "recurrenceStartDate";
     roles[IsCompletedRole] = "isCompleted";
     roles[CompletedAtRole] = "completedAt";
-    roles[IsDeletedRole] = "isDeleted";
-    roles[DeletedAtRole] = "deletedAt";
+    roles[IsTrashedRole] = "isTrashed";
+    roles[TrashedAtRole] = "trashedAt";
     roles[CreatedAtRole] = "createdAt";
     roles[UpdatedAtRole] = "updatedAt";
     roles[SyncedRole] = "synced";
@@ -160,8 +160,8 @@ bool TodoModel::setData(const QModelIndex &index, const QVariant &value, int rol
         item->setIsCompleted(value.toBool());
         changed = true;
         break;
-    case IsDeletedRole:
-        item->setIsDeleted(value.toBool());
+    case IsTrashedRole:
+        item->setIsTrashed(value.toBool());
         changed = true;
         break;
     }
@@ -286,7 +286,7 @@ bool TodoModel::标记完成(int index, bool completed) {
     return success;
 }
 
-bool TodoModel::标记删除(int index, bool deleted) {
+bool TodoModel::标记删除(int index, bool trashed) {
     // 通过过滤后的索引获取实际的任务项
     auto todoItem = 获取过滤后的待办(index);
     QModelIndex modelIndex = 获取内容在待办列表中的索引(todoItem);
@@ -296,7 +296,7 @@ bool TodoModel::标记删除(int index, bool deleted) {
 
     bool success = false;
     try {
-        if (deleted) {
+        if (trashed) {
             // 通知视图即将删除行
             beginRemoveRows(QModelIndex(), index, index);
             // 软删除
@@ -310,13 +310,13 @@ bool TodoModel::标记删除(int index, bool deleted) {
             success = true;
         } else {
             // 检查任务是否已删除
-            if (!todoItem->isDeleted()) {
+            if (!todoItem->isTrashed()) {
                 qWarning() << "尝试恢复未删除的任务，索引:" << index;
                 return false;
             }
             beginResetModel();
             QVariantMap todoData;
-            todoData["is_deleted"] = false;
+            todoData["is_trashed"] = false;
             return 更新待办(index, todoData);
 
             // 通知视图数据已更改
@@ -353,7 +353,7 @@ bool TodoModel::删除待办(int index) {
         auto todoItem = 获取过滤后的待办(index);
 
         // 检查任务是否已删除
-        if (!todoItem->isDeleted()) {
+        if (!todoItem->isTrashed()) {
             qWarning() << "尝试永久删除未删除的任务，索引:" << index;
             return false;
         }
@@ -634,10 +634,10 @@ QVariant TodoModel::获取项目数据(const TodoItem *item, int role) const {
         return item->isCompleted();
     case CompletedAtRole:
         return item->completedAt();
-    case IsDeletedRole:
-        return item->isDeleted();
-    case DeletedAtRole:
-        return item->deletedAt();
+    case IsTrashedRole:
+        return item->isTrashed();
+    case TrashedAtRole:
+        return item->trashedAt();
     case CreatedAtRole:
         return item->createdAt();
     case UpdatedAtRole:

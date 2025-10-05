@@ -12,6 +12,7 @@
 
 #include "category_data_storage.h"
 #include "../../foundation/config.h"
+#include "../../foundation/utility.h"
 #include "category_item.h"
 #include <QJsonObject>
 #include <QSqlError>
@@ -459,12 +460,12 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
                 uuid = QUuid::createUuid();
 
             QDateTime createdAt = obj.contains("created_at")
-                                      ? QDateTime::fromString(obj.value("created_at").toString(), Qt::ISODate)
+                                      ? Utility::fromIsoString(obj.value("created_at").toString())
                                       : QDateTime::currentDateTime();
             if (!createdAt.isValid())
                 createdAt = QDateTime::currentDateTime();
             QDateTime updatedAt = obj.contains("updated_at")
-                                      ? QDateTime::fromString(obj.value("updated_at").toString(), Qt::ISODate)
+                                      ? Utility::fromIsoString(obj.value("updated_at").toString())
                                       : createdAt;
             if (!updatedAt.isValid())
                 updatedAt = createdAt;
@@ -609,15 +610,7 @@ bool CategoryDataStorage::导出到JSON(QJsonObject &output) {
         qWarning() << "查询类别数据失败:" << query.lastError().text();
         return false;
     }
-    auto toIso = [&](const QVariant &v) -> QJsonValue {
-        if (v.isNull())
-            return QJsonValue();
-        bool ok = false;
-        qint64 ms = v.toLongLong(&ok);
-        if (!ok)
-            return QJsonValue();
-        return QDateTime::fromMSecsSinceEpoch(ms, QTimeZone::UTC).toString(Qt::ISODateWithMs);
-    };
+
     QJsonArray arr;
     while (query.next()) {
         QJsonObject obj;
@@ -625,8 +618,8 @@ bool CategoryDataStorage::导出到JSON(QJsonObject &output) {
         obj["uuid"] = query.value("uuid").toString();
         obj["name"] = query.value("name").toString();
         obj["user_uuid"] = query.value("user_uuid").toString();
-        obj["created_at"] = toIso(query.value("created_at"));
-        obj["updated_at"] = toIso(query.value("updated_at"));
+        obj["created_at"] = Utility::timestampToIsoJson(query.value("created_at"));
+        obj["updated_at"] = Utility::timestampToIsoJson(query.value("updated_at"));
         obj["synced"] = query.value("synced").toInt();
         arr.append(obj);
     }

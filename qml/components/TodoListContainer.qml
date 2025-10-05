@@ -181,8 +181,8 @@ ListView {
                             recurrenceStartDate: model.recurrenceStartDate,
                             isCompleted: model.isCompleted,
                             completedAt: model.completedAt,
-                            isDeleted: model.isDeleted,
-                            deletedAt: model.deletedAt,
+                            isTrashed: model.isTrashed,
+                            trashedAt: model.trashedAt,
                             createdAt: model.createdAt,
                             updatedAt: model.updatedAt
                         };

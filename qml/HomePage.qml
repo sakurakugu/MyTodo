@@ -544,7 +544,7 @@ Page {
                                 if (!globalState.selectedTodo)
                                     return "";
                                 if (todoManager.queryer.currentFilter === "recycle") {
-                                    return globalState.selectedTodo.deletedAt ? qsTr("删除时间: ") + Qt.formatDateTime(globalState.selectedTodo.deletedAt, "yyyy-MM-dd hh:mm") : "";
+                                    return globalState.selectedTodo.trashedAt ? qsTr("删除时间: ") + Qt.formatDateTime(globalState.selectedTodo.trashedAt, "yyyy-MM-dd hh:mm") : "";
                                 } else if (todoManager.queryer.currentFilter === "done") {
                                     return globalState.selectedTodo.completedAt ? qsTr("完成时间: ") + Qt.formatDateTime(globalState.selectedTodo.completedAt, "yyyy-MM-dd hh:mm") : "";
                                 } else {

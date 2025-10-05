@@ -72,8 +72,8 @@ class TodoModel : public QAbstractListModel {
         RecurrenceStartDateRole,   // 循环开始日期
         IsCompletedRole,           // 任务是否已完成
         CompletedAtRole,           // 任务完成时间
-        IsDeletedRole,             // 任务是否已删除
-        DeletedAtRole,             // 任务删除时间
+        IsTrashedRole,             // 任务是否已删除
+        TrashedAtRole,             // 任务删除时间
         CreatedAtRole,             // 任务创建时间
         UpdatedAtRole,             // 任务更新时间
         SyncedRole                 // 任务是否已同步
@@ -98,7 +98,7 @@ class TodoModel : public QAbstractListModel {
                   int recurrenceCount = 0, const QDate &recurrenceStartDate = QDate());                //
     bool 更新待办(int index, const QVariantMap &todoData);
     bool 标记完成(int index, bool completed);
-    bool 标记删除(int index, bool deleted);                     // isDeleted = 1/0 回收或删除
+    bool 标记删除(int index, bool trashed);                     // isTrashed = 1/0 回收或删除
     bool 软删除待办(int index);                                 // synced = 3
     bool 删除待办(int index);                                   // 永久删除
     bool 删除所有待办(bool deleteLocal, const QUuid &userUuid); // 永久删除所有

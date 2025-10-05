@@ -12,6 +12,7 @@
 #include "todo_sync_server.h"
 #include "foundation/default_value.h"
 #include "foundation/config.h"
+#include "foundation/utility.h"
 #include "todo_item.h"
 
 #include <QJsonDocument>
@@ -254,22 +255,17 @@ void TodoSyncServer::pushBatchToServer(const QList<TodoItem *> &batch) {
             obj["category"] = item->category();
             obj["important"] = item->important();
             // 统一使用 RFC3339 (UTC, 带毫秒, 末尾 Z) 字符串传递时间，避免 Go 端 time.Time 反序列化失败
-            auto toRfc3339 = [](const QDateTime &dt) -> QJsonValue {
-                if (!dt.isValid())
-                    return QJsonValue();
-                return dt.toUTC().toString("yyyy-MM-dd'T'HH:mm:ss.zzz'Z'");
-            };
-            obj["deadline"] = toRfc3339(item->deadline());
+            obj["deadline"] = Utility::toRfc3339Json(item->deadline());
             obj["recurrenceInterval"] = item->recurrenceInterval();
             obj["recurrenceCount"] = item->recurrenceCount();
             // recurrenceStartDate 仍保留为仅日期 ISO 字符串（业务语义：重复计划起始日期）
             obj["recurrenceStartDate"] = item->recurrenceStartDate().toString(Qt::ISODate);
             obj["is_completed"] = item->isCompleted();
-            obj["completed_at"] = toRfc3339(item->completedAt());
-            obj["is_deleted"] = item->isDeleted();
-            obj["deleted_at"] = toRfc3339(item->deletedAt());
-            obj["created_at"] = toRfc3339(item->createdAt());
-            obj["updated_at"] = toRfc3339(item->updatedAt());
+            obj["completed_at"] = Utility::toRfc3339Json(item->completedAt());
+            obj["is_trashed"] = item->isTrashed();
+            obj["trashed_at"] = Utility::toRfc3339Json(item->trashedAt());
+            obj["created_at"] = Utility::toRfc3339Json(item->createdAt());
+            obj["updated_at"] = Utility::toRfc3339Json(item->updatedAt());
             obj["synced"] = item->synced();
 
             jsonArray.append(obj);
