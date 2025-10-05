@@ -69,6 +69,7 @@ go mod download
 
 ```bash
 # 使用构建脚本
+# chmod +x build.sh # 要先赋予执行权限
 ./build.sh
 
 # 或直接运行

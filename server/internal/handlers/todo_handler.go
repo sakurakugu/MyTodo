@@ -729,6 +729,7 @@ func (th *TodoHandler) convertToCreateRequest(syncItem *models.SyncTodoItem) *mo
 		Category:    syncItem.Category,
 		Important:   syncItem.Important,
 		IsCompleted: syncItem.IsCompleted,
+		IsTrashed:   syncItem.IsTrashed,
 	}
 	// 携带客户端 uuid
 	if syncItem.UUID != "" {
@@ -739,6 +740,11 @@ func (th *TodoHandler) convertToCreateRequest(syncItem *models.SyncTodoItem) *mo
 	if syncItem.Deadline != nil {
 		deadline := *syncItem.Deadline
 		req.Deadline = &deadline
+	}
+
+	if syncItem.TrashedAt != nil {
+		trashedAt := *syncItem.TrashedAt
+		req.TrashedAt = &trashedAt
 	}
 
 	if syncItem.RecurrenceStartDate != nil && *syncItem.RecurrenceStartDate != "" {
@@ -766,14 +772,18 @@ func (th *TodoHandler) convertToUpdateRequest(syncItem *models.SyncTodoItem) *mo
 		Category:    &syncItem.Category,
 		Important:   &syncItem.Important,
 		IsCompleted: &syncItem.IsCompleted,
+		IsTrashed:   &syncItem.IsTrashed,
 	}
 
 	// 处理时间字段（支持毫秒或字符串）
 	if syncItem.Deadline != nil {
-		if syncItem.Deadline != nil {
-			deadline := *syncItem.Deadline
-			req.Deadline = &deadline
-		}
+		deadline := *syncItem.Deadline
+		req.Deadline = &deadline
+	}
+
+	if syncItem.TrashedAt != nil {
+		trashedAt := *syncItem.TrashedAt
+		req.TrashedAt = &trashedAt
 	}
 
 	if syncItem.RecurrenceStartDate != nil && *syncItem.RecurrenceStartDate != "" {

@@ -32,7 +32,7 @@ func (tr *TodoRepository) CreateTodo(userUUID string, req *models.CreateTodoRequ
 
 	query := `
 		INSERT INTO todos (uuid, title, description, category, important, is_completed, deadline, 
-			recurrence_interval, recurrence_count, recurrence_start_date, user_uuid, , is_trashed, trashed_at, created_at, updated_at)
+			recurrence_interval, recurrence_count, recurrence_start_date, user_uuid, is_trashed, trashed_at, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
 	`
 
