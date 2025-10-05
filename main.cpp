@@ -30,8 +30,8 @@
 #include "app/user_auth.h"
 #include "logger.h"
 #include "qt_debug.h"
-#include "todos/category/category_manager.h"
-#include "todos/todo/todo_manager.h"
+#include "app/category_manager.h"
+#include "app/todo_manager.h"
 #include "version.h"
 
 int main(int argc, char *argv[]) {

@@ -18,7 +18,7 @@
 #include <memory>
 #include <vector>
 
-#include "domain_base/base_sync_server.h"
+#include "base_sync_server.h"
 
 class CategorieItem;
 

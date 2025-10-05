@@ -11,12 +11,12 @@
  */
 
 #include "category_manager.h"
-#include "category_item.h"
-#include "category_data_storage.h"
-#include "category_model.h"
-#include "category_sync_server.h"
+#include "todos/category/category_item.h"
+#include "todos/category/category_data_storage.h"
+#include "todos/category/category_model.h"
+#include "todos/category/category_sync_server.h"
 #include "default_value.h"
-#include "cpp/app/user_auth.h"
+#include "user_auth.h"
 
 #include <QJsonDocument>
 #include <algorithm>

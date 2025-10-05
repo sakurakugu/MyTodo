@@ -32,9 +32,9 @@ set(CMAKE_AUTOMOC ON)                      # 自动处理 MOC
 set(CMAKE_AUTOUIC ON)                      # 自动处理 UIC
 
 add_subdirectory(cpp/foundation)
-# add_subdirectory(cpp/domain_base)
-# add_subdirectory(cpp/todos/category)
-# add_subdirectory(cpp/todos/todo)
+add_subdirectory(cpp/domain_base)
+add_subdirectory(cpp/todos/category)
+add_subdirectory(cpp/todos/todo)
 # add_subdirectory(cpp/app)
 
 # 构建类型优化
@@ -72,6 +72,9 @@ set(QT_COMPONENTS
 # 链接库配置
 set(PRIVATE_LIBRARIES
     mytodo_foundation
+    mytodo_domain_base
+    mytodo_category
+    mytodo_todo
     Qt6::Widgets
     Qt6::Quick
     Qt6::Concurrent
@@ -93,10 +96,8 @@ set(QML_COMPONENT_FILES
     qml/components/ModalDialog.qml                  # 模态对话框
     qml/components/InputDialog.qml                  # 输入对话框
     qml/components/LoginStatusDialogs.qml           # 登录状态相关对话框
-
     qml/components/MainBackground.qml               # 主背景
     qml/components/TitleBar.qml                     # 标题栏
-    
     qml/components/TodoListContainer.qml            # 待办列表显示区域
     qml/components/ThemeManager.qml                 # 主题管理器
     qml/components/IconButton.qml                   # 图标按钮
@@ -126,72 +127,17 @@ set_source_files_properties(
 )
 
 # 项目源文件配置
-set(TODO_SOURCES
-    # 待办事项
-    cpp/todos/todo/todo_item.cpp
-    cpp/todos/todo/todo_item.h
-    cpp/todos/todo/todo_manager.cpp
-    cpp/todos/todo/todo_manager.h
-    cpp/todos/todo/todo_model.cpp
-    cpp/todos/todo/todo_model.h
-    cpp/todos/todo/todo_sync_server.cpp
-    cpp/todos/todo/todo_sync_server.h
-    cpp/todos/todo/todo_data_storage.cpp
-    cpp/todos/todo/todo_data_storage.h
-    cpp/todos/todo/todo_queryer.cpp
-    cpp/todos/todo/todo_queryer.h
-)
-
-set(CATEGORY_SOURCES
-    # 待办事项分类
-    cpp/todos/category/category_item.cpp
-    cpp/todos/category/category_item.h
-    cpp/todos/category/category_manager.h
-    cpp/todos/category/category_manager.cpp
-    cpp/todos/category/category_model.h
-    cpp/todos/category/category_model.cpp
-    cpp/todos/category/category_sync_server.cpp
-    cpp/todos/category/category_sync_server.h
-    cpp/todos/category/category_data_storage.cpp
-    cpp/todos/category/category_data_storage.h
-
-)
-
-set(CORE_SOURCES
-    # 其他代码
-    cpp/domain_base/base_sync_server.cpp
-    cpp/domain_base/base_sync_server.h
-    cpp/domain_base/base_data_storage.cpp
-    cpp/domain_base/base_data_storage.h
-)
-
-set(NETWORK_SOURCES
-    # 网络通信模块
+set(PROJECT_SOURCES
+    cpp/app/todo_manager.cpp
+    cpp/app/todo_manager.h
+    cpp/app/category_manager.h
+    cpp/app/category_manager.cpp
     cpp/app/user_auth.cpp
     cpp/app/user_auth.h
-)
-
-set(UI_SOURCES
-    # 用户界面模块
     cpp/app/global_state.cpp
     cpp/app/global_state.h
-)
-
-set(UTILITY_SOURCES
-    # 工具和配置模块
     cpp/app/setting.cpp
     cpp/app/setting.h
-    # cpp/default_value.h
-)
-
-# 合并所有源文件
-set(PROJECT_SOURCES
-    ${TODO_SOURCES}
-    ${CATEGORY_SOURCES}
-    ${CORE_SOURCES}
-    ${NETWORK_SOURCES}
-    ${UI_SOURCES}
-    ${UTILITY_SOURCES}
 )
 
 # 合并所有 QML 文件
@@ -293,7 +239,10 @@ target_link_libraries(MyTodo PRIVATE ${PRIVATE_LIBRARIES})
 
 # 包含目录配置
 target_include_directories(MyTodo PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/cpp     # C++ 头文件目录
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp     # 根 cpp（放置全局头）
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/domain_base  # 领域基类
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/todos/category
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/todos/todo
 )
 
 # 安装配置

@@ -16,8 +16,8 @@
 #include <QVariant>
 
 // 要不声明这些类型为不透明指针，用于Qt MOC；要不直接用头文件
-#include "todo_model.h"   // 数据模型
-#include "todo_queryer.h" // 筛选管理器
+#include "todos/todo/todo_model.h"   // 数据模型
+#include "todos/todo/todo_queryer.h" // 筛选管理器
 
 class UserAuth;
 class GlobalState;
@@ -50,9 +50,7 @@ class TodoDataStorage;
  * - 在C++中作为数据访问层
  * - 支持在线/离线模式切换
  *
- * @note 该类是线程
- *
- * 安全的，所有网络操作都在后台线程执行
+ * @note 该类是线程安全的，所有网络操作都在后台线程执行
  * @see TodoItem, CategorieItem, NetworkRequest, Config, TodoModel
  */
 class TodoManager : public QObject {

@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include "domain_base/base_data_storage.h"
+#include "base_data_storage.h"
 
 class Config;
 class CategorieItem;

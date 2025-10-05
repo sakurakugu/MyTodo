@@ -9,14 +9,13 @@
  * @change 2025-09-24 03:10:10(UTC+8) 周三
  */
 #include "todo_manager.h"
-#include "../category/category_manager.h" // 类别管理器
-#include "network_request.h"   // 网络请求
-#include "cpp/app/global_state.h"
-#include "todo_data_storage.h" // 数据管理器
-#include "todo_item.h"         // 待办事项数据结构
-#include "cpp/app/user_auth.h"
-
-#include "todo_sync_server.h" // 服务器同步管理器
+#include "category_manager.h" // 类别管理器
+#include "global_state.h"
+#include "user_auth.h"
+#include "network_request.h"              // 网络请求
+#include "todos/todo/todo_data_storage.h" // 数据管理器
+#include "todos/todo/todo_item.h"         // 待办事项数据结构
+#include "todos/todo/todo_sync_server.h"  // 服务器同步管理器
 
 #include <QDateTime>
 
@@ -43,7 +42,8 @@ TodoManager::TodoManager(UserAuth &userAuth, CategoryManager &categoryManager,
  *
  * 清理资源，保存未同步的数据到本地存储。
  */
-TodoManager::~TodoManager() {}
+TodoManager::~TodoManager() {
+}
 
 void TodoManager::loadTodo() {
     m_todoModel->加载待办();

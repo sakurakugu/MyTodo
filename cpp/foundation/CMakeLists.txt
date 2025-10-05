@@ -1,4 +1,10 @@
+# ============================================================
 # 基础底座：配置 / 日志 / 工具 / 数据库 / 网络 / QtDebug
+# 负责基础功能的实现，包括配置管理、日志记录、工具函数、数据库访问、网络请求和 Qt 调试输出
+#
+# 作者： sakurakugu
+# 创建日期： 2025-10-05 02:42:00
+# ============================================================
 add_library(mytodo_foundation STATIC
     config.cpp
     config.h
@@ -41,6 +47,9 @@ target_include_directories(mytodo_foundation PUBLIC
 # 链接 Qt 库和 toml++ 库
 target_link_libraries(mytodo_foundation
     PUBLIC
-        Qt6::Core Qt6::Network Qt6::Sql Qt6::Gui
+        Qt6::Core
+        Qt6::Network
+        Qt6::Sql
+        Qt6::Gui
         tomlplusplus::tomlplusplus
 )
