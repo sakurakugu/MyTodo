@@ -436,7 +436,7 @@ func (th *TodoHandler) handleBatchSync(w http.ResponseWriter, userUUID string, r
 		return
 	}
 
-	var created, updated, errors, conflicts int
+	var created, updated, errors, conflicts int // TODO: errors, conflicts 这两个没用上，之后删掉，并将errorDetails改名为errors，conflictDetails改名为conflicts
 	var errorDetails []map[string]interface{}
 	var conflictDetails []map[string]interface{}
 
@@ -701,16 +701,14 @@ func (th *TodoHandler) handleBatchSync(w http.ResponseWriter, userUUID string, r
 	summary := map[string]interface{}{
 		"created":          created,
 		"updated":          updated,
-		"conflicts":        conflicts,
-		"error_count":      len(errorDetails),
+		"conflicts":        conflictDetails,
 		"errors":           errorDetails,
-		"conflict_details": conflictDetails,
 	}
 
 	message := "批量同步完成"
-	if conflicts > 0 && len(errorDetails) == 0 {
+	if len(conflictDetails) > 0 && len(errorDetails) == 0 {
 		message = "批量同步完成（包含冲突，已按较新版本保留）"
-	} else if conflicts > 0 && len(errorDetails) > 0 {
+	} else if len(conflictDetails) > 0 && len(errorDetails) > 0 {
 		message = "批量同步完成（有冲突与错误）"
 	} else if len(errorDetails) > 0 {
 		message = "批量同步完成，但有部分项目处理失败"
