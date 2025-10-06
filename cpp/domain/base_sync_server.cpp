@@ -11,7 +11,6 @@
 
 #include "base_sync_server.h"
 #include "config.h"
-#include "qml_global_data.h"
 #include "user_auth.h"
 
 #include <QDateTime>
@@ -40,8 +39,7 @@ BaseSyncServer::BaseSyncServer(UserAuth &userAuth, QObject *parent)
     m_autoSyncInterval = m_config.get("sync/autoSyncInterval", 30).toInt();
     m_lastSyncTime = QString("1970-01-01 00:00:00");
 
-        开启自动同步计时器();
-    
+    开启自动同步计时器();
 }
 
 BaseSyncServer::~BaseSyncServer() {}
@@ -74,13 +72,15 @@ void BaseSyncServer::取消同步() {
 }
 
 // 网络请求处理（默认实现）
-void BaseSyncServer::onNetworkRequestCompleted([[maybe_unused]] Network::RequestType type,
-                                               [[maybe_unused]] const QJsonObject &response) {
+void BaseSyncServer::onNetworkRequestCompleted( //
+    [[maybe_unused]] Network::RequestType type, //
+    [[maybe_unused]] const QJsonObject &response) {
     // 子类应该重写此方法来处理具体的响应
 }
 
-void BaseSyncServer::onNetworkRequestFailed([[maybe_unused]] Network::RequestType type,
-                                            NetworkRequest::NetworkError error, const QString &message) {
+void BaseSyncServer::onNetworkRequestFailed(    //
+    [[maybe_unused]] Network::RequestType type, //
+    NetworkRequest::NetworkError error, const QString &message) {
 
     if (m_isSyncing) {
         setIsSyncing(false);

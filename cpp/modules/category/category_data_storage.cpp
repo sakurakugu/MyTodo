@@ -11,9 +11,9 @@
  */
 
 #include "category_data_storage.h"
+#include "category_item.h"
 #include "config.h"
 #include "utility.h"
-#include "category_item.h"
 #include <QJsonObject>
 #include <QSqlError>
 #include <QTimeZone>
@@ -41,11 +41,9 @@ bool CategoryDataStorage::加载类别(CategorieList &categories) {
         categories.clear();
 
         // 从数据库加载数据
-        QSqlDatabase db = m_database.getDatabase();
-        if (!db.isOpen()) {
-            qCritical() << "数据库未打开，无法加载类别";
+        QSqlDatabase db;
+        if (!m_database.getDatabase(db))
             return false;
-        }
 
         QSqlQuery query(db);
         const QString queryString =
@@ -111,11 +109,9 @@ bool CategoryDataStorage::加载类别(CategorieList &categories) {
 std::unique_ptr<CategorieItem> CategoryDataStorage::新增类别( //
     CategorieList &categories, const QString &name, const QUuid &userUuid, ImportSource source) {
     try {
-        QSqlDatabase db = m_database.getDatabase();
-        if (!db.isOpen()) {
-            qCritical() << "数据库未打开，无法新增类别";
+        QSqlDatabase db;
+        if (!m_database.getDatabase(db))
             return nullptr;
-        }
 
         // 创建新的类别项
         QUuid newUuid = QUuid::createUuid();
@@ -172,11 +168,9 @@ std::unique_ptr<CategorieItem> CategoryDataStorage::新增类别( //
  * @return 更新成功返回true，否则返回false
  */
 bool CategoryDataStorage::更新类别(CategorieList &categories, const QString &name, const QString &newName) {
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qCritical() << "数据库未打开，无法更新类别";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
     auto it = std::find_if(categories.begin(), categories.end(),
                            [name](const std::unique_ptr<CategorieItem> &i) { return i->name() == name; });
     QSqlQuery updateQuery(db);
@@ -214,11 +208,9 @@ bool CategoryDataStorage::删除类别(CategorieList &categories, const QString 
     bool success = false;
 
     try {
-        QSqlDatabase db = m_database.getDatabase();
-        if (!db.isOpen()) {
-            qCritical() << "数据库未打开，无法删除类别";
+        QSqlDatabase db;
+        if (!m_database.getDatabase(db))
             return false;
-        }
 
         // 从数据库中删除类别
         QSqlQuery deleteQuery(db);
@@ -296,11 +288,9 @@ bool CategoryDataStorage::软删除类别(CategorieList &categories, const QStri
  * @return 成功返回item在待办类别中的指针，否则返回nullptr
  */
 bool CategoryDataStorage::更新同步状态(CategorieList &categories, const QString &name, int synced) {
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qCritical() << "数据库未打开，无法更新类别";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
     QSqlQuery updateQuery(db);
     const QString updateString = "UPDATE categories SET synced = ?, updated_at = ? WHERE name = ?";
     updateQuery.prepare(updateString);
@@ -332,11 +322,9 @@ bool CategoryDataStorage::更新同步状态(CategorieList &categories, const QS
  * @param userUuid 用户UUID
  */
 bool CategoryDataStorage::创建默认类别(CategorieList &categories, const QUuid &userUuid) {
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qCritical() << "数据库未打开，无法创建默认类别";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
     for (const auto &item : categories)
         if (item && item->id() == 1) {
             qDebug() << "内存中已存在默认类别";
@@ -408,11 +396,9 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
                                          ImportSource source, 解决冲突方案 resolution) {
     bool success = true;
 
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qCritical() << "数据库未打开，无法导入类别";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
 
     // 构建现有类别索引（按 uuid 与 name）
     QHash<QString, CategorieItem *> nameIndex;
@@ -464,9 +450,8 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
                                       : QDateTime::currentDateTime();
             if (!createdAt.isValid())
                 createdAt = QDateTime::currentDateTime();
-            QDateTime updatedAt = obj.contains("updated_at")
-                                      ? Utility::fromIsoString(obj.value("updated_at").toString())
-                                      : createdAt;
+            QDateTime updatedAt =
+                obj.contains("updated_at") ? Utility::fromIsoString(obj.value("updated_at").toString()) : createdAt;
             if (!updatedAt.isValid())
                 updatedAt = createdAt;
 
@@ -549,11 +534,9 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
  */
 bool CategoryDataStorage::初始化数据表() {
     // 确保数据库连接已建立
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qCritical() << "数据库未打开，无法初始化Category表";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
 
     return 创建数据表();
 }
@@ -574,7 +557,9 @@ bool CategoryDataStorage::创建数据表() {
             synced INTEGER NOT NULL DEFAULT 1
         )
     )";
-    QSqlDatabase db = m_database.getDatabase();
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
+        return false;
     QSqlQuery query(db);
     if (!query.exec(createTableQuery)) {
         qCritical() << "创建categories表失败:" << query.lastError().text();
@@ -599,11 +584,9 @@ bool CategoryDataStorage::创建数据表() {
  * @return 导出成功返回true，否则返回false
  */
 bool CategoryDataStorage::导出到JSON(QJsonObject &output) {
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qWarning() << "数据库未打开，无法导出类别数据";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
     QSqlQuery query(db);
     const QString queryString = "SELECT id, uuid, name, user_uuid, created_at, updated_at, synced FROM categories";
     if (!query.exec(queryString)) {
@@ -634,11 +617,9 @@ bool CategoryDataStorage::导出到JSON(QJsonObject &output) {
  * @return 导入成功返回true，否则返回false
  */
 bool CategoryDataStorage::导入从JSON(const QJsonObject &input, bool replaceAll) {
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qWarning() << "数据库未打开，无法导入类别数据";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
 
     if (!input.contains("categories") || !input["categories"].isArray()) {
         return true; // 没有类别数据可导入

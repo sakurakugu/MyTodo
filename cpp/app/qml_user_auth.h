@@ -47,7 +47,7 @@ class QmlUserAuth : public QObject {
     Q_INVOKABLE void login(const QString &account, const QString &password);
     Q_INVOKABLE void logout();
 
-  signals: // 直接转发底层信号（保持与旧 userAuth 名称兼容）
+  signals: // 直接转发底层信号
     void usernameChanged();
     void emailChanged();
     void uuidChanged();
@@ -56,11 +56,6 @@ class QmlUserAuth : public QObject {
     void loginFailed(const QString &errorMessage);
     void loginRequired();
     void logoutSuccessful();
-    void authTokenExpired();
-    void tokenRefreshStarted();
-    void tokenRefreshSuccessful();
-    void tokenRefreshFailed(const QString &error);
-    void firstAuthCompleted();
 
   private:
     UserAuth &m_auth; ///< 引用底层认证逻辑

@@ -20,7 +20,6 @@
 #include "modules/todo/todo_queryer.h" // 筛选管理器
 
 class UserAuth;
-class QmlGlobalData;
 class NetworkRequest;
 class TodoItem;
 class TodoSyncServer;
@@ -92,7 +91,6 @@ class QmlTodoManager : public QObject {
     // 管理器
     NetworkRequest &m_networkRequest; ///< 网络管理器
     UserAuth &m_userAuth;             ///< 用户认证管理器
-    QmlGlobalData &m_globalData;      ///< 全局数据管理器
     TodoDataStorage *m_dataManager; ///< 数据管理器 - 负责本地存储和文件导入导出
     TodoSyncServer *m_syncManager;  ///< 同步管理器 - 负责所有服务器同步相关功能
     TodoQueryer *m_queryer;         ///< 查询管理器 - 负责所有筛选排序相关功能

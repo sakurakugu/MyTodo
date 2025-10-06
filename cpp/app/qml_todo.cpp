@@ -23,7 +23,6 @@ QmlTodoManager::QmlTodoManager(UserAuth &userAuth, QObject *parent)
     : QObject(parent),                                                             //
       m_networkRequest(NetworkRequest::GetInstance()),                             //
       m_userAuth(userAuth),                                                        //
-      m_globalData(QmlGlobalData::GetInstance()),                                   //
       m_dataManager(new TodoDataStorage(this)),                                    //
       m_syncManager(new TodoSyncServer(userAuth, this)),                           //
       m_queryer(new TodoQueryer(this)),                                            //
@@ -76,7 +75,7 @@ bool QmlTodoManager::updateTodo(int index, const QString &roleName, const QVaria
  * @return 更新是否成功
  */
 bool QmlTodoManager::updateTodo() {
-    const QVariant selectedTodo = m_globalData.selectedTodo();
+    const QVariant selectedTodo = QmlGlobalData::GetInstance().selectedTodo();
     if (!selectedTodo.isValid()) {
         return false;
     }

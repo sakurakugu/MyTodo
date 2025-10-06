@@ -30,8 +30,7 @@ TodoDataStorage::TodoDataStorage(QObject *parent)
     初始化();
 }
 
-TodoDataStorage::~TodoDataStorage() {
-}
+TodoDataStorage::~TodoDataStorage() {}
 
 /**
  * @brief 加载待办事项
@@ -46,11 +45,9 @@ bool TodoDataStorage::加载待办(TodoList &todos) {
         todos.clear();
 
         // 从数据库加载数据
-        QSqlDatabase db = m_database.getDatabase();
-        if (!db.isOpen()) {
-            qCritical() << "数据库未打开，无法加载待办事项";
+        QSqlDatabase db;
+        if (!m_database.getDatabase(db))
             return false;
-        }
 
         QSqlQuery query(db);
         const QString queryString =
@@ -158,11 +155,9 @@ bool TodoDataStorage::新增待办(TodoList &todos, const QString &title, const 
                                const QString &category, bool important, const QDateTime &deadline,
                                int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate,
                                QUuid userUuid) {
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qCritical() << "数据库未打开，无法添加待办事项";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
     QDateTime now = QDateTime::currentDateTimeUtc();
     QUuid newUuid = QUuid::createUuid();
     QDateTime nullTime; // 代表空
@@ -241,11 +236,9 @@ bool TodoDataStorage::新增待办(TodoList &todos, const QString &title, const 
  * @param item 待办事项智能指针(已经改好的)
  */
 bool TodoDataStorage::新增待办(TodoList &todos, std::unique_ptr<TodoItem> item) {
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qCritical() << "数据库未打开，无法添加待办事项";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
 
     // 插入到数据库
     QSqlQuery insertQuery(db);
@@ -293,11 +286,9 @@ bool TodoDataStorage::新增待办(TodoList &todos, std::unique_ptr<TodoItem> it
  * @return 更新是否成功
  */
 bool TodoDataStorage::更新待办(TodoList &todos, const QUuid &uuid, const QVariantMap &todoData) {
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qCritical() << "数据库未打开，无法更新待办事项";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
     auto it = std::find_if(todos.begin(), todos.end(),
                            [uuid](const std::unique_ptr<TodoItem> &item) { return item->uuid() == uuid; });
     if (it == todos.end()) {
@@ -405,11 +396,9 @@ bool TodoDataStorage::更新待办(TodoList &todos, const QUuid &uuid, const QVa
  * @return 更新是否成功
  */
 bool TodoDataStorage::更新待办([[maybe_unused]] TodoList &todos, TodoItem &item) {
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qCritical() << "数据库未打开，无法更新待办事项";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
     // 更新数据库中的待办事项
     QSqlQuery updateQuery(db);
     const QString updateString =
@@ -467,11 +456,9 @@ bool TodoDataStorage::回收待办(TodoList &todos, const QUuid &uuid) {
  * @return 回收是否成功
  */
 bool TodoDataStorage::软删除待办([[maybe_unused]] TodoList &todos, const QUuid &uuid) {
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qCritical() << "数据库未打开，无法软删除待办事项";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
     QSqlQuery updateQuery(db);
     const QString updateString = "UPDATE todos SET synced = ? WHERE uuid = ?";
     updateQuery.prepare(updateString);
@@ -496,11 +483,9 @@ bool TodoDataStorage::软删除待办([[maybe_unused]] TodoList &todos, const QU
 bool TodoDataStorage::删除所有待办(TodoList &todos) {
     bool success = false;
     try {
-        QSqlDatabase db = m_database.getDatabase();
-        if (!db.isOpen()) {
-            qCritical() << "数据库未打开，无法永久删除待办事项";
+        QSqlDatabase db;
+        if (!m_database.getDatabase(db))
             return false;
-        }
 
         // 从数据库中永久删除所有待办事项
         QSqlQuery deleteQuery(db);
@@ -535,11 +520,9 @@ bool TodoDataStorage::删除所有待办(TodoList &todos) {
 bool TodoDataStorage::更新所有待办用户UUID(TodoList &todos, const QUuid &newUserUuid, int synced) {
     bool success = false;
     try {
-        QSqlDatabase db = m_database.getDatabase();
-        if (!db.isOpen()) {
-            qCritical() << "数据库未打开，无法更新待办事项的用户UUID";
+        QSqlDatabase db;
+        if (!m_database.getDatabase(db))
             return false;
-        }
 
         // 更新数据库中所有待办事项的用户UUID
         QSqlQuery updateQuery(db);
@@ -581,11 +564,9 @@ bool TodoDataStorage::更新所有待办用户UUID(TodoList &todos, const QUuid 
 bool TodoDataStorage::删除待办([[maybe_unused]] TodoList &todos, const QUuid &uuid) {
     bool success = false;
     try {
-        QSqlDatabase db = m_database.getDatabase();
-        if (!db.isOpen()) {
-            qCritical() << "数据库未打开，无法永久删除待办事项";
+        QSqlDatabase db;
+        if (!m_database.getDatabase(db))
             return false;
-        }
 
         // 从数据库中永久删除待办事项
         QSqlQuery deleteQuery(db);
@@ -626,11 +607,9 @@ bool TodoDataStorage::删除待办([[maybe_unused]] TodoList &todos, const QUuid
 bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArray &todosArray, ImportSource source,
                                          解决冲突方案 resolution) {
     bool success = true;
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qCritical() << "数据库未打开，无法导入待办事项";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
     // 建立内存索引
     QHash<QString, TodoItem *> uuidIndex;
     for (auto &it : todos) {
@@ -646,7 +625,6 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
     int insertCount = 0;
     int updateCount = 0;
     int skipCount = 0;
-
 
     try {
         for (const QJsonValue &value : todosArray) {
@@ -899,11 +877,9 @@ QString TodoDataStorage::构建SQL排序语句(int sortType, bool descending) {
  */
 QList<int> TodoDataStorage::查询待办ID列表(const QueryOptions &opt) {
     QList<int> indexs;
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qCritical() << "数据库未打开，无法查询待办事项ID列表";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return indexs;
-    }
     QString sql = "SELECT id FROM todos WHERE 1=1";
 
     // 分类
@@ -965,11 +941,9 @@ QList<int> TodoDataStorage::查询待办ID列表(const QueryOptions &opt) {
  * @return 初始化是否成功
  */
 bool TodoDataStorage::初始化数据表() {
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qCritical() << "数据库未打开，无法初始化TODO表";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
 
     return 创建数据表();
 }
@@ -1019,11 +993,9 @@ bool TodoDataStorage::创建数据表() {
  * @return 导出是否成功
  */
 bool TodoDataStorage::导出到JSON(QJsonObject &output) {
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qWarning() << "数据库未打开，无法导出待办数据";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
     QSqlQuery query(db);
     const QString sql = "SELECT id, uuid, user_uuid, title, description, category, important, deadline, "
                         "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, "
@@ -1062,11 +1034,9 @@ bool TodoDataStorage::导出到JSON(QJsonObject &output) {
 }
 
 bool TodoDataStorage::导入从JSON(const QJsonObject &input, bool replaceAll) {
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qWarning() << "数据库未打开，无法导入待办数据";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
     if (!input.contains("todos") || !input["todos"].isArray())
         return true; // 没有数据
     QSqlQuery q(db);

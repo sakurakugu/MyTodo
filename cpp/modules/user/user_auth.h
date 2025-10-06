@@ -71,6 +71,7 @@ class UserAuth : public QObject, public IDataExporter {
     bool 导入从JSON(const QJsonObject &input, bool replaceAll) override;
 
   signals:
+    // 要转发到Qml的信号
     void usernameChanged();                        // 用户名变化信号
     void emailChanged();                           // 邮箱变化信号
     void uuidChanged();                            // UUID变化信号
@@ -79,6 +80,8 @@ class UserAuth : public QObject, public IDataExporter {
     void loginFailed(const QString &errorMessage); // 登录失败信号
     void loginRequired();                          // 需要登录信号
     void logoutSuccessful();                       // 退出登录成功信号
+
+    // 只在C++中使用的信号
     void authTokenExpired();                       // 认证令牌过期信号
     void tokenRefreshStarted();                    // 令牌刷新开始信号
     void tokenRefreshSuccessful();                 // 令牌刷新成功信号

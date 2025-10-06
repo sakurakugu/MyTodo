@@ -89,11 +89,9 @@ bool BaseDataStorage::执行SQL查询(const QString &queryString, QSqlQuery &que
  * @return 执行是否成功
  */
 bool BaseDataStorage::执行SQL查询(const QString &queryString) {
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qCritical() << "数据库未打开，无法执行查询";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
 
     QSqlQuery query(db);
     return 执行SQL查询(queryString, query);

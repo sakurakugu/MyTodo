@@ -11,8 +11,8 @@
 #include "user_auth.h"
 
 QmlUserAuth::QmlUserAuth(UserAuth &auth, QObject *parent) //
-    : QObject(parent),                                            //
-      m_auth(auth)                                                //
+    : QObject(parent),                                    //
+      m_auth(auth)                                        //
 {
     connectSignals();
 }
@@ -28,7 +28,7 @@ QUuid QmlUserAuth::uuid() const {
     return m_auth.获取UUID();
 }
 bool QmlUserAuth::isLoggedIn() const {
-    return m_auth. 是否已登录();
+    return m_auth.是否已登录();
 }
 
 // ============== 方法转发 ==============
@@ -50,9 +50,4 @@ void QmlUserAuth::connectSignals() {
     QObject::connect(&m_auth, &UserAuth::loginFailed, this, &QmlUserAuth::loginFailed);
     QObject::connect(&m_auth, &UserAuth::loginRequired, this, &QmlUserAuth::loginRequired);
     QObject::connect(&m_auth, &UserAuth::logoutSuccessful, this, &QmlUserAuth::logoutSuccessful);
-    QObject::connect(&m_auth, &UserAuth::authTokenExpired, this, &QmlUserAuth::authTokenExpired);
-    QObject::connect(&m_auth, &UserAuth::tokenRefreshStarted, this, &QmlUserAuth::tokenRefreshStarted);
-    QObject::connect(&m_auth, &UserAuth::tokenRefreshSuccessful, this, &QmlUserAuth::tokenRefreshSuccessful);
-    QObject::connect(&m_auth, &UserAuth::tokenRefreshFailed, this, &QmlUserAuth::tokenRefreshFailed);
-    QObject::connect(&m_auth, &UserAuth::firstAuthCompleted, this, &QmlUserAuth::firstAuthCompleted);
 }

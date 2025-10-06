@@ -91,6 +91,7 @@ class Database {
     // 数据库连接管理
     bool initializeDatabase();   ///< 初始化数据库连接和表结构
     QSqlDatabase getDatabase();  ///< 获取数据库连接
+    bool getDatabase(QSqlDatabase &db); ///< 获取数据库连接并检查状态
     bool isDatabaseOpen() const; ///< 检查数据库是否已打开
     void closeDatabase();        ///< 关闭数据库连接
 

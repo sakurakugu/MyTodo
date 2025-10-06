@@ -15,9 +15,9 @@
  */
 
 #include "user_auth.h"
+#include "config.h"
 #include "default_value.h"
 #include "setting.h"
-#include "config.h"
 
 #include <QDateTime>
 #include <QJsonObject>
@@ -58,14 +58,13 @@ UserAuth::UserAuth(QObject *parent)
 
 void UserAuth::加载数据() {
     // 从设置中加载服务器配置
-    m_authApiEndpoint = Config::GetInstance().get("server/authApiEndpoint", QString(DefaultValues::userAuthApiEndpoint)).toString();
+    m_authApiEndpoint =
+        Config::GetInstance().get("server/authApiEndpoint", QString(DefaultValues::userAuthApiEndpoint)).toString();
 
     // 尝试从数据库中加载存储的凭据
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qWarning() << "数据库未打开，无法加载用户凭据";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return;
-    }
 
     QSqlQuery query(db);
     query.prepare("SELECT uuid, username, email, refreshToken FROM users LIMIT 1");
@@ -151,7 +150,7 @@ void UserAuth::注销() {
     emit logoutSuccessful();
 }
 
-bool UserAuth:: 是否已登录() const {
+bool UserAuth::是否已登录() const {
     // 检查访问令牌是否存在
     if (m_accessToken.isEmpty()) {
         return false;
@@ -205,7 +204,6 @@ void UserAuth::刷新访问令牌() {
     // 发送刷新请求
     m_networkRequest.sendRequest(Network::RequestType::RefreshToken, config);
 }
-
 
 void UserAuth::onNetworkRequestCompleted(Network::RequestType type, const QJsonObject &response) {
     switch (type) {
@@ -320,8 +318,6 @@ void UserAuth::处理登录成功(const QJsonObject &response) {
     m_accessToken = response["access_token"].toString();
     m_refreshToken = response["refresh_token"].toString();
 
-
-
     QJsonObject userObj = response["user"].toObject();
     m_username = userObj.value("username").toString();
     if (m_username.isEmpty()) {
@@ -416,11 +412,9 @@ void UserAuth::处理令牌刷新成功(const QJsonObject &response) {
 void UserAuth::保存凭据() {
     // 保存凭据到数据库
     if (!m_refreshToken.isEmpty() && !m_uuid.isNull()) {
-        QSqlDatabase db = m_database.getDatabase();
-        if (!db.isOpen()) {
-            qWarning() << "数据库未打开，无法保存用户凭据";
+        QSqlDatabase db;
+        if (!m_database.getDatabase(db))
             return;
-        }
 
         QSqlQuery query(db);
 
@@ -463,16 +457,15 @@ void UserAuth::清除凭据() {
     m_tokenExpiryTime = 0;
 
     // 清除数据库中的凭据
-    QSqlDatabase db = m_database.getDatabase();
-    if (db.isOpen()) {
-        QSqlQuery query(db);
-        query.prepare("DELETE FROM users");
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
+        return;
 
-        if (!query.exec()) {
-            qWarning() << "清除数据库中的用户凭据失败:" << query.lastError().text();
-        }
-    } else {
-        qWarning() << "数据库未打开，无法清除用户凭据";
+    QSqlQuery query(db);
+    query.prepare("DELETE FROM users");
+
+    if (!query.exec()) {
+        qWarning() << "清除数据库中的用户凭据失败:" << query.lastError().text();
     }
 
     // 清除网络管理器的认证令牌
@@ -514,7 +507,8 @@ void UserAuth::onTokenExpiryCheck() {
 }
 
 void UserAuth::开启令牌过期计时器() {
-    if (!m_tokenExpiryTimer) return;
+    if (!m_tokenExpiryTimer)
+        return;
 
     m_tokenExpiryTimer->stop(); // 重置任何旧的调度
 
@@ -564,11 +558,9 @@ void UserAuth::onBaseUrlChanged() {
  */
 bool UserAuth::初始化用户表() {
     // 确保数据库连接已建立
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qCritical() << "数据库未打开，无法初始化用户表";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
 
     return 创建用户表();
 }
@@ -587,7 +579,10 @@ bool UserAuth::创建用户表() {
         )
     )";
 
-    QSqlDatabase db = m_database.getDatabase();
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
+        return false;
+
     QSqlQuery query(db);
     if (!query.exec(createTableQuery)) {
         qCritical() << "创建用户表失败:" << query.lastError().text();
@@ -602,11 +597,9 @@ bool UserAuth::创建用户表() {
  * @brief 导出用户数据到JSON对象
  */
 bool UserAuth::导出到JSON(QJsonObject &output) {
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qWarning() << "数据库未打开，无法导出用户数据";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
 
     QSqlQuery query(db);
     query.prepare("SELECT uuid, username, email FROM users");
@@ -633,11 +626,9 @@ bool UserAuth::导出到JSON(QJsonObject &output) {
  * @brief 从JSON对象导入用户数据
  */
 bool UserAuth::导入从JSON(const QJsonObject &input, bool replaceAll) {
-    QSqlDatabase db = m_database.getDatabase();
-    if (!db.isOpen()) {
-        qWarning() << "数据库未打开，无法导入用户数据";
+    QSqlDatabase db;
+    if (!m_database.getDatabase(db))
         return false;
-    }
 
     if (!input.contains("users") || !input["users"].isArray()) {
         // 没有用户数据或格式错误，但不视为错误

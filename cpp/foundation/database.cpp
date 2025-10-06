@@ -107,6 +107,16 @@ QSqlDatabase Database::getDatabase() {
 }
 
 /**
+ * @brief 获取数据库连接并检查状态
+ * @param db 数据库连接对象的引用
+ * @return 数据库连接是否可用
+ */
+bool Database::getDatabase(QSqlDatabase &db) {
+    db = getDatabase();
+    return db.isOpen();
+}
+
+/**
  * @brief 检查数据库是否已打开
  * @return 数据库是否已打开
  */
