@@ -15,6 +15,7 @@
 在代码中添加详细的日志信息，并对齐哪些是 qdebug 哪些是 qinfo 等
 搞多语言时，记得把 c++中那些硬编码全改了
 重新分类一下文件夹
+服务器上有处理合并冲突的吗
 代码里实现了 GET、POST、PUT、PATCH、DELETE，但还少了 HEAD、OPTIONS、TRACE、CONNECT。（network_request.cpp）
 之后添加待办种类本地创建功能
 将 c++中的全局变量 global_state.cpp 中的变量放到 qml 中？

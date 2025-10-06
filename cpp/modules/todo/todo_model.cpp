@@ -221,13 +221,40 @@ bool TodoModel::更新待办(int index, const QVariantMap &todoData) {
     QModelIndex modelIndex = 获取内容在待办列表中的索引(todoItem);
 
     TodoItem *item = m_todos[modelIndex.row()].get();
-    QVector<int> changedRoles; // TODO: 计算实际更改的角色
+    QVector<int> changedRoles; // 计算实际更改的角色
+
+    // 根据todoData中包含的字段确定哪些角色发生了变化
+    if (todoData.contains("title"))
+        changedRoles << TitleRole;
+    if (todoData.contains("description"))
+        changedRoles << DescriptionRole;
+    if (todoData.contains("category"))
+        changedRoles << CategoryRole;
+    if (todoData.contains("important"))
+        changedRoles << ImportantRole;
+    if (todoData.contains("deadline"))
+        changedRoles << DeadlineRole;
+    if (todoData.contains("recurrence_interval"))
+        changedRoles << RecurrenceIntervalRole;
+    if (todoData.contains("recurrence_count"))
+        changedRoles << RecurrenceCountRole;
+    if (todoData.contains("recurrence_start_date"))
+        changedRoles << RecurrenceStartDateRole;
+    if (todoData.contains("is_completed"))
+        changedRoles << IsCompletedRole;
+    if (todoData.contains("completed_at"))
+        changedRoles << CompletedAtRole;
+    if (todoData.contains("is_trashed"))
+        changedRoles << IsTrashedRole;
+    if (todoData.contains("trashed_at"))
+        changedRoles << TrashedAtRole;
+    // 这些字段总是会被更新
+    changedRoles << UpdatedAtRole << SyncedRole;
 
     try {
         beginResetModel();
         m_dataManager.更新待办(m_todos, item->uuid(), todoData);
         需要重新筛选();
-        // TODO: 这里是要过滤后的索引还是过滤前的，到时候都试一下
         emit dataChanged(modelIndex, modelIndex, changedRoles);
         endResetModel();
         与服务器同步();

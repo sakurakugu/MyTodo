@@ -442,7 +442,6 @@ bool Database::createVersionTable() {
 bool Database::migrateDatabase(int fromVersion, int toVersion) {
     qInfo() << QString("开始数据库迁移: %1 -> %2").arg(fromVersion).arg(toVersion);
 
-    // TODO:
     // 目前只有版本1，暂时不需要迁移逻辑
     // 未来版本升级时再在这里添加迁移代码
 

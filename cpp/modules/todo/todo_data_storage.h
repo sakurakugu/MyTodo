@@ -60,16 +60,16 @@ class TodoDataStorage : public BaseDataStorage {
      * 允许按分类、状态、搜索文本、日期范围、排序等生成 SQL。
      */
     struct QueryOptions {
-        QString category;     // 分类过滤，空=全部
-        QString statusFilter; // "" | "todo" | "done" | "recycle" | "all"
-        QString searchText;   // 模糊搜索（title/description/category）
-        bool dateFilterEnabled{false};
-        QDate dateStart;        // 起始日期（deadline）
-        QDate dateEnd;          // 截止日期（deadline）
-        int sortType{0};        // 对应 TodoSorter::SortType
-        bool descending{false}; // 是否倒序
-        int limit{0};           // 分页限制，0=不限制 // TODO: 未来可支持分页，目前数据量不大
-        int offset{0};          // 偏移量            // TODO: 未来可支持分页，目前数据量不大
+        QString category;              // 分类过滤，空=全部
+        QString statusFilter;          // "" | "todo" | "done" | "recycle" | "all"
+        QString searchText;            // 模糊搜索（title/description/category）
+        bool dateFilterEnabled{false}; // 是否启用日期范围过滤
+        QDate dateStart;               // 起始日期（deadline）
+        QDate dateEnd;                 // 截止日期（deadline）
+        int sortType{0};               // 对应 TodoSorter::SortType
+        bool descending{false};        // 是否倒序
+        int limit{0};  // 分页限制，0=不限制 // 未来可支持分页，目前数据量不大，而且是滚动的，且有搜索功能
+        int offset{0}; // 偏移量            // 所以暂时不添加
     };
 
     // 构造函数
@@ -109,7 +109,7 @@ class TodoDataStorage : public BaseDataStorage {
     bool 导入从JSON(const QJsonObject &input, bool replaceAll) override;
 
   private:
-    static QString 构建SQL排序语句(int sortType, bool descending);    // 构建查询SQL
+    static QString 构建SQL排序语句(int sortType, bool descending); // 构建查询SQL
 
     // 数据库操作
     bool 创建数据表() override; // 创建todos表

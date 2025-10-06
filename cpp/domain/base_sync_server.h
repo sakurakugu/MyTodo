@@ -83,11 +83,11 @@ class BaseSyncServer : public QObject {
     virtual ~BaseSyncServer();
 
     // 属性访问器
-    bool isSyncing() const; // 获取当前是否正在同步
-    void setIsSyncing(bool syncing);  // 设置当前同步状态
+    bool isSyncing() const;          // 获取当前是否正在同步
+    void setIsSyncing(bool syncing); // 设置当前同步状态
 
-    // 同步操作（纯虚函数，由子类实现）
-    virtual void 与服务器同步(SyncDirection direction = Bidirectional) = 0;
+    // 同步操作
+    void 与服务器同步(SyncDirection direction = Bidirectional);
     virtual void 重置同步状态();
     virtual void 取消同步();
 
@@ -105,20 +105,21 @@ class BaseSyncServer : public QObject {
   protected slots:
     virtual void onNetworkRequestCompleted(Network::RequestType type,
                                            const QJsonObject &response); // 网络请求完成
-    virtual void onNetworkRequestFailed(Network::RequestType type, NetworkRequest::NetworkError error,
+    virtual void onNetworkRequestFailed(Network::RequestType type, Network::Error error,
                                         const QString &message); // 网络请求失败
     void onAutoSyncTimer();                                      // 自动同步定时器触发
 
   protected:
-    // 同步操作实现（由子类重写）
-    virtual void 执行同步(SyncDirection direction) = 0; // 执行同步操作
+    // 同步操作实现
+    virtual void 拉取数据()=0;
+    virtual void 推送数据()=0;
+    void 执行同步(SyncDirection direction); // 执行同步操作
 
     // 辅助方法
     void 更新最后同步时间();
     bool 是否可以执行同步() const;
     void 开启自动同步计时器();
     void 停止自动同步计时器();
-    void 检查同步前置条件(bool allowOngoingPhase = false);
 
     // 成员变量
     NetworkRequest &m_networkRequest; ///< 网络请求管理器
@@ -131,9 +132,6 @@ class BaseSyncServer : public QObject {
     QString m_lastSyncTime;               ///< 最后同步时间
     int m_autoSyncInterval;               ///< 自动同步间隔（分钟）
     SyncDirection m_currentSyncDirection; ///< 当前同步方向
-
-    // 策略标志：在双向同步且存在本地未同步更改时，先推送再拉取，避免先拉取造成改名被当作新增
-    bool m_pushFirstInBidirectional = false;
 
     // 服务器配置
     QString m_apiEndpoint; ///< API端点

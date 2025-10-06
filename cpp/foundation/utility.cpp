@@ -21,12 +21,7 @@
  * @note 自动转换为UTC时区，格式为yyyy-MM-ddTHH:mm:ss.zzzZ
  */
 QString Utility::toRfc3339String(const QDateTime &dateTime) {
-    if (!dateTime.isValid()) {
-        return QString();
-    }
-
-    // 转换为UTC并格式化为RFC 3339格式
-    return dateTime.toUTC().toString("yyyy-MM-dd'T'HH:mm:ss.zzz'Z'");
+    return toIsoStringWithZ(dateTime);
 }
 
 /**
@@ -36,10 +31,6 @@ QString Utility::toRfc3339String(const QDateTime &dateTime) {
  * @note 用于JSON序列化，自动处理null值
  */
 QJsonValue Utility::toRfc3339Json(const QDateTime &dateTime) {
-    if (!dateTime.isValid()) {
-        return QJsonValue();
-    }
-
     return QJsonValue(toRfc3339String(dateTime));
 }
 
@@ -96,10 +87,6 @@ QString Utility::toIsoStringWithZ(const QDateTime &dateTime) {
  * @note 兼容Qt::ISODate格式，用于数据导入
  */
 QDateTime Utility::fromIsoString(const QString &isoString) {
-    if (isoString.isEmpty()) {
-        return QDateTime();
-    }
-
     return parseFlexibleIso(isoString);
 }
 

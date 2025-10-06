@@ -67,6 +67,17 @@ enum RequestType {
     Other = 99,      // 其他请求
 };
 
+// 网络错误类型
+enum Error {
+    NoError,             // 无错误
+    TimeoutError,        // 超时错误
+    ConnectionError,     // 连接错误
+    AuthenticationError, // 认证错误
+    ServerError,         // 服务器错误
+    ParseError,          // 解析错误
+    UnknownError         // 未知错误
+};
+
 // 请求类型的中文名称映射
 static const std::map<RequestType, QString> RequestTypeNameMap = //
     {{Login, "登录请求"},
@@ -97,21 +108,6 @@ class NetworkRequest : public QObject {
     NetworkRequest &operator=(const NetworkRequest &) = delete;
     NetworkRequest(NetworkRequest &&) = delete;
     NetworkRequest &operator=(NetworkRequest &&) = delete;
-
-    /**
-     * @enum NetworkError
-     * @brief 网络错误类型
-     */
-    enum NetworkError {
-        NoError,             // 无错误
-        TimeoutError,        // 超时错误
-        ConnectionError,     // 连接错误
-        AuthenticationError, // 认证错误
-        ServerError,         // 服务器错误
-        ParseError,          // 解析错误
-        UnknownError         // 未知错误
-    };
-    Q_ENUM(NetworkError)
 
     /**
      * @struct RequestConfig
@@ -145,9 +141,9 @@ class NetworkRequest : public QObject {
     QString RequestTypeToString(Network::RequestType type) const; // 请求类型转字符串
 
   signals:
-    void requestCompleted(Network::RequestType type, const QJsonObject &response);             // 请求完成信号
-    void requestFailed(Network::RequestType type, NetworkError error, const QString &message); // 请求失败信号
-    void authTokenExpired();                                                                   // 认证令牌过期信号
+    void requestCompleted(Network::RequestType type, const QJsonObject &response);               // 请求完成信号
+    void requestFailed(Network::RequestType type, Network::Error error, const QString &message); // 请求失败信号
+    void authTokenExpired();                                                                     // 认证令牌过期信号
 
   private slots:
     void onReplyFinished();                           // 回复完成槽函数
@@ -177,10 +173,10 @@ class NetworkRequest : public QObject {
                          const QString &error = QString()); // 完成请求
     void cleanupRequest(qint64 requestId);                  // 清理请求
 
-    QNetworkRequest createNetworkRequest(const RequestConfig &config) const;               // 创建网络请求
-    NetworkError mapQNetworkError(QNetworkReply::NetworkError error) const;                // 映射网络错误
-    QString getErrorMessage(NetworkError error, const QString &details = QString()) const; // 获取错误信息
-    bool shouldRetry(NetworkError error) const;                                            // 是否应该重试
+    QNetworkRequest createNetworkRequest(const RequestConfig &config) const;                 // 创建网络请求
+    Network::Error mapQNetworkError(QNetworkReply::NetworkError error) const;                // 映射网络错误
+    QString getErrorMessage(Network::Error error, const QString &details = QString()) const; // 获取错误信息
+    bool shouldRetry(Network::Error error) const;                                            // 是否应该重试
 
     void setupDefaultHeaders(QNetworkRequest &request) const; // 设置默认请求头
     void addAuthHeader(QNetworkRequest &request) const;       // 添加认证头
@@ -195,6 +191,7 @@ class NetworkRequest : public QObject {
     QString m_authToken;                     // 认证令牌
     QString m_serverBaseUrl;                 // 服务器基础URL
     QString m_apiVersion;                    // API版本
+    std::string m_computerName;              // 计算机名称
 
     QMap<qint64, PendingRequest> m_pendingRequests;      // 待处理请求映射
     QMap<Network::RequestType, qint64> m_activeRequests; // 活跃请求映射（用于去重）

@@ -69,9 +69,8 @@ class CategorySyncServer : public BaseSyncServer {
     ~CategorySyncServer();
 
     // 同步操作（重写基类方法）
-    void 与服务器同步(SyncDirection direction = Bidirectional) override; // 与服务器同步
-    void 取消同步() override;                                            // 取消当前同步操作
-    void 重置同步状态() override;                                        // 重置同步状态
+    void 取消同步() override;     // 取消当前同步操作
+    void 重置同步状态() override; // 重置同步状态
 
     // 类别操作接口
     void 新增类别(const QString &name);
@@ -83,34 +82,33 @@ class CategorySyncServer : public BaseSyncServer {
 
   signals:
     // 数据更新信号（类别特有）
-    void categoriesUpdatedFromServer(const QJsonArray &categoriesArray);            // 从服务器更新的类别
-    void localChangesUploaded(const std::vector<CategorieItem *> &m_待同步的项目列表); // 本地更改已上传
-    void syncConflictDetected(const QJsonArray &conflictItems);                     // 检测到同步冲突
+    void categoriesUpdatedFromServer(const QJsonArray &categoriesArray);               // 从服务器更新的类别
+    void localChangesUploaded(const std::vector<CategorieItem *> &m_unsyncedItems); // 本地更改已上传
+    void syncConflictDetected(const QJsonArray &conflictItems);                        // 检测到同步冲突
 
   protected slots:
     void onNetworkRequestCompleted(Network::RequestType type,
                                    const QJsonObject &response) override; // 网络请求完成
-    void onNetworkRequestFailed(Network::RequestType type, NetworkRequest::NetworkError error,
+    void onNetworkRequestFailed(Network::RequestType type, Network::Error error,
                                 const QString &message) override; // 网络请求失败
 
   protected:
     // 同步操作实现（重写基类方法）
-    void 执行同步(SyncDirection direction) override;
-    void 拉取类别();
-    void 推送类别();
-    void 处理获取类别成功(const QJsonObject &response); // 处理获取类别成功
-    void 处理推送更改成功(const QJsonObject &response); // 处理推送更改成功
+    void 拉取数据() override;
+    void 推送数据() override;
+    void 处理获取数据成功(const QJsonObject &response);
+    void 处理推送更改成功(const QJsonObject &response);
 
     // 类别操作实现
-    void 处理创建类别成功(const QJsonObject &response); // 处理创建类别成功
-    void 处理更新类别成功(const QJsonObject &response); // 处理更新类别成功
-    void 处理删除类别成功(const QJsonObject &response); // 处理删除类别成功
+    void 处理创建类别成功(const QJsonObject &response);
+    void 处理更新类别成功(const QJsonObject &response);
+    void 处理删除类别成功(const QJsonObject &response);
 
     // 辅助方法
 
   private:
     // 数据管理
-    std::vector<CategorieItem *> m_待同步的项目列表;
+    std::vector<CategorieItem *> m_unsyncedItems;
 
     // 当前操作状态
     QString m_currentOperationName;    ///< 当前操作的对象的名称（用于类别CRUD操作）

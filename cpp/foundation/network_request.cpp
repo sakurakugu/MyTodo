@@ -12,8 +12,10 @@
 #include "network_request.h"
 #include "config.h"
 #include "network_proxy.h"
+#include "version.h"
 
 #include <QCoreApplication>
+#include <QHostInfo>
 #include <QJsonParseError>
 #include <QNetworkRequest>
 #include <QSslError>
@@ -36,6 +38,10 @@ NetworkRequest::NetworkRequest(QObject *parent)
 
     // 应用代理配置到网络管理器
     m_proxyManager.applyProxyToManager(m_networkRequest);
+
+    // 获取计算机名称
+    std::string computerName = QHostInfo::localHostName().toStdString();
+    m_computerName = computerName.empty() ? "Unknown" : computerName;
 }
 
 /**
@@ -136,7 +142,7 @@ void NetworkRequest::sendRequest(Network::RequestType type, const RequestConfig 
 
     // 检查认证要求
     if (config.requiresAuth && !hasValidAuth()) {
-        emit requestFailed(type, AuthenticationError, "缺少有效的认证令牌");
+        emit requestFailed(type, Network::Error::AuthenticationError, "缺少有效的认证令牌");
         return;
     }
 
@@ -226,7 +232,7 @@ void NetworkRequest::onReplyFinished() {
         } else {
             // 处理网络错误（包括HTTP状态码非2xx的情况）
             int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-            NetworkError networkError = mapQNetworkError(reply->error());
+            Network::Error networkError = mapQNetworkError(reply->error());
 
             // 读取响应体（最多预览前 256 字节，避免日志污染）
             QByteArray body = reply->readAll();
@@ -391,7 +397,7 @@ void NetworkRequest::onSslErrors(const QList<QSslError> &errors) {
         qWarning() << " -" << error.errorString();
     }
 
-    // TODO: 处理SSL错误
+    // 忽略所有SSL错误
     reply->ignoreSslErrors();
 }
 
@@ -446,11 +452,12 @@ void NetworkRequest::completeRequest(qint64 requestId, bool success, const QJson
     if (success) {
         emit requestCompleted(request.type, response);
     } else {
-        NetworkError networkError = error.contains("超时")   ? TimeoutError
-                                    : error.contains("连接") ? ConnectionError
-                                    : error.contains("认证") ? AuthenticationError
-                                    : error.contains("解析") ? ParseError
-                                                             : UnknownError;
+        Network::Error networkError = //
+            error.contains("超时")   ? Network::Error::TimeoutError
+            : error.contains("连接") ? Network::Error::ConnectionError
+            : error.contains("认证") ? Network::Error::AuthenticationError
+            : error.contains("解析") ? Network::Error::ParseError
+                                     : Network::Error::UnknownError;
         emit requestFailed(request.type, networkError, error);
     }
 
@@ -523,10 +530,11 @@ QNetworkRequest NetworkRequest::createNetworkRequest(const RequestConfig &config
 
 void NetworkRequest::setupDefaultHeaders(QNetworkRequest &request) const {
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    // TODO: 应用名 / 版本 (平台)
-    request.setRawHeader("User-Agent", "MyTodoApp/v1.0 (Qt)");
+    // 应用名 / 版本 (平台@计算机名)
+    QByteArray userAgent = std::format("%1/v%2 (Qt@%3)", APP_NAME, APP_VERSION_STRING, m_computerName).c_str();
+    request.setRawHeader("User-Agent", userAgent);
     request.setRawHeader("Accept", "application/json");
-    request.setRawHeader("Origin", "app://MyTodoApp(Windows)");
+    request.setRawHeader("Origin", "app://MyTodo(Windows)");
 }
 
 void NetworkRequest::addAuthHeader(QNetworkRequest &request) const {
@@ -539,42 +547,42 @@ void NetworkRequest::addAuthHeader(QNetworkRequest &request) const {
     }
 }
 
-NetworkRequest::NetworkError NetworkRequest::mapQNetworkError(QNetworkReply::NetworkError error) const {
+Network::Error NetworkRequest::mapQNetworkError(QNetworkReply::NetworkError error) const {
     switch (error) {
     case QNetworkReply::TimeoutError:
-        return TimeoutError;
+        return Network::Error::TimeoutError;
     case QNetworkReply::ConnectionRefusedError:
     case QNetworkReply::RemoteHostClosedError:
     case QNetworkReply::HostNotFoundError:
     case QNetworkReply::NetworkSessionFailedError:
-        return ConnectionError;
+        return Network::Error::ConnectionError;
     case QNetworkReply::AuthenticationRequiredError:
     case QNetworkReply::ProxyAuthenticationRequiredError:
-        return AuthenticationError;
+        return Network::Error::AuthenticationError;
     case QNetworkReply::InternalServerError:
     case QNetworkReply::ServiceUnavailableError:
-        return ServerError;
+        return Network::Error::ServerError;
     default:
-        return UnknownError;
+        return Network::Error::UnknownError;
     }
 }
 
-QString NetworkRequest::getErrorMessage(NetworkError error, const QString &details) const {
+QString NetworkRequest::getErrorMessage(Network::Error error, const QString &details) const {
     QString baseMessage;
     switch (error) {
-    case TimeoutError:
+    case Network::Error::TimeoutError:
         baseMessage = "请求超时";
         break;
-    case ConnectionError:
+    case Network::Error::ConnectionError:
         baseMessage = "连接错误";
         break;
-    case AuthenticationError:
+    case Network::Error::AuthenticationError:
         baseMessage = "认证失败";
         break;
-    case ServerError:
+    case Network::Error::ServerError:
         baseMessage = "服务器错误";
         break;
-    case ParseError:
+    case Network::Error::ParseError:
         baseMessage = "数据解析错误";
         break;
     default:
@@ -596,9 +604,10 @@ QString NetworkRequest::RequestTypeToString(Network::RequestType type) const {
     return "未知请求";
 }
 
-bool NetworkRequest::shouldRetry(NetworkError error) const {
+bool NetworkRequest::shouldRetry(Network::Error error) const {
     // 只对特定类型的错误进行重试
-    return error == TimeoutError || error == ConnectionError || error == ServerError;
+    return error == Network::Error::TimeoutError || error == Network::Error::ConnectionError ||
+           error == Network::Error::ServerError;
 }
 
 bool NetworkRequest::isDuplicateRequest(Network::RequestType type) const {

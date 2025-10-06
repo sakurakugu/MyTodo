@@ -227,7 +227,7 @@ void UserAuth::onNetworkRequestCompleted(Network::RequestType type, const QJsonO
     }
 }
 
-void UserAuth::onNetworkRequestFailed(Network::RequestType type, NetworkRequest::NetworkError error,
+void UserAuth::onNetworkRequestFailed(Network::RequestType type, Network::Error error,
                                       const QString &message) {
 
     switch (type) {
@@ -241,7 +241,7 @@ void UserAuth::onNetworkRequestFailed(Network::RequestType type, NetworkRequest:
         emit tokenRefreshFailed(message);
 
         // 根据错误类型进行不同处理
-        if (error == NetworkRequest::NetworkError::AuthenticationError) {
+        if (error == Network::Error::AuthenticationError) {
             qWarning() << "刷新令牌无效或已过期，清理凭据并要求重新登录";
             清除凭据();
             emit loginRequired();
@@ -258,7 +258,7 @@ void UserAuth::onNetworkRequestFailed(Network::RequestType type, NetworkRequest:
         break;
     case Network::RequestType::FetchTodos:
         // 如果是token验证请求失败，说明token无效
-        if (error == NetworkRequest::NetworkError::AuthenticationError) {
+        if (error == Network::Error::AuthenticationError) {
             qWarning() << "存储的访问令牌无效，尝试静默刷新";
             if (!m_isRefreshing && !m_refreshToken.isEmpty()) {
                 刷新访问令牌();
@@ -271,7 +271,7 @@ void UserAuth::onNetworkRequestFailed(Network::RequestType type, NetworkRequest:
         break;
     default:
         // 其他请求类型的错误处理
-        if (error == NetworkRequest::NetworkError::AuthenticationError) {
+        if (error == Network::Error::AuthenticationError) {
             qWarning() << "认证错误，尝试静默刷新:" << message;
             if (!m_isRefreshing && !m_refreshToken.isEmpty()) {
                 刷新访问令牌();

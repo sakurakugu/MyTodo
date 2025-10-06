@@ -32,7 +32,6 @@ QmlCategoryManager::QmlCategoryManager(UserAuth &userAuth, QObject *parent)
     // 连接同步服务器信号
     connect(m_syncServer, &CategorySyncServer::categoriesUpdatedFromServer, this,
             &QmlCategoryManager::onCategoriesUpdatedFromServer);
-    // 关键：同步成功后需要写回数据库（更新 synced=0），之前缺少该连接导致只改内存未持久化
     connect(m_syncServer, &CategorySyncServer::localChangesUploaded, this,
             &QmlCategoryManager::onLocalChangesUploaded);
 

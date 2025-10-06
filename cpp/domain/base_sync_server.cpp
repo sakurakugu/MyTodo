@@ -55,11 +55,25 @@ void BaseSyncServer::setIsSyncing(bool syncing) {
     }
 }
 
+// 同步操作实现
+void BaseSyncServer::与服务器同步(SyncDirection direction) {
+    if (!是否可以执行同步()) {
+        emit syncCompleted(UnknownError, "无法同步");
+        return;
+    }
+    qDebug() << "与服务器同步开始，当前同步状态:" << m_isSyncing;
+
+    setIsSyncing(true);
+    m_currentSyncDirection = direction;
+    emit syncStarted();
+
+    执行同步(direction);
+}
+
 // 默认的同步操作实现
 void BaseSyncServer::重置同步状态() {
     m_isSyncing = false;
     m_currentSyncDirection = Bidirectional;
-    m_pushFirstInBidirectional = false;
     emit syncingChanged();
 }
 
@@ -68,7 +82,6 @@ void BaseSyncServer::取消同步() {
         setIsSyncing(false);
         emit syncCompleted(UnknownError, "同步已取消");
     }
-    m_pushFirstInBidirectional = false;
 }
 
 // 网络请求处理（默认实现）
@@ -80,13 +93,13 @@ void BaseSyncServer::onNetworkRequestCompleted( //
 
 void BaseSyncServer::onNetworkRequestFailed(    //
     [[maybe_unused]] Network::RequestType type, //
-    NetworkRequest::NetworkError error, const QString &message) {
+    Network::Error error, const QString &message) {
 
     if (m_isSyncing) {
         setIsSyncing(false);
 
         SyncResult result = NetworkError;
-        if (error == NetworkRequest::AuthenticationError) {
+        if (error == Network::Error::AuthenticationError) {
             result = AuthError;
         }
 
@@ -97,6 +110,26 @@ void BaseSyncServer::onNetworkRequestFailed(    //
 void BaseSyncServer::onAutoSyncTimer() {
     if (是否可以执行同步()) {
         与服务器同步();
+    }
+}
+
+// 同步操作实现 - 重写基类虚函数
+void BaseSyncServer::执行同步(SyncDirection direction) {
+    qDebug() << "开始同步待办事项，方向:" << direction;
+
+    // 根据同步方向执行不同的操作
+    switch (direction) {
+    case Bidirectional:
+        拉取数据();
+        break;
+    case UploadOnly:
+        // 仅上传：只推送本地更改
+        推送数据();
+        break;
+    case DownloadOnly:
+        // 仅下载：只获取服务器数据
+        拉取数据();
+        break;
     }
 }
 
@@ -140,42 +173,5 @@ void BaseSyncServer::开启自动同步计时器() {
 void BaseSyncServer::停止自动同步计时器() {
     if (m_autoSyncTimer) {
         m_autoSyncTimer->stop();
-    }
-}
-
-/**
- * @brief 检查同步前置条件
- * @param allowOngoingPhase 当为 true 时，如果当前处于同一次双向同步的后续阶段（例如先拉取再推送），
- *        即使 m_isSyncing == true 也不视为冲突；仅进行必要的配置与认证校验。
- *        默认 false，保持原有严格语义用于外部入口调用。
- */
-void BaseSyncServer::检查同步前置条件(bool allowOngoingPhase) {
-    // 1. 同步状态：仅在不允许阶段继续时严格限制
-    if (m_isSyncing && !allowOngoingPhase) {
-        qDebug() << "同步检查失败：正在进行同步操作，当前同步状态:" << m_isSyncing;
-        qDebug() << "提示：如果同步状态异常，请调用resetSyncState()方法重置";
-        emit syncCompleted(UnknownError, "无法同步：已有同步操作进行中");
-        return;
-    }
-
-    // 2. 服务器基础URL
-    if (m_networkRequest.getServerBaseUrl().isEmpty()) {
-        qDebug() << "同步检查失败：服务器基础URL为空";
-        emit syncCompleted(UnknownError, "无法同步：服务器基础URL未配置");
-        return;
-    }
-
-    // 3. API端点
-    if (m_apiEndpoint.isEmpty()) {
-        qDebug() << "同步检查失败：API端点为空";
-        emit syncCompleted(UnknownError, "无法同步：API端点未配置");
-        return;
-    }
-
-    // 4. 用户登录 / token 状态
-    if (!m_userAuth.是否已登录()) {
-        qDebug() << "同步检查失败：用户未登录或令牌已过期";
-        emit syncCompleted(AuthError, "无法同步：未登录");
-        return;
     }
 }

@@ -67,13 +67,12 @@ class TodoSyncServer : public BaseSyncServer {
     ~TodoSyncServer();
 
     // 同步操作（重写基类方法）
-    void 与服务器同步(SyncDirection direction = Bidirectional) override; // 与服务器同步
     void 重置同步状态() override;
     void 取消同步() override;
 
     // 数据操作接口
     void setTodoItems(const QList<TodoItem *> &items); // 设置待同步的待办事项列表
-    QList<TodoItem *> getUnsyncedItems() const;        // 获取未同步的项目
+    QList<TodoItem *> 设置未同步的对象() const;        // 获取未同步的项目
 
   signals:
     // 数据更新信号（待办事项特有）
@@ -84,22 +83,20 @@ class TodoSyncServer : public BaseSyncServer {
   protected slots:
     void onNetworkRequestCompleted(Network::RequestType type,
                                    const QJsonObject &response) override; // 网络请求完成
-    void onNetworkRequestFailed(Network::RequestType type, NetworkRequest::NetworkError error,
+    void onNetworkRequestFailed(Network::RequestType type, Network::Error error,
                                 const QString &message) override; // 网络请求失败
 
   protected:
     // 同步操作实现（重写基类方法）
-    void 执行同步(SyncDirection direction) override;           // 执行同步操作
-    void 拉取待办();                                           // 从服务器获取待办事项
-    void 推送待办();                                           // 推送本地更改到服务器
-    void 推送单个项目(TodoItem *item);                         // 推送单个待办事项
-    void 推送下个项目();                                       // 推送下一个待办事项
-    void handleSingleItemPushSuccess();                        // 处理单个项目推送成功
-    void handleSyncSuccess(const QJsonObject &response);       // 处理同步成功
-    void handleFetchTodosSuccess(const QJsonObject &response); // 处理获取待办事项成功
-    void 处理推送更改成功(const QJsonObject &response);        // 处理推送更改成功
-    void pushBatchToServer(const QList<TodoItem *> &batch);    // 推送批次到服务器
-    void pushNextBatch();                                      // 推送下一个批次
+    void 拉取数据() override;
+    void 推送数据() override;
+    void 推送单个项目(TodoItem *item);
+    void 推送下个项目();
+    void 处理单个项目推送成功();
+    void 处理获取数据成功(const QJsonObject &response);
+    void 处理推送更改成功(const QJsonObject &response);
+    void 推送批次到服务器(const QList<TodoItem *> &batch);
+    void 推送下一个批次();
 
   private:
     // 数据管理

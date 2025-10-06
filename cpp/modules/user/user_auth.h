@@ -90,7 +90,7 @@ class UserAuth : public QObject, public IDataExporter {
 
   public slots:
     void onNetworkRequestCompleted(Network::RequestType type, const QJsonObject &response); // 处理网络请求成功
-    void onNetworkRequestFailed(Network::RequestType type, NetworkRequest::NetworkError error,
+    void onNetworkRequestFailed(Network::RequestType type, Network::Error error,
                                 const QString &message); // 处理网络请求失败
     void onAuthTokenExpired();                           // 处理认证令牌过期
 
