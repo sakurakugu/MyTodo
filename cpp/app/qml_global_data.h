@@ -87,7 +87,6 @@ class QmlGlobalData : public QObject {
     void toggleAddTaskVisible();  // 小工具模式--切换添加任务弹窗可见性
     void toggleTodosVisible();    // 小工具模式--切换待办列表弹窗可见性
     void toggleSettingsVisible(); // 小工具模式--切换设置弹窗可见性
-    void toggleDropdownVisible(); // 小工具模式--切换下拉菜单可见性
 
     // 开机自启动相关方法
     bool isAutoStartEnabled() const;
@@ -112,8 +111,6 @@ class QmlGlobalData : public QObject {
   private:
     explicit QmlGlobalData(QObject *parent = nullptr);
     ~QmlGlobalData();
-
-    void updateWidgetHeight(); // 动态更新小组件模式高度
 
     // 配置文件
     Config &m_config;

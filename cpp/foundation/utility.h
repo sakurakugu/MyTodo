@@ -26,6 +26,7 @@ class Utility {
     static QDateTime fromRfc3339String(const QString &rfc3339String); // 从RFC 3339格式字符串解析QDateTime
     static QString toIsoStringWithZ(const QDateTime &dateTime); // 将QDateTime转换为ISO 8601格式字符串（带毫秒和Z后缀）
     static QDateTime fromIsoString(const QString &isoString);   // 从ISO格式字符串解析QDateTime
+    static QDateTime timestampToDateTime(const QVariant &timestampMs); // 将毫秒时间戳转换为QDateTime
     static QJsonValue timestampToIsoJson(const QVariant &timestampMs); // 将毫秒时间戳转换为ISO格式的QJsonValue
     static QDateTime fromJsonValue(const QJsonValue &jsonValue);       // 从QJsonValue解析时间戳并转换为QDateTime
     static QString currentUtcRfc3339();                                // 获取当前UTC时间的RFC 3339格式字符串

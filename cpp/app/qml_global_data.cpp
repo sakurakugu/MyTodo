@@ -218,40 +218,22 @@ void QmlGlobalData::toggleWidgetMode() {
     // 根据模式设置窗口大小
     if (m_isDesktopWidget) {
         emit widthChanged(400);
-        updateWidgetHeight(); // 动态计算高度
     } else {
         emit widthChanged(640);
         emit heightChanged(480);
     }
 }
 
-void QmlGlobalData::updateWidgetHeight() {
-    if (!m_isDesktopWidget)
-        return;
-
-    // TODO: 之后再说，到时候从WidgetMode中移动进来
-
-    emit heightChanged(1);
-}
-
 void QmlGlobalData::toggleAddTaskVisible() {
     setIsShowAddTask(!m_isShowAddTask);
-    updateWidgetHeight(); // 动态更新高度
 }
 
 void QmlGlobalData::toggleTodosVisible() {
     setIsShowTodos(!m_isShowTodos);
-    updateWidgetHeight(); // 动态更新高度
 }
 
 void QmlGlobalData::toggleSettingsVisible() {
     setIsShowSetting(!m_isShowSetting);
-    updateWidgetHeight(); // 动态更新高度
-}
-
-void QmlGlobalData::toggleDropdownVisible() {
-    setIsShowDropdown(!m_isShowDropdown);
-    updateWidgetHeight(); // 动态更新高度
 }
 
 bool QmlGlobalData::isAutoStartEnabled() const {

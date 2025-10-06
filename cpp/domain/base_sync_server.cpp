@@ -104,7 +104,6 @@ void BaseSyncServer::更新最后同步时间() {
     m_lastSyncTime = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
 }
 
-// TODO: 和检查同步前置条件重复了
 bool BaseSyncServer::是否可以执行同步() const {
     // 检查是否可以执行同步
     if (m_isSyncing) {

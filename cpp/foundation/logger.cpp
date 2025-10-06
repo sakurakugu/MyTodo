@@ -10,11 +10,11 @@
  * @change 2025-09-20 23:17:33(UTC+8) 周六
  */
 #include "logger.h"
-#include "default_value.h"
 #include "version.h"
 
 #include <QCoreApplication>
 #include <QFileInfo>
+#include <QStandardPaths>
 #include <filesystem>
 #include <fstream>
 #include <iostream>

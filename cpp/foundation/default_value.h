@@ -12,9 +12,6 @@
 
 namespace DefaultValues {
 
-// 服务器基础配置（需与后端保持一致）
-// baseUrl 示例: https://api.example.com
-// getApiUrl 会自动拼接 api/{apiVersion}/ 前缀（默认 v1），因此端点只需写资源根路径
 constexpr const char *baseUrl{"https://api.example.com"};   // 基础 API URL（这里不改，在配置文件改）
 constexpr const char *apiVersion{"v1"};                     // API 版本
 constexpr const char *todoApiEndpoint{"/todos"};            // 待办事项 API 端点

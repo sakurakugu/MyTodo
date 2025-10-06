@@ -23,11 +23,10 @@
 #include <QVariant>
 #include <algorithm>
 
-TodoDataStorage::TodoDataStorage(QObject *parent)
-    : BaseDataStorage("todos", parent) // 调用基类构造函数
+TodoDataStorage::TodoDataStorage(QObject *parent) //
+    : BaseDataStorage("todos", parent)            // 调用基类构造函数
 {
-    // 在子类构造完成后初始化数据表
-    初始化();
+    初始化(); // 在子类构造完成后初始化数据表
 }
 
 TodoDataStorage::~TodoDataStorage() {}
@@ -60,29 +59,6 @@ bool TodoDataStorage::加载待办(TodoList &todos) {
             return false;
         }
 
-        // auto parseTimeMs = [](const QVariant &v) -> QDateTime {
-        //     if (v.isNull())
-        //         return {};
-        //     bool ok = false;
-        //     qint64 ms = v.toLongLong(&ok);
-        //     if (ok)
-        //         return QDateTime::fromMSecsSinceEpoch(ms, QTimeZone::UTC);
-        //     // 回退 ISO 字符串（兼容旧格式）
-        //     QDateTime dt = QDateTime::fromString(v.toString(), Qt::ISODate);
-        //     return dt.isValid() ? dt.toUTC() : QDateTime();
-        // };
-        auto parseTimeMs = [](const QVariant &v) -> QDateTime {
-            if (v.isNull())
-                return {};
-            // bool ok = false;
-            // qint64 ms = v.toLongLong(&ok);
-            qint64 ms = v.toLongLong();
-            // if (ok)
-            return QDateTime::fromMSecsSinceEpoch(ms, QTimeZone::UTC);
-            // QDateTime dt = QDateTime::fromString(v.toString(), Qt::ISODate);
-            // return dt.isValid() ? dt.toUTC() : QDateTime();
-        };
-
         while (query.next()) {
             int id = query.value("id").toInt();
             QUuid uuid = QUuid::fromString(query.value("uuid").toString());
@@ -91,16 +67,16 @@ bool TodoDataStorage::加载待办(TodoList &todos) {
             QString description = query.value("description").toString();
             QString category = query.value("category").toString();
             bool important = query.value("important").toBool();
-            QDateTime deadline = parseTimeMs(query.value("deadline"));
+            QDateTime deadline = Utility::timestampToDateTime(query.value("deadline"));
             int recurrenceInterval = query.value("recurrence_interval").toInt();
             int recurrenceCount = query.value("recurrence_count").toInt();
             QDate recurrenceStartDate = QDate::fromString(query.value("recurrence_start_date").toString(), Qt::ISODate);
             bool isCompleted = query.value("is_completed").toBool();
-            QDateTime completedAt = parseTimeMs(query.value("completed_at"));
+            QDateTime completedAt = Utility::timestampToDateTime(query.value("completed_at"));
             bool isTrashed = query.value("is_trashed").toBool();
-            QDateTime trashedAt = parseTimeMs(query.value("trashed_at"));
-            QDateTime createdAt = parseTimeMs(query.value("created_at"));
-            QDateTime updatedAt = parseTimeMs(query.value("updated_at"));
+            QDateTime trashedAt = Utility::timestampToDateTime(query.value("trashed_at"));
+            QDateTime createdAt = Utility::timestampToDateTime(query.value("created_at"));
+            QDateTime updatedAt = Utility::timestampToDateTime(query.value("updated_at"));
             int synced = query.value("synced").toInt();
 
             auto item = std::make_unique<TodoItem>( //
@@ -604,8 +580,8 @@ bool TodoDataStorage::删除待办([[maybe_unused]] TodoList &todos, const QUuid
  * @param source 来源（服务器或本地备份）
  * @param resolution 冲突解决策略
  */
-bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArray &todosArray, ImportSource source,
-                                         解决冲突方案 resolution) {
+bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArray &todosArray, //
+                                         ImportSource source, 解决冲突方案 resolution) {
     bool success = true;
     QSqlDatabase db;
     if (!m_database.getDatabase(db))

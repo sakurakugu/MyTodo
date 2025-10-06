@@ -121,7 +121,7 @@ Item {
 
             IconButton {
                 text: "\ue90f"              ///< 菜单图标
-                onClicked: globalData.toggleSettingsVisible()
+                onClicked: globalData.toggleSettingsVisible()  ///< 切换设置页面显示
             }
 
             /// 待办状态指示器
@@ -235,7 +235,6 @@ Item {
                     setting.save("setting/preventDragging", globalData.preventDragging);
                 }
             }
-
         }
     }
 

@@ -12,8 +12,8 @@
 #include "category_sync_server.h"
 #include "category_item.h"
 #include "config.h"
-#include "utility.h"
 #include "default_value.h"
+#include "utility.h"
 
 #include <QDateTime>
 #include <QJsonArray>
@@ -22,16 +22,12 @@
 #include <QUuid>
 
 CategorySyncServer::CategorySyncServer(UserAuth &userAuth, QObject *parent) : BaseSyncServer(userAuth, parent) {
-
     // 设置类别特有的API端点
     m_apiEndpoint =
         m_config.get("server/categoriesApiEndpoint", QString(DefaultValues::categoriesApiEndpoint)).toString();
 }
 
-CategorySyncServer::~CategorySyncServer() {
-}
-
-// 属性访问器已在基类中实现
+CategorySyncServer::~CategorySyncServer() {}
 
 // 同步操作实现
 void CategorySyncServer::与服务器同步(SyncDirection direction) {

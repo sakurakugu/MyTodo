@@ -10,10 +10,10 @@
  */
 
 #include "todo_sync_server.h"
-#include "default_value.h"
 #include "config.h"
-#include "utility.h"
+#include "default_value.h"
 #include "todo_item.h"
+#include "utility.h"
 
 #include <QJsonDocument>
 #include <QUuid>
@@ -46,10 +46,8 @@ void TodoSyncServer::与服务器同步(SyncDirection direction) {
 }
 
 void TodoSyncServer::取消同步() {
-    if (!m_isSyncing) {
-        qDebug() << "没有正在进行的同步操作可以取消";
+    if (!m_isSyncing)
         return;
-    }
 
     qDebug() << "取消待办事项同步操作";
 
@@ -283,12 +281,10 @@ void TodoSyncServer::pushBatchToServer(const QList<TodoItem *> &batch) {
         m_networkRequest.sendRequest(Network::RequestType::PushTodos, config);
     } catch (const std::exception &e) {
         qCritical() << "推送更改时发生异常:" << e.what();
-
         setIsSyncing(false);
         emit syncCompleted(UnknownError, QString("推送更改失败: %1").arg(e.what()));
     } catch (...) {
         qCritical() << "推送更改时发生未知异常";
-
         setIsSyncing(false);
         emit syncCompleted(UnknownError, "推送更改失败：未知错误");
     }

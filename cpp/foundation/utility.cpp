@@ -10,9 +10,9 @@
  */
 #include "utility.h"
 
+#include <QJsonValue>
 #include <QRegularExpression>
 #include <QTimeZone>
-#include <QJsonValue>
 
 /**
  * @brief 将QDateTime转换为RFC 3339格式字符串
@@ -101,6 +101,26 @@ QDateTime Utility::fromIsoString(const QString &isoString) {
     }
 
     return parseFlexibleIso(isoString);
+}
+
+/**
+ * @brief 将毫秒时间戳转换为QDateTime
+ * @param timestampMs 毫秒时间戳（QVariant类型，支持数据库读取）
+ * @return 转换后的QDateTime对象；无效时间戳返回无效的QDateTime
+ * @note 自动转换为UTC时区，格式为yyyy-MM-ddTHH:mm:ss.zzzZ
+ */
+QDateTime Utility::timestampToDateTime(const QVariant &timestampMs) {
+    if (timestampMs.isNull()) {
+        return QDateTime();
+    }
+
+    bool ok = false;
+    qint64 ms = timestampMs.toLongLong(&ok);
+    if (!ok) {
+        return QDateTime();
+    }
+
+    return QDateTime::fromMSecsSinceEpoch(ms, QTimeZone::UTC);
 }
 
 /**
