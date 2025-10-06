@@ -1,21 +1,20 @@
 /**
- * @file global_state.h
- * @brief GlobalState类的头文件
+ * @file qml_global_data.h
+ * @brief QmlGlobalData类的头文件
  *
- * 该文件定义了GlobalState类，用于管理应用程序的全局状态。
+ * 该文件定义了QmlGlobalData类，用于管理Qml中的全局数据。
  *
  * @author Sakurakugu
- * @date 2025-08-16 20:05:55(UTC+8) 周六
- * @change 2025-10-05 23:50:47(UTC+8) 周日
+ * @date 2025-10-06 17:36:23(UTC+8) 周一
+ * @change 2025-10-06 17:36:23(UTC+8) 周一
  */
 #pragma once
-
 #include <QObject>
 #include <QVariant>
 
 class Config;
 
-class GlobalState : public QObject {
+class QmlGlobalData : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool isDarkMode READ isDarkMode WRITE setIsDarkMode NOTIFY isDarkModeChanged)
     Q_PROPERTY(bool isFollowSystemDarkMode READ isFollowSystemDarkMode WRITE setIsFollowSystemDarkMode NOTIFY
@@ -33,15 +32,15 @@ class GlobalState : public QObject {
 
   public:
     // 单例模式
-    static GlobalState &GetInstance() {
-        static GlobalState instance;
+    static QmlGlobalData &GetInstance() {
+        static QmlGlobalData instance;
         return instance;
     }
     // 禁用拷贝构造和赋值操作
-    GlobalState(const GlobalState &) = delete;
-    GlobalState &operator=(const GlobalState &) = delete;
-    GlobalState(GlobalState &&) = delete;
-    GlobalState &operator=(GlobalState &&) = delete;
+    QmlGlobalData(const QmlGlobalData &) = delete;
+    QmlGlobalData &operator=(const QmlGlobalData &) = delete;
+    QmlGlobalData(QmlGlobalData &&) = delete;
+    QmlGlobalData &operator=(QmlGlobalData &&) = delete;
 
     // 属性访问器
     bool isDarkMode() const;
@@ -94,12 +93,6 @@ class GlobalState : public QObject {
     Q_INVOKABLE bool isAutoStartEnabled() const;
     Q_INVOKABLE bool setAutoStart(bool enabled);
 
-  private:
-    void updateWidgetHeight(); // 动态更新小组件模式高度
-
-    explicit GlobalState(QObject *parent = nullptr);
-    ~GlobalState();
-
   signals:
     void isDarkModeChanged();
     void isFollowSystemDarkModeChanged();
@@ -117,6 +110,11 @@ class GlobalState : public QObject {
     void heightChanged(int height);
 
   private:
+    explicit QmlGlobalData(QObject *parent = nullptr);
+    ~QmlGlobalData();
+
+    void updateWidgetHeight(); // 动态更新小组件模式高度
+
     // 配置文件
     Config &m_config;
 

@@ -9,6 +9,7 @@
  * @date 2025-09-05 18:17:08(UTC+8) 周五
  * @change 2025-09-06 17:22:15(UTC+8) 周六
  */
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 
@@ -193,15 +194,12 @@ Item {
         cursorShape: Qt.PointingHandCursor
 
         onClicked: {
-            if (controlLoader.item && typeof controlLoader.item.toggle === "function") {
-                controlLoader.item.toggle();
-            } else if (controlLoader.item && controlLoader.item.hasOwnProperty("checked")) {
-                controlLoader.item.checked = !controlLoader.item.checked;
-            }
+            root.toggle();
         }
     }
 
     // 提供通用的操作方法
+    // 切换操作 - 开关/复选框/单选框
     function toggle() {
         if (root.enabled && controlLoader.item) {
             if (typeof controlLoader.item.toggle === "function") {
@@ -212,6 +210,7 @@ Item {
         }
     }
 
+    // 触发操作 - 按钮点击或开关/复选框/单选框切换
     function triggerAction() {
         if (root.enabled && controlLoader.item) {
             if (root.controlType === ControlRow.ControlType.Button && typeof controlLoader.item.clicked === "function") {

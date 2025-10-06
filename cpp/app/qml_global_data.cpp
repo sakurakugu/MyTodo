@@ -1,14 +1,14 @@
 /**
- * @file global_state.cpp
- * @brief GlobalState类的实现文件
+ * @file qml_global_data.cpp
+ * @brief QmlGlobalData类的实现文件
  *
- * 该文件实现了GlobalState类，负责管理应用程序的全局状态，包括窗口属性、显示状态和系统主题监听。
+ * 该文件实现了QmlGlobalData类的成员函数。
  *
  * @author Sakurakugu
- * @date 2025-08-16 20:05:55(UTC+8) 周六
- * @change 2025-10-05 23:50:47(UTC+8) 周日
+ * @date 2025-10-06 17:36:23(UTC+8) 周一
+ * @change 2025-10-06 17:36:23(UTC+8) 周一
  */
-#include "global_state.h"
+#include "qml_global_data.h"
 #include "config.h"
 
 #include <QCoreApplication>
@@ -17,7 +17,7 @@
 #include <QPalette>
 #include <QSettings>
 
-GlobalState::GlobalState(QObject *parent)
+QmlGlobalData::QmlGlobalData(QObject *parent)
     : QObject(parent),                                                  // 初始化父对象
       m_config(Config::GetInstance()),                                  // 初始化配置文件
       m_isDarkMode(m_config.get("setting/isDarkMode", false).toBool()), // 初始化是否为深色模式为false
@@ -38,18 +38,18 @@ GlobalState::GlobalState(QObject *parent)
     connect(QGuiApplication::instance(), SIGNAL(paletteChanged(QPalette)), this, SIGNAL(systemInDarkModeChanged()));
 }
 
-GlobalState::~GlobalState() {
+QmlGlobalData::~QmlGlobalData() {
     // 保存配置
     m_config.save("setting/isDarkMode", m_isDarkMode);
     m_config.save("setting/followSystemTheme", m_isFollowSystemDarkMode);
     m_config.save("setting/preventDragging", m_preventDragging);
 }
 
-bool GlobalState::isDarkMode() const {
+bool QmlGlobalData::isDarkMode() const {
     return m_isDarkMode;
 }
 
-void GlobalState::setIsDarkMode(bool value) {
+void QmlGlobalData::setIsDarkMode(bool value) {
     if (m_isDarkMode != value) {
         m_isDarkMode = value;
         m_config.save("setting/isDarkMode", value);
@@ -57,11 +57,11 @@ void GlobalState::setIsDarkMode(bool value) {
     }
 }
 
-bool GlobalState::isFollowSystemDarkMode() const {
+bool QmlGlobalData::isFollowSystemDarkMode() const {
     return m_isFollowSystemDarkMode;
 }
 
-void GlobalState::setIsFollowSystemDarkMode(bool value) {
+void QmlGlobalData::setIsFollowSystemDarkMode(bool value) {
     if (m_isFollowSystemDarkMode != value) {
         m_isFollowSystemDarkMode = value;
         m_config.save("setting/followSystemTheme", value);
@@ -69,77 +69,77 @@ void GlobalState::setIsFollowSystemDarkMode(bool value) {
     }
 }
 
-bool GlobalState::isDesktopWidget() const {
+bool QmlGlobalData::isDesktopWidget() const {
     return m_isDesktopWidget;
 }
 
-void GlobalState::setIsDesktopWidget(bool value) {
+void QmlGlobalData::setIsDesktopWidget(bool value) {
     if (m_isDesktopWidget != value) {
         m_isDesktopWidget = value;
         emit isDesktopWidgetChanged();
     }
 }
 
-bool GlobalState::isNew() const {
+bool QmlGlobalData::isNew() const {
     return m_isNew;
 }
 
-void GlobalState::setIsNew(bool value) {
+void QmlGlobalData::setIsNew(bool value) {
     if (m_isNew != value) {
         m_isNew = value;
         emit isNewChanged();
     }
 }
 
-bool GlobalState::isShowAddTask() const {
+bool QmlGlobalData::isShowAddTask() const {
     return m_isShowAddTask;
 }
 
-void GlobalState::setIsShowAddTask(bool value) {
+void QmlGlobalData::setIsShowAddTask(bool value) {
     if (m_isShowAddTask != value) {
         m_isShowAddTask = value;
         emit isShowAddTaskChanged();
     }
 }
 
-bool GlobalState::isShowTodos() const {
+bool QmlGlobalData::isShowTodos() const {
     return m_isShowTodos;
 }
 
-void GlobalState::setIsShowTodos(bool value) {
+void QmlGlobalData::setIsShowTodos(bool value) {
     if (m_isShowTodos != value) {
         m_isShowTodos = value;
         emit isShowTodosChanged();
     }
 }
 
-bool GlobalState::isShowSetting() const {
+bool QmlGlobalData::isShowSetting() const {
     return m_isShowSetting;
 }
 
-void GlobalState::setIsShowSetting(bool value) {
+void QmlGlobalData::setIsShowSetting(bool value) {
     if (m_isShowSetting != value) {
         m_isShowSetting = value;
         emit isShowSettingChanged();
     }
 }
 
-bool GlobalState::isShowDropdown() const {
+bool QmlGlobalData::isShowDropdown() const {
     return m_isShowDropdown;
 }
 
-void GlobalState::setIsShowDropdown(bool value) {
+void QmlGlobalData::setIsShowDropdown(bool value) {
     if (m_isShowDropdown != value) {
         m_isShowDropdown = value;
         emit isShowDropdownChanged();
     }
 }
 
-bool GlobalState::preventDragging() const {
+bool QmlGlobalData::preventDragging() const {
     return m_preventDragging;
 }
 
-void GlobalState::setPreventDragging(bool value) {
+void QmlGlobalData::setPreventDragging(bool value) {
     if (m_preventDragging != value) {
         m_preventDragging = value;
         m_config.save("setting/preventDragging", value);
@@ -147,29 +147,29 @@ void GlobalState::setPreventDragging(bool value) {
     }
 }
 
-bool GlobalState::refreshing() const {
+bool QmlGlobalData::refreshing() const {
     return m_refreshing;
 }
 
-void GlobalState::setRefreshing(bool value) {
+void QmlGlobalData::setRefreshing(bool value) {
     if (m_refreshing != value) {
         m_refreshing = value;
         emit refreshingChanged();
     }
 }
 
-QVariant GlobalState::selectedTodo() const {
+QVariant QmlGlobalData::selectedTodo() const {
     return m_selectedTodo;
 }
 
-void GlobalState::setSelectedTodo(const QVariant &value) {
+void QmlGlobalData::setSelectedTodo(const QVariant &value) {
     if (m_selectedTodo != value) {
         m_selectedTodo = value;
         emit selectedTodoChanged();
     }
 }
 
-bool GlobalState::isSystemInDarkMode() const {
+bool QmlGlobalData::isSystemInDarkMode() const {
 
 #if defined(Q_OS_WIN) // Windows 平台
     QSettings settings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
@@ -212,7 +212,7 @@ bool GlobalState::isSystemInDarkMode() const {
 #endif
 }
 
-void GlobalState::toggleWidgetMode() {
+void QmlGlobalData::toggleWidgetMode() {
     setIsDesktopWidget(!m_isDesktopWidget);
 
     // 根据模式设置窗口大小
@@ -225,7 +225,7 @@ void GlobalState::toggleWidgetMode() {
     }
 }
 
-void GlobalState::updateWidgetHeight() {
+void QmlGlobalData::updateWidgetHeight() {
     if (!m_isDesktopWidget)
         return;
 
@@ -234,32 +234,32 @@ void GlobalState::updateWidgetHeight() {
     emit heightChanged(1);
 }
 
-void GlobalState::toggleAddTaskVisible() {
+void QmlGlobalData::toggleAddTaskVisible() {
     setIsShowAddTask(!m_isShowAddTask);
     updateWidgetHeight(); // 动态更新高度
 }
 
-void GlobalState::toggleTodosVisible() {
+void QmlGlobalData::toggleTodosVisible() {
     setIsShowTodos(!m_isShowTodos);
     updateWidgetHeight(); // 动态更新高度
 }
 
-void GlobalState::toggleSettingsVisible() {
+void QmlGlobalData::toggleSettingsVisible() {
     setIsShowSetting(!m_isShowSetting);
     updateWidgetHeight(); // 动态更新高度
 }
 
-void GlobalState::toggleDropdownVisible() {
+void QmlGlobalData::toggleDropdownVisible() {
     setIsShowDropdown(!m_isShowDropdown);
     updateWidgetHeight(); // 动态更新高度
 }
 
-bool GlobalState::isAutoStartEnabled() const {
+bool QmlGlobalData::isAutoStartEnabled() const {
     QSettings config("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
     return config.contains("MyTodo");
 }
 
-bool GlobalState::setAutoStart(bool enabled) {
+bool QmlGlobalData::setAutoStart(bool enabled) {
     QSettings config("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
 
     if (enabled) {
@@ -290,7 +290,7 @@ bool GlobalState::setAutoStart(bool enabled) {
  * @param dt 输入的日期时间对象
  * @return 格式化后的字符串表示
  */
-QString GlobalState::formatDateTime(const QVariant &dateTime) const {
+QString QmlGlobalData::formatDateTime(const QVariant &dateTime) const {
     // 确保输入是有效的QDateTime
     QDateTime dt;
     if (!dateTime.canConvert<QDateTime>()) {

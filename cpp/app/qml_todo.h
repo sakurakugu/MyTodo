@@ -1,8 +1,8 @@
 /**
- * @file todo_manager.h
- * @brief TodoManager类的头文件
+ * @file qml_todo.h
+ * @brief QmlTodoManager类的头文件
  *
- * 该文件定义了TodoManager类，用于管理待办事项的数据模型。
+ * 该文件定义了QmlTodoManager类，用于管理待办事项的数据模型。
  *
  * @author Sakurakugu
  * @date 2025-08-16 20:05:55(UTC+8) 周六
@@ -20,18 +20,17 @@
 #include "modules/todo/todo_queryer.h" // 筛选管理器
 
 class UserAuth;
-class GlobalState;
+class QmlGlobalData;
 class NetworkRequest;
-class CategoryManager;
 class TodoItem;
 class TodoSyncServer;
 class TodoDataStorage;
 
 /**
- * @class TodoManager
+ * @class QmlTodoManager
  * @brief 待办事项管理器，负责管理所有待办事项的业务逻辑
  *
- * TodoManager类是应用程序的核心业务逻辑类，提供了完整的待办事项管理功能：
+ * QmlTodoManager类是应用程序的核心业务逻辑类，提供了完整的待办事项管理功能：
  *
  * **核心功能：**
  * - 待办事项的CRUD操作（创建、读取、更新、删除）
@@ -46,21 +45,21 @@ class TodoDataStorage;
  * - 通过信号槽机制通知数据变化
  *
  * **使用场景：**
- * - 作为TodoModel的数据源
+ * - 作为QmlTodoModel的数据源
  * - 在C++中作为数据访问层
  * - 支持在线/离线模式切换
  *
  * @note 该类是线程安全的，所有网络操作都在后台线程执行
  * @see TodoItem, CategorieItem, NetworkRequest, Config, TodoModel
  */
-class TodoManager : public QObject {
+class QmlTodoManager : public QObject {
     Q_OBJECT
     Q_PROPERTY(TodoQueryer *queryer READ queryer CONSTANT)
     Q_PROPERTY(TodoModel *todoModel READ todoModel CONSTANT)
 
   public:
-    explicit TodoManager(UserAuth &userAuth, CategoryManager &categoryManager, QObject *parent = nullptr);
-    ~TodoManager();
+    explicit QmlTodoManager(UserAuth &userAuth, QObject *parent = nullptr);
+    ~QmlTodoManager();
 
     // 访问器
     Q_INVOKABLE TodoQueryer *queryer() const;
@@ -93,11 +92,9 @@ class TodoManager : public QObject {
     // 管理器
     NetworkRequest &m_networkRequest; ///< 网络管理器
     UserAuth &m_userAuth;             ///< 用户认证管理器
-    GlobalState &m_globalState;       ///< 全局状态管理器
-
-    TodoDataStorage *m_dataManager;     ///< 数据管理器 - 负责本地存储和文件导入导出
-    TodoSyncServer *m_syncManager;      ///< 同步管理器 - 负责所有服务器同步相关功能
-    CategoryManager *m_categoryManager; ///< 类别管理器 - 负责类别相关操作
-    TodoQueryer *m_queryer;             ///< 查询管理器 - 负责所有筛选排序相关功能
-    TodoModel *m_todoModel;             ///< 待办事项数据模型
+    QmlGlobalData &m_globalData;      ///< 全局数据管理器
+    TodoDataStorage *m_dataManager; ///< 数据管理器 - 负责本地存储和文件导入导出
+    TodoSyncServer *m_syncManager;  ///< 同步管理器 - 负责所有服务器同步相关功能
+    TodoQueryer *m_queryer;         ///< 查询管理器 - 负责所有筛选排序相关功能
+    TodoModel *m_todoModel;         ///< 待办事项数据模型
 };

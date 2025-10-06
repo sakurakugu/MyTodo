@@ -14,7 +14,6 @@
  */
 
 import QtQuick
-import QtQuick.Controls
 
 /**
  * @brief 窗口拖拽处理组件
@@ -72,7 +71,7 @@ MouseArea {
         }
 
         // 只有在非小组件模式或小组件模式但未启用防止拖动时才允许拖动
-        if (pressed && ((!globalState.isDesktopWidget) || (globalState.isDesktopWidget && !globalState.preventDragging))) {
+        if (pressed && ((!globalData.isDesktopWidget) || (globalData.isDesktopWidget && !globalData.preventDragging))) {
             if (wasMaximized) {
                 // 如果是从最大化状态开始拖拽，需要特殊处理
                 handleMaximizedDrag(mouse);
@@ -153,9 +152,9 @@ MouseArea {
      * @param preventDrag 是否阻止拖拽
      */
     function setWidgetMode(isWidget, preventDrag) {
-        globalState.isDesktopWidget = isWidget;
+        globalData.isDesktopWidget = isWidget;
         if (preventDrag !== undefined) {
-            globalState.preventDragging = preventDrag;
+            globalData.preventDragging = preventDrag;
         }
     }
 

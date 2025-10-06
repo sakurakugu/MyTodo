@@ -36,17 +36,17 @@ ListView {
 
     onMovementEnded: {
         // 如果下拉距离超过阈值且在顶部，触发刷新
-        if (contentY < -pullThreshold && atYBeginning && !globalState.refreshing) {
+        if (contentY < -pullThreshold && atYBeginning && !globalData.refreshing) {
             console.info("下拉刷新触发");
-            globalState.refreshing = true;
+            globalData.refreshing = true;
             todoManager.syncWithServer();
         }
     }
 
     header: Item {
         width: root.width
-        height: globalState.refreshing ? 50 : Math.min(50, root.pullDistance)
-        visible: height > 0 || globalState.refreshing
+        height: globalData.refreshing ? 50 : Math.min(50, root.pullDistance)
+        visible: height > 0 || globalData.refreshing
         RowLayout {
             anchors.centerIn: parent
             spacing: 6
@@ -54,14 +54,14 @@ ListView {
             IconButton {
                 id: refreshIndicatorIcon
                 text: "\ue8e2"              // 刷新图标
-                visible: globalState.refreshing || root.pullDistance > 0
+                visible: globalData.refreshing || root.pullDistance > 0
                 width: 20
                 height: 20
                 Layout.alignment: Qt.AlignVCenter
 
                 // 根据下拉比例旋转
                 rotation: {
-                    if (globalState.refreshing) {
+                    if (globalData.refreshing) {
                         console.info("刷新时保持旋转动画");
                         // 刷新时保持旋转动画
                         return 0; // 由下面的RotationAnimation控制
@@ -79,11 +79,11 @@ ListView {
                     to: 360
                     duration: 1000
                     loops: Animation.Infinite
-                    running: globalState.refreshing
+                    running: globalData.refreshing
                 }
             }
             Label {
-                text: globalState.refreshing ? qsTr("正在同步...") : (root.pullDistance >= root.pullThreshold ? qsTr("释放刷新") : qsTr("下拉刷新"))
+                text: globalData.refreshing ? qsTr("正在同步...") : (root.pullDistance >= root.pullThreshold ? qsTr("释放刷新") : qsTr("下拉刷新"))
                 color: ThemeManager.textColor
                 font.pixelSize: 12
                 Layout.alignment: Qt.AlignVCenter
@@ -105,13 +105,13 @@ ListView {
         target: todoManager
         function onSyncStarted() {
             console.info("开始同步");
-            if (!globalState.refreshing && root.atYBeginning) {
-                globalState.refreshing = true;
+            if (!globalData.refreshing && root.atYBeginning) {
+                globalData.refreshing = true;
             }
         }
         function onSyncCompleted(result, message) {
             console.info("同步完成", result, message);
-            globalState.refreshing = false;
+            globalData.refreshing = false;
             // 使用动画平滑重置下拉距离
             pullDistanceAnimation.start();
             if (result === 0) {
@@ -161,14 +161,14 @@ ListView {
                         }
                     } else {
                         // 如果 index 不同，保存当前选中待办的更改
-                        // if (globalState.selectedTodo && globalState.selectedTodo.index !== null) {
-                        //     console.info(index, globalState.selectedTodo.index);
-                        //     if (globalState.selectedTodo.index !== index) {
+                        // if (globalData.selectedTodo && globalData.selectedTodo.index !== null) {
+                        //     console.info(index, globalData.selectedTodo.index);
+                        //     if (globalData.selectedTodo.index !== index) {
                         //         console.info("切换选中待办，保存当前选中待办的更改");
                         //         todoManager.updateTodo(); // 保存当前选中待办的更改
                         //     }
                         // }
-                        globalState.selectedTodo = {
+                        globalData.selectedTodo = {
                             index: index,
                             uuid: model.uuid,
                             title: model.title,
@@ -189,13 +189,13 @@ ListView {
                         console.info("选中待办项：index =", index, ", title =", model.title);
                         // 普通模式下切换添加任务窗口显示状态
                         // 如果点击的是同一个待办项，则切换isShowAddTask状态
-                        if (globalState.isDesktopWidget) {
-                            if (globalState.selectedTodo.index === index) {
-                                globalState.isShowAddTask = !globalState.isShowAddTask;
+                        if (globalData.isDesktopWidget) {
+                            if (globalData.selectedTodo.index === index) {
+                                globalData.isShowAddTask = !globalData.isShowAddTask;
                             } else {
-                                globalState.isShowAddTask = true;
+                                globalData.isShowAddTask = true;
                             }
-                            globalState.isNew = false;
+                            globalData.isNew = false;
                         }
                     }
                 }
@@ -275,7 +275,7 @@ ListView {
                             spacing: 4
                             // 时间
                             Label {
-                                text: globalState.formatDateTime(model.updatedAt)
+                                text: globalData.formatDateTime(model.updatedAt)
                                 font.pixelSize: 12
                                 color: ThemeManager.secondaryTextColor
                             }

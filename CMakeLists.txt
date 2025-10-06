@@ -37,7 +37,7 @@ add_subdirectory(cpp/modules/category)
 add_subdirectory(cpp/modules/todo)
 add_subdirectory(cpp/modules/setting)
 add_subdirectory(cpp/modules/user)
-# add_subdirectory(cpp/app)
+add_subdirectory(cpp/app)
 
 # 构建类型优化
 if(NOT CMAKE_BUILD_TYPE)
@@ -79,6 +79,7 @@ set(PRIVATE_LIBRARIES
     mytodo_todo
     mytodo_setting
     mytodo_user
+    mytodo_app
     Qt6::Widgets
     Qt6::Quick
     Qt6::Concurrent
@@ -130,19 +131,6 @@ set_source_files_properties(
     qml/components/ThemeManager.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE # 主题管理器
 )
 
-# 项目源文件配置
-set(PROJECT_SOURCES
-    cpp/app/todo_manager.cpp
-    cpp/app/todo_manager.h
-    cpp/app/category_manager.h
-    cpp/app/category_manager.cpp
-    cpp/app/user_auth_manager.cpp
-    cpp/app/user_auth_manager.h
-    cpp/app/global_state.cpp
-    cpp/app/global_state.h
-    cpp/app/setting_manager.cpp
-    cpp/app/setting_manager.h
-)
 
 # 合并所有 QML 文件
 set(QML_FILES
@@ -180,14 +168,13 @@ qt_standard_project_setup(REQUIRES 6.9)
 # 创建可执行文件目标
 qt_add_executable(MyTodo
     main.cpp                        # 主入口文件
-    ${PROJECT_SOURCES}              # 所有 C++ 源文件
     "./image/app_icon/icon.rc"      # Windows 图标资源
 )
 
 # 设置目标属性
 set_target_properties(MyTodo PROPERTIES
     OUTPUT_NAME "MyTodo"            # 输出文件名
-    DEBUG_POSTFIX "_debug"              # Debug 版本后缀
+    DEBUG_POSTFIX "_debug"          # Debug 版本后缀
 )
 
 # 新增 QML 模块
@@ -195,7 +182,7 @@ qt_add_qml_module(MyTodo
     URI MyTodo                      # QML 模块 URI
     VERSION 1.0                     # 模块版本
     QML_FILES ${QML_FILES}          # QML 文件列表
-    SOURCES ${PROJECT_SOURCES}      # C++ 源文件
+    # 应用层 C++ 源文件已放入 mytodo_app 库，这里不再重复列出
     RESOURCES ${RESOURCE_FILES}     # 资源文件
     OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml  # 输出目录
 )
@@ -251,6 +238,7 @@ target_include_directories(MyTodo PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp/modules/user
 )
 
+# TODO: 到时候打包安装部分改一下
 # 安装配置
 include(GNUInstallDirs)
 

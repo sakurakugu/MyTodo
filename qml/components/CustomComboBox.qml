@@ -12,7 +12,7 @@
  * @date 2025-09-05 00:31:59(UTC+8) 周五
  * @change 2025-09-05 00:31:59(UTC+8) 周五
  */
-
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 
@@ -120,11 +120,15 @@ ComboBox {
 
     // 下拉项样式
     delegate: ItemDelegate {
+        id: delegateItem
+        required property var modelData
+        required property int index
+        
         width: root.width
         height: 30
 
         contentItem: Text {
-            text: modelData
+            text: delegateItem.modelData
             color: root.textColor
             font.pixelSize: root.fontSize
             elide: Text.ElideRight
@@ -133,10 +137,10 @@ ComboBox {
         }
 
         background: Rectangle {
-            color: highlighted ? root.hoverColor : "transparent"
+            color: delegateItem.highlighted ? root.hoverColor : "transparent"
             radius: root.radius
         }
 
-        highlighted: root.highlightedIndex === index
+        highlighted: root.highlightedIndex === delegateItem.index
     }
 }

@@ -51,7 +51,7 @@ SpinBox {
     // 内容项（输入框）
     contentItem: TextInput {
         z: 2
-        text: root.textFromValue(root.value, root.locale)
+        text: Number(root.value).toLocaleString(root.locale, 'f', 0);
         font.pixelSize: root.fontSize
         color: root.enabled ? root.textColor : root.disabledTextColor
         selectionColor: root.textColor
@@ -66,7 +66,7 @@ SpinBox {
 
         onTextEdited: {
             if (root.editable) {
-                root.value = root.valueFromText(text, root.locale);
+                root.value =  Number.fromLocaleString(root.locale, text);
             }
         }
 

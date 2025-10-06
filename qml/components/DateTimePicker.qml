@@ -13,7 +13,7 @@
  * @date 2025-09-02 11:59:05(UTC+8) 周二
  * @change 2025-09-05 14:08:26(UTC+8) 周五
  */
-
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -153,7 +153,7 @@ BaseDialog {
 
                     Rectangle {
                         Layout.fillWidth: true
-                        height: 30
+                        Layout.preferredHeight: 30
                         color: "transparent"
 
                         Text {
@@ -188,6 +188,9 @@ BaseDialog {
                     model: [qsTr("日"), qsTr("一"), qsTr("二"), qsTr("三"), qsTr("四"), qsTr("五"), qsTr("六")]
 
                     Text {
+                        required property var modelData
+                        required property int index
+                        
                         text: modelData
                         color: ThemeManager.textColor
                         font.pixelSize: 12
@@ -205,6 +208,8 @@ BaseDialog {
                     model: 42 // 6周 x 7天
 
                     Rectangle {
+                        required property int index
+                        
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         Layout.preferredHeight: 35
@@ -331,6 +336,9 @@ BaseDialog {
                             visibleItemCount: 5
 
                             delegate: Text {
+                                required property var modelData
+                                required property int index
+                                
                                 text: String(modelData).padStart(2, '0')
                                 color: ThemeManager.textColor
                                 font.pixelSize: 16
@@ -370,6 +378,9 @@ BaseDialog {
                             visibleItemCount: 5
 
                             delegate: Text {
+                                required property var modelData
+                                required property int index
+                                
                                 text: String(modelData).padStart(2, '0')
                                 color: ThemeManager.textColor
                                 font.pixelSize: 16
@@ -409,6 +420,9 @@ BaseDialog {
                             visibleItemCount: 5
 
                             delegate: Text {
+                                required property var modelData
+                                required property int index
+                                
                                 text: String(modelData).padStart(2, '0')
                                 color: ThemeManager.textColor
                                 font.pixelSize: 16

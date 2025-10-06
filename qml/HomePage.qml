@@ -206,10 +206,10 @@ Page {
 
                 // 深色模式
                 IconButton {
-                    text: globalState.isDarkMode ? "\ue668" : "\ue62e"
+                    text: globalData.isDarkMode ? "\ue668" : "\ue62e"
                     onClicked: {
-                        globalState.isDarkMode = !globalState.isDarkMode;
-                        setting.save("setting/isDarkMode", globalState.isDarkMode);
+                        globalData.isDarkMode = !globalData.isDarkMode;
+                        setting.save("setting/isDarkMode", globalData.isDarkMode);
                     }
                 }
 
@@ -369,7 +369,7 @@ Page {
                             text: "\ue61f"
                             /// 鼠标按下事件处理
                             onClicked: {
-                                globalState.toggleWidgetMode();
+                                globalData.toggleWidgetMode();
                             }
                             fontSize: 18
                         }
@@ -444,22 +444,22 @@ Page {
                         // 标题栏输入框
                         CustomTextInput {
                             id: titleField
-                            text: globalState.selectedTodo ? (globalState.selectedTodo.title || qsTr("无标题")) : qsTr("选择一个待办事项")
+                            text: globalData.selectedTodo ? (globalData.selectedTodo.title || qsTr("无标题")) : qsTr("选择一个待办事项")
                             font.pixelSize: 18
                             Layout.fillHeight: true
                             Layout.fillWidth: true
                             font.bold: true
-                            enabled: globalState.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done" // 只有选中待办事项且不在回收站或已完成模式时才能编辑
+                            enabled: globalData.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done" // 只有选中待办事项且不在回收站或已完成模式时才能编辑
                             borderWidth: 0
                             backgroundColor: "transparent"
 
                             // 保存标题的函数
                             function saveTitleIfChanged() {
-                                if (globalState.selectedTodo && text !== globalState.selectedTodo.title) {
+                                if (globalData.selectedTodo && text !== globalData.selectedTodo.title) {
                                     // 通过TodoManager的updateTodo方法保存更改
-                                    todoManager.updateTodo(globalState.selectedTodo.index, "title", text);
+                                    todoManager.updateTodo(globalData.selectedTodo.index, "title", text);
                                     // 更新本地selectedTodo对象以保持UI同步
-                                    globalState.selectedTodo.title = text;
+                                    globalData.selectedTodo.title = text;
                                 }
                             }
 
@@ -504,11 +504,11 @@ Page {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: {
-                        if (!globalState.selectedTodo)
+                        if (!globalData.selectedTodo)
                             return 0;
                         return 32;
                     }
-                    visible: if (!globalState.selectedTodo && globalState.selectedTodo !== null) {
+                    visible: if (!globalData.selectedTodo && globalData.selectedTodo !== null) {
                         return false;
                     } else {
                         return true;
@@ -541,20 +541,20 @@ Page {
 
                             property bool isCreatedText: false
                             property string timeText: {
-                                if (!globalState.selectedTodo)
+                                if (!globalData.selectedTodo)
                                     return "";
                                 if (todoManager.queryer.currentFilter === "recycle") {
-                                    return globalState.selectedTodo.trashedAt ? qsTr("删除时间: ") + Qt.formatDateTime(globalState.selectedTodo.trashedAt, "yyyy-MM-dd hh:mm") : "";
+                                    return globalData.selectedTodo.trashedAt ? qsTr("删除时间: ") + Qt.formatDateTime(globalData.selectedTodo.trashedAt, "yyyy-MM-dd hh:mm") : "";
                                 } else if (todoManager.queryer.currentFilter === "done") {
-                                    return globalState.selectedTodo.completedAt ? qsTr("完成时间: ") + Qt.formatDateTime(globalState.selectedTodo.completedAt, "yyyy-MM-dd hh:mm") : "";
+                                    return globalData.selectedTodo.completedAt ? qsTr("完成时间: ") + Qt.formatDateTime(globalData.selectedTodo.completedAt, "yyyy-MM-dd hh:mm") : "";
                                 } else {
-                                    return globalState.selectedTodo.updatedAt ? qsTr("修改时间: ") + Qt.formatDateTime(globalState.selectedTodo.updatedAt, "yyyy-MM-dd hh:mm") : "";
+                                    return globalData.selectedTodo.updatedAt ? qsTr("修改时间: ") + Qt.formatDateTime(globalData.selectedTodo.updatedAt, "yyyy-MM-dd hh:mm") : "";
                                 }
                             }
                             property string createdText: {
-                                if (!globalState.selectedTodo)
+                                if (!globalData.selectedTodo)
                                     return "";
-                                return globalState.selectedTodo.createdAt ? qsTr("创建时间: ") + Qt.formatDateTime(globalState.selectedTodo.createdAt, "yyyy-MM-dd hh:mm") : "";
+                                return globalData.selectedTodo.createdAt ? qsTr("创建时间: ") + Qt.formatDateTime(globalData.selectedTodo.createdAt, "yyyy-MM-dd hh:mm") : "";
                             }
 
                             MouseArea {
@@ -594,14 +594,14 @@ Page {
 
                             CustomButton {
                                 text: {
-                                    if (!globalState.selectedTodo)
+                                    if (!globalData.selectedTodo)
                                         return qsTr("未分类");
-                                    return globalState.selectedTodo.category || qsTr("未分类");
+                                    return globalData.selectedTodo.category || qsTr("未分类");
                                 }
                                 font.pixelSize: 12
                                 implicitHeight: 30
                                 implicitWidth: 70
-                                enabled: globalState.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
+                                enabled: globalData.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
                                 onClicked: {
                                     var pos = mapToItem(null, 0, height);
                                     todoCategoryManager.popup(pos.x, pos.y, false);
@@ -637,18 +637,18 @@ Page {
                     Layout.fillHeight: true
                     Layout.margins: 8
                     placeholderText: qsTr("输入详情")
-                    text: globalState.selectedTodo ? (globalState.selectedTodo.description || "") : ""
+                    text: globalData.selectedTodo ? (globalData.selectedTodo.description || "") : ""
                     wrapMode: TextEdit.WrapAnywhere
-                    enabled: globalState.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
+                    enabled: globalData.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
 
                     onEditingFinished: {
                         saveDescriptionIfChanged();
                     }
 
                     function saveDescriptionIfChanged() {
-                        if (globalState.selectedTodo && text !== globalState.selectedTodo.description) {
-                            todoManager.updateTodo(globalState.selectedTodo.index, "description", text);
-                            globalState.selectedTodo.description = text;
+                        if (globalData.selectedTodo && text !== globalData.selectedTodo.description) {
+                            todoManager.updateTodo(globalData.selectedTodo.index, "description", text);
+                            globalData.selectedTodo.description = text;
                         }
                     }
                 }
@@ -659,7 +659,7 @@ Page {
                     Layout.fillWidth: true
                     height: 20
                     color: "transparent"
-                    visible: globalState.selectedTodo !== null
+                    visible: globalData.selectedTodo !== null
 
                     Row {
                         anchors.right: parent.right
@@ -783,13 +783,13 @@ Page {
 
                                 CustomButton {
                                     text: {
-                                        if (!globalState.selectedTodo)
+                                        if (!globalData.selectedTodo)
                                             return qsTr("未分类");
-                                        return globalState.selectedTodo.category || qsTr("未分类");
+                                        return globalData.selectedTodo.category || qsTr("未分类");
                                     }
                                     font.pixelSize: 12
                                     implicitHeight: 40
-                                    enabled: globalState.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
+                                    enabled: globalData.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
                                     onClicked: {
                                         var pos = mapToItem(null, 0, height);
                                         todoCategoryManager.popup(pos.x, pos.y, false);
@@ -818,18 +818,18 @@ Page {
                                 CustomButton {
                                     id: drawerDeadlineField
                                     text: {
-                                        if (globalState.selectedTodo && globalState.selectedTodo.deadline && !isNaN(globalState.selectedTodo.deadline.getTime()))
-                                            return Qt.formatDateTime(globalState.selectedTodo.deadline, "yyyy-MM-dd hh:mm");
+                                        if (globalData.selectedTodo && globalData.selectedTodo.deadline && !isNaN(globalData.selectedTodo.deadline.getTime()))
+                                            return Qt.formatDateTime(globalData.selectedTodo.deadline, "yyyy-MM-dd hh:mm");
                                         return qsTr("点击选择日期");
                                     }
-                                    enabled: globalState.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
+                                    enabled: globalData.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
                                     font.pixelSize: 12
                                     Layout.fillWidth: true
                                     implicitHeight: 40
                                     is2ndColor: true
 
                                     onClicked: {
-                                        deadlineDatePicker.selectedDate = globalState.selectedTodo && globalState.selectedTodo.deadline ? globalState.selectedTodo.deadline : new Date();
+                                        deadlineDatePicker.selectedDate = globalData.selectedTodo && globalData.selectedTodo.deadline ? globalData.selectedTodo.deadline : new Date();
                                         deadlineDatePicker.open();
                                     }
                                 }
@@ -854,13 +854,13 @@ Page {
                                 RecurrenceSelector {
                                     id: drawerIntervalSelector
                                     Layout.fillWidth: true
-                                    value: globalState.selectedTodo ? globalState.selectedTodo.recurrenceInterval : 0
-                                    enabled: globalState.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
+                                    value: globalData.selectedTodo ? globalData.selectedTodo.recurrenceInterval : 0
+                                    enabled: globalData.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
 
                                     onIntervalChanged: function (newValue) {
-                                        if (globalState.selectedTodo && newValue !== globalState.selectedTodo.recurrenceInterval) {
-                                            todoManager.updateTodo(globalState.selectedTodo.index, "recurrenceInterval", newValue);
-                                            globalState.selectedTodo.recurrenceInterval = newValue;
+                                        if (globalData.selectedTodo && newValue !== globalData.selectedTodo.recurrenceInterval) {
+                                            todoManager.updateTodo(globalData.selectedTodo.index, "recurrenceInterval", newValue);
+                                            globalData.selectedTodo.recurrenceInterval = newValue;
                                         }
                                     }
                                 }
@@ -886,15 +886,15 @@ Page {
                                     id: drawerCountSpinBox
                                     from: 0
                                     to: 999
-                                    value: globalState.selectedTodo ? globalState.selectedTodo.recurrenceCount : 0
-                                    enabled: globalState.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
+                                    value: globalData.selectedTodo ? globalData.selectedTodo.recurrenceCount : 0
+                                    enabled: globalData.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
                                     implicitWidth: 100
                                     implicitHeight: 25
 
                                     onValueChanged: {
-                                        if (globalState.selectedTodo && value !== globalState.selectedTodo.recurrenceCount) {
-                                            todoManager.updateTodo(globalState.selectedTodo.index, "recurrenceCount", value);
-                                            globalState.selectedTodo.recurrenceCount = value;
+                                        if (globalData.selectedTodo && value !== globalData.selectedTodo.recurrenceCount) {
+                                            todoManager.updateTodo(globalData.selectedTodo.index, "recurrenceCount", value);
+                                            globalData.selectedTodo.recurrenceCount = value;
                                         }
                                     }
                                 }
@@ -926,18 +926,18 @@ Page {
                                 CustomButton {
                                     id: drawerStartDateField
                                     text: {
-                                        if (globalState.selectedTodo && globalState.selectedTodo.recurrenceStartDate && !isNaN(globalState.selectedTodo.recurrenceStartDate.getTime()))
-                                            return Qt.formatDate(globalState.selectedTodo.recurrenceStartDate, "yyyy-MM-dd");
+                                        if (globalData.selectedTodo && globalData.selectedTodo.recurrenceStartDate && !isNaN(globalData.selectedTodo.recurrenceStartDate.getTime()))
+                                            return Qt.formatDate(globalData.selectedTodo.recurrenceStartDate, "yyyy-MM-dd");
                                         return qsTr("点击选择日期");
                                     }
-                                    enabled: globalState.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
+                                    enabled: globalData.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
                                     font.pixelSize: 12
                                     Layout.fillWidth: true
                                     implicitHeight: 40
                                     is2ndColor: true
 
                                     onClicked: {
-                                        startDatePicker.selectedDate = globalState.selectedTodo && globalState.selectedTodo.recurrenceStartDate ? globalState.selectedTodo.recurrenceStartDate : new Date();
+                                        startDatePicker.selectedDate = globalData.selectedTodo && globalData.selectedTodo.recurrenceStartDate ? globalData.selectedTodo.recurrenceStartDate : new Date();
                                         startDatePicker.open();
                                     }
                                 }
@@ -956,16 +956,16 @@ Page {
                                 CustomCheckBox {
                                     id: drawerCompletedCheckBox
                                     text: qsTr("已完成:")
-                                    checked: globalState.selectedTodo?.isCompleted ?? false
-                                    enabled: globalState.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle"
+                                    checked: globalData.selectedTodo?.isCompleted ?? false
+                                    enabled: globalData.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle"
                                     fontSize: 16
                                     implicitHeight: 30
                                     isCheckBoxOnLeft: false
 
                                     onCheckedChanged: {
-                                        if (globalState.selectedTodo && checked !== globalState.selectedTodo.isCompleted) {
-                                            todoManager.markAsDone(globalState.selectedTodo.index, checked);
-                                            globalState.selectedTodo.isCompleted = checked;
+                                        if (globalData.selectedTodo && checked !== globalData.selectedTodo.isCompleted) {
+                                            todoManager.markAsDone(globalData.selectedTodo.index, checked);
+                                            globalData.selectedTodo.isCompleted = checked;
                                         }
                                     }
                                 }
@@ -984,16 +984,16 @@ Page {
                                 CustomCheckBox {
                                     id: drawerImportantCheckBox
                                     text: qsTr("重要:")
-                                    checked: globalState.selectedTodo?.important ?? false
-                                    enabled: globalState.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
+                                    checked: globalData.selectedTodo?.important ?? false
+                                    enabled: globalData.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
                                     fontSize: 16
                                     implicitHeight: 30
                                     isCheckBoxOnLeft: false
 
                                     onCheckedChanged: {
-                                        if (globalState.selectedTodo && checked !== globalState.selectedTodo.important) {
-                                            todoManager.updateTodo(globalState.selectedTodo.index, "important", checked);
-                                            globalState.selectedTodo.important = checked;
+                                        if (globalData.selectedTodo && checked !== globalData.selectedTodo.important) {
+                                            todoManager.updateTodo(globalData.selectedTodo.index, "important", checked);
+                                            globalData.selectedTodo.important = checked;
                                         }
                                     }
                                 }
@@ -1019,7 +1019,7 @@ Page {
                                 CustomButton {
                                     text: qsTr("删除")
                                     font.pixelSize: 16
-                                    enabled: globalState.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
+                                    enabled: globalData.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
                                     backgroundColor: ThemeManager.errorColor
                                     hoverColor: Qt.darker(ThemeManager.errorColor, 1.1)
                                     pressedColor: Qt.darker(ThemeManager.errorColor, 1.2)
@@ -1027,8 +1027,8 @@ Page {
                                     implicitHeight: 40
 
                                     onClicked: {
-                                        if (globalState.selectedTodo) {
-                                            todoManager.markAsRemove(globalState.selectedTodo.index);
+                                        if (globalData.selectedTodo) {
+                                            todoManager.markAsRemove(globalData.selectedTodo.index);
                                         }
                                     }
                                 }
@@ -1208,9 +1208,9 @@ Page {
         id: deadlineDatePicker
 
         onConfirmed: {
-            if (globalState.selectedTodo) {
-                todoManager.updateTodo(globalState.selectedTodo.index, "deadline", selectedDate);
-                globalState.selectedTodo.deadline = selectedDate;
+            if (globalData.selectedTodo) {
+                todoManager.updateTodo(globalData.selectedTodo.index, "deadline", selectedDate);
+                globalData.selectedTodo.deadline = selectedDate;
             }
         }
     }
@@ -1221,9 +1221,9 @@ Page {
         enableTimeMode: false
 
         onConfirmed: {
-            if (globalState.selectedTodo) {
-                todoManager.updateTodo(globalState.selectedTodo.index, "recurrenceStartDate", selectedDate);
-                globalState.selectedTodo.recurrenceStartDate = selectedDate;
+            if (globalData.selectedTodo) {
+                todoManager.updateTodo(globalData.selectedTodo.index, "recurrenceStartDate", selectedDate);
+                globalData.selectedTodo.recurrenceStartDate = selectedDate;
             }
         }
     }

@@ -13,7 +13,6 @@
  */
 
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 
 RowLayout {
@@ -112,8 +111,8 @@ RowLayout {
         model: {
             let items = [];
             // 添加预设选项
-            for (let i = 0; i < presetOptions.length; i++) {
-                items.push(presetOptions[i].text);
+            for (let i = 0; i < root.presetOptions.length; i++) {
+                items.push(root.presetOptions[i].text);
             }
             // 添加自定义选项
             items.push(qsTr("自定义"));
@@ -122,23 +121,23 @@ RowLayout {
 
         // 设置当前索引
         currentIndex: {
-            for (let i = 0; i < presetOptions.length; i++) {
-                if (presetOptions[i].value === root.value) {
+            for (let i = 0; i < root.presetOptions.length; i++) {
+                if (root.presetOptions[i].value === root.value) {
                     return i;
                 }
             }
             // 如果是自定义值（大于0），选择"自定义"选项
             if (root.value >= 0) {
-                return presetOptions.length; // "自定义"选项的索引
+                return root.presetOptions.length; // "自定义"选项的索引
             }
             return 0; // 默认选择第一个选项
         }
 
         onCurrentIndexChanged: {
             // 防止绑定循环：只有当用户主动选择时才更新值
-            if (currentIndex >= 0 && currentIndex < presetOptions.length) {
+            if (currentIndex >= 0 && currentIndex < root.presetOptions.length) {
                 // 选择了预设选项
-                let newValue = presetOptions[currentIndex].value;
+                let newValue = root.presetOptions[currentIndex].value;
                 if (newValue !== root.value) {
                     // 临时断开绑定以避免循环
                     Qt.callLater(function () {
@@ -146,7 +145,7 @@ RowLayout {
                         root.intervalChanged(newValue);
                     });
                 }
-            } else if (currentIndex === presetOptions.length) {
+            } else if (currentIndex === root.presetOptions.length) {
                 // 选择了"自定义"选项
                 if (root.value <= 0) {
                     Qt.callLater(function () {
@@ -180,7 +179,7 @@ RowLayout {
 
     // 描述文本
     Text {
-        text: root.isCustomMode ? qsTr("天重复") : getCurrentDescription()
+        text: root.isCustomMode ? qsTr("天重复") : root.getCurrentDescription()
         font.pixelSize: 16
         color: root.textColor
         verticalAlignment: Text.AlignVCenter

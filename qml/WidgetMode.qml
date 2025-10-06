@@ -15,7 +15,7 @@ import "components"
 
 Item {
     id: toolMode
-    visible: globalState.isDesktopWidget
+    visible: globalData.isDesktopWidget
     // 外部导入的组件
     property var loginStatusDialogs
     property var todoCategoryManager
@@ -65,22 +65,22 @@ Item {
 
     // 当尺寸变化时通知父窗口
     onTotalWidthChanged: {
-        if (root && globalState.isDesktopWidget) {
+        if (root && globalData.isDesktopWidget) {
             root.width = totalWidth;
         }
     }
 
     onTotalHeightChanged: {
-        if (root && globalState.isDesktopWidget) {
+        if (root && globalData.isDesktopWidget) {
             root.height = totalHeight;
         }
     }
 
     // 监听小组件模式状态变化
     Connections {
-        target: globalState
+        target: globalData
         function onIsDesktopWidgetChanged() {
-            if (globalState.isDesktopWidget && root) {
+            if (globalData.isDesktopWidget && root) {
                 // 切换到小组件模式时立即更新尺寸
                 root.width = totalWidth;
                 root.height = totalHeight;
@@ -90,7 +90,7 @@ Item {
 
     // 组件完成时初始化尺寸
     Component.onCompleted: {
-        if (globalState.isDesktopWidget && root) {
+        if (globalData.isDesktopWidget && root) {
             root.width = totalWidth;
             root.height = totalHeight;
         }
@@ -105,13 +105,13 @@ Item {
         color: ThemeManager.primaryColor
         border.width: 0                               ///< 边框宽度
         radius: 5                                     ///< 圆角
-        visible: globalState.isDesktopWidget
+        visible: globalData.isDesktopWidget
 
         // 窗口拖拽处理区域
         WindowDragHandler {
             anchors.fill: parent
             targetWindow: toolMode.root
-            enabled: !globalState.preventDragging
+            enabled: !globalData.preventDragging
         }
 
         RowLayout {
@@ -121,7 +121,7 @@ Item {
 
             IconButton {
                 text: "\ue90f"              ///< 菜单图标
-                onClicked: globalState.toggleSettingsVisible()
+                onClicked: globalData.toggleSettingsVisible()
             }
 
             /// 待办状态指示器
@@ -158,21 +158,21 @@ Item {
 
             /// 任务列表展开/收起按钮
             IconButton {
-                text: globalState.isShowTodos ? "\ue667" : "\ue669"     ///< 根据状态显示箭头
-                onClicked: globalState.toggleTodosVisible()     ///< 切换任务列表显示
+                text: globalData.isShowTodos ? "\ue667" : "\ue669"     ///< 根据状态显示箭头
+                onClicked: globalData.toggleTodosVisible()     ///< 切换任务列表显示
             }
 
             /// 添加任务按钮
             IconButton {
                 text: "\ue903"                                 ///< 加号图标
                 onClicked: {
-                    if (globalState.isShowAddTask) {
-                        globalState.isNew = false;
+                    if (globalData.isShowAddTask) {
+                        globalData.isNew = false;
                     } else {
-                        globalState.isNew = true;
+                        globalData.isNew = true;
                     }
-                    globalState.selectedTodo = null;
-                    globalState.toggleAddTaskVisible();   ///< 切换添加任务界面显示
+                    globalData.selectedTodo = null;
+                    globalData.toggleAddTaskVisible();   ///< 切换添加任务界面显示
                 }
             }
 
@@ -181,7 +181,7 @@ Item {
                 text: "\ue620"
                 /// 鼠标按下事件处理
                 onClicked: {
-                    globalState.toggleWidgetMode();
+                    globalData.toggleWidgetMode();
                 }
                 fontSize: 18
             }
@@ -194,7 +194,7 @@ Item {
         y: toolMode.calculateStackedY(settingsPopup)
         width: 400
         height: 200
-        visible: globalState.isDesktopWidget && globalState.isShowSetting
+        visible: globalData.isDesktopWidget && globalData.isShowSetting
 
         ColumnLayout {
             anchors.fill: parent
@@ -211,13 +211,13 @@ Item {
             ControlRow {
                 id: darkModeCheckBox
                 text: qsTr("深色模式")
-                checked: globalState.isDarkMode
-                enabled: !globalState.isFollowSystemDarkMode
+                checked: globalData.isDarkMode
+                enabled: !globalData.isFollowSystemDarkMode
                 leftMargin: 10
                 controlType: ControlRow.ControlType.Switch
 
                 onCheckedChanged: {
-                    globalState.isDarkMode = checked;
+                    globalData.isDarkMode = checked;
                     // 保存设置到配置文件
                     setting.save("setting/isDarkMode", checked);
                 }
@@ -226,13 +226,13 @@ Item {
             ControlRow {
                 id: preventDraggingCheckBox
                 text: qsTr("防止拖动窗口（小窗口模式）")
-                checked: globalState.preventDragging
-                enabled: globalState.isDesktopWidget
+                checked: globalData.preventDragging
+                enabled: globalData.isDesktopWidget
                 leftMargin: 10
                 controlType: ControlRow.ControlType.Switch
                 onCheckedChanged: {
-                    globalState.preventDragging = checked;
-                    setting.save("setting/preventDragging", globalState.preventDragging);
+                    globalData.preventDragging = checked;
+                    setting.save("setting/preventDragging", globalData.preventDragging);
                 }
             }
 
@@ -245,7 +245,7 @@ Item {
         y: toolMode.calculateStackedY(mainContentPopup)
         width: 400
         height: baseHeight
-        visible: globalState.isDesktopWidget && globalState.isShowTodos // 在小组件模式下且需要显示所有任务时显示
+        visible: globalData.isDesktopWidget && globalData.isShowTodos // 在小组件模式下且需要显示所有任务时显示
         property int baseHeight: 275 // 一个待办事项的高度为50，其他的占了75px的高度
 
         ColumnLayout {
@@ -271,7 +271,7 @@ Item {
         y: toolMode.calculateStackedY(addTaskPopup)
         width: 400
         height: 250
-        visible: globalState.isDesktopWidget && globalState.isShowAddTask
+        visible: globalData.isDesktopWidget && globalData.isShowAddTask
 
         // TODO: 这里可以天空标题输入框，还有一些详细设置
         ColumnLayout {
@@ -281,7 +281,7 @@ Item {
             RowLayout {
                 CustomTextInput {
                     id: titleInput
-                    text: globalState.selectedTodo ? (globalState.selectedTodo.title || qsTr("无标题")) : qsTr("新建待办")
+                    text: globalData.selectedTodo ? (globalData.selectedTodo.title || qsTr("无标题")) : qsTr("新建待办")
                     font.bold: true
                     font.pixelSize: 16
                     borderWidth: 0
@@ -293,8 +293,8 @@ Item {
                 IconButton {
                     text: "\ue8d1"
                     onClicked: {
-                        globalState.isShowAddTask = !globalState.isShowAddTask;
-                        globalState.isNew = true;
+                        globalData.isShowAddTask = !globalData.isShowAddTask;
+                        globalData.isNew = true;
                     }
                 }
             }
@@ -304,7 +304,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 placeholderText: qsTr("输入详情")
-                text: globalState.selectedTodo ? (globalState.selectedTodo.description || "") : ""
+                text: globalData.selectedTodo ? (globalData.selectedTodo.description || "") : ""
                 wrapMode: TextEdit.WrapAnywhere
                 clip: true
 
@@ -313,12 +313,12 @@ Item {
                 }
 
                 function saveDescriptionIfChanged() {
-                    if (globalState.isNew) {
+                    if (globalData.isNew) {
                         return;
                     }
-                    if (globalState.selectedTodo && text !== globalState.selectedTodo.description) {
-                        todoManager.updateTodo(globalState.selectedTodo.index, "description", text);
-                        globalState.selectedTodo.description = text;
+                    if (globalData.selectedTodo && text !== globalData.selectedTodo.description) {
+                        todoManager.updateTodo(globalData.selectedTodo.index, "description", text);
+                        globalData.selectedTodo.description = text;
                     }
                 }
             }
@@ -341,7 +341,7 @@ Item {
                     IconButton {
                         text: "\ue6e5"
                         onClicked: {
-                            deadlineDatePicker.selectedDate = globalState.selectedTodo && globalState.selectedTodo.deadline ? globalState.selectedTodo.deadline : new Date();
+                            deadlineDatePicker.selectedDate = globalData.selectedTodo && globalData.selectedTodo.deadline ? globalData.selectedTodo.deadline : new Date();
                             deadlineDatePicker.open();
                         }
                     }
@@ -362,10 +362,10 @@ Item {
                     IconButton {
                         text: "\ue74b"
                         onClicked: {
-                            if (globalState.isNew) {
+                            if (globalData.isNew) {
                                 return;
                             } else {
-                                startDatePicker.selectedDate = globalState.selectedTodo && globalState.selectedTodo.recurrenceStartDate ? globalState.selectedTodo.recurrenceStartDate : new Date();
+                                startDatePicker.selectedDate = globalData.selectedTodo && globalData.selectedTodo.recurrenceStartDate ? globalData.selectedTodo.recurrenceStartDate : new Date();
                                 startDatePicker.open();
                             }
                         }
@@ -374,13 +374,13 @@ Item {
                     // 完成状态
                     IconButton {
                         text: "\ue8eb"
-                        visible: !globalState.isNew
-                        property bool checked: globalState.selectedTodo ? (globalState.selectedTodo.isCompleted || false) : false
+                        visible: !globalData.isNew
+                        property bool checked: globalData.selectedTodo ? (globalData.selectedTodo.isCompleted || false) : false
                         onClicked: {
                             checked = !checked;
-                            if (globalState.selectedTodo && checked !== globalState.selectedTodo.isCompleted) {
-                                todoManager.markAsDone(globalState.selectedTodo.index.checked);
-                                globalState.selectedTodo.isCompleted = checked;
+                            if (globalData.selectedTodo && checked !== globalData.selectedTodo.isCompleted) {
+                                todoManager.markAsDone(globalData.selectedTodo.index.checked);
+                                globalData.selectedTodo.isCompleted = checked;
                             }
                         }
                     }
@@ -388,14 +388,14 @@ Item {
                     // 重要程度
                     IconButton {
                         text: "\ue8de"
-                        property bool checked: globalState.selectedTodo ? (globalState.selectedTodo.important || false) : false
+                        property bool checked: globalData.selectedTodo ? (globalData.selectedTodo.important || false) : false
                         onClicked: {
                             checked = !checked;
-                            if (globalState.isNew) {
-                                globalState.selectedTodo.important = checked;
-                            } else if (globalState.selectedTodo && checked !== globalState.selectedTodo.important) {
-                                todoManager.updateTodo(globalState.selectedTodo.index, "important", checked);
-                                globalState.selectedTodo.important = checked;
+                            if (globalData.isNew) {
+                                globalData.selectedTodo.important = checked;
+                            } else if (globalData.selectedTodo && checked !== globalData.selectedTodo.important) {
+                                todoManager.updateTodo(globalData.selectedTodo.index, "important", checked);
+                                globalData.selectedTodo.important = checked;
                             }
                         }
                     }
@@ -403,11 +403,11 @@ Item {
                     // 删除按钮
                     IconButton {
                         text: "\ue8f5"
-                        visible: !globalState.isNew
+                        visible: !globalData.isNew
                         onClicked: {
-                            if (globalState.selectedTodo) {
-                                todoManager.markAsRemove(globalState.selectedTodo.index);
-                                globalState.selectedTodo = null;
+                            if (globalData.selectedTodo) {
+                                todoManager.markAsRemove(globalData.selectedTodo.index);
+                                globalData.selectedTodo = null;
                             }
                         }
                     }
@@ -416,23 +416,23 @@ Item {
                 RowLayout {
                     Layout.alignment: Qt.AlignRight
                     CustomButton {
-                        text: globalState.isNew ? qsTr("添加") : qsTr("保存")
+                        text: globalData.isNew ? qsTr("添加") : qsTr("保存")
                         onClicked: {
-                            if (globalState.isNew) {
+                            if (globalData.isNew) {
                                 // TODO：c++中有些没实现
                                 todoManager.addTodo(titleInput.text, contentInput.text);
                             } else {
-                                todoManager.updateTodo(globalState.selectedTodo.index, "title", titleInput.text);
-                                todoManager.updateTodo(globalState.selectedTodo.index, "description", contentInput.text);
-                                todoManager.updateTodo(globalState.selectedTodo.index, "deadline", globalState.selectedTodo.deadline);
-                                todoManager.updateTodo(globalState.selectedTodo.index, "recurrenceCount", globalState.selectedTodo.recurrenceCount);
-                                todoManager.updateTodo(globalState.selectedTodo.index, "recurrenceStartDate", globalState.selectedTodo.recurrenceStartDate);
-                                todoManager.updateTodo(globalState.selectedTodo.index, "recurrenceInterval", globalState.selectedTodo.recurrenceInterval);
-                                todoManager.updateTodo(globalState.selectedTodo.index, "important", globalState.selectedTodo.important);
-                                todoManager.updateTodo(globalState.selectedTodo.index, "category", globalState.selectedTodo.category);
-                                todoManager.markAsDone(globalState.selectedTodo.index, globalState.selectedTodo.isCompleted);
+                                todoManager.updateTodo(globalData.selectedTodo.index, "title", titleInput.text);
+                                todoManager.updateTodo(globalData.selectedTodo.index, "description", contentInput.text);
+                                todoManager.updateTodo(globalData.selectedTodo.index, "deadline", globalData.selectedTodo.deadline);
+                                todoManager.updateTodo(globalData.selectedTodo.index, "recurrenceCount", globalData.selectedTodo.recurrenceCount);
+                                todoManager.updateTodo(globalData.selectedTodo.index, "recurrenceStartDate", globalData.selectedTodo.recurrenceStartDate);
+                                todoManager.updateTodo(globalData.selectedTodo.index, "recurrenceInterval", globalData.selectedTodo.recurrenceInterval);
+                                todoManager.updateTodo(globalData.selectedTodo.index, "important", globalData.selectedTodo.important);
+                                todoManager.updateTodo(globalData.selectedTodo.index, "category", globalData.selectedTodo.category);
+                                todoManager.markAsDone(globalData.selectedTodo.index, globalData.selectedTodo.isCompleted);
                             }
-                            globalState.selectedTodo = null;
+                            globalData.selectedTodo = null;
                         }
                     }
                 }
@@ -459,15 +459,15 @@ Item {
                 id: drawerCountSpinBox
                 from: 0
                 to: 999
-                value: globalState.selectedTodo ? globalState.selectedTodo.recurrenceCount : 0
-                enabled: globalState.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
+                value: globalData.selectedTodo ? globalData.selectedTodo.recurrenceCount : 0
+                enabled: globalData.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
                 implicitWidth: 100
                 implicitHeight: 25
 
                 onValueChanged: {
-                    if (globalState.selectedTodo && value !== globalState.selectedTodo.recurrenceCount) {
-                        todoManager.updateTodo(globalState.selectedTodo.index, "recurrenceCount", value);
-                        globalState.selectedTodo.recurrenceCount = value;
+                    if (globalData.selectedTodo && value !== globalData.selectedTodo.recurrenceCount) {
+                        todoManager.updateTodo(globalData.selectedTodo.index, "recurrenceCount", value);
+                        globalData.selectedTodo.recurrenceCount = value;
                     }
                 }
             }
@@ -500,15 +500,15 @@ Item {
             RecurrenceSelector {
                 id: drawerIntervalSelector
                 Layout.fillWidth: true
-                value: globalState.selectedTodo ? globalState.selectedTodo.recurrenceInterval : 0
-                enabled: globalState.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
+                value: globalData.selectedTodo ? globalData.selectedTodo.recurrenceInterval : 0
+                enabled: globalData.selectedTodo !== null && todoManager.queryer.currentFilter !== "recycle" && todoManager.queryer.currentFilter !== "done"
 
                 onIntervalChanged: function (newValue) {
-                    if (globalState.isNew) {
-                        globalState.selectedTodo.recurrenceInterval = newValue;
-                    } else if (globalState.selectedTodo && newValue !== globalState.selectedTodo.recurrenceInterval) {
-                        todoManager.updateTodo(globalState.selectedTodo.index, "recurrenceInterval", newValue);
-                        globalState.selectedTodo.recurrenceInterval = newValue;
+                    if (globalData.isNew) {
+                        globalData.selectedTodo.recurrenceInterval = newValue;
+                    } else if (globalData.selectedTodo && newValue !== globalData.selectedTodo.recurrenceInterval) {
+                        todoManager.updateTodo(globalData.selectedTodo.index, "recurrenceInterval", newValue);
+                        globalData.selectedTodo.recurrenceInterval = newValue;
                     }
                 }
             }
@@ -521,11 +521,11 @@ Item {
         enableTimeMode: false
 
         onConfirmed: {
-            if (globalState.isNew) {
-                globalState.selectedTodo.recurrenceStartDate = selectedDate;
-            } else if (globalState.selectedTodo) {
-                todoManager.updateTodo(globalState.selectedTodo.index, "recurrenceStartDate", selectedDate);
-                globalState.selectedTodo.recurrenceStartDate = selectedDate;
+            if (globalData.isNew) {
+                globalData.selectedTodo.recurrenceStartDate = selectedDate;
+            } else if (globalData.selectedTodo) {
+                todoManager.updateTodo(globalData.selectedTodo.index, "recurrenceStartDate", selectedDate);
+                globalData.selectedTodo.recurrenceStartDate = selectedDate;
             }
         }
     }
@@ -535,11 +535,11 @@ Item {
         id: deadlineDatePicker
 
         onConfirmed: {
-            if (globalState.isNew) {
-                globalState.selectedTodo.deadline = selectedDate;
-            } else if (globalState.selectedTodo) {
-                todoManager.updateTodo(globalState.selectedTodo.index, "deadline", selectedDate);
-                globalState.selectedTodo.deadline = selectedDate;
+            if (globalData.isNew) {
+                globalData.selectedTodo.deadline = selectedDate;
+            } else if (globalData.selectedTodo) {
+                todoManager.updateTodo(globalData.selectedTodo.index, "deadline", selectedDate);
+                globalData.selectedTodo.deadline = selectedDate;
             }
         }
     }

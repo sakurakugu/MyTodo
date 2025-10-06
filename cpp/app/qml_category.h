@@ -50,13 +50,13 @@ class CategorieItem;
  * @note 该类是线程安全的，所有网络操作都在后台线程执行
  * @see CategorieItem, NetworkRequest, CategorySyncServer, CategoryModel
  */
-class CategoryManager : public QObject {
+class QmlCategoryManager : public QObject {
     Q_OBJECT
     Q_PROPERTY(QStringList categories READ getCategories NOTIFY categoriesChanged)
 
   public:
-    explicit CategoryManager(UserAuth &userAuth, QObject *parent = nullptr);
-    ~CategoryManager();
+    explicit QmlCategoryManager(UserAuth &userAuth, QObject *parent = nullptr);
+    ~QmlCategoryManager();
 
     // 类别管理相关方法
     QStringList getCategories() const;                                            ///< 获取类别列表

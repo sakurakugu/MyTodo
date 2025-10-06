@@ -1,6 +1,6 @@
 /**
- * @file user_auth_manager.h
- * @brief UserAuthManager QML 暴露层头文件
+ * @file qml_user_auth.h
+ * @brief QmlUserAuth QML 暴露层头文件
  *
  * 将底层 `UserAuth` 逻辑与 QML 解耦：
  * - 仅转发 UI 所需的属性 / 方法 / 信号
@@ -20,7 +20,7 @@
 class UserAuth; // 前向声明底层认证类
 
 /**
- * @class UserAuthManager
+ * @class QmlUserAuth
  * @brief QML 层用户认证门面（轻量包装转发）
  *
  * 设计目标：
@@ -28,14 +28,14 @@ class UserAuth; // 前向声明底层认证类
  * - 只暴露 QML 当前使用的最小集合；若 UI 新增需求，再增量扩展
  * - 可在此添加 UI 相关状态（例如 loading 状态聚合）而不污染核心类
  */
-class UserAuthManager : public QObject {
+class QmlUserAuth : public QObject {
     Q_OBJECT
     Q_PROPERTY(QString username READ username NOTIFY usernameChanged)
     Q_PROPERTY(QString email READ email NOTIFY emailChanged)
     Q_PROPERTY(QUuid uuid READ uuid NOTIFY uuidChanged)
     Q_PROPERTY(bool isLoggedIn READ isLoggedIn NOTIFY isLoggedInChanged)
   public:
-    explicit UserAuthManager(UserAuth &auth, QObject *parent = nullptr);
+    explicit QmlUserAuth(UserAuth &auth, QObject *parent = nullptr);
 
     // 基本属性访问（转发）
     QString username() const;

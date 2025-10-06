@@ -133,7 +133,7 @@ BaseDialog {
      * @brief 设置自定义验证函数
      * @param validationFunc 验证函数，返回 {valid: boolean, message: string}
      */
-    property var customValidation: null
+    property var customValidation: function(text) { return {valid: true, message: ""}; }
 
     function validateWithCustom() {
         if (customValidation && typeof customValidation === "function") {

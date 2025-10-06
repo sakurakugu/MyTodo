@@ -113,13 +113,13 @@ Page {
             ControlRow {
                 id: darkModeCheckBox
                 text: qsTr("深色模式")
-                checked: globalState.isDarkMode
-                enabled: !globalState.isFollowSystemDarkMode
+                checked: globalData.isDarkMode
+                enabled: !globalData.isFollowSystemDarkMode
                 leftMargin: 10
                 controlType: ControlRow.ControlType.Switch
 
                 onCheckedChanged: {
-                    globalState.isDarkMode = checked;
+                    globalData.isDarkMode = checked;
                     // 保存设置到配置文件
                     setting.save("setting/isDarkMode", checked);
                 }
@@ -134,33 +134,33 @@ Page {
 
                 Component.onCompleted: {
                     if (checked) {
-                        globalState.isFollowSystemDarkMode = checked;
+                        globalData.isFollowSystemDarkMode = checked;
                         // 如果启用跟随系统，立即同步系统主题
-                        if (globalState.isDarkMode !== globalState.isSystemInDarkMode) {
-                            globalState.isDarkMode = globalState.isSystemInDarkMode;
+                        if (globalData.isDarkMode !== globalData.isSystemInDarkMode) {
+                            globalData.isDarkMode = globalData.isSystemInDarkMode;
                         }
                     }
                 }
 
                 onCheckedChanged: {
                     setting.save("setting/followSystemTheme", checked);
-                    globalState.isFollowSystemDarkMode = checked;
+                    globalData.isFollowSystemDarkMode = checked;
 
                     if (checked) {
                         // 启用跟随系统时，立即同步系统主题
-                        if (globalState.isDarkMode !== globalState.isSystemInDarkMode) {
-                            globalState.isDarkMode = globalState.isSystemInDarkMode;
+                        if (globalData.isDarkMode !== globalData.isSystemInDarkMode) {
+                            globalData.isDarkMode = globalData.isSystemInDarkMode;
                         }
                     }
                 }
 
                 // 监听系统主题变化
                 Connections {
-                    target: globalState
+                    target: globalData
                     function onSystemInDarkModeChanged() {
                         if (followSystemThemeCheckBox.checked) {
-                            if (globalState.isDarkMode !== globalState.isSystemInDarkMode) {
-                                globalState.isDarkMode = globalState.isSystemInDarkMode;
+                            if (globalData.isDarkMode !== globalData.isSystemInDarkMode) {
+                                globalData.isDarkMode = globalData.isSystemInDarkMode;
                             }
                         }
                     }
@@ -170,24 +170,24 @@ Page {
             ControlRow {
                 id: preventDraggingCheckBox
                 text: qsTr("防止拖动窗口（小窗口模式）")
-                checked: globalState.preventDragging
-                enabled: globalState.isDesktopWidget
+                checked: globalData.preventDragging
+                enabled: globalData.isDesktopWidget
                 leftMargin: 10
                 controlType: ControlRow.ControlType.Switch
                 onCheckedChanged: {
-                    globalState.preventDragging = checked;
-                    setting.save("setting/preventDragging", globalState.preventDragging);
+                    globalData.preventDragging = checked;
+                    setting.save("setting/preventDragging", globalData.preventDragging);
                 }
             }
 
             ControlRow {
                 id: autoStartSwitch
                 text: qsTr("开机自启动")
-                checked: globalState.isAutoStartEnabled()
+                checked: globalData.isAutoStartEnabled()
                 leftMargin: 10
                 controlType: ControlRow.ControlType.Switch
                 onCheckedChanged: {
-                    globalState.setAutoStart(checked);
+                    globalData.setAutoStart(checked);
                 }
             }
 

@@ -8,8 +8,8 @@
 {
     "files.associations": {
         "*.dbclient-js": "javascript",
-        "*.json5": "json5",
         "*.json": "jsonc",
+        "*.json5": "json5",
         "random": "cpp",
         "chrono": "cpp",
         "ranges": "cpp",
@@ -142,7 +142,9 @@
         "qqmlcontext": "cpp",
         "qdiriterator": "cpp",
         "qregularexpression": "cpp",
-        "qsqldatabase": "cpp"
+        "qsqldatabase": "cpp",
+        "queue": "cpp",
+        "stack": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "search.useIgnoreFiles": false, // 禁用git忽略文件

@@ -5,7 +5,7 @@
  * 主要职责：
  * - 初始化 Qt 应用与基础图形环境（透明窗口、控件样式）
  * - 安装日志处理器并在 Debug 模式调整日志级别
- * - 构建并注入核心业务对象（UserAuth / CategoryManager / TodoManager / GlobalState / Setting）到 QML 上下文
+ * - 构建并注入核心业务对象（UserAuth / CategoryManager / TodoManager / GlobalData / Setting）到 QML 上下文
  * - 处理 --autostart 参数以设置桌面组件模式
  * - 加载 QML 主界面并进入事件循环
  *
@@ -25,14 +25,14 @@
 #include <QSurfaceFormat>
 #include <QtQuickControls2/QQuickStyle>
 
-#include "app/global_state.h"
-#include "app/setting_manager.h"
-#include "modules/user/user_auth.h"
-#include "app/user_auth_manager.h"
+#include "app/qml_category.h"
+#include "app/qml_global_data.h"
+#include "app/qml_setting.h"
+#include "app/qml_todo.h"
+#include "app/qml_user_auth.h"
 #include "logger.h"
+#include "modules/user/user_auth.h"
 #include "qt_debug.h"
-#include "app/category_manager.h"
-#include "app/todo_manager.h"
 #include "version.h"
 
 int main(int argc, char *argv[]) {
@@ -65,26 +65,26 @@ int main(int argc, char *argv[]) {
     // 设置应用信息
     QGuiApplication::setApplicationName(APP_NAME);              // 设置应用名称（不设置组织名）
     QGuiApplication::setApplicationVersion(APP_VERSION_STRING); // 设置应用版本
-    
-    UserAuth userAuth;                                        // 核心认证逻辑实例
-    UserAuthManager userAuthManager(userAuth);                // QML 暴露层
-    CategoryManager categoryManager(userAuth);                // 创建CategoryManager实例
-    TodoManager todoManager(userAuth, categoryManager);       // 创建TodoManager实例
-    SettingManager settingManager; // QML 包装层实例
+
+    UserAuth userAuth;                            // 核心认证逻辑实例
+    QmlUserAuth qmlUserAuth(userAuth);            // QML 暴露层
+    QmlCategoryManager categoryManager(userAuth); // 创建CategoryManager实例
+    QmlTodoManager todoManager(userAuth);         // 创建TodoManager实例
+    QmlSetting qmlSetting;                        // QML 包装层实例
 
     // 检查是否通过开机自启动启动
     QStringList arguments = app.arguments();
     if (arguments.contains("--autostart")) {
         // 如果是开机自启动，默认设置为小组件模式
-        GlobalState::GetInstance().setIsDesktopWidget(true);
+        QmlGlobalData::GetInstance().setIsDesktopWidget(true);
     }
 
     QQmlApplicationEngine engine;
 
     // 将类注册到QML上下文
-    engine.rootContext()->setContextProperty("globalState", &GlobalState::GetInstance());
-    engine.rootContext()->setContextProperty("setting", &settingManager);
-    engine.rootContext()->setContextProperty("userAuth", &userAuthManager);
+    engine.rootContext()->setContextProperty("globalData", &QmlGlobalData::GetInstance());
+    engine.rootContext()->setContextProperty("setting", &qmlSetting);
+    engine.rootContext()->setContextProperty("userAuth", &qmlUserAuth);
     engine.rootContext()->setContextProperty("categoryManager", &categoryManager);
     engine.rootContext()->setContextProperty("todoManager", &todoManager);
 

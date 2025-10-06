@@ -16,7 +16,6 @@
 # 创建日期： 2025-10-05 22:19:33(UTC+8) 周日
 # 修改日期： 2025-10-05 23:32:12(UTC+8) 周日
 
-
 # 查找Python3解释器
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
@@ -33,7 +32,8 @@ endif()
 add_custom_target(check_headers
     COMMAND ${Python3_EXECUTABLE} ${HEADER_CHECK_SCRIPT} --root ${CMAKE_SOURCE_DIR}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    COMMENT "正在校验 C/C++ 文件头规范..."
+    # COMMENT "正在校验 C/C++ 文件头规范..."
+    COMMENT "Checking C/C++ headers..."
     VERBATIM
 )
 
@@ -41,7 +41,8 @@ add_custom_target(check_headers
 add_custom_target(fix_headers
     COMMAND ${Python3_EXECUTABLE} ${HEADER_CHECK_SCRIPT} --root ${CMAKE_SOURCE_DIR} --fix
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    COMMENT "正在自动修复简单的文件头规范问题..."
+    # COMMENT "正在自动修复简单的文件头规范问题..."
+    COMMENT "Fixing C/C++ headers..."
     VERBATIM
 )
 

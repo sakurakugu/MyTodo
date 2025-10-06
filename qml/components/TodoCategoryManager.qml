@@ -113,11 +113,11 @@ Item {
                         if (root.isFilterMode) {
                             todoManager.queryer.currentCategory = modelData;
                         } else {
-                            if (globalState.selectedTodo && globalState.selectedTodo.index !== null) {
-                                todoManager.updateTodo(globalState.selectedTodo.index, "category", modelData);
+                            if (globalData.selectedTodo && globalData.selectedTodo.index !== null) {
+                                todoManager.updateTodo(globalData.selectedTodo.index, "category", modelData);
                             }
-                            if (globalState.selectedTodo) {
-                                globalState.selectedTodo.category = modelData;
+                            if (globalData.selectedTodo) {
+                                globalData.selectedTodo.category = modelData;
                             }
                             root.close();  // 选择后关闭菜单
                         }
@@ -175,11 +175,11 @@ Item {
                                 if (root.isFilterMode) {
                                     todoManager.queryer.currentCategory = modelData;
                                 } else {
-                                    if (globalState.selectedTodo && globalState.selectedTodo.index !== null) {
-                                        todoManager.updateTodo(globalState.selectedTodo.index, "category", modelData);
+                                    if (globalData.selectedTodo && globalData.selectedTodo.index !== null) {
+                                        todoManager.updateTodo(globalData.selectedTodo.index, "category", modelData);
                                     }
-                                    if (globalState.selectedTodo) {
-                                        globalState.selectedTodo.category = modelData;
+                                    if (globalData.selectedTodo) {
+                                        globalData.selectedTodo.category = modelData;
                                     }
                                 }
                                 root.close();

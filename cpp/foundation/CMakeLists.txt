@@ -12,6 +12,8 @@ add_library(mytodo_foundation STATIC
     database.cpp
     database.h
     default_value.h
+    global_data.cpp
+    global_data.h
     logger.cpp
     logger.h
     network_proxy.cpp

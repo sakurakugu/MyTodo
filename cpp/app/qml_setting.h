@@ -1,12 +1,12 @@
 /**
- * @file setting_manager.h
- * @brief SettingManager 包装类，将 Setting 单例对 QML 暴露的接口隔离出来
+ * @file qml_setting.h
+ * @brief QmlSetting 包装类，将 Setting 单例对 QML 暴露的接口隔离出来
  *
  * 设计目的：
  * - 降低 QML 对核心 Setting 实现的直接耦合
  * - 后续可在不影响 QML 的情况下重构 Setting 内部逻辑或权限控制
  * 
- * 该文件定义了SettingManager类，负责管理应用程序的设置。
+ * 该文件定义了QmlSetting类，负责管理应用程序的设置。
  * 
  * @author Sakurakugu
  * @date 2025-10-06 01:32:19(UTC+8) 周一
@@ -19,12 +19,12 @@
 
 #include "setting.h" // 底层业务单例
 
-class SettingManager : public QObject {
+class QmlSetting : public QObject {
     Q_OBJECT
   public:
-    explicit SettingManager(QObject *parent = nullptr) : QObject(parent) {
+    explicit QmlSetting(QObject *parent = nullptr) : QObject(parent) {
         // 透传底层信号
-        QObject::connect(&Setting::GetInstance(), &Setting::baseUrlChanged, this, &SettingManager::baseUrlChanged);
+        QObject::connect(&Setting::GetInstance(), &Setting::baseUrlChanged, this, &QmlSetting::baseUrlChanged);
     }
 
     // ---- 直接数据存取 ----
