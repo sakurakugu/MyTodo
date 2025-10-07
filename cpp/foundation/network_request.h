@@ -15,7 +15,9 @@
 #include <QNetworkReply>
 #include <QObject>
 #include <QTimer>
+#include <functional>
 #include <map>
+#include <optional>
 
 // 前向声明
 class NetworkProxy;
@@ -64,7 +66,9 @@ enum RequestType {
     PushCategories,  // 批量同步类别请求
     UpdateCategory,  // 更新类别请求
     DeleteCategory,  // 删除类别请求
-    Other = 99,      // 其他请求
+
+    Other = 100,       // 其他请求，大于等于它的都是自定义请求
+    UpdateCheck = 101, // 更新检查请求
 };
 
 // 网络错误类型
@@ -123,6 +127,14 @@ class NetworkRequest : public QObject {
         bool requiresAuth = true;       // 是否需要认证
     };
 
+    /**
+     * @brief 自定义响应处理器函数类型
+     * @param rawResponse 原始响应数据（QByteArray）
+     * @param httpStatusCode HTTP状态码
+     * @return 解析后的JSON对象，如果解析失败返回空对象
+     */
+    using CustomResponseHandler = std::function<QJsonObject(const QByteArray &rawResponse, int httpStatusCode)>;
+
     // 认证管理
     void setAuthToken(const QString &token); // 设置认证令牌
     void clearAuthToken();                   // 清除认证令牌
@@ -134,9 +146,11 @@ class NetworkRequest : public QObject {
     QString getApiUrl(const QString &endpoint) const;                             // 获取完整的API URL
 
     // 网络请求方法
-    void sendRequest(Network::RequestType type, const RequestConfig &config); // 发送网络请求
-    void cancelRequest(Network::RequestType type);                            // 取消指定类型的请求
-    void cancelAllRequests();                                                 // 取消所有请求
+    void sendRequest(Network::RequestType type, const RequestConfig &config,
+                     const std::optional<CustomResponseHandler> &customHandler = std::nullopt); // 发送网络请求
+
+    void cancelRequest(Network::RequestType type); // 取消指定类型的请求
+    void cancelAllRequests();                      // 取消所有请求
 
     QString RequestTypeToString(Network::RequestType type) const; // 请求类型转字符串
 
@@ -159,12 +173,13 @@ class NetworkRequest : public QObject {
      * @brief 待处理请求结构
      */
     struct PendingRequest {
-        Network::RequestType type;      // 请求类型
-        RequestConfig config;           // 请求配置
-        QNetworkReply *reply = nullptr; // 网络回复对象
-        QTimer *timeoutTimer = nullptr; // 超时定时器
-        int currentRetry = 0;           // 当前重试次数
-        qint64 requestId;               // 请求ID
+        Network::RequestType type;           // 请求类型
+        RequestConfig config;                // 请求配置
+        QNetworkReply *reply = nullptr;      // 网络回复对象
+        QTimer *timeoutTimer = nullptr;      // 超时定时器
+        int currentRetry = 0;                // 当前重试次数
+        qint64 requestId;                    // 请求ID
+        CustomResponseHandler customHandler; // 自定义响应处理器（仅用于Other类型）
     };
 
     // 内部方法

@@ -133,15 +133,29 @@ QString NetworkRequest::getApiUrl(const QString &endpoint) const {
     return baseUrl + cleanEndpoint;
 }
 
-void NetworkRequest::sendRequest(Network::RequestType type, const RequestConfig &config) {
+/**
+ * @brief 发送网络请求
+ * @param type 请求类型
+ * @param config 请求配置
+ * @param customHandler 自定义响应处理器（可选，仅适用于Other类型）
+ */
+void NetworkRequest::sendRequest(Network::RequestType type, const RequestConfig &config,
+                                 const std::optional<CustomResponseHandler> &customHandler) {
+    // 如果提供了自定义处理器，检查请求类型是否合法
+    if (customHandler.has_value() && type < Network::RequestType::Other) {
+        qWarning() << "自定义响应处理器仅适用于自定义请求类型（大于等于Network::RequestType::Other）";
+        emit requestFailed(type, Network::Error::UnknownError, "自定义响应处理器仅适用于自定义请求类型");
+        return;
+    }
+
     // 检查是否为重复请求
     if (isDuplicateRequest(type)) {
         qDebug() << "忽略重复请求:" << type;
         return;
     }
 
-    // 检查认证要求
-    if (config.requiresAuth && !hasValidAuth()) {
+    // 检查认证要求（对于自定义请求暂不处理认证）
+    if (config.requiresAuth && !customHandler.has_value() && !hasValidAuth()) {
         emit requestFailed(type, Network::Error::AuthenticationError, "缺少有效的认证令牌");
         return;
     }
@@ -152,6 +166,9 @@ void NetworkRequest::sendRequest(Network::RequestType type, const RequestConfig 
     request.config = config;
     request.currentRetry = 0;
     request.requestId = m_nextRequestId++;
+    // 设置自定义处理器（如果提供）
+    if (customHandler.has_value())
+        request.customHandler = customHandler.value();
 
     // 创建超时定时器
     request.timeoutTimer = new QTimer(this);
@@ -202,32 +219,47 @@ void NetworkRequest::onReplyFinished() {
         if (reply->error() == QNetworkReply::NoError) {
             // 解析响应数据
             QByteArray responseBytes = reply->readAll();
-            QJsonParseError parseError;
-            QJsonDocument doc = QJsonDocument::fromJson(responseBytes, &parseError);
 
-            if (parseError.error != QJsonParseError::NoError) {
-                throw QString("JSON解析错误: %1").arg(parseError.errorString());
-            }
-
-            QJsonObject fullResponse = doc.object();
-
-            bool serverSuccess = fullResponse["success"].toBool();
-            if (serverSuccess) {
-                // 成功响应，提取data字段作为响应数据
-                responseData = fullResponse.contains("data") ? fullResponse["data"].toObject() : fullResponse;
+            // 检查是否有自定义响应处理器（仅适用于Other类型）
+            if (request.type >= Network::RequestType::Other && request.customHandler) {
+                int httpStatusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+                responseData = request.customHandler(responseBytes, httpStatusCode);
                 success = true;
 #ifdef QT_DEBUG
-                qInfo() << "请求成功:" << NetworkRequest::GetInstance().RequestTypeToString(request.type);
+                qInfo() << "自定义处理器处理请求成功:" << RequestTypeToString(request.type);
                 qInfo() << "响应内容:" << responseData;
 #else
-                qDebug() << "请求成功:" << RequestTypeToString(request.type);
+                qDebug() << "自定义处理器处理请求成功:" << RequestTypeToString(request.type);
 #endif
             } else {
-                // 服务器返回错误
-                QString serverMessage = fullResponse.contains("error") ? fullResponse["error"].toString()
-                                                                       : fullResponse["message"].toString();
-                throw QString("服务器错误: %1").arg(serverMessage);
-            }
+                // 使用默认的JSON解析逻辑
+                QJsonParseError parseError;
+                QJsonDocument doc = QJsonDocument::fromJson(responseBytes, &parseError);
+
+                if (parseError.error != QJsonParseError::NoError) {
+                    throw QString("JSON解析错误: %1").arg(parseError.errorString());
+                }
+
+                QJsonObject fullResponse = doc.object();
+
+                bool serverSuccess = fullResponse["success"].toBool();
+                if (serverSuccess) {
+                    // 成功响应，提取data字段作为响应数据
+                    responseData = fullResponse.contains("data") ? fullResponse["data"].toObject() : fullResponse;
+                    success = true;
+#ifdef QT_DEBUG
+                    qInfo() << "请求成功:" << NetworkRequest::GetInstance().RequestTypeToString(request.type);
+                    qInfo() << "响应内容:" << responseData;
+#else
+                    qDebug() << "请求成功:" << RequestTypeToString(request.type);
+#endif
+                } else {
+                    // 服务器返回错误
+                    QString serverMessage = fullResponse.contains("error") ? fullResponse["error"].toString()
+                                                                           : fullResponse["message"].toString();
+                    throw QString("服务器错误: %1").arg(serverMessage);
+                }
+            } // 结束默认JSON解析逻辑的else分支
 
         } else {
             // 处理网络错误（包括HTTP状态码非2xx的情况）

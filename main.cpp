@@ -29,6 +29,7 @@
 #include "app/qml_global_data.h"
 #include "app/qml_setting.h"
 #include "app/qml_todo.h"
+#include "app/qml_update_checker.h"
 #include "app/qml_user_auth.h"
 #include "logger.h"
 #include "modules/user/user_auth.h"
@@ -50,7 +51,7 @@ int main(int argc, char *argv[]) {
     Logger::GetInstance().setLogLevel(LogLevel::Debug); // 默认 Info，调试模式下设为 Debug
 #endif
 
-    qInfo() << APP_NAME << "应用程序启动";
+    qInfo() << std::format("{}/v{}", APP_NAME, APP_VERSION_STRING) << "应用程序启动";
 
     // 设置应用样式为Material
     qputenv("QT_QUICK_CONTROLS_STYLE", "Material");
@@ -66,11 +67,12 @@ int main(int argc, char *argv[]) {
     QGuiApplication::setApplicationName(APP_NAME);              // 设置应用名称（不设置组织名）
     QGuiApplication::setApplicationVersion(APP_VERSION_STRING); // 设置应用版本
 
-    UserAuth userAuth;                            // 核心认证逻辑实例
-    QmlUserAuth qmlUserAuth(userAuth);            // QML 暴露层
-    QmlCategoryManager categoryManager(userAuth); // 创建CategoryManager实例
-    QmlTodoManager todoManager(userAuth);         // 创建TodoManager实例
-    QmlSetting qmlSetting;                        // QML 包装层实例
+    UserAuth userAuth;                               // 核心认证逻辑实例
+    QmlUserAuth qmlUserAuth(userAuth);               // QML 认证层实例
+    QmlCategoryManager qmlCategoryManager(userAuth); // QML 类别管理器实例
+    QmlTodoManager qmlTodoManager(userAuth);         // QML 待办事项管理器实例
+    QmlSetting qmlSetting;                           // QML 包装层实例
+    QmlUpdateChecker qmlUpdateChecker;               // QML 更新检查器实例
 
     // 检查是否通过开机自启动启动
     QStringList arguments = app.arguments();
@@ -85,8 +87,9 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("globalData", &QmlGlobalData::GetInstance());
     engine.rootContext()->setContextProperty("setting", &qmlSetting);
     engine.rootContext()->setContextProperty("userAuth", &qmlUserAuth);
-    engine.rootContext()->setContextProperty("categoryManager", &categoryManager);
-    engine.rootContext()->setContextProperty("todoManager", &todoManager);
+    engine.rootContext()->setContextProperty("categoryManager", &qmlCategoryManager);
+    engine.rootContext()->setContextProperty("todoManager", &qmlTodoManager);
+    engine.rootContext()->setContextProperty("updateChecker", &qmlUpdateChecker);
 
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app, []() { QCoreApplication::exit(-1); },

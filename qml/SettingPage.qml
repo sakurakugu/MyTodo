@@ -535,6 +535,42 @@ Page {
                 Layout.leftMargin: 20
             }
 
+            // 版本信息显示
+            RowLayout {
+                Layout.leftMargin: 20
+                Layout.fillWidth: true
+                spacing: 10
+
+                Label {
+                    text: qsTr("当前版本：") + updateChecker.currentVersion
+                    color: ThemeManager.textColor
+                    font.pixelSize: 14
+                }
+
+                Label {
+                    text: updateChecker.hasUpdate ? qsTr("(有新版本可用)") : qsTr("(已是最新版本)")
+                    color: ThemeManager.textColor
+                    font.pixelSize: 12
+                    visible: updateChecker.latestVersion !== ""
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                CustomButton {
+                    text: updateChecker.isChecking ? qsTr("检查中...") : qsTr("检查更新")
+                    enabled: !updateChecker.isChecking
+                    onClicked: updateChecker.checkForUpdates()
+                }
+
+                CustomButton {
+                    text: qsTr("下载更新")
+                    visible: updateChecker.hasUpdate
+                    onClicked: updateChecker.openDownloadPage()
+                }
+            }
+
             Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 30
@@ -634,6 +670,44 @@ Page {
             onConfirmed: {
                 modalDialog.close();
             }
+        }
+
+        // 版本更新通知对话框
+        ModalDialog {
+            id: updateNotificationDialog
+            dialogTitle: qsTr("发现新版本")
+            isShowCancelButton: true
+            confirmText: qsTr("立即下载")
+            cancelText: qsTr("稍后提醒")
+
+            property string newVersion: ""
+            property string releaseNotes: ""
+
+            message: qsTr("发现新版本 %1\n\n更新内容：\n%2\n\n是否立即前往下载页面？")
+                     .arg(newVersion)
+                     .arg(releaseNotes || qsTr("暂无更新说明"))
+
+            onConfirmed: {
+                updateChecker.openDownloadPage();
+                updateNotificationDialog.close();
+            }
+        }
+    }
+
+    // 版本检查器信号连接
+    Connections {
+        target: updateChecker
+
+        function onUpdateCheckCompleted(hasUpdate, version) {
+            if (hasUpdate) {
+                updateNotificationDialog.newVersion = version;
+                updateNotificationDialog.releaseNotes = updateChecker.releaseNotes;
+                updateNotificationDialog.open();
+            }
+        }
+
+        function onUpdateCheckFailed(error) {
+            modalDialog.showInfo(qsTr("检查更新失败"), qsTr("无法检查更新：%1").arg(error));
         }
     }
 }

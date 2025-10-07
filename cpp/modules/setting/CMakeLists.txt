@@ -31,5 +31,5 @@ target_link_libraries(mytodo_setting
     PUBLIC
         Qt6::Core
         Qt6::Network
-        mytodo_foundation    # 基础模块（Logger, Config类等）
+        mytodo_foundation        # 基础模块（Logger, Config类等）
 )
