@@ -21,6 +21,8 @@ add_library(mytodo_app STATIC
     qml_user_auth.h
     qml_update_checker.cpp
     qml_update_checker.h
+    qml_holiday.cpp
+    qml_holiday.h
 )
 
 # 需要的 Qt 组件：Core / Gui（模型基类等）/ Network（透传网络操作）/ Sql（数据持久化）
@@ -36,6 +38,7 @@ target_include_directories(mytodo_app PUBLIC
     ${CMAKE_SOURCE_DIR}/cpp/modules/setting
     ${CMAKE_SOURCE_DIR}/cpp/modules/user
     ${CMAKE_SOURCE_DIR}/cpp/modules/update_checker
+    ${CMAKE_SOURCE_DIR}/cpp/modules/holiday
     ${CMAKE_SOURCE_DIR}/cpp/domain        # 访问基类（若 manager 未来需要）
 )
 
@@ -52,4 +55,5 @@ target_link_libraries(mytodo_app
         mytodo_setting
         mytodo_user
         mytodo_update_checker
+        mytodo_holiday
 )

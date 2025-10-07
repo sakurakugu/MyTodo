@@ -98,7 +98,7 @@ void VersionChecker::打开下载页面() {
 }
 
 void VersionChecker::设置检查间隔(int hours) {
-    if (hours < 8760 && hours > 0 && m_checkIntervalHours != hours) {// 一年内
+    if (hours < 8760 && hours > 0 && m_checkIntervalHours != hours) { // 一年内
         m_checkIntervalHours = hours;
 
         // 重启定时器以应用新的间隔
@@ -144,29 +144,29 @@ void VersionChecker::执行版本检查() {
     // 创建GitHub API自定义响应处理器
     auto githubResponseHandler = [this](const QByteArray &rawResponse, int httpStatusCode) -> QJsonObject {
         QJsonObject result;
-        
+
         try {
             if (httpStatusCode == 200) {
                 // 解析GitHub API响应
                 QJsonParseError parseError;
                 QJsonDocument doc = QJsonDocument::fromJson(rawResponse, &parseError);
-                
+
                 if (parseError.error != QJsonParseError::NoError) {
                     qWarning() << "GitHub API响应JSON解析错误:" << parseError.errorString();
                     return result; // 返回空对象表示失败
                 }
-                
+
                 QJsonObject githubResponse = doc.object();
-                
+
                 // 验证必要字段
                 if (!githubResponse.contains("tag_name")) {
                     qWarning() << "GitHub API响应缺少tag_name字段";
                     return result;
                 }
-                
+
                 // 直接返回GitHub API的响应数据，让解析GitHub响应方法处理
                 return githubResponse;
-                
+
             } else {
                 qWarning() << "GitHub API请求失败，HTTP状态码:" << httpStatusCode;
                 qWarning() << "响应内容:" << QString::fromUtf8(rawResponse);
@@ -176,7 +176,7 @@ void VersionChecker::执行版本检查() {
         } catch (...) {
             qWarning() << "处理GitHub API响应时发生未知异常";
         }
-        
+
         return result; // 返回空对象表示失败
     };
 
@@ -194,7 +194,7 @@ void VersionChecker::解析GitHub响应(const QJsonObject &response) {
             设置是否正在检查(false);
             return;
         }
-        
+
         // 检查响应是否包含必要字段
         if (!response.contains("tag_name")) {
             emit updateCheckFailed("GitHub API响应格式错误：缺少tag_name字段");
@@ -301,6 +301,9 @@ void VersionChecker::启动自动检查定时器() {
         int intervalMs = m_checkIntervalHours * 60 * 60 * 1000; // 转换为毫秒
         m_autoCheckTimer->start(intervalMs);
         qDebug() << "启动自动版本检查定时器，间隔:" << m_checkIntervalHours << "小时";
+
+        // 立即执行一次检查
+        QTimer::singleShot(1000, this, &VersionChecker::执行版本检查);
     }
 }
 

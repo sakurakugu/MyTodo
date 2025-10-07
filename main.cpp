@@ -27,6 +27,7 @@
 
 #include "app/qml_category.h"
 #include "app/qml_global_data.h"
+#include "app/qml_holiday.h"
 #include "app/qml_setting.h"
 #include "app/qml_todo.h"
 #include "app/qml_update_checker.h"
@@ -73,13 +74,13 @@ int main(int argc, char *argv[]) {
     QmlTodoManager qmlTodoManager(userAuth);         // QML 待办事项管理器实例
     QmlSetting qmlSetting;                           // QML 包装层实例
     QmlUpdateChecker qmlUpdateChecker;               // QML 更新检查器实例
+    QmlHolidayManager qmlHolidayManager;             // QML 节假日管理器实例
 
     // 检查是否通过开机自启动启动
     QStringList arguments = app.arguments();
-    if (arguments.contains("--autostart")) {
+    if (arguments.contains("--autostart"))
         // 如果是开机自启动，默认设置为小组件模式
         QmlGlobalData::GetInstance().setIsDesktopWidget(true);
-    }
 
     QQmlApplicationEngine engine;
 
@@ -90,6 +91,7 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("categoryManager", &qmlCategoryManager);
     engine.rootContext()->setContextProperty("todoManager", &qmlTodoManager);
     engine.rootContext()->setContextProperty("updateChecker", &qmlUpdateChecker);
+    engine.rootContext()->setContextProperty("holidayManager", &qmlHolidayManager);
 
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app, []() { QCoreApplication::exit(-1); },

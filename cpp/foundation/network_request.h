@@ -67,8 +67,9 @@ enum RequestType {
     UpdateCategory,  // 更新类别请求
     DeleteCategory,  // 删除类别请求
 
-    Other = 100,       // 其他请求，大于等于它的都是自定义请求
-    UpdateCheck = 101, // 更新检查请求
+    Other = 100,  // 其他请求，大于等于它的都是自定义请求
+    UpdateCheck,  // 更新检查请求
+    CheckHoliday, // 检查节假日请求
 };
 
 // 网络错误类型
@@ -95,7 +96,9 @@ static const std::map<RequestType, QString> RequestTypeNameMap = //
      {PushCategories, "批量类别同步请求"},
      {UpdateCategory, "更新类别请求"},
      {DeleteCategory, "删除类别请求"},
-     {Other, "其他请求"}};
+     {Other, "其他请求"},
+     {UpdateCheck, "更新检查请求"},
+     {CheckHoliday, "检查节假日请求"}};
 } // namespace Network
 
 class NetworkRequest : public QObject {

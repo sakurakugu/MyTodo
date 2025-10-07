@@ -148,8 +148,8 @@ void NetworkRequest::sendRequest(Network::RequestType type, const RequestConfig 
         return;
     }
 
-    // 检查是否为重复请求
-    if (isDuplicateRequest(type)) {
+    // 检查是否为重复请求（自定义请求除外到时候自行处理）// TODO: 自定义请求处理重复请求
+    if (isDuplicateRequest(type) && !customHandler.has_value()) {
         qDebug() << "忽略重复请求:" << type;
         return;
     }

@@ -56,7 +56,7 @@ class TodoItem {
              const QDateTime &createdAt,       ///< 创建时间
              const QDateTime &updatedAt,       ///< 最后更新时间
              int synced                        ///< 是否已与服务器同步（是否要上传）
-            ///< 0表示已同步，1表示待插入，2表示待更新，3表示待删除
+                                               ///< 0表示已同步，1表示待插入，2表示待更新，3表示待删除
     );
 
     int id() const noexcept { return m_id; } // 获取ID

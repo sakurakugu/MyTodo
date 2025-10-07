@@ -235,34 +235,101 @@ BaseDialog {
                             return dayNumber === today.getDate() && calendarGrid.currentMonth === today.getMonth() && calendarGrid.currentYear === today.getFullYear();
                         }
 
+                        // 节假日相关属性
+                        property date currentDateObj: isValidDay ? new Date(calendarGrid.currentYear, calendarGrid.currentMonth, dayNumber) : new Date()
+                        property int dateType: isValidDay ? holidayManager.getDateType(currentDateObj) : 0 // 0: WorkDay, 1: Holiday, 2: Weekend, 3: HolidayWork
+                        property bool isHoliday: dateType === 1
+                        property bool isWeekend: dateType === 2
+                        property bool isHolidayWork: dateType === 3
+                        property string holidayName: isValidDay && isHoliday ? holidayManager.getHolidayName(currentDateObj) : ""
+
                         color: {
                             if (isSelected)
                                 return ThemeManager.buttonColor;
                             if (isToday)
                                 return ThemeManager.borderColor;
+                            if (isHoliday)
+                                return "#ffebee"; // 浅红色背景表示节假日
+                            if (isWeekend)
+                                return "#f3e5f5"; // 浅紫色背景表示周末
+                            if (isHolidayWork)
+                                return "#fff3e0"; // 浅橙色背景表示节假日调休工作日
                             return "transparent";
                         }
-                        border.color: isToday ? ThemeManager.buttonColor : "transparent"
-                        border.width: isToday ? 1 : 0
+                        border.color: {
+                            if (isToday)
+                                return ThemeManager.buttonColor;
+                            if (isHoliday)
+                                return "#f44336"; // 红色边框表示节假日
+                            if (isWeekend)
+                                return "#9c27b0"; // 紫色边框表示周末
+                            if (isHolidayWork)
+                                return "#ff9800"; // 橙色边框表示节假日调休工作日
+                            return "transparent";
+                        }
+                        border.width: (isToday || isHoliday || isWeekend || isHolidayWork) ? 1 : 0
                         radius: 4
 
-                        Text {
+                        Column {
                             anchors.centerIn: parent
-                            text: parent.isValidDay ? parent.dayNumber : ""
-                            color: {
-                                if (parent.isSelected)
-                                    return "white";
-                                if (!parent.isValidDay)
-                                    return "transparent";
-                                return ThemeManager.textColor;
+                            spacing: 1
+
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: parent.parent.isValidDay ? parent.parent.dayNumber : ""
+                                color: {
+                                    if (parent.parent.isSelected)
+                                        return "white";
+                                    if (!parent.parent.isValidDay)
+                                        return "transparent";
+                                    if (parent.parent.isHoliday)
+                                        return "#d32f2f"; // 深红色文字表示节假日
+                                    if (parent.parent.isWeekend)
+                                        return "#7b1fa2"; // 深紫色文字表示周末
+                                    if (parent.parent.isHolidayWork)
+                                        return "#f57c00"; // 深橙色文字表示节假日调休工作日
+                                    return ThemeManager.textColor;
+                                }
+                                font.pixelSize: 12
+                                font.bold: parent.parent.isSelected || parent.parent.isToday
                             }
-                            font.pixelSize: 12
-                            font.bold: parent.isSelected || parent.isToday
+
+                            // 节假日名称显示（仅在有足够空间时显示）
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: parent.parent.holidayName
+                                visible: parent.parent.holidayName !== "" && text.length <= 4
+                                color: parent.parent.isSelected ? "white" : "#d32f2f"
+                                font.pixelSize: 8
+                                font.bold: false
+                                width: parent.parent.width - 4
+                                horizontalAlignment: Text.AlignHCenter
+                                elide: Text.ElideRight
+                            }
                         }
 
                         MouseArea {
                             anchors.fill: parent
                             enabled: parent.isValidDay
+
+                            onClicked: {
+                                root.selectedDate = new Date(calendarGrid.currentYear, calendarGrid.currentMonth, parent.dayNumber, root.selectedHour, root.selectedMinute, root.selectedSecond);
+                            }
+                        }
+
+                        // 工具提示显示完整的节假日信息
+                        ToolTip {
+                            visible: parent.holidayName !== "" && mouseArea.containsMouse
+                            text: parent.holidayName + (parent.isHoliday ? " (休)" : parent.isHolidayWork ? " (班)" : "")
+                            delay: 500
+                        }
+
+                        MouseArea {
+                            id: mouseArea
+                            anchors.fill: parent
+                            enabled: parent.isValidDay
+                            hoverEnabled: true
+                            acceptedButtons: Qt.LeftButton
 
                             onClicked: {
                                 root.selectedDate = new Date(calendarGrid.currentYear, calendarGrid.currentMonth, parent.dayNumber, root.selectedHour, root.selectedMinute, root.selectedSecond);

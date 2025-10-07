@@ -43,6 +43,21 @@ RowLayout {
             description: qsTr("每天重复")
         },
         {
+            text: qsTr("每工作日"),
+            value: -5,
+            description: qsTr("每个工作日重复")
+        },
+        {
+            text: qsTr("每节假日"),
+            value: -3,
+            description: qsTr("每个节假日重复")
+        },
+        {
+            text: qsTr("每周末"),
+            value: -2,
+            description: qsTr("每个周末重复")
+        },
+        {
             text: qsTr("每周"),
             value: -7,
             description: qsTr("每周重复")

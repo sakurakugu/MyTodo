@@ -12,6 +12,7 @@
  */
 
 #include "todo_item.h"
+#include "../holiday/holiday_manager.h"
 
 /**
  * @brief 默认构造函数
@@ -180,9 +181,19 @@ void TodoItem::setDeadline(const QDateTime &deadline) {
 void TodoItem::setRecurrenceInterval(int recurrenceInterval) {
     int interval_ = recurrenceInterval;
     if (interval_ < 0) {
-        if (interval_ == -1 || interval_ == -7 || interval_ == -30 || interval_ == -365) {
-        } else [[unlikely]] {
+        switch (interval_) {
+        case -1:
+        case -2:
+        case -3:
+        case -5:
+        case -7:
+        case -30:
+        case -365:
+        case -999:
+            break;
+        default:
             interval_ = 0;
+            break;
         }
     }
     if (m_recurrenceInterval != interval_) {
@@ -366,6 +377,7 @@ bool TodoItem::isInRecurrencePeriod(const QDate &checkDate) const noexcept {
         }
     } else if (m_recurrenceInterval < 0) {
         // 负数：按照特定时间单位进行循环判断
+        HolidayManager &holidayManager = HolidayManager::GetInstance();
         switch (m_recurrenceInterval) {
         case -1:
             // 每天
@@ -398,6 +410,62 @@ bool TodoItem::isInRecurrencePeriod(const QDate &checkDate) const noexcept {
                     occurrenceNumber = yearsDiff + 1;
                 }
             }
+            break;
+        }
+        case -5: { // 每工作日
+            auto dateType = holidayManager.getDateType(checkDate);
+            if (dateType == HolidayManager::DateType::WorkDay) {
+                isValidInterval = true;
+                // 计算从开始日期到当前日期的工作日数量
+                int workDayCount = 0;
+                QDate currentDate = m_recurrenceStartDate;
+                while (currentDate <= checkDate) {
+                    if (holidayManager.getDateType(currentDate) == HolidayManager::DateType::WorkDay) {
+                        workDayCount++;
+                    }
+                    currentDate = currentDate.addDays(1);
+                }
+                occurrenceNumber = workDayCount;
+            }
+            break;
+        }
+        case -3: { // 每节假日
+            auto dateType = holidayManager.getDateType(checkDate);
+            if (dateType == HolidayManager::DateType::Holiday) {
+                isValidInterval = true;
+                // 计算从开始日期到当前日期的节假日数量
+                int holidayCount = 0;
+                QDate currentDate = m_recurrenceStartDate;
+                while (currentDate <= checkDate) {
+                    if (holidayManager.getDateType(currentDate) == HolidayManager::DateType::Holiday) {
+                        holidayCount++;
+                    }
+                    currentDate = currentDate.addDays(1);
+                }
+                occurrenceNumber = holidayCount;
+            }
+            break;
+        }
+        case -2: { // 每周末
+            auto dateType = holidayManager.getDateType(checkDate);
+            if (dateType == HolidayManager::DateType::Weekend) {
+                isValidInterval = true;
+                // 计算从开始日期到当前日期的周末数量
+                int weekendCount = 0;
+                QDate currentDate = m_recurrenceStartDate;
+                while (currentDate <= checkDate) {
+                    if (holidayManager.getDateType(currentDate) == HolidayManager::DateType::Weekend) {
+                        weekendCount++;
+                    }
+                    currentDate = currentDate.addDays(1);
+                }
+                occurrenceNumber = weekendCount;
+            }
+            break;
+        }
+        case -999: { // 无限循环
+            isValidInterval = true;
+            occurrenceNumber = daysSinceStart + 1;
             break;
         }
         default:
