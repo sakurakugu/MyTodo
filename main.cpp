@@ -38,8 +38,8 @@
 
 int main(int argc, char *argv[]) {
 #ifdef QT_DEBUG
-    QtDebug::设置终端编码();
-    QtDebug::打印资源路径();
+    QtDebug::设置终端编码(65001);
+    // QtDebug::打印资源路径();
 #endif
 
     QGuiApplication app(argc, argv);

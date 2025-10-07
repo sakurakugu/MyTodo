@@ -15,7 +15,6 @@
 #include "version.h"
 
 #include <QDesktopServices>
-#include <QJsonArray>
 #include <QJsonDocument>
 #include <QUrl>
 #include <QVersionNumber>

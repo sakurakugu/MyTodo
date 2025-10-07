@@ -14,7 +14,6 @@
 #include <QJsonObject>
 #include <QObject>
 #include <QTimer>
-#include <QVersionNumber>
 
 /**
  * @class VersionChecker

@@ -25,10 +25,10 @@ void QtDebug::打印资源路径(const QString &path) {
     }
 }
 
-void QtDebug::设置终端编码() {
+void QtDebug::设置终端编码(int codePage) {
 #ifdef Q_OS_WIN
     // Windows平台，设置控制台编码
-    SetConsoleCP(CP_UTF8);
-    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(codePage);
+    SetConsoleOutputCP(codePage);
 #endif
 }

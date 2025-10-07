@@ -7,7 +7,6 @@
 # 临时
 image/font_icon/
 image/app_icon/
-server/
 
 # 不排除
 !image/app_icon/icon.rc
@@ -101,9 +100,13 @@ CMakeLists.txt.user*
 # IDE 生成文件
 .idea/
 
+# 备份文件
+*.backup
+
 # 其他
 replacements.txt
-my-test/
+不上传到Git的/
+server/
 Test*Page.qml
 .env
 

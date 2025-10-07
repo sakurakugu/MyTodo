@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
-<TS version="2.1" language="en" sourcelanguage="en">
+<TS version="2.1" language="en" sourcelanguage="zh_CN">
 <context>
     <name>BaseDialog</name>
     <message>
@@ -12,64 +12,6 @@
         <location filename="../qml/components/BaseDialog.qml" line="40"/>
         <source>取消</source>
         <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>CategoryManagementDialog</name>
-    <message>
-        <source>类别管理</source>
-        <translation type="vanished">Category Management</translation>
-    </message>
-    <message>
-        <source>添加新类别</source>
-        <translation type="vanished">Add New Category</translation>
-    </message>
-    <message>
-        <source>输入新类别名称</source>
-        <translation type="vanished">Input New Category Name</translation>
-    </message>
-    <message>
-        <source>添加</source>
-        <translation type="vanished">Add</translation>
-    </message>
-    <message>
-        <source>现有类别</source>
-        <translation type="vanished">Existing Categories</translation>
-    </message>
-    <message>
-        <source>删除</source>
-        <translation type="vanished">Delete</translation>
-    </message>
-    <message>
-        <source>关闭</source>
-        <translation type="vanished">Close</translation>
-    </message>
-    <message>
-        <source>确认删除</source>
-        <translation type="vanished">Confirm Delete</translation>
-    </message>
-    <message>
-        <source>确定要删除类别 &quot;%1&quot; 吗？</source>
-        <translation type="vanished">Are you sure you want to delete the category &quot;%1&quot;?</translation>
-    </message>
-    <message>
-        <source>取消</source>
-        <translation type="vanished">Cancel</translation>
-    </message>
-</context>
-<context>
-    <name>ConfirmDialog</name>
-    <message>
-        <source>确定</source>
-        <translation type="vanished">Confirm</translation>
-    </message>
-    <message>
-        <source>取消</source>
-        <translation type="vanished">Cancel</translation>
-    </message>
-    <message>
-        <source>确认</source>
-        <translation type="vanished">Confirm</translation>
     </message>
 </context>
 <context>
@@ -374,7 +316,7 @@
     <message>
         <location filename="../qml/HomePage.qml" line="1019"/>
         <source>删除</source>
-        <translation type="unfinished">Delete</translation>
+        <translation>Delete</translation>
     </message>
     <message>
         <location filename="../qml/HomePage.qml" line="1053"/>
@@ -414,12 +356,12 @@
     <message>
         <location filename="../qml/HomePage.qml" line="1134"/>
         <source>退出登录</source>
-        <translation type="unfinished">Logout</translation>
+        <translation>Logout</translation>
     </message>
     <message>
         <location filename="../qml/HomePage.qml" line="1134"/>
         <source>登录</source>
-        <translation type="unfinished">Login</translation>
+        <translation>Login</translation>
     </message>
     <message>
         <location filename="../qml/HomePage.qml" line="1185"/>
@@ -446,55 +388,16 @@
     </message>
 </context>
 <context>
-    <name>LoginDialog</name>
-    <message>
-        <source>用户登录</source>
-        <translation type="vanished">User Login</translation>
-    </message>
-    <message>
-        <source>请输入您的登录信息</source>
-        <translation type="vanished">Please enter your login information</translation>
-    </message>
-    <message>
-        <source>用户名:</source>
-        <translation type="vanished">Username:</translation>
-    </message>
-    <message>
-        <source>请输入用户名</source>
-        <translation type="vanished">Please enter your username</translation>
-    </message>
-    <message>
-        <source>密码:</source>
-        <translation type="vanished">Password:</translation>
-    </message>
-    <message>
-        <source>请输入密码</source>
-        <translation type="vanished">Please enter your password</translation>
-    </message>
-    <message>
-        <source>取消</source>
-        <translation type="vanished">Cancel</translation>
-    </message>
-    <message>
-        <source>登录中...</source>
-        <translation type="vanished">Logging in...</translation>
-    </message>
-    <message>
-        <source>登录</source>
-        <translation type="vanished">Login</translation>
-    </message>
-</context>
-<context>
     <name>LoginStatusDialogs</name>
     <message>
         <location filename="../qml/components/LoginStatusDialogs.qml" line="33"/>
         <source>欢迎回来，%1！</source>
-        <translation type="unfinished">Welcome back, %1!</translation>
+        <translation>Welcome back, %1!</translation>
     </message>
     <message>
         <location filename="../qml/components/LoginStatusDialogs.qml" line="41"/>
         <source>已成功退出登录</source>
-        <translation type="unfinished">Logout Successful</translation>
+        <translation>Logout Successful</translation>
     </message>
     <message>
         <location filename="../qml/components/LoginStatusDialogs.qml" line="48"/>
@@ -508,49 +411,54 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../qml/components/LoginStatusDialogs.qml" line="51"/>
+        <source>去登录</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../qml/components/LoginStatusDialogs.qml" line="74"/>
         <source>用户登录</source>
-        <translation type="unfinished">User Login</translation>
+        <translation>User Login</translation>
     </message>
     <message>
         <location filename="../qml/components/LoginStatusDialogs.qml" line="80"/>
         <source>登录中...</source>
-        <translation type="unfinished">Logging in...</translation>
+        <translation>Logging in...</translation>
     </message>
     <message>
         <location filename="../qml/components/LoginStatusDialogs.qml" line="80"/>
         <source>登录</source>
-        <translation type="unfinished">Login</translation>
+        <translation>Login</translation>
     </message>
     <message>
         <location filename="../qml/components/LoginStatusDialogs.qml" line="136"/>
         <source>用户名:</source>
-        <translation type="unfinished">Username:</translation>
+        <translation>Username:</translation>
     </message>
     <message>
         <location filename="../qml/components/LoginStatusDialogs.qml" line="144"/>
         <source>请输入用户名</source>
-        <translation type="unfinished">Please enter your username</translation>
+        <translation>Please enter your username</translation>
     </message>
     <message>
         <location filename="../qml/components/LoginStatusDialogs.qml" line="163"/>
         <source>密码:</source>
-        <translation type="unfinished">Password:</translation>
+        <translation>Password:</translation>
     </message>
     <message>
         <location filename="../qml/components/LoginStatusDialogs.qml" line="169"/>
         <source>请输入密码</source>
-        <translation type="unfinished">Please enter your password</translation>
+        <translation>Please enter your password</translation>
     </message>
     <message>
         <location filename="../qml/components/LoginStatusDialogs.qml" line="245"/>
         <source>退出登录</source>
-        <translation type="unfinished">Logout</translation>
+        <translation>Logout</translation>
     </message>
     <message>
         <location filename="../qml/components/LoginStatusDialogs.qml" line="248"/>
         <source>确认</source>
-        <translation type="unfinished">Confirm</translation>
+        <translation>Confirm</translation>
     </message>
     <message>
         <location filename="../qml/components/LoginStatusDialogs.qml" line="270"/>
@@ -567,148 +475,13 @@
         <source>登录消息</source>
         <translation type="unfinished"></translation>
     </message>
-    <message>
-        <source>开启自动同步功能需要先登录账户。
-请先登录后再开启自动同步。</source>
-        <translation type="vanished">Enabling automatic synchronization requires logging in first.
-Please log in first before enabling automatic synchronization.</translation>
-    </message>
-    <message>
-        <source>取消</source>
-        <translation type="vanished">Cancel</translation>
-    </message>
-    <message>
-        <location filename="../qml/components/LoginStatusDialogs.qml" line="51"/>
-        <source>去登录</source>
-        <translation>Go to Login</translation>
-    </message>
-    <message>
-        <source>确认退出</source>
-        <translation type="vanished">Confirm Exit</translation>
-    </message>
-    <message>
-        <source>确定要退出登录吗？</source>
-        <translation type="vanished">Are you sure you want to log out?</translation>
-    </message>
-    <message>
-        <source>确定</source>
-        <translation type="vanished">Confirm</translation>
-    </message>
 </context>
 <context>
     <name>Main</name>
     <message>
         <location filename="../qml/Main.qml" line="21"/>
         <source>我的待办</source>
-        <translation>My Todo</translation>
-    </message>
-    <message>
-        <source>设置</source>
-        <translation type="vanished">Settings</translation>
-    </message>
-    <message>
-        <source>未登录</source>
-        <translation type="vanished">Not Logged In</translation>
-    </message>
-    <message>
-        <source>退出登录</source>
-        <translation type="vanished">Logout</translation>
-    </message>
-    <message>
-        <source>登录</source>
-        <translation type="vanished">Login</translation>
-    </message>
-    <message>
-        <source>深色模式</source>
-        <translation type="vanished">Dark Mode</translation>
-    </message>
-    <message>
-        <source>自动同步</source>
-        <translation type="vanished">Automatic Synchronization</translation>
-    </message>
-    <message>
-        <source>欢迎回来，%1！</source>
-        <translation type="vanished">Welcome back, %1!</translation>
-    </message>
-    <message>
-        <source>登录失败：%1</source>
-        <translation type="vanished">Login Failed: %1</translation>
-    </message>
-    <message>
-        <source>已成功退出登录</source>
-        <translation type="vanished">Logout Successful</translation>
-    </message>
-    <message>
-        <source>需要登录</source>
-        <translation type="vanished">Login Required</translation>
-    </message>
-    <message>
-        <source>开启自动同步功能需要先登录账户。
-请先登录后再开启自动同步。</source>
-        <translation type="vanished">Enabling automatic synchronization requires logging in first.
-Please log in first before enabling automatic synchronization.</translation>
-    </message>
-</context>
-<context>
-    <name>MainPage</name>
-    <message>
-        <source>分类</source>
-        <translation type="vanished">Categories</translation>
-    </message>
-    <message>
-        <source>同步</source>
-        <translation type="vanished">Sync</translation>
-    </message>
-    <message>
-        <source>添加新待办...</source>
-        <translation type="vanished">Add New Todo...</translation>
-    </message>
-    <message>
-        <source>添加</source>
-        <translation type="vanished">Add</translation>
-    </message>
-    <message>
-        <source>类别管理</source>
-        <translation type="vanished">Category Management</translation>
-    </message>
-    <message>
-        <source>正在同步...</source>
-        <translation type="vanished">Syncing...</translation>
-    </message>
-    <message>
-        <source>释放刷新</source>
-        <translation type="vanished">Release Refresh</translation>
-    </message>
-    <message>
-        <source>下拉刷新</source>
-        <translation type="vanished">Pull to Refresh</translation>
-    </message>
-    <message>
-        <source>待办详情</source>
-        <translation type="vanished">Todo Details</translation>
-    </message>
-</context>
-<context>
-    <name>MessageDialog</name>
-    <message>
-        <source>确定</source>
-        <translation type="vanished">Confirm</translation>
-    </message>
-    <message>
-        <source>成功</source>
-        <translation type="vanished">Success</translation>
-    </message>
-    <message>
-        <source>警告</source>
-        <translation type="vanished">Warning</translation>
-    </message>
-    <message>
-        <source>错误</source>
-        <translation type="vanished">Error</translation>
-    </message>
-    <message>
-        <source>提示</source>
-        <translation type="vanished">Tip</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -815,503 +588,142 @@ Please log in first before enabling automatic synchronization.</translation>
     </message>
 </context>
 <context>
-    <name>Setting</name>
-    <message>
-        <source>外观设置</source>
-        <translation type="vanished">Appearance Settings</translation>
-    </message>
-    <message>
-        <source>深色模式</source>
-        <translation type="vanished">Dark Mode</translation>
-    </message>
-    <message>
-        <source>跟随系统深色模式</source>
-        <translation type="vanished">Follow System Dark Mode</translation>
-    </message>
-    <message>
-        <source>防止拖动窗口（小窗口模式）</source>
-        <translation type="vanished">Prevent Dragging Window (Small Window Mode)</translation>
-    </message>
-    <message>
-        <source>开机自启动</source>
-        <translation type="vanished">Start on Boot</translation>
-    </message>
-    <message>
-        <source>自动同步</source>
-        <translation type="vanished">Auto Sync</translation>
-    </message>
-    <message>
-        <source>连接状态:</source>
-        <translation type="vanished">Connection Status:</translation>
-    </message>
-    <message>
-        <source>网络代理设置</source>
-        <translation type="vanished">Network Proxy Settings</translation>
-    </message>
-    <message>
-        <source>启用代理</source>
-        <translation type="vanished">Enable Proxy</translation>
-    </message>
-    <message>
-        <source>不使用代理</source>
-        <translation type="vanished">Disable Proxy</translation>
-    </message>
-    <message>
-        <source>系统代理</source>
-        <translation type="vanished">System Proxy</translation>
-    </message>
-    <message>
-        <source>HTTP代理</source>
-        <translation type="vanished">HTTP Proxy</translation>
-    </message>
-    <message>
-        <source>SOCKS5代理</source>
-        <translation type="vanished">SOCKS5 Proxy</translation>
-    </message>
-    <message>
-        <source>服务器:</source>
-        <translation type="vanished">Server:</translation>
-    </message>
-    <message>
-        <source>代理服务器地址</source>
-        <translation type="vanished">Proxy Server Address</translation>
-    </message>
-    <message>
-        <source>端口:</source>
-        <translation type="vanished">Port:</translation>
-    </message>
-    <message>
-        <source>用户名:</source>
-        <translation type="vanished">Username:</translation>
-    </message>
-    <message>
-        <source>用户名（可选）</source>
-        <translation type="vanished">Username (Optional):</translation>
-    </message>
-    <message>
-        <source>密码:</source>
-        <translation type="vanished">Password:</translation>
-    </message>
-    <message>
-        <source>密码（可选）</source>
-        <translation type="vanished">Password (Optional):</translation>
-    </message>
-    <message>
-        <source>在线</source>
-        <translation type="vanished">Online:</translation>
-    </message>
-    <message>
-        <source>离线</source>
-        <translation type="vanished">Offline:</translation>
-    </message>
-    <message>
-        <source>数据管理</source>
-        <translation type="vanished">Data Management:</translation>
-    </message>
-    <message>
-        <source>导出待办事项</source>
-        <translation type="vanished">Export Todo Items:</translation>
-    </message>
-    <message>
-        <source>导入待办事项</source>
-        <translation type="vanished">Import Todo Items:</translation>
-    </message>
-    <message>
-        <source>关于</source>
-        <translation type="vanished">About:</translation>
-    </message>
-    <message>
-        <source>GitHub主页</source>
-        <translation type="vanished">GitHub Home:</translation>
-    </message>
-    <message>
-        <source>配置文件管理</source>
-        <translation type="vanished">Configuration File Management:</translation>
-    </message>
-    <message>
-        <source>配置文件路径:</source>
-        <translation type="vanished">Configuration File Path:</translation>
-    </message>
-    <message>
-        <source>打开目录</source>
-        <translation type="vanished">Open Directory:</translation>
-    </message>
-    <message>
-        <source>清空配置</source>
-        <translation type="vanished">Clear Configuration:</translation>
-    </message>
-    <message>
-        <source>服务器配置</source>
-        <translation type="vanished">Server Configuration:</translation>
-    </message>
-    <message>
-        <source>API服务器地址:</source>
-        <translation type="vanished">API Server Address:</translation>
-    </message>
-    <message>
-        <source>保存配置</source>
-        <translation type="vanished">Save Configuration:</translation>
-    </message>
-    <message>
-        <source>请输入完整的URL地址（包含http://或https://）</source>
-        <translation type="vanished">Please enter a complete URL address (including http:// or https://):</translation>
-    </message>
-    <message>
-        <source>重置为默认</source>
-        <translation type="vanished">Reset to Default:</translation>
-    </message>
-    <message>
-        <source>选择导出位置</source>
-        <translation type="vanished">Select Export Location:</translation>
-    </message>
-    <message>
-        <source>选择要导入的文件</source>
-        <translation type="vanished">Select Import File:</translation>
-    </message>
-    <message>
-        <source>导出成功</source>
-        <translation type="vanished">Export Successful:</translation>
-    </message>
-    <message>
-        <source>待办事项已成功导出！</source>
-        <translation type="vanished">Export Successful:</translation>
-    </message>
-    <message>
-        <source>导出失败</source>
-        <translation type="vanished">Export Failed:</translation>
-    </message>
-    <message>
-        <source>导出待办事项时发生错误，请检查文件路径和权限。</source>
-        <translation type="vanished">Export Failed: Please check the file path and permissions.</translation>
-    </message>
-    <message>
-        <source>导入成功</source>
-        <translation type="vanished">Import Successful:</translation>
-    </message>
-    <message>
-        <source>待办事项已成功导入！</source>
-        <translation type="vanished">Import Successful:</translation>
-    </message>
-    <message>
-        <source>导入失败</source>
-        <translation type="vanished">Import Failed:</translation>
-    </message>
-    <message>
-        <source>导入待办事项时发生错误，请检查文件格式和内容。</source>
-        <translation type="vanished">Import Failed: Please check the file format and content.</translation>
-    </message>
-    <message>
-        <source>检测到冲突</source>
-        <translation type="vanished">Import Failed: Conflict detected.</translation>
-    </message>
-    <message>
-        <source>导入文件中发现 %1 个待办事项与现有数据存在ID冲突，请为每个冲突项选择处理方式：</source>
-        <translation type="vanished">Import Failed: Conflict detected. Please select the handling method for each conflict item:</translation>
-    </message>
-    <message>
-        <source>冲突项目 %1 (ID: %2)</source>
-        <translation type="vanished">Conflict Item %1 (ID: %2):</translation>
-    </message>
-    <message>
-        <source>现有数据</source>
-        <translation type="vanished">Existing Data:</translation>
-    </message>
-    <message>
-        <source>标题: %1</source>
-        <translation type="vanished">Title: %1</translation>
-    </message>
-    <message>
-        <source>描述: %1</source>
-        <translation type="vanished">Description: %1</translation>
-    </message>
-    <message>
-        <source>分类: %1</source>
-        <translation type="vanished">Category: %1</translation>
-    </message>
-    <message>
-        <source>状态: %1</source>
-        <translation type="vanished">Status: %1</translation>
-    </message>
-    <message>
-        <source>更新时间: %1</source>
-        <translation type="vanished">Update Time: %1</translation>
-    </message>
-    <message>
-        <source>导入数据</source>
-        <translation type="vanished">Import Data:</translation>
-    </message>
-    <message>
-        <source>处理方式:</source>
-        <translation type="vanished">Handling Method:</translation>
-    </message>
-    <message>
-        <source>跳过</source>
-        <translation type="vanished">Skip:</translation>
-    </message>
-    <message>
-        <source>覆盖</source>
-        <translation type="vanished">Override:</translation>
-    </message>
-    <message>
-        <source>智能合并</source>
-        <translation type="vanished">Smart Merge:</translation>
-    </message>
-    <message>
-        <source>保留现有数据，不导入此项目</source>
-        <translation type="vanished">Keep existing data, do not import this item:</translation>
-    </message>
-    <message>
-        <source>用导入的数据完全替换现有数据</source>
-        <translation type="vanished">Replace existing data with imported data:</translation>
-    </message>
-    <message>
-        <source>保留更新时间较新的版本</source>
-        <translation type="vanished">Keep the newer version based on update time:</translation>
-    </message>
-    <message>
-        <source>批量操作:</source>
-        <translation type="vanished">Batch Operation:</translation>
-    </message>
-    <message>
-        <source>全部跳过</source>
-        <translation type="vanished">Skip All:</translation>
-    </message>
-    <message>
-        <source>全部覆盖</source>
-        <translation type="vanished">Override All:</translation>
-    </message>
-    <message>
-        <source>全部智能合并</source>
-        <translation type="vanished">Smart Merge All:</translation>
-    </message>
-    <message>
-        <source>取消</source>
-        <translation type="vanished">Cancel:</translation>
-    </message>
-    <message>
-        <source>确定</source>
-        <translation type="vanished">OK:</translation>
-    </message>
-    <message>
-        <source>配置成功</source>
-        <translation type="vanished">Configuration Successful:</translation>
-    </message>
-    <message>
-        <source>API服务器地址已成功保存！</source>
-        <translation type="vanished">API Server Address Saved Successfully:</translation>
-    </message>
-    <message>
-        <source>配置错误</source>
-        <translation type="vanished">Configuration Error:</translation>
-    </message>
-    <message>
-        <source>安全警告</source>
-        <translation type="vanished">Security Warning:</translation>
-    </message>
-    <message>
-        <source>您输入的地址使用HTTP协议，这可能不安全。
-建议使用HTTPS协议以保护您的数据安全。
-
-是否仍要保存此配置？</source>
-        <translation type="vanished">Are you sure you want to save this configuration?</translation>
-    </message>
-    <message>
-        <source>需要登录</source>
-        <translation type="vanished">Login Required:</translation>
-    </message>
-    <message>
-        <source>开启自动同步功能需要先登录账户。
-请先登录后再开启自动同步。</source>
-        <translation type="vanished">Automatic synchronization requires login. Please log in first.</translation>
-    </message>
-    <message>
-        <source>清空所有配置</source>
-        <translation type="vanished">Clear All Configurations:</translation>
-    </message>
-    <message>
-        <source>警告：此操作将清空所有配置设置！
-
-确定要继续吗？此操作无法撤销。</source>
-        <translation type="vanished">Are you sure you want to clear all configurations? This action cannot be undone.</translation>
-    </message>
-    <message>
-        <source>操作成功</source>
-        <translation type="vanished">Operation Successful:</translation>
-    </message>
-    <message>
-        <source>存储类型已成功更改！</source>
-        <translation type="vanished">Storage Type Changed Successfully:</translation>
-    </message>
-    <message>
-        <source>操作失败</source>
-        <translation type="vanished">Operation Failed:</translation>
-    </message>
-    <message>
-        <source>更改存储类型时发生错误，请重试。</source>
-        <translation type="vanished">Error changing storage type. Please try again.</translation>
-    </message>
-    <message>
-        <source>配置文件路径已成功更改！</source>
-        <translation type="vanished">Configuration File Path Changed Successfully:</translation>
-    </message>
-    <message>
-        <source>更改配置文件路径时发生错误，请检查路径是否有效。</source>
-        <translation type="vanished">Error changing configuration file path. Please check the path.</translation>
-    </message>
-    <message>
-        <source>配置文件路径已重置为选定的默认位置！</source>
-        <translation type="vanished">Configuration File Path Reset to Default:</translation>
-    </message>
-    <message>
-        <source>重置配置文件路径时发生错误。</source>
-        <translation type="vanished">Error resetting configuration file path.</translation>
-    </message>
-    <message>
-        <source>所有配置已清空！</source>
-        <translation type="vanished">All Configurations Cleared:</translation>
-    </message>
-    <message>
-        <source>无法打开配置文件目录。</source>
-        <translation type="vanished">Error opening configuration file directory.</translation>
-    </message>
-</context>
-<context>
     <name>SettingPage</name>
     <message>
         <location filename="../qml/SettingPage.qml" line="45"/>
         <source>设置</source>
-        <translation type="unfinished">Settings</translation>
+        <translation>Settings</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="92"/>
         <source>未登录</source>
-        <translation type="unfinished">Not Logged In</translation>
+        <translation>Not Logged In</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="107"/>
         <source>外观设置</source>
-        <translation type="unfinished">Appearance Settings</translation>
+        <translation>Appearance Settings</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="115"/>
         <source>深色模式</source>
-        <translation type="unfinished">Dark Mode</translation>
+        <translation>Dark Mode</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="130"/>
         <source>跟随系统深色模式</source>
-        <translation type="unfinished">Follow System Dark Mode</translation>
+        <translation>Follow System Dark Mode</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="172"/>
         <source>防止拖动窗口（小窗口模式）</source>
-        <translation type="unfinished">Prevent Dragging Window (Small Window Mode)</translation>
+        <translation>Prevent Dragging Window (Small Window Mode)</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="185"/>
         <source>开机自启动</source>
-        <translation type="unfinished">Start on Boot</translation>
+        <translation>Start on Boot</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="197"/>
         <source>网络代理设置</source>
-        <translation type="unfinished">Network Proxy Settings</translation>
+        <translation>Network Proxy Settings</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="205"/>
         <source>启用代理</source>
-        <translation type="unfinished">Enable Proxy</translation>
+        <translation>Enable Proxy</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="221"/>
         <source>不使用代理</source>
-        <translation type="unfinished">Disable Proxy</translation>
+        <translation>Disable Proxy</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="221"/>
         <source>系统代理</source>
-        <translation type="unfinished">System Proxy</translation>
+        <translation>System Proxy</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="221"/>
         <source>HTTP代理</source>
-        <translation type="unfinished">HTTP Proxy</translation>
+        <translation>HTTP Proxy</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="221"/>
         <source>SOCKS5代理</source>
-        <translation type="unfinished">SOCKS5 Proxy</translation>
+        <translation>SOCKS5 Proxy</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="241"/>
         <source>服务器:</source>
-        <translation type="unfinished">Server:</translation>
+        <translation>Server:</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="248"/>
         <source>代理服务器地址</source>
-        <translation type="unfinished">Proxy Server Address</translation>
+        <translation>Proxy Server Address</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="264"/>
         <source>端口:</source>
-        <translation type="unfinished">Port:</translation>
+        <translation>Port:</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="288"/>
         <source>用户名:</source>
-        <translation type="unfinished">Username:</translation>
+        <translation>Username:</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="295"/>
         <source>用户名（可选）</source>
-        <translation type="unfinished">Username (Optional):</translation>
+        <translation>Username (Optional):</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="310"/>
         <source>密码:</source>
-        <translation type="unfinished">Password:</translation>
+        <translation>Password:</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="317"/>
         <source>密码（可选）</source>
-        <translation type="unfinished">Password (Optional):</translation>
+        <translation>Password (Optional):</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="333"/>
         <source>数据管理</source>
-        <translation type="unfinished">Data Management:</translation>
+        <translation>Data Management:</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="344"/>
         <source>导出待办事项</source>
-        <translation type="unfinished">Export Todo Items:</translation>
+        <translation>Export Todo Items:</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="353"/>
         <source>导入待办事项</source>
-        <translation type="unfinished">Import Todo Items:</translation>
+        <translation>Import Todo Items:</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="361"/>
         <source>配置文件管理</source>
-        <translation type="unfinished">Configuration File Management:</translation>
+        <translation>Configuration File Management:</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="376"/>
         <source>配置文件路径:</source>
-        <translation type="unfinished">Configuration File Path:</translation>
+        <translation>Configuration File Path:</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="391"/>
         <source>打开目录</source>
-        <translation type="unfinished">Open Directory:</translation>
+        <translation>Open Directory:</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="397"/>
         <location filename="../qml/SettingPage.qml" line="497"/>
         <source>操作失败</source>
-        <translation type="unfinished">Operation Failed:</translation>
+        <translation>Operation Failed:</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="397"/>
@@ -1321,7 +733,7 @@ Please log in first before enabling automatic synchronization.</translation>
     <message>
         <location filename="../qml/SettingPage.qml" line="403"/>
         <source>清空配置</source>
-        <translation type="unfinished">Clear Configuration:</translation>
+        <translation>Clear Configuration:</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="413"/>
@@ -1361,108 +773,138 @@ Please log in first before enabling automatic synchronization.</translation>
     <message>
         <location filename="../qml/SettingPage.qml" line="462"/>
         <source>服务器配置</source>
-        <translation type="unfinished">Server Configuration:</translation>
+        <translation>Server Configuration:</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="475"/>
         <source>API服务器地址:</source>
-        <translation type="unfinished">API Server Address:</translation>
+        <translation>API Server Address:</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="489"/>
         <source>保存配置</source>
-        <translation type="unfinished">Save Configuration:</translation>
+        <translation>Save Configuration:</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="497"/>
         <source>请输入完整的URL地址（包含http://或https://）</source>
-        <translation type="unfinished">Please enter a complete URL address (including http:// or https://):</translation>
+        <translation>Please enter a complete URL address (including http:// or https://):</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="508"/>
-        <location filename="../qml/SettingPage.qml" line="592"/>
-        <location filename="../qml/SettingPage.qml" line="605"/>
+        <location filename="../qml/SettingPage.qml" line="628"/>
+        <location filename="../qml/SettingPage.qml" line="641"/>
         <source>操作成功</source>
-        <translation type="unfinished">Operation Successful:</translation>
+        <translation>Operation Successful:</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="508"/>
-        <location filename="../qml/SettingPage.qml" line="592"/>
+        <location filename="../qml/SettingPage.qml" line="628"/>
         <source>API服务器地址已成功保存！</source>
-        <translation type="unfinished">API Server Address Saved Successfully:</translation>
+        <translation>API Server Address Saved Successfully:</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="513"/>
         <source>重置为默认</source>
-        <translation type="unfinished">Reset to Default:</translation>
+        <translation>Reset to Default:</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="525"/>
         <source>关于</source>
-        <translation type="unfinished">About:</translation>
+        <translation>About:</translation>
     </message>
     <message>
         <location filename="../qml/SettingPage.qml" line="533"/>
         <source>GitHub主页</source>
-        <translation type="unfinished">GitHub Home:</translation>
+        <translation>GitHub Home:</translation>
     </message>
     <message>
-        <location filename="../qml/SettingPage.qml" line="547"/>
+        <location filename="../qml/SettingPage.qml" line="545"/>
+        <source>当前版本：</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingPage.qml" line="551"/>
+        <source>(有新版本可用)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingPage.qml" line="551"/>
+        <source>(已是最新版本)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingPage.qml" line="562"/>
+        <source>检查中...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingPage.qml" line="562"/>
+        <source>检查更新</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingPage.qml" line="568"/>
+        <source>下载更新</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingPage.qml" line="583"/>
         <source>选择导出位置</source>
-        <translation type="unfinished">Select Export Location:</translation>
+        <translation>Select Export Location:</translation>
     </message>
     <message>
-        <location filename="../qml/SettingPage.qml" line="565"/>
+        <location filename="../qml/SettingPage.qml" line="601"/>
         <source>选择要导入的文件</source>
-        <translation type="unfinished">Select Import File:</translation>
+        <translation>Select Import File:</translation>
     </message>
     <message>
-        <location filename="../qml/SettingPage.qml" line="578"/>
+        <location filename="../qml/SettingPage.qml" line="614"/>
         <source>导入成功</source>
-        <translation type="unfinished">Import Successful:</translation>
+        <translation>Import Successful:</translation>
     </message>
     <message>
-        <location filename="../qml/SettingPage.qml" line="578"/>
+        <location filename="../qml/SettingPage.qml" line="614"/>
         <source>待办事项已成功导入！</source>
-        <translation type="unfinished">Import Successful:</translation>
+        <translation>Import Successful:</translation>
     </message>
     <message>
-        <location filename="../qml/SettingPage.qml" line="586"/>
+        <location filename="../qml/SettingPage.qml" line="622"/>
         <source>安全警告</source>
-        <translation type="unfinished">Security Warning:</translation>
+        <translation>Security Warning:</translation>
     </message>
     <message>
-        <location filename="../qml/SettingPage.qml" line="587"/>
+        <location filename="../qml/SettingPage.qml" line="623"/>
         <source>您输入的地址使用HTTP协议，这可能不安全。
 建议使用HTTPS协议以保护您的数据安全。
 
 是否仍要保存此配置？</source>
-        <translation type="unfinished">Are you sure you want to save this configuration?</translation>
+        <translation>Are you sure you want to save this configuration?</translation>
     </message>
     <message>
-        <location filename="../qml/SettingPage.qml" line="599"/>
+        <location filename="../qml/SettingPage.qml" line="635"/>
         <source>清空所有配置</source>
-        <translation type="unfinished">Clear All Configurations:</translation>
+        <translation>Clear All Configurations:</translation>
     </message>
     <message>
-        <location filename="../qml/SettingPage.qml" line="601"/>
+        <location filename="../qml/SettingPage.qml" line="637"/>
         <source>警告：此操作将清空所有配置设置！
 
 确定要继续吗？此操作无法撤销。</source>
-        <translation type="unfinished">Are you sure you want to clear all configurations? This action cannot be undone.</translation>
+        <translation>Are you sure you want to clear all configurations? This action cannot be undone.</translation>
     </message>
     <message>
-        <location filename="../qml/SettingPage.qml" line="605"/>
+        <location filename="../qml/SettingPage.qml" line="641"/>
         <source>所有配置已清空</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/SettingPage.qml" line="612"/>
+        <location filename="../qml/SettingPage.qml" line="648"/>
         <source>迁移配置文件</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/SettingPage.qml" line="615"/>
+        <location filename="../qml/SettingPage.qml" line="651"/>
         <source>即将迁移配置文件到所选位置。
 
 如果目标已有文件将被覆盖。
@@ -1470,83 +912,64 @@ Please log in first before enabling automatic synchronization.</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/SettingPage.qml" line="622"/>
+        <location filename="../qml/SettingPage.qml" line="658"/>
         <source>迁移成功</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/SettingPage.qml" line="622"/>
+        <location filename="../qml/SettingPage.qml" line="658"/>
         <source>配置文件已成功迁移。</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/SettingPage.qml" line="624"/>
+        <location filename="../qml/SettingPage.qml" line="660"/>
         <source>迁移失败</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/SettingPage.qml" line="624"/>
+        <location filename="../qml/SettingPage.qml" line="660"/>
         <source>配置文件迁移未成功，请检查权限或文件占用。</source>
         <translation type="unfinished"></translation>
     </message>
-</context>
-<context>
-    <name>TaskForm</name>
     <message>
-        <source>标题</source>
-        <translation type="vanished">Title:</translation>
+        <location filename="../qml/SettingPage.qml" line="678"/>
+        <source>发现新版本</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>输入任务标题...</source>
-        <translation type="vanished">Input Task Title:</translation>
+        <location filename="../qml/SettingPage.qml" line="680"/>
+        <source>立即下载</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>描述</source>
-        <translation type="vanished">Description:</translation>
+        <location filename="../qml/SettingPage.qml" line="681"/>
+        <source>稍后提醒</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>输入任务描述...</source>
-        <translation type="vanished">Input Task Description:</translation>
+        <location filename="../qml/SettingPage.qml" line="686"/>
+        <source>发现新版本 %1
+
+更新内容：
+%2
+
+是否立即前往下载页面？</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>分类</source>
-        <translation type="vanished">Category:</translation>
+        <location filename="../qml/SettingPage.qml" line="688"/>
+        <source>暂无更新说明</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>重要程度</source>
-        <translation type="vanished">Priority:</translation>
+        <location filename="../qml/SettingPage.qml" line="710"/>
+        <source>检查更新失败</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>截止日期</source>
-        <translation type="vanished">Due Date:</translation>
-    </message>
-    <message>
-        <source>YYYY-MM-DD HH:MM</source>
-        <translation type="vanished">Due Date Format: YYYY-MM-DD HH:MM</translation>
-    </message>
-    <message>
-        <source>循环间隔（天）</source>
-        <translation type="vanished">Recurrence Interval (Days):</translation>
-    </message>
-    <message>
-        <source>0表示不循环</source>
-        <translation type="vanished">0 means no recurrence:</translation>
-    </message>
-    <message>
-        <source>循环次数</source>
-        <translation type="vanished">Recurrence Count:</translation>
-    </message>
-    <message>
-        <source>-1表示无限循环</source>
-        <translation type="vanished">-1 means infinite recurrence:</translation>
-    </message>
-    <message>
-        <source>循环开始日期</source>
-        <translation type="vanished">Recurrence Start Date:</translation>
-    </message>
-    <message>
-        <source>YYYY-MM-DD</source>
-        <translation type="vanished">Recurrence Start Date Format: YYYY-MM-DD</translation>
+        <location filename="../qml/SettingPage.qml" line="710"/>
+        <source>无法检查更新：%1</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1645,18 +1068,11 @@ Please log in first before enabling automatic synchronization.</translation>
     </message>
 </context>
 <context>
-    <name>TodoDetailsDialog</name>
-    <message>
-        <source>待办详情</source>
-        <translation type="vanished">Todo Details:</translation>
-    </message>
-</context>
-<context>
     <name>TodoListContainer</name>
     <message>
         <location filename="../qml/todos/TodoListContainer.qml" line="86"/>
         <source>正在同步...</source>
-        <translation type="unfinished">Syncing...</translation>
+        <translation>Syncing...</translation>
     </message>
     <message>
         <location filename="../qml/todos/TodoListContainer.qml" line="86"/>
@@ -1682,7 +1098,7 @@ Please log in first before enabling automatic synchronization.</translation>
         <location filename="../qml/todos/TodoListContainer.qml" line="378"/>
         <location filename="../qml/todos/TodoListContainer.qml" line="600"/>
         <source>删除</source>
-        <translation type="unfinished">Delete</translation>
+        <translation>Delete</translation>
     </message>
     <message>
         <location filename="../qml/todos/TodoListContainer.qml" line="582"/>
@@ -1697,7 +1113,7 @@ Please log in first before enabling automatic synchronization.</translation>
     <message>
         <location filename="../qml/todos/TodoListContainer.qml" line="638"/>
         <source>确认删除</source>
-        <translation type="unfinished">Confirm Delete</translation>
+        <translation>Confirm Delete</translation>
     </message>
     <message>
         <location filename="../qml/todos/TodoListContainer.qml" line="640"/>
@@ -1709,26 +1125,14 @@ Please log in first before enabling automatic synchronization.</translation>
 <context>
     <name>WidgetMode</name>
     <message>
-        <source>正在同步...</source>
-        <translation type="vanished">Syncing...</translation>
-    </message>
-    <message>
-        <source>释放刷新</source>
-        <translation type="vanished">Release to Refresh:</translation>
-    </message>
-    <message>
-        <source>下拉刷新</source>
-        <translation type="vanished">Pull to Refresh:</translation>
-    </message>
-    <message>
         <location filename="../qml/WidgetMode.qml" line="237"/>
         <source>深色模式</source>
-        <translation type="unfinished">Dark Mode</translation>
+        <translation>Dark Mode</translation>
     </message>
     <message>
         <location filename="../qml/WidgetMode.qml" line="252"/>
         <source>防止拖动窗口（小窗口模式）</source>
-        <translation type="unfinished">Prevent Dragging Window (Small Window Mode)</translation>
+        <translation>Prevent Dragging Window (Small Window Mode)</translation>
     </message>
     <message>
         <location filename="../qml/WidgetMode.qml" line="306"/>
@@ -1748,7 +1152,7 @@ Please log in first before enabling automatic synchronization.</translation>
     <message>
         <location filename="../qml/WidgetMode.qml" line="441"/>
         <source>添加</source>
-        <translation type="unfinished">Add</translation>
+        <translation>Add</translation>
     </message>
     <message>
         <location filename="../qml/WidgetMode.qml" line="441"/>

@@ -24,5 +24,8 @@ qt_add_translations(${APP_NAME}
     # 最终路径：qrc:/i18n/MyTodo_*.qm
     RESOURCE_PREFIX /                # 资源前缀
     TS_FILE_BASE ${APP_NAME}         # 翻译文件前缀 ${APP_NAME}_${LANG}.ts
+    LUPDATE_OPTIONS  
+        -source-language zh_CN       # 源语言为简体中文
+        -no-obsolete                 # 不包含已过时的翻译
     # QM_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/  # 输出目录
 )
