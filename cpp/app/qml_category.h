@@ -1,8 +1,8 @@
 /**
- * @file category_manager.h
- * @brief CategoryManager类的头文件
+ * @file qml_category.h
+ * @brief QmlCategoryManager类的头文件
  *
- * 该文件定义了CategoryManager类，用于管理待办事项的类别。
+ * 该文件定义了QmlCategoryManager类，用于管理待办事项的类别。
  *
  * @author Sakurakugu
  * @date 2025-08-25 01:28:49(UTC+8) 周一

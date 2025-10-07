@@ -134,8 +134,8 @@ class UserAuth : public QObject, public IDataExporter {
     // ===== 令牌策略常量 =====
     // 访问令牌总有效期（秒）—— 服务端约定：1 小时
     static const int ACCESS_TOKEN_LIFETIME = 3600;
-    // 刷新令牌总有效期（秒）—— 服务端约定：14 天
-    static const int REFRESH_TOKEN_LIFETIME = 14 * 24 * 3600; // 1209600 秒
+    // 刷新令牌总有效期（秒）—— 服务端约定：30 天
+    static const int REFRESH_TOKEN_LIFETIME = 30 * 24 * 3600; // 2592000 秒
     // 在访问令牌过期前多少秒刷新（预刷新提前量）
     static const int ACCESS_TOKEN_REFRESH_AHEAD = 300; // 5 分钟，可根据需要调整
 

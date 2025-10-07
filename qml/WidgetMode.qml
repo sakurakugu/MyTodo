@@ -132,7 +132,6 @@ Item {
                 font.pixelSize: 14
                 font.bold: true
 
-                // TODO: 新增或删除待办后，这里的文字没有更改（显示的是当前分类下的待办数量）
                 property int todoCount: todoManager.todoModel.rowCount()
                 property bool isHovered: false
 
@@ -141,6 +140,31 @@ Item {
                         return todoCount > 0 ? todoCount + "个待办" : "没有待办";
                     } else {
                         return todoCount > 0 ? todoCount + "个待办" : "我的待办";
+                    }
+                }
+
+                // 监听模型变化，确保待办数量及时更新
+                Connections {
+                    target: todoManager.todoModel
+                    function onRowsInserted() {
+                        todoStatusIndicator.todoCount = todoManager.todoModel.rowCount();
+                    }
+                    function onRowsRemoved() {
+                        todoStatusIndicator.todoCount = todoManager.todoModel.rowCount();
+                    }
+                    function onModelReset() {
+                        todoStatusIndicator.todoCount = todoManager.todoModel.rowCount();
+                    }
+                    function onDataChanged() {
+                        todoStatusIndicator.todoCount = todoManager.todoModel.rowCount();
+                    }
+                }
+
+                // 监听查询条件变化，当分类筛选改变时更新数量
+                Connections {
+                    target: todoManager.queryer
+                    function onQueryConditionsChanged() {
+                        todoStatusIndicator.todoCount = todoManager.todoModel.rowCount();
                     }
                 }
 
@@ -272,7 +296,6 @@ Item {
         height: 250
         visible: globalData.isDesktopWidget && globalData.isShowAddTask
 
-        // TODO: 这里可以天空标题输入框，还有一些详细设置
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 10
@@ -418,7 +441,6 @@ Item {
                         text: globalData.isNew ? qsTr("添加") : qsTr("保存")
                         onClicked: {
                             if (globalData.isNew) {
-                                // TODO：c++中有些没实现
                                 todoManager.addTodo(titleInput.text, contentInput.text);
                             } else {
                                 todoManager.updateTodo(globalData.selectedTodo.index, "title", titleInput.text);

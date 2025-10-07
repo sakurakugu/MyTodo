@@ -131,12 +131,19 @@ ListView {
         property bool isSelected: selectedItems.indexOf(index) !== -1
         property real swipeOffset: 0
         property bool swipeActive: false
+        // 滑动配置
+        property real swipeMax: 80              // 最大横向滑动距离
+        property real actionTrigger: 56         // 触发动作的阈值（约70%）
+        property bool actionInProgress: false   // 动作执行中防止重复触发
 
-        // 主内容区域
+        // 主内容区域（通过 Translate 让主体随 swipeOffset 水平滑动）
         Rectangle {
             id: mainContent
             anchors.fill: parent
-            x: delegateItem.swipeOffset
+            // 不能直接设置 x 因为使用 anchors，会导致 x 只读；改用 transform
+            transform: Translate {
+                x: delegateItem.swipeOffset
+            }
             color: ThemeManager.backgroundColor
             // 长按和点击处理
             MouseArea {
@@ -244,17 +251,6 @@ ListView {
                                 height: 10
                                 radius: 4
                                 color: (model.isCompleted || false) ? ThemeManager.completedColor : (model.important || false) ? ThemeManager.highImportantColor : ThemeManager.lowImportantColor
-
-                                // TODO ：如果是备忘录模式记得开启它
-                                // MouseArea {
-                                //     anchors.fill: parent
-                                //     onClicked: function (mouse) {
-                                //         if (!multiSelectMode) {
-                                //             todoManager.markAsDone(index);
-                                //         }
-                                //         mouse.accepted = true;
-                                //     }
-                                // }
                             }
 
                             // 待办标题
@@ -267,7 +263,6 @@ ListView {
                                 maximumLineCount: 1
                             }
                         }
-                        // TODO:如果是记录（笔记或备忘录）
                         // “时间”和“部分内容”
                         RowLayout {
                             Layout.leftMargin: 8
@@ -327,7 +322,8 @@ ListView {
             }
         }
 
-        // TODO： 现在左右滑动没让主体也跟着滑动
+        // 滑动操作背景：向右 -> 已完成 / 未完成；向左 -> 删除
+        // 背景放在主体下方（z: -1），主体滑动露出背景
         // 右划完成背景
         Rectangle {
             id: completeBackground
@@ -337,6 +333,7 @@ ListView {
             width: Math.abs(delegateItem.swipeOffset)
             color: (model.isCompleted || false) ? ThemeManager.warningColor : ThemeManager.successColor
             visible: delegateItem.swipeOffset > 0
+            z: -1
 
             Text {
                 anchors.centerIn: parent
@@ -374,6 +371,7 @@ ListView {
             width: Math.abs(delegateItem.swipeOffset)
             color: ThemeManager.errorColor
             visible: delegateItem.swipeOffset < 0
+            z: -1
 
             Text {
                 anchors.centerIn: parent
@@ -456,20 +454,26 @@ ListView {
                     var deltaX = mouse.x - startX;
                     if (Math.abs(deltaX) > 20) {
                         // 增加拖拽阈值到20像素
-                        isDragging = true;
+                        if (!isDragging) {
+                            isDragging = true;
+                            root.interactive = false; // 禁用垂直滚动
+                        }
                     }
+
+                    if (delegateItem.actionInProgress)
+                        return; // 动作执行中不响应进一步滑动
 
                     if (isDragging && deltaX < 0) {
                         // 左划删除
-                        delegateItem.swipeOffset = Math.max(deltaX, -80);
+                        delegateItem.swipeOffset = Math.max(deltaX, -delegateItem.swipeMax);
                         delegateItem.swipeActive = true;
                     } else if (isDragging && deltaX > 0) {
                         if (delegateItem.swipeOffset < 0) {
                             // 从左划状态向右滑动回弹
                             delegateItem.swipeOffset = Math.min(0, delegateItem.swipeOffset + deltaX);
                         } else {
-                            // 右划切换完成状态
-                            delegateItem.swipeOffset = Math.min(deltaX, 80);
+                            // 右划完成/未完成
+                            delegateItem.swipeOffset = Math.min(deltaX, delegateItem.swipeMax);
                             delegateItem.swipeActive = true;
                         }
                     }
@@ -493,6 +497,12 @@ ListView {
                     return;
                 }
 
+                if (delegateItem.actionInProgress) {
+                    return; // 动作期间直接忽略
+                }
+
+                let offset = delegateItem.swipeOffset;
+                let absOffset = Math.abs(offset);
                 if (isDragging) {
                     // 如果左划距离不够，回弹
                     if (delegateItem.swipeOffset > -40 && delegateItem.swipeOffset < 0) {
@@ -524,6 +534,7 @@ ListView {
                 }
                 isDragging = false;
                 delegateItem.swipeActive = false;
+                root.interactive = true; // 恢复垂直滚动
             }
 
             // 长按处理
@@ -547,6 +558,7 @@ ListView {
             to: 0
             duration: 200
             easing.type: Easing.OutQuad
+            onFinished: delegateItem.actionInProgress = false
         }
     }
 

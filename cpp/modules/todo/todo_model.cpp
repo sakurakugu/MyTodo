@@ -493,9 +493,9 @@ void TodoModel::需要重新筛选() {
 
 // 更新同步管理器的待办事项数据
 void TodoModel::更新同步管理器的数据() {
-    QList<TodoItem *> todoItems;
+    std::vector<TodoItem *> todoItems;
     for (const auto &item : m_todos) {
-        todoItems.append(item.get());
+        todoItems.push_back(item.get());
     }
     m_syncManager.setTodoItems(todoItems);
 }

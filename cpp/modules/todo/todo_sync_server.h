@@ -71,14 +71,14 @@ class TodoSyncServer : public BaseSyncServer {
     void 取消同步() override;
 
     // 数据操作接口
-    void setTodoItems(const QList<TodoItem *> &items); // 设置待同步的待办事项列表
-    QList<TodoItem *> 设置未同步的对象() const;        // 获取未同步的项目
+    void setTodoItems(const std::vector<TodoItem *> &items); // 设置待同步的待办事项列表
+    std::vector<TodoItem *> 设置未同步的对象() const;        // 获取未同步的项目
 
   signals:
     // 数据更新信号（待办事项特有）
-    void todosUpdatedFromServer(const QJsonArray &todosArray);  // 从服务器更新的待办事项
-    void localChangesUploaded(const QList<TodoItem *> &items);  // 本地更改已上传
-    void syncConflictDetected(const QJsonArray &conflictItems); // 检测到同步冲突
+    void todosUpdatedFromServer(const QJsonArray &todosArray);       // 从服务器更新的待办事项
+    void localChangesUploaded(const std::vector<TodoItem *> &items); // 本地更改已上传
+    void syncConflictDetected(const QJsonArray &conflictItems);      // 检测到同步冲突
 
   protected slots:
     void onNetworkRequestCompleted(Network::RequestType type,
@@ -90,21 +90,18 @@ class TodoSyncServer : public BaseSyncServer {
     // 同步操作实现（重写基类方法）
     void 拉取数据() override;
     void 推送数据() override;
-    void 推送单个项目(TodoItem *item);
-    void 推送下个项目();
-    void 处理单个项目推送成功();
     void 处理获取数据成功(const QJsonObject &response);
     void 处理推送更改成功(const QJsonObject &response);
-    void 推送批次到服务器(const QList<TodoItem *> &batch);
+    void 推送批次到服务器(const std::vector<TodoItem *> &batch);
     void 推送下一个批次();
 
   private:
     // 数据管理
-    QList<TodoItem *> m_todoItems;            ///< 待同步的待办事项列表
-    QList<TodoItem *> m_pendingUnsyncedItems; ///< 等待推送的未同步项目
-    QList<TodoItem *> m_allUnsyncedItems;     ///< 存储所有待同步项目
-    int m_currentPushIndex;                   ///< 当前推送的项目索引
-    int m_currentBatchIndex;                  ///< 当前批次索引
-    int m_totalBatches;                       ///< 总批次数
-    static const int m_maxBatchSize = 100;    ///< 最大批次大小
+    std::vector<TodoItem *> m_todoItems;            ///< 待同步的待办事项列表
+    std::vector<TodoItem *> m_pendingUnsyncedItems; ///< 等待推送的未同步项目
+    std::vector<TodoItem *> m_allUnsyncedItems;     ///< 存储所有待同步项目
+    int m_currentPushIndex;                         ///< 当前推送的项目索引
+    int m_currentBatchIndex;                        ///< 当前批次索引
+    int m_totalBatches;                             ///< 总批次数
+    static const int m_maxBatchSize = 100;          ///< 最大批次大小
 };

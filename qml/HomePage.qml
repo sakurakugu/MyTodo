@@ -584,7 +584,6 @@ Page {
                             Layout.rightMargin: 8
                             spacing: 8
 
-                            // TODO: 改成图标
                             Text {
                                 text: qsTr("分类:")
                                 font.pixelSize: 12

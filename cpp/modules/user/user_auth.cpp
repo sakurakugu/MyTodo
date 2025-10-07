@@ -117,9 +117,9 @@ void UserAuth::登录(const QString &account, const QString &password) {
         }
         isEmail = true;
     } else {
-        // 用户名简单验证 // TODO: 到时候看一下是1~20还是3~20
-        if (account.length() < 1 || account.length() > 20) {
-            emit loginFailed("用户名长度应在1到20个字符之间");
+        // 用户名简单验证
+        if (account.length() < 3 || account.length() > 20) {
+            emit loginFailed("用户名长度应在3到20个字符之间");
             return;
         }
     }
@@ -337,7 +337,7 @@ void UserAuth::处理登录成功(const QJsonObject &response) {
         return;
     }
 
-    // 设置令牌过期时间（若服务端未返回，使用默认访问令牌生命周期） // TODO: 从服务端返回过期时间
+    // 设置令牌过期时间（从服务端返回过期时间，若未返回则使用默认值）
     if (response.contains("expires_in")) {
         qint64 expiresIn = response["expires_in"].toInt();
         if (expiresIn <= 0 || expiresIn > ACCESS_TOKEN_LIFETIME) {

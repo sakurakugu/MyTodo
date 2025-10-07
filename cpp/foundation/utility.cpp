@@ -31,6 +31,8 @@ QString Utility::toRfc3339String(const QDateTime &dateTime) {
  * @note 用于JSON序列化，自动处理null值
  */
 QJsonValue Utility::toRfc3339Json(const QDateTime &dateTime) {
+    if (!dateTime.isValid())
+        return QJsonValue(); // 返回 null
     return QJsonValue(toRfc3339String(dateTime));
 }
 
@@ -117,9 +119,8 @@ QDateTime Utility::timestampToDateTime(const QVariant &timestampMs) {
  * @note 用于数据库数据导出到JSON
  */
 QJsonValue Utility::timestampToIsoJson(const QVariant &timestampMs) {
-    if (timestampMs.isNull()) {
-        return QJsonValue();
-    }
+    if (timestampMs.isNull())
+        return QJsonValue(); // 返回 null
 
     bool ok = false;
     qint64 ms = timestampMs.toLongLong(&ok);
