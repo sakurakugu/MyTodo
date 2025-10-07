@@ -41,6 +41,11 @@ class QmlSetting : public QObject {
     Q_INVOKABLE bool exportDatabaseToJsonFile(const QString &filePath);
     Q_INVOKABLE bool importDatabaseFromJsonFile(const QString &filePath, bool replaceAll);
 
+    // ---- 配置文件位置管理与迁移 ----
+    Q_INVOKABLE int getConfigLocation() const;                     // 获取当前配置文件位置枚举值
+    Q_INVOKABLE QString getConfigLocationPath(int location) const; // 获取指定位置路径
+    Q_INVOKABLE bool migrateConfigLocation(int targetLocation, bool overwriteExisting);
+
     // ---- 代理配置 ----
     Q_INVOKABLE void setProxyType(int type);
     Q_INVOKABLE int getProxyType() const;

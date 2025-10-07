@@ -9,9 +9,9 @@
  * @change 2025-09-10 16:24:14(UTC+8) 周三
  */
 #pragma once
-#include <toml++/toml.hpp>
 #include <QString>
 #include <QVariant>
+#include <toml++/toml.hpp>
 
 class Config {
   public:
@@ -47,14 +47,15 @@ class Config {
     bool JsonToToml(const std::string &jsonContent, toml::table *table);     // JSON字符串 转换为 TOML
 
     // 配置文件位置切换
-    enum class ConfigLocation {
+    enum class Location {
         ApplicationPath, // 应用程序所在路径
         AppDataLocal     // AppData/Local路径
     };
 
-    void setConfigLocation(ConfigLocation location);                  // 设置配置文件位置
-    ConfigLocation getConfigLocation() const;                         // 获取配置文件位置
-    std::string getConfigLocationPath(ConfigLocation location) const; // 获取配置文件位置路径
+    bool setConfigLocation(Location location, bool overwrite = false);             // 设置配置文件位置
+    Location getConfigLocation() const;                                            // 获取配置文件位置
+    std::string getConfigLocationPath(Location location) const;                    // 获取配置文件位置路径
+    bool migrateConfigToLocation(Location targetLocation, bool overwrite = false); // 迁移配置文件到指定位置
 
     // 存储类型和路径管理相关方法
     bool openConfigFilePath() const;   // 打开配置文件路径
@@ -76,8 +77,8 @@ class Config {
     toml::table m_config;       // 配置数据
     std::string m_filePath;     // 配置文件路径
 #if defined(QT_DEBUG)
-    ConfigLocation m_configLocation = ConfigLocation::ApplicationPath;
+    Location m_configLocation = Location::ApplicationPath;
 #else
-    ConfigLocation m_configLocation = ConfigLocation::AppDataLocal;
+    Location m_configLocation = Location::AppDataLocal;
 #endif
 };

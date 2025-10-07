@@ -158,6 +158,27 @@ void Setting::清除所有日志文件() {
     }
 }
 
+// ---- 配置文件位置管理 ----
+int Setting::获取配置文件位置() const {
+    return static_cast<int>(m_config.getConfigLocation());
+}
+
+QString Setting::获取指定配置位置路径(int location) const {
+    Config::Location local = Config::Location::ApplicationPath;
+    if (location == static_cast<int>(Config::Location::AppDataLocal))
+        local = Config::Location::AppDataLocal;
+
+    return QString::fromStdString(m_config.getConfigLocationPath(local));
+}
+
+bool Setting::迁移配置文件到位置(int targetLocation, bool overwrite) {
+    Config::Location target = Config::Location::ApplicationPath;
+    if (targetLocation == static_cast<int>(Config::Location::AppDataLocal))
+        target = Config::Location::AppDataLocal;
+
+    return m_config.setConfigLocation(target, overwrite);
+}
+
 /**
  * @brief 初始化默认服务器配置
  * 如果服务器配置不存在，则设置默认值

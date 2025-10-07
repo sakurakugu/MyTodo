@@ -52,7 +52,7 @@ target_link_libraries(mytodo_foundation
     PUBLIC
         Qt6::Core
         Qt6::Network
-        Qt6::Sql
         Qt6::Gui
+        Qt6::Sql
         tomlplusplus::tomlplusplus
 )

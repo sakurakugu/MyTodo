@@ -43,5 +43,10 @@ configure_file(
     @ONLY
 )
 
+# 确保 APP_NAME 变量在当前作用域可用（从父作用域继承）
+if(NOT DEFINED APP_NAME)
+    message(FATAL_ERROR "APP_NAME 变量未定义，请在主 CMakeLists.txt 中设置")
+endif()
+
 # 设置全局变量，供主 CMakeLists.txt 使用
 set(INCLUDE_DIR ${CMAKE_BINARY_DIR}/generated)

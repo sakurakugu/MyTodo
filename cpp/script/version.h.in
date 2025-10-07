@@ -14,5 +14,5 @@
 
 #define APP_VERSION_STRING "@VERSION_MAJOR@.@VERSION_MINOR@.@VERSION_PATCH@"
 
-// 应用名称，手动修改
-#define APP_NAME "MyTodo"
+// 应用名称，从CMake变量自动生成
+#define APP_NAME "@APP_NAME@"

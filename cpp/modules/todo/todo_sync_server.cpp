@@ -240,7 +240,7 @@ void TodoSyncServer::推送下一个批次() {
     int startIndex = m_currentBatchIndex * maxBatchSize;
     int endIndex = std::min(startIndex + maxBatchSize, static_cast<int>(m_allUnsyncedItems.size()));
 
-    if (startIndex >= m_allUnsyncedItems.size()) {
+    if (startIndex >= static_cast<int>(m_allUnsyncedItems.size())) {
         // 所有批次都已推送完成
         qDebug() << "所有批次推送完成";
         setIsSyncing(false);

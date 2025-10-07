@@ -531,10 +531,19 @@ QNetworkRequest NetworkRequest::createNetworkRequest(const RequestConfig &config
 void NetworkRequest::setupDefaultHeaders(QNetworkRequest &request) const {
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     // 应用名 / 版本 (平台@计算机名)
-    QByteArray userAgent = std::format("%1/v%2 (Qt@%3)", APP_NAME, APP_VERSION_STRING, m_computerName).c_str();
+    const QByteArray userAgent = std::format("{} v{} (Qt@{})", APP_NAME, APP_VERSION_STRING, m_computerName).c_str();
+    // 设置Origin头部，格式为 app://应用名(平台)
+#if defined(Q_OS_WIN)
+    const QByteArray origin = std::format("app://{}({})", APP_NAME, "Windows").c_str();
+#elif defined(Q_OS_MACOS)
+    const QByteArray origin = std::format("app://{}({})", APP_NAME, "macOS").c_str();
+#else
+    const QByteArray origin = std::format("app://{}({})", APP_NAME, "Linux").c_str();
+#endif
+
     request.setRawHeader("User-Agent", userAgent);
     request.setRawHeader("Accept", "application/json");
-    request.setRawHeader("Origin", "app://MyTodo(Windows)");
+    request.setRawHeader("Origin", origin);
 }
 
 void NetworkRequest::addAuthHeader(QNetworkRequest &request) const {

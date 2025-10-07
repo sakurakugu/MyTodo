@@ -407,6 +407,53 @@ Page {
                         onClicked: clearConfigDialog.open()
                     }
                 }
+
+                // 配置文件位置迁移
+                Label {
+                    text: qsTr("配置文件存放位置:")
+                    color: ThemeManager.textColor
+                    Layout.topMargin: 10
+                }
+
+                RowLayout {
+                    spacing: 10
+                    Layout.fillWidth: true
+
+                    CustomComboBox {
+                        id: configLocationCombo
+                        Layout.preferredWidth: 240
+                        model: [qsTr("程序目录"), qsTr("AppData/Local")] // 顺序需与枚举保持一致
+                        // 使用 try-catch 防止早期访问错误
+                        Component.onCompleted: {
+                            try {
+                                currentIndex = setting.getConfigLocation();
+                            } catch (e) {
+                                currentIndex = 1; // 默认选择 AppData/Local
+                            }
+                        }
+                    }
+
+                    CustomButton {
+                        text: qsTr("迁移到该位置")
+                        onClicked: {
+                            var target = configLocationCombo.currentIndex;
+                            if (target === setting.getConfigLocation()) {
+                                modalDialog.showInfo(qsTr("无需迁移"), qsTr("配置文件已在该位置"));
+                                return;
+                            }
+                            migrateConfigConfirmDialog.targetLocation = target;
+                            migrateConfigConfirmDialog.open();
+                        }
+                    }
+                }
+
+                Label {
+                    text: qsTr("说明: 程序目录在某些安装环境可能没有写权限，失败时请改用AppData/Local。")
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: 12
+                    color: ThemeManager.textColor
+                    opacity: 0.7
+                }
             }
 
             Divider {}
@@ -556,6 +603,26 @@ Page {
             onConfirmed: {
                 setting.clear();
                 modalDialog.showInfo(qsTr("操作成功"), qsTr("所有配置已清空"));
+            }
+        }
+
+        // 迁移配置文件确认对话框
+        ModalDialog {
+            id: migrateConfigConfirmDialog
+            dialogTitle: qsTr("迁移配置文件")
+            dialogWidth: 380
+            property int targetLocation: 0
+            message: qsTr("即将迁移配置文件到所选位置。\n\n如果目标已有文件将被覆盖。\n确定继续吗？")
+
+            onConfirmed: {
+                var ok = setting.migrateConfigLocation(targetLocation, true);
+                if (ok) {
+                    configPathField.text = setting.getConfigFilePath();
+                    configLocationCombo.currentIndex = setting.getConfigLocation();
+                    modalDialog.showInfo(qsTr("迁移成功"), qsTr("配置文件已成功迁移。"));
+                } else {
+                    modalDialog.showInfo(qsTr("迁移失败"), qsTr("配置文件迁移未成功，请检查权限或文件占用。"));
+                }
             }
         }
 

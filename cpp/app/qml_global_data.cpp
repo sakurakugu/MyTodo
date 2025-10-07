@@ -9,6 +9,7 @@
  * @change 2025-10-06 17:36:23(UTC+8) 周一
  */
 #include "qml_global_data.h"
+#include "version.h"
 #include "config.h"
 
 #include <QCoreApplication>
@@ -238,7 +239,7 @@ void QmlGlobalData::toggleSettingsVisible() {
 
 bool QmlGlobalData::isAutoStartEnabled() const {
     QSettings config("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
-    return config.contains("MyTodo");
+    return config.contains(APP_NAME);
 }
 
 bool QmlGlobalData::setAutoStart(bool enabled) {
@@ -249,9 +250,9 @@ bool QmlGlobalData::setAutoStart(bool enabled) {
         applicationPath = QDir::toNativeSeparators(applicationPath);
         // 添加命令行参数标识开机自启动
         applicationPath += " --autostart";
-        config.setValue("MyTodo", applicationPath);
+        config.setValue(APP_NAME, applicationPath);
     } else {
-        config.remove("MyTodo");
+        config.remove(APP_NAME);
     }
 
     config.sync();

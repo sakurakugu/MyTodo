@@ -51,7 +51,6 @@ target_link_libraries(mytodo_todo
         Qt6::Core
         Qt6::Gui
         Qt6::Network
-        Qt6::Sql
         mytodo_foundation    # 基础模块（配置、日志、数据库等）
         mytodo_domain        # 领域模块（BaseDataStorage等）
 )

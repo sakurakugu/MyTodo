@@ -42,7 +42,6 @@ target_link_libraries(mytodo_app
         Qt6::Core
         Qt6::Gui
         Qt6::Network
-        Qt6::Sql
         mytodo_foundation
         mytodo_domain
         mytodo_category

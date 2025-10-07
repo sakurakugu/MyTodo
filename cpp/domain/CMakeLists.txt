@@ -22,7 +22,6 @@ add_library(mytodo_domain STATIC
 find_package(Qt6 REQUIRED COMPONENTS 
     Core        # 核心功能（QObject, QString, QDateTime等）
     Network     # 网络功能（同步服务器需要）
-    Sql         # SQL数据库支持
 )
 
 # 设置包含目录
@@ -37,7 +36,6 @@ target_link_libraries(mytodo_domain
     PUBLIC
         Qt6::Core
         Qt6::Network
-        Qt6::Sql
         mytodo_foundation    # 基础模块（Database类等）
         mytodo_user          # 用户模块
 )

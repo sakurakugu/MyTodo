@@ -86,6 +86,10 @@ class Setting : public QObject {
     void 清除所有日志文件();
     void 初始化默认服务器配置();
 
+    int 获取配置文件位置() const;                                // 当前配置文件位置
+    QString 获取指定配置位置路径(int location) const;            // 指定位置的完整路径
+    bool 迁移配置文件到位置(int targetLocation, bool overwrite); // 迁移配置文件到目标位置
+
   signals:
     void baseUrlChanged(); // 服务器基础URL变化信号
 

@@ -356,7 +356,7 @@ bool Config::openConfigFilePath() const {
  */
 void Config::findExistingConfigFile() {
     // 按优先级顺序查找配置文件
-    std::vector<ConfigLocation> searchOrder = {ConfigLocation::ApplicationPath, ConfigLocation::AppDataLocal};
+    std::vector<Location> searchOrder = {Location::ApplicationPath, Location::AppDataLocal};
 
     for (const auto &location : searchOrder) {
         std::string configPath = getConfigLocationPath(location);
@@ -889,15 +889,17 @@ bool Config::importFromJson(const std::string &jsonContent, bool replaceAll) {
 /**
  * @brief 设置配置文件存放位置
  * @param location 配置文件位置
+ * @param overwrite 是否允许覆盖已存在文件
+ * @return 是否成功
  */
-void Config::setConfigLocation(ConfigLocation location) {
+bool Config::setConfigLocation(Location location, bool overwrite) {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     if (m_configLocation == location) {
-        return; // 位置未改变
+        return true; // 位置未改变
     }
 
-    ConfigLocation oldLocation = m_configLocation;
+    Location oldLocation = m_configLocation;
     std::string oldPath = m_filePath;
 
     try {
@@ -910,8 +912,14 @@ void Config::setConfigLocation(ConfigLocation location) {
         std::filesystem::path dir = newFilePath.parent_path();
         if (!std::filesystem::exists(dir)) {
             if (!std::filesystem::create_directories(dir)) {
-                throw std::runtime_error("无法创建配置目录: " + dir.string());
+                qCritical() << "无法创建配置目录:" << dir.string();
+                return false;
             }
+        }
+
+        if (std::filesystem::exists(newPath) && !overwrite) {
+            qCritical() << "新配置文件路径已存在，且不允许覆盖:" << newPath;
+            return false;
         }
 
         // 如果旧配置文件存在，复制到新位置
@@ -932,6 +940,7 @@ void Config::setConfigLocation(ConfigLocation location) {
                 qDebug() << "已删除旧配置文件:" << oldPath;
             } catch (const std::exception &e) {
                 qWarning() << "删除旧配置文件失败:" << oldPath << "错误:" << e.what();
+                return false;
             }
         }
 
@@ -942,14 +951,16 @@ void Config::setConfigLocation(ConfigLocation location) {
         // 恢复原位置
         m_configLocation = oldLocation;
         m_filePath = oldPath;
+        return false;
     }
+    return true;
 }
 
 /**
  * @brief 获取当前配置文件位置
  * @return 当前配置位置
  */
-Config::ConfigLocation Config::getConfigLocation() const {
+Config::Location Config::getConfigLocation() const {
     std::lock_guard<std::mutex> lock(m_mutex);
     return m_configLocation;
 }
@@ -959,16 +970,16 @@ Config::ConfigLocation Config::getConfigLocation() const {
  * @param location 配置位置
  * @return 配置文件完整路径
  */
-std::string Config::getConfigLocationPath(ConfigLocation location) const {
+std::string Config::getConfigLocationPath(Location location) const {
     QString basePath;
 
     switch (location) {
-    case ConfigLocation::ApplicationPath: {
+    case Location::ApplicationPath: {
         // 应用程序所在目录
         basePath = QCoreApplication::applicationDirPath();
         break;
     }
-    case ConfigLocation::AppDataLocal: {
+    case Location::AppDataLocal: {
         // AppData/Local目录
         basePath = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
         if (basePath.isEmpty()) {
@@ -992,3 +1003,4 @@ std::string Config::getConfigLocationPath(ConfigLocation location) const {
 
     return configPath.toStdString();
 }
+

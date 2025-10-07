@@ -62,6 +62,19 @@ bool QmlSetting::importDatabaseFromJsonFile(const QString &filePath, bool replac
     return Setting::GetInstance().导入数据库从JSON文件(filePath, replaceAll);
 }
 
+// ---- 配置文件位置管理与迁移 ----
+int QmlSetting::getConfigLocation() const {
+    return Setting::GetInstance().获取配置文件位置();
+}
+
+QString QmlSetting::getConfigLocationPath(int location) const {
+    return Setting::GetInstance().获取指定配置位置路径(location);
+}
+
+bool QmlSetting::migrateConfigLocation(int targetLocation, bool overwriteExisting) {
+    return Setting::GetInstance().迁移配置文件到位置(targetLocation, overwriteExisting);
+}
+
 // ---- 代理配置 ----
 void QmlSetting::setProxyType(int type) {
     Setting::GetInstance().设置代理类型(type);
