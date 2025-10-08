@@ -137,3 +137,48 @@ bool QmlSetting::isHttpsUrl(const QString &url) const {
 void QmlSetting::updateServerConfig(const QString &baseUrl) {
     Setting::GetInstance().更新服务器配置(baseUrl);
 }
+
+// ---- 自动备份配置 ----
+void QmlSetting::setAutoBackupEnabled(bool enabled) {
+    Setting::GetInstance().设置自动备份启用状态(enabled);
+}
+
+bool QmlSetting::getAutoBackupEnabled() const {
+    return Setting::GetInstance().读取("backup/autoBackupEnabled", false).toBool();
+}
+
+void QmlSetting::setAutoBackupInterval(int days) {
+    Setting::GetInstance().保存("backup/autoBackupInterval", days);
+}
+
+int QmlSetting::getAutoBackupInterval() const {
+    return Setting::GetInstance().读取("backup/autoBackupInterval", 7).toInt(); // 默认7天
+}
+
+void QmlSetting::setAutoBackupPath(const QString &path) {
+    Setting::GetInstance().保存("backup/autoBackupPath", path);
+}
+
+QString QmlSetting::getAutoBackupPath() const {
+    return Setting::GetInstance().读取("backup/autoBackupPath", "").toString();
+}
+
+void QmlSetting::setMaxBackupFiles(int maxFiles) {
+    Setting::GetInstance().保存("backup/maxBackupFiles", maxFiles);
+}
+
+int QmlSetting::getMaxBackupFiles() const {
+    return Setting::GetInstance().读取("backup/maxBackupFiles", 5).toInt(); // 默认保留5个备份文件
+}
+
+bool QmlSetting::performBackup() {
+    return Setting::GetInstance().执行备份();
+}
+
+QString QmlSetting::getLastBackupTime() const {
+    return Setting::GetInstance().读取("backup/lastBackupTime", "").toString();
+}
+
+void QmlSetting::setLastBackupTime(const QString &time) {
+    Setting::GetInstance().保存("backup/lastBackupTime", time);
+}

@@ -9,16 +9,23 @@
  * @change 2025-10-06 02:13:23(UTC+8) 周一
  */
 #include "setting.h"
+#include "backup_manager.h"
 #include "config.h"
 #include "database.h"
 #include "default_value.h"
 #include "network_proxy.h"
 #include "network_request.h"
 
+#include <QDateTime>
+#include <QDir>
+#include <QFileInfo>
+#include <QStandardPaths>
+
 Setting::Setting(QObject *parent)
-    : QObject(parent),                 //
-      m_logger(Logger::GetInstance()), //
-      m_config(Config::GetInstance())  //
+    : QObject(parent),                              //
+      m_logger(Logger::GetInstance()),              //
+      m_config(Config::GetInstance()),              //
+      m_backupManager(BackupManager::GetInstance()) //
 {
     初始化默认服务器配置();
 }
@@ -165,18 +172,30 @@ int Setting::获取配置文件位置() const {
 
 QString Setting::获取指定配置位置路径(int location) const {
     Config::Location local = Config::Location::ApplicationPath;
-    if (location == static_cast<int>(Config::Location::AppDataLocal))
-        local = Config::Location::AppDataLocal;
+    if (location == static_cast<int>(Config::Location::AppDataRoaming))
+        local = Config::Location::AppDataRoaming;
 
     return QString::fromStdString(m_config.getConfigLocationPath(local));
 }
 
 bool Setting::迁移配置文件到位置(int targetLocation, bool overwrite) {
     Config::Location target = Config::Location::ApplicationPath;
-    if (targetLocation == static_cast<int>(Config::Location::AppDataLocal))
-        target = Config::Location::AppDataLocal;
+    if (targetLocation == static_cast<int>(Config::Location::AppDataRoaming))
+        target = Config::Location::AppDataRoaming;
 
     return m_config.setConfigLocation(target, overwrite);
+}
+
+/**
+ * @brief 设置自动备份启用状态
+ * @param enabled 是否启用自动备份
+ */
+void Setting::设置自动备份启用状态(bool enabled) {
+    m_backupManager.设置自动备份启用状态(enabled);
+}
+
+bool Setting::执行备份() {
+    return m_backupManager.执行备份();
 }
 
 /**
@@ -302,3 +321,5 @@ void Setting::设置代理配置(bool enableProxy, int type, const QString &host
     NetworkProxy::GetInstance().setProxyConfig(enableProxy, static_cast<NetworkProxy::ProxyType>(type), //
                                                host, port, username, password);
 }
+
+// ---- 自动备份相关方法实现 ----

@@ -14,10 +14,13 @@
 #include "logger.h"
 
 #include <QObject>
+#include <QTimer>
 #include <QVariant>
 
 class Config;
+class BackupManager;
 
+// TODO:Setting 和 BackupManager 要单例嘛
 class Setting : public QObject {
     Q_OBJECT
   public:
@@ -86,9 +89,13 @@ class Setting : public QObject {
     void 清除所有日志文件();
     void 初始化默认服务器配置();
 
-    int 获取配置文件位置() const;                                // 当前配置文件位置
-    QString 获取指定配置位置路径(int location) const;            // 指定位置的完整路径
-    bool 迁移配置文件到位置(int targetLocation, bool overwrite); // 迁移配置文件到目标位置
+    int 获取配置文件位置() const;
+    QString 获取指定配置位置路径(int location) const;
+    bool 迁移配置文件到位置(int targetLocation, bool overwrite);
+
+    // 自动备份相关方法
+    void 设置自动备份启用状态(bool enabled);
+    bool 执行备份();
 
   signals:
     void baseUrlChanged(); // 服务器基础URL变化信号
@@ -97,6 +104,7 @@ class Setting : public QObject {
     explicit Setting(QObject *parent = nullptr);
     ~Setting();
 
-    Logger &m_logger; ///< 日志系统对象
-    Config &m_config; ///< 配置文件对象
+    Logger &m_logger;               ///< 日志系统对象
+    Config &m_config;               ///< 配置文件对象
+    BackupManager &m_backupManager; ///< 备份管理器对象
 };

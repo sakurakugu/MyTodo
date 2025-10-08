@@ -356,7 +356,7 @@ bool Config::openConfigFilePath() const {
  */
 void Config::findExistingConfigFile() {
     // 按优先级顺序查找配置文件
-    std::vector<Location> searchOrder = {Location::ApplicationPath, Location::AppDataLocal};
+    std::vector<Location> searchOrder = {Location::ApplicationPath, Location::AppDataRoaming};
 
     for (const auto &location : searchOrder) {
         std::string configPath = getConfigLocationPath(location);
@@ -979,9 +979,9 @@ std::string Config::getConfigLocationPath(Location location) const {
         basePath = QCoreApplication::applicationDirPath();
         break;
     }
-    case Location::AppDataLocal: {
-        // AppData/Local目录
-        basePath = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+    case Location::AppDataRoaming: {
+        // AppData/Roaming目录
+        basePath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
         if (basePath.isEmpty()) {
             // 备用方案：使用应用程序目录
             basePath = QCoreApplication::applicationDirPath();
@@ -998,9 +998,8 @@ std::string Config::getConfigLocationPath(Location location) const {
     QDir baseDir(basePath);
     QString configPath = baseDir.absoluteFilePath("config.toml");
 
-    // 将路径分隔符统一为正斜杠
+    // 将路径分隔符统一
     configPath = QDir::fromNativeSeparators(configPath);
 
     return configPath.toStdString();
 }
-

@@ -355,6 +355,99 @@ Page {
                 }
             }
 
+            // 自动备份设置
+            ColumnLayout {
+                spacing: 10
+                Layout.fillWidth: true
+                Layout.leftMargin: 20
+                Layout.topMargin: 15
+
+                ControlRow {
+                    text: qsTr("启用自动备份")
+                    controlType: ControlRow.ControlType.Switch
+                    checked: setting.getAutoBackupEnabled()
+                    onToggled: {
+                        setting.setAutoBackupEnabled(checked);
+                    }
+                }
+
+                ControlRow {
+                    text: qsTr("备份间隔（天）")
+                    controlType: ControlRow.ControlType.SpinBox
+                    spinBoxFrom: 1
+                    spinBoxTo: 365
+                    spinBoxValue: setting.getAutoBackupInterval()
+                    onValueChanged: function(newValue) {
+                        setting.setAutoBackupInterval(newValue);
+                    }
+                }
+
+                // 备份路径设置（使用自定义布局）
+                RowLayout {
+                    spacing: 10
+                    Layout.fillWidth: true
+
+                    Label {
+                        text: qsTr("备份路径:")
+                        color: ThemeManager.textColor
+                        Layout.preferredWidth: 100
+                    }
+
+                    CustomTextInput {
+                        id: backupPathField
+                        Layout.fillWidth: true
+                        text: setting.getAutoBackupPath()
+                        onEditingFinished: {
+                            setting.setAutoBackupPath(text);
+                        }
+                    }
+
+                    CustomButton {
+                        text: qsTr("选择")
+                        onClicked: backupPathDialog.open()
+                    }
+                }
+
+                ControlRow {
+                    text: qsTr("最大备份文件数")
+                    controlType: ControlRow.ControlType.SpinBox
+                    spinBoxFrom: 1
+                    spinBoxTo: 100
+                    spinBoxValue: setting.getMaxBackupFiles()
+                    onValueChanged: function(newValue) {
+                        setting.setMaxBackupFiles(newValue);
+                    }
+                }
+
+                RowLayout {
+                    spacing: 10
+                    Layout.topMargin: 10
+
+                    CustomButton {
+                        text: qsTr("立即备份")
+                        backgroundColor: ThemeManager.primaryColor
+                        hoverColor: Qt.darker(ThemeManager.primaryColor, 1.1)
+                        pressedColor: Qt.darker(ThemeManager.primaryColor, 1.2)
+                        onClicked: {
+                            if (setting.performBackup()) {
+                                modalDialog.showInfo(qsTr("备份成功"), qsTr("数据已成功备份"));
+                            } else {
+                                modalDialog.showInfo(qsTr("备份失败"), qsTr("备份过程中发生错误"));
+                            }
+                        }
+                    }
+
+                    Label {
+                        text: {
+                            var lastTime = setting.getLastBackupTime();
+                            return lastTime ? qsTr("上次备份: ") + lastTime : qsTr("尚未备份");
+                        }
+                        color: ThemeManager.textColor
+                        font.pixelSize: 12
+                    }
+                }
+            }
+
             Divider {}
 
             Label {
@@ -605,14 +698,26 @@ Page {
                 var filePath = selectedFile.toString().replace("file:///", "");
 
                 // 使用新的自动解决方法：先导入无冲突项目，返回冲突项目列表
-                var conflicts = todoManager.importTodosFromJson(filePath);
+                // TODO: 目前没这个函数
+                // var conflicts = todoManager.importTodosFromJson(filePath);
 
-                if (conflicts.length > 0)
-                // 有冲突，显示冲突处理对话框
-                {} else {
-                    // 没有冲突，所有项目已自动导入
-                    modalDialog.showInfo(qsTr("导入成功"), qsTr("待办事项已成功导入！"));
-                }
+                // if (conflicts.length > 0)
+                // // 有冲突，显示冲突处理对话框
+                // {} else {
+                //     // 没有冲突，所有项目已自动导入
+                //     modalDialog.showInfo(qsTr("导入成功"), qsTr("待办事项已成功导入！"));
+                // }
+            }
+        }
+
+        // 备份路径选择对话框
+        FolderDialog {
+            id: backupPathDialog
+            title: qsTr("选择备份路径")
+            onAccepted: {
+                var folderPath = selectedFolder.toString().replace("file:///", "");
+                setting.setAutoBackupPath(folderPath);
+                backupPathField.text = folderPath;
             }
         }
 
@@ -683,9 +788,7 @@ Page {
             property string newVersion: ""
             property string releaseNotes: ""
 
-            message: qsTr("发现新版本 %1\n\n更新内容：\n%2\n\n是否立即前往下载页面？")
-                     .arg(newVersion)
-                     .arg(releaseNotes || qsTr("暂无更新说明"))
+            message: qsTr("发现新版本 %1\n\n更新内容：\n%2\n\n是否立即前往下载页面？").arg(newVersion).arg(releaseNotes || qsTr("暂无更新说明"))
 
             onConfirmed: {
                 updateChecker.openDownloadPage();

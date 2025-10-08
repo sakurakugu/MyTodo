@@ -13,12 +13,10 @@
 
 #include "version.h"
 
-#include <QDir>
 #include <QJsonArray>
 #include <QObject>
 #include <QSqlDatabase>
 #include <QSqlQuery>
-#include <QStandardPaths>
 #include <QString>
 #include <map>
 #include <memory>
@@ -89,11 +87,12 @@ class Database {
     Database &operator=(Database &&) = delete;
 
     // 数据库连接管理
-    bool initializeDatabase();   ///< 初始化数据库连接和表结构
-    QSqlDatabase getDatabase();  ///< 获取数据库连接
+    bool initializeDatabase();          ///< 初始化数据库连接和表结构
+    QSqlDatabase getDatabase();         ///< 获取数据库连接
     bool getDatabase(QSqlDatabase &db); ///< 获取数据库连接并检查状态
-    bool isDatabaseOpen() const; ///< 检查数据库是否已打开
-    void closeDatabase();        ///< 关闭数据库连接
+    bool isDatabaseOpen() const;        ///< 检查数据库是否已打开
+    bool isDatabaseOpenUnsafe() const;  ///< 检查数据库是否已打开（不加锁版本）
+    void closeDatabase();               ///< 关闭数据库连接
 
     // 数据库操作
     bool executeQuery(const QString &queryString, QSqlQuery &query); ///< 执行SQL查询
@@ -138,12 +137,11 @@ class Database {
     QSqlDatabase m_database;    ///< 数据库连接对象
     QString m_lastError;        ///< 最后一次错误信息
     bool m_initialized;         ///< 是否已初始化
-    QString m_databasePath = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
-                                 .absoluteFilePath(QString(APP_NAME) + ".db"); ///< 数据库文件路径
 
     // 数据导出器管理
     std::map<QString, IDataExporter *> m_dataExporters; ///< 注册的数据导出器
 
+    static const QString DATABASE_PATH;                                            ///< 数据库文件路径
     static constexpr int DATABASE_VERSION = 1;                                     ///< 当前数据库版本
     static inline const QString CONNECTION_NAME = QString(APP_NAME) + "_Database"; ///< 数据库连接名称
 };

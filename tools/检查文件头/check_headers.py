@@ -41,6 +41,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
+# TODO: 如果文件头有日期和周数，检查周数是否正确
+
 HEADER_RE = re.compile(r"^\s*/\*\*(?P<body>.*?)\*/", re.DOTALL)
 TAG_RE = re.compile(r"@(?P<tag>file|brief|date|change|author)\b\s*(?P<value>.*)")
 DATE_PREFIX_RE = re.compile(r"\d{4}-\d{2}-\d{2}")

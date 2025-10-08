@@ -581,7 +581,6 @@ bool CategoryDataStorage::导出到JSON(QJsonObject &output) {
         qWarning() << "查询类别数据失败:" << query.lastError().text();
         return false;
     }
-
     QJsonArray arr;
     while (query.next()) {
         QJsonObject obj;

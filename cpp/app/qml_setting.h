@@ -66,6 +66,19 @@ class QmlSetting : public QObject {
     Q_INVOKABLE bool isHttpsUrl(const QString &url) const;
     Q_INVOKABLE void updateServerConfig(const QString &baseUrl);
 
+    // ---- 自动备份配置 ----
+    Q_INVOKABLE void setAutoBackupEnabled(bool enabled);
+    Q_INVOKABLE bool getAutoBackupEnabled() const;
+    Q_INVOKABLE void setAutoBackupInterval(int days);
+    Q_INVOKABLE int getAutoBackupInterval() const;
+    Q_INVOKABLE void setAutoBackupPath(const QString &path);
+    Q_INVOKABLE QString getAutoBackupPath() const;
+    Q_INVOKABLE void setMaxBackupFiles(int maxFiles);
+    Q_INVOKABLE int getMaxBackupFiles() const;
+    Q_INVOKABLE QString getLastBackupTime() const;
+    Q_INVOKABLE void setLastBackupTime(const QString &time);
+    Q_INVOKABLE bool performBackup();
+
   signals:
     void baseUrlChanged();
 };

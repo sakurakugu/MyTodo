@@ -14,10 +14,15 @@
 
 #include <QCoreApplication>
 #include <QDateTime>
+#include <QDir>
 #include <QFile>
 #include <QJsonObject>
 #include <QSaveFile>
 #include <QSqlError>
+#include <QStandardPaths>
+
+const QString Database::DATABASE_PATH = // 数据库文件路径
+    QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).absoluteFilePath(QString(APP_NAME) + ".db");
 
 Database::Database() : m_initialized(false) {
     // 初始化数据库
@@ -45,7 +50,7 @@ bool Database::initializeDatabase() {
     }
 
     // 确保数据库目录存在
-    QFileInfo fileInfo(m_databasePath);
+    QFileInfo fileInfo(DATABASE_PATH);
     QDir dir = fileInfo.absoluteDir();
     if (!dir.exists()) {
         if (!dir.mkpath(".")) {
@@ -57,7 +62,7 @@ bool Database::initializeDatabase() {
 
     // 创建数据库连接
     m_database = QSqlDatabase::addDatabase("QSQLITE", CONNECTION_NAME);
-    m_database.setDatabaseName(m_databasePath);
+    m_database.setDatabaseName(DATABASE_PATH);
 
     if (!m_database.open()) {
         m_lastError = QString("无法打开数据库: %1").arg(m_database.lastError().text());
@@ -86,7 +91,7 @@ bool Database::initializeDatabase() {
     }
 
     m_initialized = true;
-    qInfo() << "数据库初始化成功:" << m_databasePath << "版本:" << DATABASE_VERSION;
+    qInfo() << "数据库初始化成功:" << DATABASE_PATH << "版本:" << DATABASE_VERSION;
     return true;
 }
 
@@ -122,6 +127,14 @@ bool Database::getDatabase(QSqlDatabase &db) {
  */
 bool Database::isDatabaseOpen() const {
     std::lock_guard<std::mutex> locker(m_mutex);
+    return isDatabaseOpenUnsafe();
+}
+
+/**
+ * @brief 检查数据库是否已打开（不加锁版本）
+ * @return 数据库是否已打开
+ */
+bool Database::isDatabaseOpenUnsafe() const {
     return m_initialized && m_database.isOpen();
 }
 
@@ -202,7 +215,7 @@ QString Database::getLastError() const {
  */
 QString Database::getDatabasePath() const {
     std::lock_guard<std::mutex> locker(m_mutex);
-    return m_databasePath;
+    return DATABASE_PATH;
 }
 
 /**
@@ -244,9 +257,8 @@ QString Database::getSqliteVersion() {
  */
 bool Database::exportDatabaseToJsonFile(const QString &filePath) {
     QJsonObject root;
-    if (!exportDataToJson(root)) {
+    if (!exportDataToJson(root))
         return false;
-    }
 
     QJsonDocument doc(root);
     QSaveFile out(filePath);
@@ -262,7 +274,7 @@ bool Database::exportDatabaseToJsonFile(const QString &filePath) {
         return false;
     }
 
-    qInfo() << "数据库导出成功:" << filePath;
+    // qInfo() << "数据库导出成功:" << filePath;
     return true;
 }
 
@@ -292,8 +304,7 @@ void Database::unregisterDataExporter(const QString &name) {
  */
 bool Database::exportDataToJson(QJsonObject &output) {
     std::lock_guard<std::mutex> locker(m_mutex);
-
-    if (!isDatabaseOpen()) {
+    if (!isDatabaseOpenUnsafe()) {
         m_lastError = "数据库未打开";
         return false;
     }
@@ -302,10 +313,13 @@ bool Database::exportDataToJson(QJsonObject &output) {
     output["meta"] = QJsonObject{{"version", QString(APP_VERSION_STRING)},
                                  {"database_version", DATABASE_VERSION},
                                  {"sqlite_version", getSqliteVersion()},
-                                 {"export_time", QDateTime::currentDateTime().toString(Qt::ISODate)}};
+                                 {"export_time", QDateTime::currentDateTime().toString(Qt::ISODate)}}; // 不是rfc3339格式
 
     // 导出database_version表
     output["database_version"] = exportTable("database_version", {"version"});
+
+    // 下面都有锁
+    locker.~lock_guard();
 
     // 通过各个导出器导出数据
     bool allSuccessful = true;

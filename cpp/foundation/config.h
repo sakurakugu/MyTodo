@@ -49,7 +49,7 @@ class Config {
     // 配置文件位置切换
     enum class Location {
         ApplicationPath, // 应用程序所在路径
-        AppDataLocal     // AppData/Local路径
+        AppDataRoaming   // AppData/Roaming路径
     };
 
     bool setConfigLocation(Location location, bool overwrite = false);             // 设置配置文件位置
@@ -79,6 +79,6 @@ class Config {
 #if defined(QT_DEBUG)
     Location m_configLocation = Location::ApplicationPath;
 #else
-    Location m_configLocation = Location::AppDataLocal;
+    Location m_configLocation = Location::AppDataRoaming;
 #endif
 };
