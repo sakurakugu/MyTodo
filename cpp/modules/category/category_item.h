@@ -12,6 +12,7 @@
 #pragma once
 
 #include <QDateTime>
+#include <QJsonObject>
 #include <QString>
 #include <QUuid>
 
@@ -36,6 +37,7 @@ class CategorieItem {
     bool operator!=(const CategorieItem &other) const;
 
     explicit CategorieItem();
+    explicit CategorieItem(const QJsonObject &json);
     CategorieItem(int id,                     ///< 分类唯一标识符
                   const QUuid &uuid,          ///< 分类唯一标识符（UUID）
                   const QString &name,        ///< 分类名称
@@ -43,7 +45,7 @@ class CategorieItem {
                   const QDateTime &createdAt, ///< 创建时间
                   const QDateTime &updatedAt, ///< 更新时间
                   int synced                  ///< 是否已与服务器同步
-                  ///< 0表示已同步，1表示待插入，2表示待更新，3表示待删除
+                                              ///< 0表示已同步，1表示待插入，2表示待更新，3表示待删除
     );
 
     int id() const noexcept { return m_id; } // 获取ID
@@ -66,8 +68,12 @@ class CategorieItem {
 
     int synced() const noexcept { return m_synced; } // 获取是否已同步
     void setSynced(int synced);                      // 设置是否已同步
+    void forceSetSynced(int synced);                 // 强制设置是否已同步
 
     // 便利方法
+    QJsonObject toJson(int synced = -1) const;              ///< 转换为JSON对象
+    bool fromJson(const QJsonObject &json, int synced = 1); ///< 从JSON对象加载数据
+
     bool isValidName() const noexcept;     // 检查分类名称是否有效
     bool isSystemDefault() const noexcept; // 检查是否为系统默认分类
     QString displayName() const noexcept;  // 获取显示名称

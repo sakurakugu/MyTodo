@@ -29,8 +29,9 @@ class Utility {
     static QDateTime timestampToDateTime(const QVariant &timestampMs); // 将毫秒时间戳转换为QDateTime
     static QJsonValue timestampToIsoJson(const QVariant &timestampMs); // 将毫秒时间戳转换为ISO格式的QJsonValue
     static QDateTime fromJsonValue(const QJsonValue &jsonValue);       // 从QJsonValue解析时间戳并转换为QDateTime
-    static QString currentUtcRfc3339();                                // 获取当前UTC时间的RFC 3339格式字符串
-    static QString currentUtcIsoWithZ();                               // 获取当前UTC时间的ISO格式字符串（带Z后缀）
+    // TODO：static QDate fromJsonValue(const QJsonValue &jsonValue);       // 从QJsonValue解析日期并转换为QDate
+    static QString currentUtcRfc3339();  // 获取当前UTC时间的RFC 3339格式字符串
+    static QString currentUtcIsoWithZ(); // 获取当前UTC时间的ISO格式字符串（带Z后缀）
 
   private:
     Utility() = delete;

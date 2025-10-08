@@ -39,6 +39,14 @@ TodoItem::TodoItem()
 {}
 
 /**
+ * @brief 从JSON对象构造
+ * @param json JSON对象
+ */
+TodoItem::TodoItem(const QJsonObject &json) {
+    fromJson(json);
+}
+
+/**
  * @brief 带参数的构造函数
  *
  * 使用指定的参数创建TodoItem对象。这个构造函数通常用于
@@ -296,8 +304,75 @@ void TodoItem::setSynced(int synced) {
     m_synced = synced;
 }
 
+/**
+ * @brief 强制设置待办事项同步状态
+ * @param synced 新的同步状态
+ */
+void TodoItem::forceSetSynced(int synced) {
+    if (m_synced == synced)
+        return;
+
+    m_synced = synced;
+}
+
 // 便利方法实现
 
+/**
+ * @brief 转换为JSON对象
+ * @return JSON对象
+ */
+QJsonObject TodoItem::toJson() const {
+    QJsonObject json;
+    json["uuid"] = m_uuid.toString();
+    json["userUuid"] = m_userUuid.toString();
+    json["title"] = m_title;
+    json["description"] = m_description;
+    json["category"] = m_category;
+    json["important"] = m_important;
+    json["deadline"] = m_deadline.toString(Qt::ISODate);
+    json["recurrenceInterval"] = m_recurrenceInterval;
+    json["recurrenceCount"] = m_recurrenceCount;
+    json["recurrenceStartDate"] = m_recurrenceStartDate.toString(Qt::ISODate);
+    json["isCompleted"] = m_isCompleted;
+    json["completedAt"] = m_completedAt.toString(Qt::ISODate);
+    json["isTrashed"] = m_isTrashed;
+    json["trashedAt"] = m_trashedAt.toString(Qt::ISODate);
+    json["updatedAt"] = m_updatedAt.toString(Qt::ISODate);
+    json["createdAt"] = m_createdAt.toString(Qt::ISODate);
+    json["synced"] = m_synced;
+    return json;
+}
+
+/**
+ * @brief 从JSON对象加载数据
+ * @param json JSON对象
+ * @param synced 同步状态（默认为待新建 1 ）
+ * @return 是否成功
+ */
+bool TodoItem::fromJson(const QJsonObject &json, int synced) {
+    if (!json.contains("uuid") || !json.contains("userUuid") || !json.contains("title") || !json.contains("updatedAt"))
+        return false;
+
+    m_uuid = QUuid::fromString(json["uuid"].toString());
+    m_userUuid = QUuid::fromString(json["userUuid"].toString());
+    m_title = json["title"].toString();
+    m_description = json["description"].toString();
+    m_category = json["category"].toString();
+    m_important = json["important"].toBool();
+    m_deadline = Utility::fromJsonValue(json.value("deadline")); // TODO: 如果没有截止时间，设置为无效时间
+    m_recurrenceInterval = json["recurrenceInterval"].toInt();
+    m_recurrenceCount = json["recurrenceCount"].toInt();
+    m_recurrenceStartDate = Utility::fromJsonValue(json.value("recurrenceStartDate")); // TODO: 如果没有重复开始时间，设置为无效时间
+    m_isCompleted = json["isCompleted"].toBool();
+    m_completedAt = Utility::fromJsonValue(json.value("completedAt")); // TODO: 如果没有完成时间，设置为无效时间
+    m_isTrashed = json["isTrashed"].toBool();
+    m_trashedAt = Utility::fromJsonValue(json.value("trashedAt")); // TODO: 如果没有回收时间，设置为无效时间
+    m_updatedAt = Utility::fromJsonValue(json.value("updatedAt")); // TODO: 如果没有更新时间，设置为当前时间
+    m_createdAt = Utility::fromJsonValue(json.value("createdAt")); // TODO: 如果没有创建时间，设置为当前时间
+    m_synced = synced;
+
+
+}
 /**
  * @brief 检查待办事项是否已过期
  * @return 如果已过期返回true，否则返回false

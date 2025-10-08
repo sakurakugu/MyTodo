@@ -12,6 +12,7 @@
  */
 
 #include "category_item.h"
+#include "utility.h"
 
 /**
  * @brief 默认构造函数
@@ -30,6 +31,14 @@ CategorieItem::CategorieItem()
       m_updatedAt(QDateTime::currentDateTime()), // 初始化更新时间为当前时间
       m_synced(1)                                // 初始化是否已同步为false
 {}
+
+/**
+ * @brief 从JSON对象构造
+ * @param json JSON对象
+ */
+CategorieItem::CategorieItem(const QJsonObject &json) {
+    fromJson(json);
+}
 
 /**
  * @brief 带参数的构造函数
@@ -130,6 +139,17 @@ void CategorieItem::setSynced(int synced) {
     m_synced = synced;
 }
 
+/**
+ * @brief 强制设置分类同步状态
+ * @param synced 新的同步状态
+ */
+void CategorieItem::forceSetSynced(int synced) {
+    if (m_synced == synced)
+        return;
+
+    m_synced = synced;
+}
+
 // 便利方法实现
 
 /**
@@ -166,6 +186,44 @@ QString CategorieItem::displayName() const noexcept {
 bool CategorieItem::canBeDeleted() const noexcept {
     // 系统默认分类不能被删除
     return !isSystemDefault();
+}
+
+// JSON 便利方法实现
+
+/**
+ * @brief 转换为JSON对象
+ * @param synced 同步状态（默认为-1，不改变当前状态）
+ * @return JSON对象
+ */
+QJsonObject CategorieItem::toJson(int synced) const {
+    QJsonObject json;
+    json["uuid"] = m_uuid.toString(QUuid::WithoutBraces);
+    json["name"] = m_name;
+    json["userUuid"] = m_userUuid.toString(QUuid::WithoutBraces);
+    json["createdAt"] = Utility::toRfc3339Json(m_createdAt);
+    json["updatedAt"] = Utility::toRfc3339Json(m_updatedAt);
+    json["synced"] = synced >= 0 ? synced : m_synced;
+    return json;
+}
+
+/**
+ * @brief 从JSON对象加载数据
+ * @param json JSON对象
+ * @param synced 同步状态（默认为待新建 1 ）
+ * @return 是否成功
+ */
+bool CategorieItem::fromJson(const QJsonObject &json, int synced) {
+    if (!json.contains("uuid") || !json.contains("name") || !json.contains("userUuid"))
+        return false;
+
+    m_uuid = QUuid::fromString(json["uuid"].toString());
+    m_name = json["name"].toString();
+    m_userUuid = QUuid::fromString(json["userUuid"].toString());
+    m_createdAt = Utility::fromJsonValue(json.value("createdAt")); // TODO: 如果没有创建时间，设置为当前时间
+    m_updatedAt = Utility::fromJsonValue(json.value("updatedAt")); // TODO: 如果没有更新时间，设置为当前时间
+    m_synced = synced;
+
+    return true;
 }
 
 /**

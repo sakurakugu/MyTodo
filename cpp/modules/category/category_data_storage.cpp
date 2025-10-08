@@ -58,20 +58,8 @@ bool CategoryDataStorage::加载类别(CategorieList &categories) {
             QUuid uuid = QUuid::fromString(query.value("uuid").toString());
             QString name = query.value("name").toString();
             QUuid userUuid = QUuid::fromString(query.value("user_uuid").toString());
-            // 兼容两种存储格式：首选整数UTC毫秒，其次旧的ISO文本
-            auto parseMs = [](const QVariant &v) {
-                if (v.isNull())
-                    return QDateTime();
-                // bool ok = false;
-                // qint64 ms = v.toLongLong(&ok);
-                qint64 ms = v.toLongLong();
-                // if (ok)
-                return QDateTime::fromMSecsSinceEpoch(ms, QTimeZone::UTC);
-                // QDateTime dt = QDateTime::fromString(v.toString(), Qt::ISODate);
-                // return dt.isValid() ? dt.toUTC() : QDateTime();
-            };
-            QDateTime createdAt = parseMs(query.value("created_at"));
-            QDateTime updatedAt = parseMs(query.value("updated_at"));
+            QDateTime createdAt = Utility::timestampToDateTime(query.value("created_at"));
+            QDateTime updatedAt = Utility::timestampToDateTime(query.value("updated_at"));
             int synced = query.value("synced").toInt();
 
             auto item = std::make_unique<CategorieItem>( //
@@ -597,6 +585,7 @@ bool CategoryDataStorage::导出到JSON(QJsonObject &output) {
     QJsonArray arr;
     while (query.next()) {
         QJsonObject obj;
+        // TODO:id 是自增主键，不应该导出
         obj["id"] = query.value("id").toInt();
         obj["uuid"] = query.value("uuid").toString();
         obj["name"] = query.value("name").toString();
@@ -639,22 +628,15 @@ bool CategoryDataStorage::导入从JSON(const QJsonObject &input, bool replaceAl
     QJsonArray arr = input["categories"].toArray();
     for (const auto &v : arr) {
         QJsonObject obj = v.toObject();
-
+        // TODO:id 是自增主键，不应该从JSON导入
         query.prepare("INSERT OR REPLACE INTO categories (id, uuid, name, user_uuid, created_at, updated_at, synced) "
                       "VALUES (?,?,?,?,?,?,?)");
         query.addBindValue(obj.value("id").toVariant());
         query.addBindValue(obj.value("uuid").toString());
         query.addBindValue(obj.value("name").toString());
         query.addBindValue(obj.value("user_uuid").toString());
-        auto bindIso = [&](const char *k) {
-            if (obj.contains(k) && !obj.value(k).isNull()) {
-                QDateTime dt = QDateTime::fromString(obj.value(k).toString(), Qt::ISODate);
-                query.addBindValue(dt.isValid() ? QVariant(dt.toUTC().toMSecsSinceEpoch()) : QVariant());
-            } else
-                query.addBindValue(QVariant());
-        };
-        bindIso("created_at");
-        bindIso("updated_at");
+        query.addBindValue(Utility::fromJsonValue(obj.value("created_at")));
+        query.addBindValue(Utility::fromJsonValue(obj.value("updated_at")));
         query.addBindValue(obj.value("synced").toInt());
         if (!query.exec()) {
             qWarning() << "导入类别数据失败:" << query.lastError().text();

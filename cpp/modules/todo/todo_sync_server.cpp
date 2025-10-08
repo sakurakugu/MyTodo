@@ -299,8 +299,11 @@ void TodoSyncServer::处理推送更改成功(const QJsonObject &response) {
     int conflicts = conflictArray.size();
     int errors = errorArray.size();
 
-    qInfo() << std::format("服务器处理结果: 创建={}, 更新={}, 冲突={}, 错误={}", //
-                           created, updated, conflicts, errors);
+    qInfo() << QString("服务器处理结果: 创建=%1, 更新=%2, 冲突=%3, 错误=%4")
+                   .arg(created)
+                   .arg(updated)
+                   .arg(conflicts)
+                   .arg(errors); // utf-8
 
     // 记录冲突详情（如果有）
     if (conflicts > 0) {
@@ -316,23 +319,47 @@ void TodoSyncServer::处理推送更改成功(const QJsonObject &response) {
         }
     }
 
-    // 如果有错误，记录详细信息
+    // 如果有错误，记录详细信息，并处理重复UUID错误
     if (errors > 0) {
         int idx = 0;
         for (const auto &errorValue : errorArray) {
             QJsonObject error = errorValue.toObject();
-            qWarning() << QString("错误 %1: 项目序号=%2, 描述=%3")
+            QString errorMsg = error.value("error").toString();
+            QString errorCode = error.value("code").toString();
+            int index = error.value("index").toInt();
+
+            qWarning() << QString("错误 %1: 项目序号=%2, 错误码=%3, 描述=%4")
                               .arg(++idx)
-                              .arg(error.value("index").toInt())
-                              .arg(error.value("error").toString());
+                              .arg(index)
+                              .arg(errorCode)
+                              .arg(errorMsg);
+
+            // 检查是否为重复UUID错误（MySQL错误1062）
+            if (errorCode == "CREATE_FAILED" && errorMsg.contains("Duplicate entry")) {
+
+                // 找到对应的待同步项目并将其标记为更新模式
+                if (index >= 0 && index < static_cast<int>(m_pendingUnsyncedItems.size())) {
+                    TodoItem *item = m_pendingUnsyncedItems[index];
+                    if (item) {
+                        qInfo() << QString("检测到重复UUID错误，将项目 %1 转换为更新模式").arg(item->uuid().toString());
+                        // 将synced设置为2表示需要更新而不是创建
+                        item->forceSetSynced(2);
+                        // 到时候重新上传更新
+                    }
+                }
+            }
         }
     }
 
     bool shouldMarkAsSynced = true;
     if (conflicts > 0 || errors > 0) {
         shouldMarkAsSynced = false;
-        qWarning() << "由于存在" << (conflicts > 0 ? "冲突" : "") << ((conflicts > 0 && errors > 0) ? "和" : "")
-                   << (errors > 0 ? "错误" : "") << "，不标记项目为已同步";
+        QString errorMsg = QString("由于存在%1%2%3%4，不标记项目为已同步")
+                               .arg(conflicts > 0 ? "冲突" : "")
+                               .arg((conflicts > 0 && errors > 0) ? "和" : "")
+                               .arg(errors > 0 ? "错误" : "")
+                               .arg(conflicts + errors > 0 ? "，" : "");
+        qWarning() << errorMsg;
     }
 
     // 只有在验证通过时才标记当前批次的项目为已同步
@@ -384,8 +411,3 @@ void TodoSyncServer::处理推送更改成功(const QJsonObject &response) {
         }
     }
 }
-
-//         m_pendingUnsyncedItems.clear();
-//         m_currentPushIndex = 0;
-//     }
-// }

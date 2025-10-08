@@ -221,13 +221,7 @@ void CategorySyncServer::推送数据() {
         // 创建一个包含当前批次类别的JSON数组
         QJsonArray jsonArray;
         for (CategorieItem *item : std::as_const(m_unsyncedItems)) {
-            QJsonObject obj;
-            obj["uuid"] = item->uuid().toString(QUuid::WithoutBraces);
-            obj["name"] = item->name();
-            obj["created_at"] = Utility::toRfc3339Json(item->createdAt());
-            obj["updated_at"] = Utility::toRfc3339Json(item->updatedAt());
-            obj["synced"] = item->synced();
-            jsonArray.append(obj);
+            jsonArray.append(item->toJson());
         }
 
         NetworkRequest::RequestConfig config;

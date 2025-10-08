@@ -983,6 +983,7 @@ bool TodoDataStorage::导出到JSON(QJsonObject &output) {
     QJsonArray arr;
     while (query.next()) {
         QJsonObject obj;
+        // TODO:id 是自增主键，不应该导出
         obj["id"] = query.value("id").toInt();
         obj["uuid"] = query.value("uuid").toString();
         obj["user_uuid"] = query.value("user_uuid").toString();
@@ -1031,6 +1032,7 @@ bool TodoDataStorage::导入从JSON(const QJsonObject &input, bool replaceAll) {
             qq.addBindValue(QVariant());
         }
     };
+    // TODO:id 是自增主键，不应该从JSON导入
     for (const auto &v : arr) {
         QJsonObject o = v.toObject();
         q.prepare("INSERT OR REPLACE INTO todos (id, uuid, user_uuid, title, description, category, "

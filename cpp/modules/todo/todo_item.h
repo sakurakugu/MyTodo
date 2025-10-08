@@ -38,6 +38,7 @@ class TodoItem {
     bool operator!=(const TodoItem &other) const noexcept;
 
     explicit TodoItem();
+    explicit TodoItem(const QJsonObject &json);
     TodoItem(int id,                           ///< 唯一标识符
              const QUuid &uuid,                ///< 唯一标识符（UUID）
              const QUuid &userUuid,            ///< 用户UUID
@@ -112,8 +113,12 @@ class TodoItem {
 
     int synced() const noexcept { return m_synced; } // 获取是否已同步
     void setSynced(int synced);                      // 设置是否已同步
+    void forceSetSynced(int synced);                 // 强制设置是否已同步
 
     // 便利方法
+    QJsonObject toJson() const;                             ///< 转换为JSON对象
+    bool fromJson(const QJsonObject &json, int synced = 1); ///< 从JSON对象加载数据
+
     bool isOverdue() const noexcept;                                                      // 检查是否已过期
     constexpr bool isRecurring() const noexcept;                                          // 检查是否为重复任务
     bool isDue(const QDateTime &checkTime = QDateTime::currentDateTime()) const noexcept; // 检查是否到期
