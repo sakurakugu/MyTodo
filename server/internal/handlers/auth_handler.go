@@ -3,6 +3,8 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 
 	"MyTodo/internal/config"
@@ -32,6 +34,9 @@ func NewAuthHandler() *AuthHandler {
 	}
 }
 
+// 允许的用户名正则：仅字母、数字、下划线，并且长度为 3-20
+var usernamePattern = regexp.MustCompile(`^[A-Za-z0-9_]{3,20}$`)
+
 // Register 用户注册
 func (ah *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -53,6 +58,12 @@ func (ah *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	if len(req.Password) < 6 {
 		ah.response.ValidationError(w, "密码长度至少6位")
+		return
+	}
+
+	// 用户名规则校验：不允许特殊符号，仅字母、数字、下划线，长度 3-20
+	if !usernamePattern.MatchString(req.Username) {
+		ah.response.ValidationError(w, "用户名只能包含字母、数字或下划线，长度应为3-20个字符")
 		return
 	}
 
@@ -118,13 +129,20 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 验证输入
-	if req.Username == "" || req.Password == "" {
+	if req.Account == "" || req.Password == "" {
 		ah.response.ValidationError(w, "用户名和密码不能为空")
 		return
 	}
 
+	// 如果是邮箱登录，跳过用户名规则校验；否则用户名必须符合规则
+	isEmail := strings.Contains(req.Account, "@")
+	if !isEmail && !usernamePattern.MatchString(req.Account) {
+		ah.response.ValidationError(w, "用户名只能包含字母、数字或下划线，长度应为3-20个字符")
+		return
+	}
+
 	// 验证用户
-	user, err := ah.userRepo.ValidateUser(req.Username, req.Password)
+	user, err := ah.userRepo.ValidateUser(req.Account, req.Password)
 	if err != nil {
 		ah.response.UnauthorizedError(w, "用户名或密码错误", "LOGIN_FAILED")
 		return
@@ -157,7 +175,7 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		User:         &models.UserInfo{UUID: user.UUID, Username: user.Username, Email: user.Email},
 	}
 
-	ah.response.Success(w, tokenResponse, "登录成功")
+	ah.response.Success(w, tokenResponse, "用户登录成功")
 }
 
 // RefreshToken 刷新令牌
