@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -196,24 +197,37 @@ func (th *TodoHandler) GetTodos(w http.ResponseWriter, r *http.Request, userUUID
 // CreateTodo 创建待办事项
 func (th *TodoHandler) CreateTodo(w http.ResponseWriter, r *http.Request, userUUID string) {
 	// 首先尝试解析为批量同步请求
-	var batchReq models.BatchSyncRequest
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		th.response.ValidationError(w, "无法读取请求体")
 		return
 	}
 
-	// 尝试解析为批量同步请求
-	if err := json.Unmarshal(body, &batchReq); err == nil && len(batchReq.Todos) > 0 {
-		// 处理批量同步请求
-		th.handleBatchSync(w, userUUID, &batchReq)
-		return
+	// 先做一个浅层探测，看是否包含 todos 字段
+	type batchProbe struct {
+		Todos json.RawMessage `json:"todos"`
+	}
+	var probe batchProbe
+	_ = json.Unmarshal(body, &probe) // 探测失败不影响
+	batchModeHint := len(strings.TrimSpace(string(probe.Todos))) > 0
+
+	// 首次正式尝试解析批量
+	if batchModeHint {
+		var batchReq models.BatchSyncRequest
+		if err := json.Unmarshal(body, &batchReq); err == nil && len(batchReq.Todos) > 0 {
+			th.handleBatchSync(w, userUUID, &batchReq)
+			return
+		} else if err != nil {
+			// 如果看起来像批量（含 todos）但解析失败，给出更详细的错误说明
+			th.response.ValidationError(w, fmt.Sprintf("批量同步解析失败: %v。请确认时间字段为合法 RFC3339 或使用 null，且 'todos' 为数组", err))
+			return
+		}
 	}
 
-	// 如果不是批量请求，尝试解析为单个创建请求
+	// 非批量：解析为单项创建
 	var req models.CreateTodoRequest
 	if err := json.Unmarshal(body, &req); err != nil {
-		th.response.ValidationError(w, "无效的请求格式")
+		th.response.ValidationError(w, "无效的请求格式：既不是批量 todos，也不是单个待办 JSON 对象")
 		return
 	}
 
@@ -460,6 +474,16 @@ func (th *TodoHandler) handleBatchSync(w http.ResponseWriter, userUUID string, r
 			continue
 		}
 
+		// 检查项目是否存在，如果存在则检查synced状态
+		serverTodo, errGet := th.todoRepo.GetTodoByUUID(syncItem.UUID, userUUID)
+		if errGet == nil && serverTodo != nil {
+			// 将错误synced状态转换为待更新状态
+			if syncItem.Synced != nil && *syncItem.Synced == 1 {
+				syncItem.Synced = new(int)
+				*syncItem.Synced = 2
+			}
+		}
+
 		// 删除优先：synced=3 表示删除（需要进行时间冲突判断）
 		if syncItem.Synced != nil && *syncItem.Synced == 3 {
 			if syncItem.UUID != "" {
@@ -628,6 +652,7 @@ func (th *TodoHandler) handleBatchSync(w http.ResponseWriter, userUUID string, r
 				updated++
 			}
 		default: // 自动模式：有UUID则更新，无UUID则创建
+			// TODO：无UUID 则不执行
 			if syncItem.UUID != "" {
 				// 自动模式下也进行冲突检测
 				serverTodo, errGet := th.todoRepo.GetTodoByUUID(syncItem.UUID, userUUID)
@@ -699,10 +724,10 @@ func (th *TodoHandler) handleBatchSync(w http.ResponseWriter, userUUID string, r
 
 	// 返回处理结果
 	summary := map[string]interface{}{
-		"created":          created,
-		"updated":          updated,
-		"conflicts":        conflictDetails,
-		"errors":           errorDetails,
+		"created":   created,
+		"updated":   updated,
+		"conflicts": conflictDetails,
+		"errors":    errorDetails,
 	}
 
 	message := "批量同步完成"
