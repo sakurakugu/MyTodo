@@ -89,8 +89,23 @@ Item {
 
         onConfirmed: {
             if (usernameField.text.length > 0 && passwordField.text.length > 0) {
+                // 允许邮箱登录；否则用户名必须为字母数字下划线 3-20 位
+                const text = usernameField.text.trim();
+                const isEmail = text.indexOf('@') !== -1;
+                if (!isEmail) {
+                    const re = /^[A-Za-z0-9_]{3,20}$/;
+                    if (!re.test(text)) {
+                        loginDialog.errorMessage = qsTr("用户名只能包含字母、数字或下划线，长度应为3-20个字符");
+                        return;
+                    }
+                }
+                if (passwordField.text.length < 1) {
+                    loginDialog.errorMessage = qsTr("密码不能为空");
+                    return;
+                }
+
                 loginDialog.isLoggingIn = true;
-                userAuth.login(usernameField.text, passwordField.text);
+                userAuth.login(text, passwordField.text);
             } else if (usernameField.text.length == 0 && passwordField.activeFocus) {
                 usernameField.forceActiveFocus();
             } else if (passwordField.text.length == 0 && usernameField.activeFocus) {
@@ -143,7 +158,7 @@ Item {
                     Layout.preferredHeight: 36
                     placeholderText: qsTr("请输入用户名")
                     enabled: !loginDialog.isLoggingIn // 登录中禁用输入
-
+                    maximumLength: 254 // 最大长度适配邮箱
                     // 文本变化时清除错误消息
                     onTextChanged: {
                         if (loginDialog.errorMessage !== "") {

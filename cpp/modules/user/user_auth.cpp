@@ -21,6 +21,7 @@
 
 #include <QDateTime>
 #include <QJsonObject>
+#include <QRegularExpression>
 #include <QSqlError>
 #include <QSqlQuery>
 
@@ -108,18 +109,17 @@ void UserAuth::登录(const QString &account, const QString &password) {
     }
 
     // 简单区分用户名和邮箱
-    bool isEmail = false;
     if (account.contains('@')) {
         // 简单的邮箱格式验证
         if (!account.contains('.') || account.startsWith('@') || account.endsWith('@')) {
             emit loginFailed("无效的邮箱格式");
             return;
         }
-        isEmail = true;
     } else {
-        // 用户名简单验证
-        if (account.length() < 3 || account.length() > 20) {
-            emit loginFailed("用户名长度应在3到20个字符之间");
+        // 用户名严格验证：仅字母、数字、下划线，长度 3-20
+        static const QRegularExpression re("^[A-Za-z0-9_]{3,20}$");
+        if (!re.match(account).hasMatch()) {
+            emit loginFailed("用户名只能包含字母、数字或下划线，长度应为3-20个字符");
             return;
         }
     }
@@ -133,7 +133,7 @@ void UserAuth::登录(const QString &account, const QString &password) {
     config.requiresAuth = false; // 登录请求不需要认证
 
     // 创建登录数据
-    config.data[isEmail ? "email" : "username"] = account;
+    config.data["account"] = account;
     config.data["password"] = password;
 
     // 发送登录请求
@@ -227,8 +227,7 @@ void UserAuth::onNetworkRequestCompleted(Network::RequestType type, const QJsonO
     }
 }
 
-void UserAuth::onNetworkRequestFailed(Network::RequestType type, Network::Error error,
-                                      const QString &message) {
+void UserAuth::onNetworkRequestFailed(Network::RequestType type, Network::Error error, const QString &message) {
 
     switch (type) {
     case Network::RequestType::Login:
