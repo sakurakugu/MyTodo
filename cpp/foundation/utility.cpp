@@ -150,6 +150,20 @@ QDateTime Utility::fromJsonValue(const QJsonValue &jsonValue) {
     return fromIsoString(jsonValue.toString());
 }
 
+// /**
+//  * @brief 从QJsonValue解析日期并转换为QDate
+//  * @param jsonValue 包含日期字符串的QJsonValue
+//  * @return 解析后的QDate对象；解析失败返回无效的QDate
+//  * @note 自动检测ISO格式，用于JSON数据导入
+//  */
+// QDate Utility::fromJsonValue(const QJsonValue &jsonValue) {
+//     if (jsonValue.isNull() || !jsonValue.isString()) {
+//         return QDate();
+//     }
+
+//     return QDate::fromString(jsonValue.toString(), Qt::ISODate);
+// }
+
 /**
  * @brief 获取当前UTC时间的RFC 3339格式字符串
  * @return 当前UTC时间的RFC 3339格式字符串

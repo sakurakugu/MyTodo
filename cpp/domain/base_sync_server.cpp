@@ -141,7 +141,7 @@ bool BaseSyncServer::是否可以执行同步() const {
     // 检查是否可以执行同步
     if (m_isSyncing) {
         qDebug() << "同步检查失败：正在进行同步操作，当前同步状态:" << m_isSyncing;
-        qDebug() << "提示：如果同步状态异常，请调用resetSyncState()方法重置";
+        // qDebug() << "提示：如果同步状态异常，请调用resetSyncState()方法重置";
         return false;
     }
 

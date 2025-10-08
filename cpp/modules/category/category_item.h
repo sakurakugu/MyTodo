@@ -37,7 +37,6 @@ class CategorieItem {
     bool operator!=(const CategorieItem &other) const;
 
     explicit CategorieItem();
-    explicit CategorieItem(const QJsonObject &json);
     CategorieItem(int id,                     ///< 分类唯一标识符
                   const QUuid &uuid,          ///< 分类唯一标识符（UUID）
                   const QString &name,        ///< 分类名称
@@ -71,8 +70,6 @@ class CategorieItem {
     void forceSetSynced(int synced);                 // 强制设置是否已同步
 
     // 便利方法
-    QJsonObject toJson(int synced = -1) const;              ///< 转换为JSON对象
-    bool fromJson(const QJsonObject &json, int synced = 1); ///< 从JSON对象加载数据
 
     bool isValidName() const noexcept;     // 检查分类名称是否有效
     bool isSystemDefault() const noexcept; // 检查是否为系统默认分类

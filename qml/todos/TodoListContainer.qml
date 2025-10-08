@@ -110,7 +110,7 @@ ListView {
             }
         }
         function onSyncCompleted(result, message) {
-            console.info("同步完成", result, message);
+            console.info("同步完成", "类型:", result, "消息:", message);
             globalData.refreshing = false;
             // 使用动画平滑重置下拉距离
             pullDistanceAnimation.start();
