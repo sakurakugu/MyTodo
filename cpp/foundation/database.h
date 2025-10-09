@@ -21,6 +21,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <sqlite3.h>
 
 /**
  * @brief 数据导入导出接口
@@ -96,7 +97,7 @@ class Database {
 
     // 数据库操作
     bool executeQuery(const QString &queryString, QSqlQuery &query); ///< 执行SQL查询
-    bool executeQuery(const QString &queryString);                   ///< 执行SQL查询（无返回结果）
+    bool executeQuery(const QString &queryString);                   ///< 执行SQL查询（无返回QSqlQuery结果）
 
     // 错误处理
     QString getLastError() const; ///< 获取最后一次错误信息

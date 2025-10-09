@@ -37,10 +37,16 @@ include(tools/检查文件头/check_headers.cmake)            # 包含文件头�
 set(SQLITE3_VERSION "3.50.4" CACHE STRING "SQLite 语义化版本号")
 set(SQLITE3_RELEASE_YEAR "2025" CACHE STRING "sqlite.org 上该版本的年份目录" FORCE)
 
+# ============ 第三方依赖：nlohmann/json ============
+set(NLOHMANN_JSON_VERSION "3.11.3" CACHE STRING "nlohmann/json 版本号")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake") # 包含自定义 CMake 模块路径
 include(cmake/SQLite3.cmake)
+include(cmake/nlohmann_json.cmake)
+include(cmake/tomlplusplus.cmake)
 add_sqlite3()
+add_nlohmann_json()
+add_tomlplusplus()
 
 
 # 构建类型优化
@@ -84,6 +90,8 @@ set(QT_COMPONENTS
     Quick               # QML 引擎
     Network             # 网络功能
     Concurrent          # 并发处理
+    Sql                 # SQL 数据库支持
+    Gui                 # GUI 支持
 )
 
 # 链接库配置
@@ -99,6 +107,7 @@ set(PRIVATE_LIBRARIES
     Qt6::Quick
     Qt6::Concurrent
     SQLite::SQLite3
+    nlohmann_json::nlohmann_json
 )
 
 # 单例组件

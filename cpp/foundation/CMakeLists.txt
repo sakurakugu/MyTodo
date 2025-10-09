@@ -26,15 +26,6 @@ add_library(mytodo_foundation STATIC
     utility.h
 )
 
-# 添加外部库 toml++
-include(FetchContent)
-FetchContent_Declare(
-    tomlplusplus
-    GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
-    GIT_TAG        v3.4.0
-)
-FetchContent_MakeAvailable(tomlplusplus)
-
 include("${CMAKE_SOURCE_DIR}/cpp/script/version.cmake")
 
 # 查找 Qt 库

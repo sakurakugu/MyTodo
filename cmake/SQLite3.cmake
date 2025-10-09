@@ -103,7 +103,7 @@ function(add_sqlite3)
 
     FetchContent_GetProperties(${_proj})
     if(NOT ${_proj}_POPULATED)
-        FetchContent_Populate(${_proj})
+        FetchContent_MakeAvailable(${_proj})
     endif()
 
     # 压缩包解压后的目录名称通常为 sqlite-amalgamation-<ver>

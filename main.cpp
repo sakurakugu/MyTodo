@@ -36,6 +36,7 @@
 #include "modules/user/user_auth.h"
 #include "qt_debug.h"
 #include "version.h"
+// #include <nlohmann/json.hpp>
 
 int main(int argc, char *argv[]) {
 #ifdef QT_DEBUG
