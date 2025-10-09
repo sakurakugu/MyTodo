@@ -13,7 +13,7 @@
  * 使用方法
  * 1. 包含头文件
  *    #include "logger.h"
- * 2. 初始化日志系统
+ * 2. 初始化日志系统（main.cpp中即可）
  *        qInstallMessageHandler(Logger::messageHandler);
  * 3. 设置日志级别
  *    日志级别从低到高依次为：Debug、Info、Warning、Critical、Fatal

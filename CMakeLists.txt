@@ -1,6 +1,6 @@
 # ============================================================
 # MyTodo 项目构建配置
-# 现代化的 CMake 配置，支持 Qt6.9.2 和 C++23
+# 现代化的 CMake 配置，支持 Qt6.10.0 和 C++23
 #
 # 作者： sakurakugu
 # 首次创建日期： 2025-08-16 20:05:55(UTC+8) 周六
@@ -29,6 +29,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)              # 禁用编译器扩展，确保可�
 set(CMAKE_AUTORCC ON)                      # 自动处理资源文件
 set(CMAKE_AUTOMOC ON)                      # 自动处理 MOC
 set(CMAKE_AUTOUIC ON)                      # 自动处理 UIC
+
+include(tools/检查文件头/check_headers.cmake)            # 包含文件头检查模块
 
 # 构建类型优化
 if(NOT CMAKE_BUILD_TYPE)
@@ -206,12 +208,4 @@ message(STATUS "C++ 标准: ${CMAKE_CXX_STANDARD}")
 message(STATUS "Qt6 版本: ${Qt6_VERSION}")
 message(STATUS "CMake 版本: ${CMAKE_VERSION}")
 message(STATUS "安装前缀: ${CMAKE_INSTALL_PREFIX}")
-message(STATUS "===========================")
-
-# ---------------- 文件头规范校验 ----------------
-include(tools/检查文件头/check_headers.cmake)
-message(STATUS "===========================")
-
-# ---------------- 翻译文件配置 ----------------
-message(STATUS "在主目录输入 “cmake --build build --target update_translations” 以更新翻译文件")
 message(STATUS "===========================")

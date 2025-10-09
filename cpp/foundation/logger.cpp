@@ -51,7 +51,15 @@ Logger::Logger(QObject *parent) noexcept
         // 确保目录存在
         std::filesystem::path logPath{m_logDir};
         if (!std::filesystem::exists(logPath)) {
-            std::filesystem::create_directories(logPath);
+            if (!std::filesystem::create_directories(logPath)) {
+                qCritical() << "无法创建目录:" << logPath.string();
+                return;
+            }
+        } else if (!std::filesystem::is_directory(logPath)) {
+            if (!std::filesystem::create_directories(logPath)) {
+                qCritical() << "无法创建目录:" << logPath.string();
+                return;
+            }
         }
 
         // 初始化日志文件 - 忽略错误，在运行时处理

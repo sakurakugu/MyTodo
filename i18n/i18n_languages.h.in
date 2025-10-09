@@ -1,0 +1,10 @@
+#pragma once
+
+#include <QString>
+#include <map>
+
+// 从CMake自动生成的语言列表
+const std::map<QString, QString> LANG_LIST = {
+@LANGUAGE_LIST_CONTENT@
+};
+

@@ -53,25 +53,23 @@ bool BackupManager::执行备份() {
     namespace fs = std::filesystem;
     try {
         // 获取备份路径
-        std::string backupPath = m_config.get("backup/autoBackupPath", 获取默认备份路径()).toString().toStdString();
+        std::string dir = m_config.get("backup/autoBackupPath", 获取默认备份路径()).toString().toStdString();
         // 如果备份目录不存在，且不是目录，创建它
-        if (fs::exists(backupPath)) {
-            if (!fs::is_directory(backupPath)) { // 如果不是目录
-                if (!fs::create_directory(backupPath)) {
-                    qWarning() << "无法创建备份目录:" << backupPath;
-                    return false;
-                }
+        if (!std::filesystem::exists(dir)) {
+            if (!std::filesystem::create_directories(dir)) {
+                qCritical() << "无法创建目录:" << dir;
+                return false;
             }
-        } else {
-            if (!fs::create_directory(backupPath)) {
-                qWarning() << "无法创建备份目录:" << backupPath;
+        } else if (!std::filesystem::is_directory(dir)) {
+            if (!std::filesystem::create_directories(dir)) {
+                qCritical() << "无法创建目录:" << dir;
                 return false;
             }
         }
 
         // 生成备份路径
-        std::string ConfigBackupFilePath = backupPath + "/" + 生成备份路径("config");
-        std::string DatabaseBackupFilePath = backupPath + "/" + 生成备份路径("database");
+        std::string ConfigBackupFilePath = dir + "/" + 生成备份路径("config");
+        std::string DatabaseBackupFilePath = dir + "/" + 生成备份路径("database");
 
         // 执行配置文件备份
         std::vector<std::string> excludeKeys = {"proxy"};
@@ -87,7 +85,7 @@ bool BackupManager::执行备份() {
 
             // 清理旧的备份文件
             int maxFiles = m_config.get("backup/maxBackupFiles", 5).toInt();
-            清理旧备份文件(backupPath, maxFiles);
+            清理旧备份文件(dir, maxFiles);
 
             qInfo() << "备份成功完成:";
             qInfo() << "\t配置文件备份路径:" << QString::fromStdString(ConfigBackupFilePath);

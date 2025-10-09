@@ -35,9 +35,17 @@ Config::Config()
     // 确保配置目录存在
     std::filesystem::path filePath(m_filePath);
     std::filesystem::path dir = filePath.parent_path();
-    // 如果目录不存在，创建它
+    // 如果目录不存在，且不是目录则创建它
     if (!std::filesystem::exists(dir)) {
-        std::filesystem::create_directories(dir);
+        if (!std::filesystem::create_directories(dir)) {
+            qCritical() << "无法创建目录:" << dir.string();
+            return;
+        }
+    } else if (!std::filesystem::is_directory(dir)) {
+        if (!std::filesystem::create_directories(dir)) {
+            qCritical() << "无法创建目录:" << dir.string();
+            return;
+        }
     }
 
     // 尝试加载现有配置文件
@@ -55,8 +63,10 @@ void Config::loadFromFile() {
 
     try {
         if (!std::filesystem::exists(m_filePath)) {
-            qDebug() << "配置文件不存在，将创建新的配置文件:" << m_filePath;
-            return;
+            if (!std::filesystem::is_regular_file(m_filePath)) {
+                qDebug() << "配置文件不存在，将创建新的配置文件:" << m_filePath;
+                return;
+            }
         }
 
         m_config = toml::parse_file(m_filePath);
@@ -911,7 +921,12 @@ bool Config::setConfigLocation(Location location, bool overwrite) {
         std::filesystem::path dir = newFilePath.parent_path();
         if (!std::filesystem::exists(dir)) {
             if (!std::filesystem::create_directories(dir)) {
-                qCritical() << "无法创建配置目录:" << dir.string();
+                qCritical() << "无法创建目录:" << dir.string();
+                return false;
+            }
+        } else if (!std::filesystem::is_directory(dir)) {
+            if (!std::filesystem::create_directories(dir)) {
+                qCritical() << "无法创建目录:" << dir.string();
                 return false;
             }
         }
