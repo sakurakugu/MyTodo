@@ -414,15 +414,13 @@ void UserAuth::保存凭据() {
         QSqlQuery query(db);
 
         // 使用REPLACE INTO来插入或更新用户记录
-        query.prepare(R"(
-            REPLACE INTO users (uuid, username, email, refreshToken)
-            VALUES (?, ?, ?, ?)
-        )");
-
-        query.addBindValue(m_uuid.toString());
-        query.addBindValue(m_username);
-        query.addBindValue(m_email);
-        query.addBindValue(m_refreshToken);
+        query.prepare(QString::fromStdString(m_database.bindSQL( //
+            R"(REPLACE INTO users (uuid, username, email, refreshToken)
+            VALUES (?, ?, ?, ?))",                               //
+            m_uuid.toString(),                                   //
+            m_username,                                          //
+            m_email,                                             //
+            m_refreshToken)));
 
         if (!query.exec()) {
             qWarning() << "保存用户凭据到数据库失败:" << query.lastError().text();
@@ -641,10 +639,11 @@ bool UserAuth::导入从JSON(const QJsonObject &input, bool replaceAll) {
     for (const auto &userValue : usersArray) {
         QJsonObject userObj = userValue.toObject();
 
-        query.prepare("INSERT OR REPLACE INTO users (uuid, username, email) VALUES (?, ?, ?)");
-        query.addBindValue(userObj["uuid"].toString());
-        query.addBindValue(userObj["username"].toString());
-        query.addBindValue(userObj["email"].toString());
+        query.prepare(QString::fromStdString(m_database.bindSQL(                        //
+            R"(INSERT OR REPLACE INTO users (uuid, username, email) VALUES (?, ?, ?))", //
+            userObj["uuid"].toString(),                                                 //
+            userObj["username"].toString(),                                             //
+            userObj["email"].toString())));
 
         if (!query.exec()) {
             qWarning() << "导入用户数据失败:" << query.lastError().text();

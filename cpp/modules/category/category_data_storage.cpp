@@ -107,15 +107,16 @@ std::unique_ptr<CategorieItem> CategoryDataStorage::新增类别( //
 
         // 插入到数据库
         QSqlQuery insertQuery(db);
-        const QString insertString =
+        const std::string insertString =
             "INSERT INTO categories (uuid, name, user_uuid, created_at, updated_at, synced) VALUES (?,?,?,?,?,?)";
-        insertQuery.prepare(insertString);
-        insertQuery.addBindValue(newUuid.toString());
-        insertQuery.addBindValue(name);
-        insertQuery.addBindValue(userUuid.toString());
-        insertQuery.addBindValue(createdAt.toMSecsSinceEpoch());
-        insertQuery.addBindValue(createdAt.toMSecsSinceEpoch());
-        insertQuery.addBindValue(source == ImportSource::Server ? 0 : 1);
+        insertQuery.prepare(QString::fromStdString(m_database.bindSQL( //
+            insertString,                                              //
+            newUuid.toString(),                                        //
+            name,                                                      //
+            userUuid.toString(),                                       //
+            createdAt.toMSecsSinceEpoch(),                             //
+            createdAt.toMSecsSinceEpoch(),                             //
+            source == ImportSource::Server ? 0 : 1)));
 
         if (!insertQuery.exec()) {
             qCritical() << "插入类别到数据库失败:" << insertQuery.lastError().text();
@@ -162,13 +163,15 @@ bool CategoryDataStorage::更新类别(CategorieList &categories, const QString 
     auto it = std::find_if(categories.begin(), categories.end(),
                            [name](const std::unique_ptr<CategorieItem> &i) { return i->name() == name; });
     QSqlQuery updateQuery(db);
-    const QString updateString = "UPDATE categories SET name = ?, updated_at = ?, synced = ? WHERE name = ?";
-    updateQuery.prepare(updateString);
     QDateTime now = QDateTime::currentDateTimeUtc();
-    updateQuery.addBindValue(newName);
-    updateQuery.addBindValue(now.toMSecsSinceEpoch());
-    updateQuery.addBindValue((*it)->synced() != 1 ? 2 : 1); // 如果之前是插入状态，不要改成更新状态
-    updateQuery.addBindValue(name);
+    const std::string updateString = "UPDATE categories SET name = ?, updated_at = ?, synced = ? WHERE name = ?";
+    updateQuery.prepare(QString::fromStdString(m_database.bindSQL( //
+        updateString,                                              //
+        newName,                                                   //
+        now.toMSecsSinceEpoch(),                                   //
+        now.toMSecsSinceEpoch(),                                   //
+        (*it)->synced() != 1 ? 2 : 1,                              // 如果之前是插入状态，不要改成更新状态
+        name)));                                                   //
     if (!updateQuery.exec()) {
         qCritical() << "更新数据库中的类别失败:" << updateQuery.lastError().text();
         return false;
@@ -202,9 +205,8 @@ bool CategoryDataStorage::删除类别(CategorieList &categories, const QString 
 
         // 从数据库中删除类别
         QSqlQuery deleteQuery(db);
-        const QString deleteString = "DELETE FROM categories WHERE name = ?";
-        deleteQuery.prepare(deleteString);
-        deleteQuery.addBindValue(name);
+        const std::string deleteString = "DELETE FROM categories WHERE name = ?";
+        deleteQuery.prepare(QString::fromStdString(m_database.bindSQL(deleteString, name)));
 
         if (!deleteQuery.exec()) {
             qCritical() << "从数据库删除类别失败:" << deleteQuery.lastError().text();
@@ -280,12 +282,10 @@ bool CategoryDataStorage::更新同步状态(CategorieList &categories, const QS
     if (!m_database.getDatabase(db))
         return false;
     QSqlQuery updateQuery(db);
-    const QString updateString = "UPDATE categories SET synced = ?, updated_at = ? WHERE name = ?";
-    updateQuery.prepare(updateString);
     QDateTime now = QDateTime::currentDateTimeUtc();
-    updateQuery.addBindValue(synced);
-    updateQuery.addBindValue(now.toMSecsSinceEpoch());
-    updateQuery.addBindValue(name);
+    const std::string updateString = "UPDATE categories SET synced = ?, updated_at = ? WHERE name = ?";
+    updateQuery.prepare(QString::fromStdString(m_database.bindSQL( //
+        updateString, synced, now.toMSecsSinceEpoch(), name)));
     if (!updateQuery.exec()) {
         qCritical() << "更新数据库中的类别同步状态失败:" << updateQuery.lastError().text();
         return false;
@@ -325,15 +325,16 @@ bool CategoryDataStorage::创建默认类别(CategorieList &categories, const QU
         return false;
     }
     QSqlQuery insertQuery(db);
-    insertQuery.prepare("INSERT OR IGNORE INTO categories (id, uuid, name, user_uuid, created_at, updated_at, synced) "
-                        "VALUES (?,?,?,?,?,?,?)");
-    insertQuery.addBindValue(1);
-    insertQuery.addBindValue(defaultUuid.toString());
-    insertQuery.addBindValue("未分类");
-    insertQuery.addBindValue(userUuid.toString());
-    insertQuery.addBindValue(createdAt.toMSecsSinceEpoch());
-    insertQuery.addBindValue(createdAt.toMSecsSinceEpoch());
-    insertQuery.addBindValue(0);
+    insertQuery.prepare(QString::fromStdString(m_database.bindSQL( //
+        "INSERT OR IGNORE INTO categories (id, uuid, name, user_uuid, created_at, updated_at, synced) VALUES "
+        "(?,?,?,?,?,?,?)",
+        1,                             //
+        defaultUuid.toString(),        //
+        "未分类",                      //
+        userUuid.toString(),           //
+        createdAt.toMSecsSinceEpoch(), //
+        createdAt.toMSecsSinceEpoch(), //
+        0)));
     if (!insertQuery.exec()) {
         qCritical() << "插入默认类别失败:" << insertQuery.lastError().text();
         db.rollback();
@@ -345,9 +346,9 @@ bool CategoryDataStorage::创建默认类别(CategorieList &categories, const QU
         return false;
     }
     QSqlQuery selectQuery(db);
-    selectQuery.prepare(
-        "SELECT id, uuid, name, user_uuid, created_at, updated_at, synced FROM categories WHERE id=1 AND user_uuid=?");
-    selectQuery.addBindValue(userUuid.toString());
+    selectQuery.prepare(QString::fromStdString(m_database.bindSQL( //
+        "SELECT id, uuid, name, user_uuid, created_at, updated_at, synced FROM categories WHERE id=1 AND user_uuid=?",
+        userUuid.toString())));
     if (selectQuery.exec() && selectQuery.next()) {
         auto parse = [](const QVariant &v) {
             if (v.isNull())
@@ -433,9 +434,8 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
             if (uuid.isNull())
                 uuid = QUuid::createUuid();
 
-            QDateTime createdAt = obj.contains("created_at")
-                                      ? Utility::fromIsoString(obj["created_at"].toString())
-                                      : QDateTime::currentDateTime();
+            QDateTime createdAt = obj.contains("created_at") ? Utility::fromIsoString(obj["created_at"].toString())
+                                                             : QDateTime::currentDateTime();
             if (!createdAt.isValid())
                 createdAt = QDateTime::currentDateTime();
             QDateTime updatedAt =
@@ -466,15 +466,17 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
                 ++insertCount;
             } else if (action == 解决冲突方案::Overwrite && existing) {
                 QSqlQuery updateQuery(db);
-                updateQuery.prepare("UPDATE categories SET name = ?, user_uuid = ?, created_at = ?, updated_at = ?, "
-                                    "synced = ? WHERE uuid = ? OR name = ?");
-                updateQuery.addBindValue(name);
-                updateQuery.addBindValue(userUuid.toString());
-                updateQuery.addBindValue(createdAt.toUTC().toMSecsSinceEpoch());
-                updateQuery.addBindValue(updatedAt.toUTC().toMSecsSinceEpoch());
-                updateQuery.addBindValue(source == ImportSource::Server ? 0 : (existing->synced() == 1 ? 1 : 2));
-                updateQuery.addBindValue(existing->uuid().toString());
-                updateQuery.addBindValue(existing->name());
+                updateQuery.prepare(QString::fromStdString(m_database.bindSQL( //
+                    "UPDATE categories SET name = ?, user_uuid = ?, created_at = ?, updated_at = ?, "
+                    "synced = ? WHERE uuid = ? OR name = ?",
+                    name,                                                                   //
+                    userUuid.toString(),                                                    //
+                    createdAt.toUTC().toMSecsSinceEpoch(),                                  //
+                    updatedAt.toUTC().toMSecsSinceEpoch(),                                  //
+                    source == ImportSource::Server ? 0 : (existing->synced() == 1 ? 1 : 2), //
+                    existing->uuid().toString(),                                            //
+                    existing->name()                                                        //
+                    )));
                 if (!updateQuery.exec()) {
                     qCritical() << "更新类别失败(uuid=" << existing->uuid() << "):" << updateQuery.lastError().text();
                     success = false;
@@ -628,15 +630,17 @@ bool CategoryDataStorage::导入从JSON(const QJsonObject &input, bool replaceAl
     for (const auto &v : arr) {
         QJsonObject obj = v.toObject();
         // TODO:id 是自增主键，不应该从JSON导入
-        query.prepare("INSERT OR REPLACE INTO categories (id, uuid, name, user_uuid, created_at, updated_at, synced) "
-                      "VALUES (?,?,?,?,?,?,?)");
-        query.addBindValue(obj["id"].toVariant());
-        query.addBindValue(obj["uuid"].toString());
-        query.addBindValue(obj["name"].toString());
-        query.addBindValue(obj["user_uuid"].toString());
-        query.addBindValue(Utility::fromJsonValue(obj["created_at"]));
-        query.addBindValue(Utility::fromJsonValue(obj["updated_at"]));
-        query.addBindValue(obj["synced"].toInt());
+        query.prepare(QString::fromStdString(m_database.bindSQL( //
+            "INSERT OR REPLACE INTO categories (id, uuid, name, user_uuid, created_at, updated_at, synced) VALUES "
+            "(?,?,?,?,?,?,?)",                         //
+            obj["id"].toInt(),                         //
+            obj["uuid"].toString(),                    //
+            obj["name"].toString(),                    //
+            obj["user_uuid"].toString(),               //
+            Utility::fromJsonValue(obj["created_at"]), //
+            Utility::fromJsonValue(obj["updated_at"]), //
+            obj["synced"].toInt()                      //
+            )));
         if (!query.exec()) {
             qWarning() << "导入类别数据失败:" << query.lastError().text();
             return false;

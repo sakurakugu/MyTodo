@@ -163,5 +163,6 @@
         "other": "on",
         "comments": "off",
         "strings": "on"
-    }
+    },
+    "files.autoSave": "onFocusChange"
 }

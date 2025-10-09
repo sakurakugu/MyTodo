@@ -22,6 +22,8 @@
 #include <memory>
 #include <mutex>
 #include <sqlite3.h>
+#include <tuple>
+#include <type_traits>
 
 /**
  * @brief 数据导入导出接口
@@ -48,6 +50,22 @@ class IDataExporter {
      */
     virtual bool 导入从JSON(const QJsonObject &input, bool replaceAll) = 0;
 };
+
+using SqlValue = std::variant< // 若要新增类型，记得在bindSQL中也添加对应的处理
+    int32_t,                   //
+    int64_t,                   //
+    double,                    //
+    bool,                      //
+    std::string,               //
+    const char *,              //
+    std::nullptr_t             // SqlValue(nullptr) 表示数据库中的 NULL
+#ifdef QT_CORE_LIB
+    ,
+    QString,  //
+    QUuid,    //
+    QDateTime //
+#endif
+    >;
 
 /**
  * @class Database
@@ -112,11 +130,25 @@ class Database {
     void unregisterDataExporter(const QString &name);                        ///< 注销数据导出器
 
     // 通用的数据库导入导出接口
-    bool exportDataToJson(QJsonObject &output);                         ///< 导出所有表数据到JSON对象
-    bool importDataFromJson(const QJsonObject &input, bool replaceAll); ///< 从JSON对象导入数据到数据库
-
+    bool exportDataToJson(QJsonObject &output);                                ///< 导出所有表数据到JSON对象
+    bool importDataFromJson(const QJsonObject &input, bool replaceAll);        ///< 从JSON对象导入数据到数据库
     bool exportDatabaseToJsonFile(const QString &filePath);                    ///< 导出数据库所有表到JSON文件
     bool importDatabaseFromJsonFile(const QString &filePath, bool replaceAll); ///< 从JSON文件导入数据库
+
+    // 查询处理
+    std::string sqlEscape(const SqlValue &value);                                             ///< SQL转义，防止SQL注入
+    std::string bindSQL(const std::string &sqlTemplate, const std::vector<SqlValue> &values); ///< 绑定SQL参数
+    std::string bindSQL(const std::string &sqlTemplate,
+                        std::vector<SqlValue> &&values) { ///< 绑定SQL参数（移动语义），防止下面那个模板报错无限递归
+        return bindSQL(sqlTemplate, values);
+    }
+    template <typename... Args>
+    std::enable_if_t< // 第一个参数不是vector<SqlValue>，则启用此模板（防止匹配到自身，无限递归）
+        !std::is_same_v<std::decay_t<std::tuple_element_t<0, std::tuple<Args..., void>>>, std::vector<SqlValue>>,
+        std::string>
+    bindSQL(const std::string &sqlTemplate, Args &&...args) { ///< 可变参数模板
+        return bindSQL(sqlTemplate, std::vector<SqlValue>{std::forward<Args>(args)...});
+    }
 
   private:
     explicit Database();

@@ -20,6 +20,7 @@
 #include <QSaveFile>
 #include <QSqlError>
 #include <QStandardPaths>
+#include <variant>
 
 const QString Database::DATABASE_PATH = // 数据库文件路径
     QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/" + APP_NAME)
@@ -311,10 +312,11 @@ bool Database::exportDataToJson(QJsonObject &output) {
     }
 
     // 添加元数据
-    output["meta"] = QJsonObject{{"version", QString(APP_VERSION_STRING)},
-                                 {"database_version", DATABASE_VERSION},
-                                 {"sqlite_version", getSqliteVersion()},
-                                 {"export_time", QDateTime::currentDateTime().toString(Qt::ISODate)}}; // 不是rfc3339格式
+    output["meta"] =
+        QJsonObject{{"version", QString(APP_VERSION_STRING)},
+                    {"database_version", DATABASE_VERSION},
+                    {"sqlite_version", getSqliteVersion()},
+                    {"export_time", QDateTime::currentDateTime().toString(Qt::ISODate)}}; // 不是rfc3339格式
 
     // 导出database_version表
     output["database_version"] = exportTable("database_version", {"version"});
@@ -535,4 +537,76 @@ QJsonArray Database::exportTable(const QString &table, const QStringList &column
         array.append(obj);
     }
     return array;
+}
+
+/**
+ * @brief SQL转义，防止SQL注入
+ * @param value SQL值
+ * @return 转义后的字符串
+ */
+std::string Database::sqlEscape(const SqlValue &value) {
+    // 提取字符串转义逻辑为辅助函数
+    auto escapeString = [](const std::string &str) {
+        std::string escaped = str;
+        size_t pos = 0;
+        while ((pos = escaped.find('\'', pos)) != std::string::npos) {
+            escaped.replace(pos, 1, "''");
+            pos += 2;
+        }
+        return "'" + escaped + "'";
+    };
+
+    return std::visit(
+        [&escapeString](auto &&v) -> std::string {
+            using T = std::decay_t<decltype(v)>;
+
+#ifdef QT_CORE_LIB
+            if constexpr (std::is_same_v<T, QString>) {
+                return escapeString(v.toStdString());
+            } else if constexpr (std::is_same_v<T, QUuid>) {
+                return escapeString(v.toString().toStdString());
+            } else if constexpr (std::is_same_v<T, QDateTime>) {
+                return escapeString(v.toString(Qt::ISODateWithMs).toStdString());
+            } else
+#endif
+                if constexpr (std::is_same_v<T, bool>) {
+                return v ? "1" : "0";
+            } else if constexpr (std::is_same_v<T, std::string>) {
+                return escapeString(v);
+            } else if constexpr (std::is_same_v<T, const char *>) {
+                return escapeString(std::string(v));
+            } else if constexpr (std::is_same_v<T, std::nullptr_t>) {
+                return "NULL";
+            } else {
+                return std::to_string(v);
+            }
+        },
+        value);
+}
+
+/**
+ * @brief 绑定SQL参数
+ * @param sqlTemplate SQL模板字符串
+ * @param values 参数值向量
+ * @return 绑定后的SQL字符串
+ */
+std::string Database::bindSQL(const std::string &sqlTemplate, const std::vector<SqlValue> &values) {
+    // TODO:
+    // 字符串里的 ? 不替换（单/双引号）。
+    // 注释里的 ? 不替换（-- 单行注释、/* */ 多行注释）
+    std::string result;
+    result.reserve(sqlTemplate.size() + 64 * values.size());
+    size_t pos = 0, argIndex = 0;
+    while (pos < sqlTemplate.size()) {
+        if (sqlTemplate[pos] == '?' && argIndex < values.size()) {
+            result += sqlEscape(values[argIndex++]);
+            ++pos;
+        } else {
+            result += sqlTemplate[pos++];
+        }
+    }
+    if (argIndex != values.size()) {
+        throw std::runtime_error("bindSQL: 参数数量与占位符不匹配");
+    }
+    return result;
 }
