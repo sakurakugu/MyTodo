@@ -32,6 +32,17 @@ set(CMAKE_AUTOUIC ON)                      # 自动处理 UIC
 
 include(tools/检查文件头/check_headers.cmake)            # 包含文件头检查模块
 
+# ============ 第三方依赖：SQLite3（可选内置构建） ============
+# 提供选项：默认静态库，开启 JSON1/FTS5/RTREE
+set(SQLITE3_VERSION "3.50.4" CACHE STRING "SQLite 语义化版本号")
+set(SQLITE3_RELEASE_YEAR "2025" CACHE STRING "sqlite.org 上该版本的年份目录" FORCE)
+
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake") # 包含自定义 CMake 模块路径
+include(cmake/SQLite3.cmake)
+add_sqlite3()
+
+
 # 构建类型优化
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "选择构建类型" FORCE)
@@ -87,6 +98,7 @@ set(PRIVATE_LIBRARIES
     Qt6::Widgets
     Qt6::Quick
     Qt6::Concurrent
+    SQLite::SQLite3
 )
 
 # 单例组件
@@ -184,6 +196,15 @@ install(TARGETS MyTodo
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}             # 库文件安装位置
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}             # 静态库安装位置
 )
+
+# # 若 sqlite3 作为共享库构建，确保它也被安装到 bin/lib 中
+# if(SQLITE3_BUILD_SHARED)
+#     install(TARGETS sqlite3
+#         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} # 可执行文件安装位置
+#         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} # 库文件安装位置
+#         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} # 静态库安装位置
+#     )
+# endif()
 
 # 安装 Qt6 运行时依赖（Windows）
 if(WIN32)

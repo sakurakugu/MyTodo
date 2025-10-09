@@ -994,12 +994,14 @@ std::string Config::getConfigLocationPath(Location location) const {
         break;
     }
     case Location::AppDataRoaming: {
-        // AppData/Roaming目录
-        basePath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-        if (basePath.isEmpty()) {
-            // 备用方案：使用应用程序目录
-            basePath = QCoreApplication::applicationDirPath();
-            qWarning() << "无法获取AppData路径，使用应用程序目录作为备用";
+        // AppData/Roaming/${APP_NAME}目录
+        basePath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/" + APP_NAME;
+        // 如果目录不存在，创建它
+        if (!QDir(basePath).exists()) {
+            if (!QDir(basePath).mkpath(basePath)) {
+                qWarning() << "无法获取AppData路径，使用应用程序目录作为备用";
+                basePath = QCoreApplication::applicationDirPath();
+            }
         }
         break;
     }

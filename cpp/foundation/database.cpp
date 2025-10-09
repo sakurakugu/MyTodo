@@ -22,7 +22,8 @@
 #include <QStandardPaths>
 
 const QString Database::DATABASE_PATH = // 数据库文件路径
-    QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).absoluteFilePath(QString(APP_NAME) + ".db");
+    QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/" + APP_NAME)
+        .absoluteFilePath(QString(APP_NAME) + ".db");
 
 Database::Database() : m_initialized(false) {
     // 初始化数据库

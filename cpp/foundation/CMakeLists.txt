@@ -55,4 +55,5 @@ target_link_libraries(mytodo_foundation
         Qt6::Gui
         Qt6::Sql
         tomlplusplus::tomlplusplus
+        SQLite::SQLite3
 )
