@@ -26,8 +26,6 @@ add_library(mytodo_foundation STATIC
     utility.h
 )
 
-include("${CMAKE_SOURCE_DIR}/cpp/script/version.cmake")
-
 # 查找 Qt 库
 find_package(Qt6 REQUIRED COMPONENTS 
     Core Network Sql Gui)

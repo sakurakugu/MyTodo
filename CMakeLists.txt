@@ -10,7 +10,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 set(APP_NAME "MyTodo")
-include("${CMAKE_SOURCE_DIR}/cpp/script/version.cmake") # 包含版本号处理模块
+include("${CMAKE_SOURCE_DIR}/cmake/version/version.cmake") # 包含版本号处理模块
 
 # 项目基本信息
 project(${APP_NAME} 
@@ -32,7 +32,7 @@ set(CMAKE_AUTOUIC ON)                      # 自动处理 UIC
 
 include(tools/检查文件头/check_headers.cmake)            # 包含文件头检查模块
 
-# ============ 第三方依赖：SQLite3（可选内置构建） ============
+# ============ 第三方依赖：SQLite3（设置可选内置构建） ============
 # 提供选项：默认静态库，开启 JSON1/FTS5/RTREE
 set(SQLITE3_VERSION "3.50.4" CACHE STRING "SQLite 语义化版本号")
 set(SQLITE3_RELEASE_YEAR "2025" CACHE STRING "sqlite.org 上该版本的年份目录" FORCE)

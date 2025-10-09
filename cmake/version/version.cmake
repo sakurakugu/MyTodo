@@ -38,7 +38,7 @@ endif()
 
 # 生成版本号头文件
 configure_file(
-    "${CMAKE_SOURCE_DIR}/cpp/script/version.h.in"
+    "${CMAKE_CURRENT_LIST_DIR}/version.h.in"
     "${CMAKE_BINARY_DIR}/generated/version.h"
     @ONLY
 )

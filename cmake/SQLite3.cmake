@@ -20,8 +20,6 @@
 
 # 若遇到下载 404，请确认 `SQLITE3_VERSION` 与 `SQLITE3_RELEASE_YEAR` 是否匹配；必要时直接指定 `SQLITE3_AMALGAMATION_URL`。
 
-# TODO: 改成传入下载地址和版本号，而非输入年份和版本号获取地址
-
 include_guard(GLOBAL)
 
 include(FetchContent)
