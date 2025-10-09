@@ -17,7 +17,6 @@
 #include "user_auth.h"
 #include "config.h"
 #include "default_value.h"
-#include "setting.h"
 
 #include <QDateTime>
 #include <QJsonObject>
@@ -42,9 +41,6 @@ UserAuth::UserAuth(QObject *parent)
     connect(&m_networkRequest, &NetworkRequest::requestCompleted, this, &UserAuth::onNetworkRequestCompleted);
     connect(&m_networkRequest, &NetworkRequest::requestFailed, this, &UserAuth::onNetworkRequestFailed);
     connect(&m_networkRequest, &NetworkRequest::authTokenExpired, this, &UserAuth::onAuthTokenExpired);
-
-    // 监听服务器配置变化
-    connect(&Setting::GetInstance(), &Setting::baseUrlChanged, this, &UserAuth::onBaseUrlChanged);
 
     // 连接令牌过期检查定时器
     connect(m_tokenExpiryTimer, &QTimer::timeout, this, &UserAuth::onTokenExpiryCheck);
@@ -318,7 +314,7 @@ void UserAuth::处理登录成功(const QJsonObject &response) {
     m_refreshToken = response["refresh_token"].toString();
 
     QJsonObject userObj = response["user"].toObject();
-    m_username = userObj.value("username").toString();
+    m_username = userObj["username"].toString();
     if (m_username.isEmpty()) {
         emit loginFailed("服务器响应缺少用户名");
         return;
@@ -328,8 +324,8 @@ void UserAuth::处理登录成功(const QJsonObject &response) {
     if (!userObj.contains("email")) {
         qWarning() << "登录响应中缺少 email 字段，使用空字符串";
     }
-    m_email = userObj.value("email").toString();
-    m_uuid = QUuid::fromString(userObj.value("uuid").toString());
+    m_email = userObj["email"].toString();
+    m_uuid = QUuid::fromString(userObj["uuid"].toString());
 
     if (m_uuid.isNull()) {
         emit loginFailed("服务器响应缺少有效的用户UUID");
@@ -547,10 +543,6 @@ void UserAuth::停止令牌过期计时器() {
     }
 }
 
-void UserAuth::onBaseUrlChanged() {
-    注销();
-}
-
 /**
  * @brief 初始化用户表
  * @return 初始化是否成功
@@ -649,10 +641,10 @@ bool UserAuth::导入从JSON(const QJsonObject &input, bool replaceAll) {
     for (const auto &userValue : usersArray) {
         QJsonObject userObj = userValue.toObject();
 
-        query.prepare("INSERT OR REPLACE INTO users (uuid, username, email) VALUES (?, ?, ?, ?)");
-        query.addBindValue(userObj.value("uuid").toString());
-        query.addBindValue(userObj.value("username").toString());
-        query.addBindValue(userObj.value("email").toString());
+        query.prepare("INSERT OR REPLACE INTO users (uuid, username, email) VALUES (?, ?, ?)");
+        query.addBindValue(userObj["uuid"].toString());
+        query.addBindValue(userObj["username"].toString());
+        query.addBindValue(userObj["email"].toString());
 
         if (!query.exec()) {
             qWarning() << "导入用户数据失败:" << query.lastError().text();

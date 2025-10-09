@@ -52,10 +52,9 @@ class Config {
         AppDataRoaming   // AppData/Roaming路径
     };
 
-    bool setConfigLocation(Location location, bool overwrite = false);             // 设置配置文件位置
-    Location getConfigLocation() const;                                            // 获取配置文件位置
-    std::string getConfigLocationPath(Location location) const;                    // 获取配置文件位置路径
-    bool migrateConfigToLocation(Location targetLocation, bool overwrite = false); // 迁移配置文件到指定位置
+    bool setConfigLocation(Location location, bool overwrite = false); // 设置配置文件位置
+    Location getConfigLocation() const;                                // 获取配置文件位置
+    std::string getConfigLocationPath(Location location) const;        // 获取配置文件位置路径
 
     // 存储类型和路径管理相关方法
     bool openConfigFilePath() const;   // 打开配置文件路径

@@ -126,6 +126,7 @@ class Logger : public QObject {
     std::string m_logDir;                     // 日志目录路径
     std::string m_logFileName;                // 日志文件名
     std::string m_appName;                    // 应用程序名称
+    std::string m_timeZone;                   // 时区
 };
 
 // 最大日志文件大小（字节）

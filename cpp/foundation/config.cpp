@@ -24,7 +24,6 @@
 #include <QStandardPaths>
 #include <QUrl>
 #include <fstream>
-#include <functional>
 #include <limits>
 
 Config::Config()

@@ -8,6 +8,7 @@
  */
 
 #include "qml_user_auth.h"
+#include "setting.h"
 #include "user_auth.h"
 
 QmlUserAuth::QmlUserAuth(UserAuth &auth, QObject *parent) //
@@ -39,6 +40,10 @@ void QmlUserAuth::logout() {
     m_auth.注销();
 }
 
+void QmlUserAuth::onBaseUrlChanged() {
+    m_auth.注销();
+}
+
 // ============== 信号桥接 ==============
 void QmlUserAuth::connectSignals() {
     // 使用 lambda 直接转发，避免多继承/友元侵入
@@ -50,4 +55,7 @@ void QmlUserAuth::connectSignals() {
     QObject::connect(&m_auth, &UserAuth::loginFailed, this, &QmlUserAuth::loginFailed);
     QObject::connect(&m_auth, &UserAuth::loginRequired, this, &QmlUserAuth::loginRequired);
     QObject::connect(&m_auth, &UserAuth::logoutSuccessful, this, &QmlUserAuth::logoutSuccessful);
+
+    // 监听服务器配置变化
+    connect(&Setting::GetInstance(), &Setting::baseUrlChanged, this, &QmlUserAuth::onBaseUrlChanged);
 }

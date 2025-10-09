@@ -45,8 +45,8 @@ class BackupManager : public QObject {
     BackupManager &operator=(BackupManager &&) = delete;
 
     bool 执行备份();
-    bool 清理旧备份文件(const QString &backupDir, int maxFiles);
-    QString 生成备份路径(const QString &fileType) const; // 生成备份路径
+    bool 清理旧备份文件(const std::string &backupDir, int maxFiles);
+    std::string 生成备份路径(const QString &fileType) const; // 生成备份路径
     QString 获取默认备份路径() const;
     void 设置自动备份启用状态(bool enabled);
     void 启动自动备份定时器();

@@ -283,54 +283,53 @@ bool TodoDataStorage::更新待办(TodoList &todos, const QUuid &uuid, const QVa
     };
     if (todoData.contains("title")) {
         appendField("title", QMetaType::QString);
-        (*it)->setTitle(todoData.value("title").toString());
+        (*it)->setTitle(todoData["title"].toString());
     }
     if (todoData.contains("description")) {
         appendField("description", QMetaType::QString);
-        (*it)->setDescription(todoData.value("description").toString());
+        (*it)->setDescription(todoData["description"].toString());
     }
     if (todoData.contains("category")) {
         appendField("category", QMetaType::QString);
-        (*it)->setCategory(todoData.value("category").toString());
+        (*it)->setCategory(todoData["category"].toString());
     }
     if (todoData.contains("important")) {
         appendField("important", QMetaType::Bool);
-        (*it)->setImportant(todoData.value("important").toBool());
+        (*it)->setImportant(todoData["important"].toBool());
     }
     if (todoData.contains("deadline")) {
         appendField("deadline", QMetaType::QDateTime);
-        QDateTime dt = QDateTime::fromString(todoData.value("deadline").toString(), Qt::ISODate);
+        QDateTime dt = QDateTime::fromString(todoData["deadline"].toString(), Qt::ISODate);
         (*it)->setDeadline(dt);
     }
     if (todoData.contains("recurrence_interval")) {
         appendField("recurrence_interval", QMetaType::Int);
-        (*it)->setRecurrenceInterval(todoData.value("recurrence_interval").toInt());
+        (*it)->setRecurrenceInterval(todoData["recurrence_interval"].toInt());
     }
     if (todoData.contains("recurrence_count")) {
         appendField("recurrence_count", QMetaType::Int);
-        (*it)->setRecurrenceCount(todoData.value("recurrence_count").toInt());
+        (*it)->setRecurrenceCount(todoData["recurrence_count"].toInt());
     }
     if (todoData.contains("recurrence_start_date")) {
         appendField("recurrence_start_date", QMetaType::QDate);
-        (*it)->setRecurrenceStartDate(
-            QDate::fromString(todoData.value("recurrence_start_date").toString(), Qt::ISODate));
+        (*it)->setRecurrenceStartDate(QDate::fromString(todoData["recurrence_start_date"].toString(), Qt::ISODate));
     }
     if (todoData.contains("is_completed")) {
         appendField("is_completed", QMetaType::Bool);
-        (*it)->setIsCompleted(todoData.value("is_completed").toBool());
+        (*it)->setIsCompleted(todoData["is_completed"].toBool());
     }
     if (todoData.contains("completed_at")) {
         appendField("completed_at", QMetaType::QDateTime);
-        QDateTime dt = QDateTime::fromString(todoData.value("completed_at").toString(), Qt::ISODate);
+        QDateTime dt = QDateTime::fromString(todoData["completed_at"].toString(), Qt::ISODate);
         (*it)->setCompletedAt(dt);
     }
     if (todoData.contains("is_trashed")) {
         appendField("is_trashed", QMetaType::Bool);
-        (*it)->setIsTrashed(todoData.value("is_trashed").toBool());
+        (*it)->setIsTrashed(todoData["is_trashed"].toBool());
     }
     if (todoData.contains("trashed_at")) {
         appendField("trashed_at", QMetaType::QDateTime);
-        QDateTime dt = QDateTime::fromString(todoData.value("trashed_at").toString(), Qt::ISODate);
+        QDateTime dt = QDateTime::fromString(todoData["trashed_at"].toString(), Qt::ISODate);
         (*it)->setTrashedAt(dt);
     }
     // 始终更新这两个字段
@@ -338,13 +337,13 @@ bool TodoDataStorage::更新待办(TodoList &todos, const QUuid &uuid, const QVa
     updateQuery.prepare(order);
     for (const auto &[type, name] : fields) {
         if (type == QMetaType::QDateTime) {
-            QDateTime dt = QDateTime::fromString(todoData.value(name).toString(), Qt::ISODate);
+            QDateTime dt = QDateTime::fromString(todoData[name].toString(), Qt::ISODate);
             updateQuery.addBindValue(dt.isValid() ? QVariant(dt.toUTC().toMSecsSinceEpoch()) : QVariant());
         } else if (type == QMetaType::QDate) {
-            QDate d = QDate::fromString(todoData.value(name).toString(), Qt::ISODate);
+            QDate d = QDate::fromString(todoData[name].toString(), Qt::ISODate);
             updateQuery.addBindValue(d.isValid() ? d.toString(Qt::ISODate) : QString());
         } else {
-            updateQuery.addBindValue(todoData.value(name));
+            updateQuery.addBindValue(todoData[name]);
         }
     }
     QDateTime now = QDateTime::currentDateTimeUtc();
@@ -615,7 +614,7 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
                 ++skipCount;
                 continue;
             }
-            QUuid userUuid = QUuid::fromString(obj.value("user_uuid").toString());
+            QUuid userUuid = QUuid::fromString(obj["user_uuid"].toString());
             if (userUuid.isNull()) {
                 qWarning() << "跳过无效待办（user_uuid 无效）";
                 ++skipCount;
@@ -639,7 +638,7 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
             QDateTime createdAt = Utility::fromIsoString(obj["created_at"].toString());
             if (!createdAt.isValid())
                 createdAt = QDateTime::currentDateTimeUtc();
-            QDateTime updatedAt = Utility::fromIsoString(obj.value("updated_at").toString());
+            QDateTime updatedAt = Utility::fromIsoString(obj["updated_at"].toString());
             if (!updatedAt.isValid())
                 updatedAt = createdAt;
 
@@ -1039,24 +1038,24 @@ bool TodoDataStorage::导入从JSON(const QJsonObject &input, bool replaceAll) {
                   "important, deadline, recurrence_interval, recurrence_count, recurrence_start_date, "
                   "is_completed, completed_at, is_trashed, trashed_at, created_at, updated_at, synced) "
                   "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-        q.addBindValue(o.value("id").toVariant());
-        q.addBindValue(o.value("uuid").toString());
-        q.addBindValue(o.value("user_uuid").toString());
-        q.addBindValue(o.value("title").toString());
-        q.addBindValue(o.value("description").toVariant());
-        q.addBindValue(o.value("category").toString());
-        q.addBindValue(o.value("important").toInt());
+        q.addBindValue(o["id"].toVariant());
+        q.addBindValue(o["uuid"].toString());
+        q.addBindValue(o["user_uuid"].toString());
+        q.addBindValue(o["title"].toString());
+        q.addBindValue(o["description"].toVariant());
+        q.addBindValue(o["category"].toString());
+        q.addBindValue(o["important"].toInt());
         bindIso(q, o, "deadline");
-        q.addBindValue(o.value("recurrence_interval").toInt());
-        q.addBindValue(o.value("recurrence_count").toInt());
-        q.addBindValue(o.value("recurrence_start_date").toVariant());
-        q.addBindValue(o.value("is_completed").toInt());
+        q.addBindValue(o["recurrence_interval"].toInt());
+        q.addBindValue(o["recurrence_count"].toInt());
+        q.addBindValue(o["recurrence_start_date"].toVariant());
+        q.addBindValue(o["is_completed"].toInt());
         bindIso(q, o, "completed_at");
-        q.addBindValue(o.value("is_trashed").toInt());
+        q.addBindValue(o["is_trashed"].toInt());
         bindIso(q, o, "trashed_at");
         bindIso(q, o, "created_at");
         bindIso(q, o, "updated_at");
-        q.addBindValue(o.value("synced").toInt());
+        q.addBindValue(o["synced"].toInt());
         if (!q.exec()) {
             qWarning() << "导入待办数据失败:" << q.lastError().text();
             return false;

@@ -292,8 +292,8 @@ void TodoSyncServer::处理推送更改成功(const QJsonObject &response) {
 
     // 验证服务器响应
     QJsonObject summary = response["summary"].toObject();
-    int created = summary.value("created").toInt();
-    int updated = summary.value("updated").toInt();
+    int created = summary["created"].toInt();
+    int updated = summary["updated"].toInt();
     QJsonArray conflictArray = summary["conflicts"].toArray();
     QJsonArray errorArray = summary["errors"].toArray();
     int conflicts = conflictArray.size();
@@ -312,10 +312,10 @@ void TodoSyncServer::处理推送更改成功(const QJsonObject &response) {
             QJsonObject cObj = cVal.toObject();
             qWarning() << QString("冲突 %1: index=%2, reason=%3, server_version=%4")
                               .arg(++idx)
-                              .arg(cObj.value("index").toInt())
-                              .arg(cObj.value("reason").toString())
+                              .arg(cObj["index"].toInt())
+                              .arg(cObj["reason"].toString())
                               .arg(QString::fromUtf8(
-                                  QJsonDocument(cObj.value("server_item").toObject()).toJson(QJsonDocument::Compact)));
+                                  QJsonDocument(cObj["server_item"].toObject()).toJson(QJsonDocument::Compact)));
         }
     }
 
@@ -324,9 +324,9 @@ void TodoSyncServer::处理推送更改成功(const QJsonObject &response) {
         int idx = 0;
         for (const auto &errorValue : errorArray) {
             QJsonObject error = errorValue.toObject();
-            QString errorMsg = error.value("error").toString();
-            QString errorCode = error.value("code").toString();
-            int index = error.value("index").toInt();
+            QString errorMsg = error["error"].toString();
+            QString errorCode = error["code"].toString();
+            int index = error["index"].toInt();
 
             qWarning() << QString("错误 %1: 项目序号=%2, 错误码=%3, 描述=%4")
                               .arg(++idx)

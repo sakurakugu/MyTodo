@@ -370,6 +370,7 @@ Page {
                             /// 鼠标按下事件处理
                             onClicked: {
                                 globalData.toggleWidgetMode();
+                                todoManager.queryer.currentFilter = "todo";
                             }
                             fontSize: 18
                         }

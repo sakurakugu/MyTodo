@@ -284,20 +284,20 @@ void NetworkRequest::onReplyFinished() {
                 QJsonObject o = jdoc.object();
                 // 结构: { success:false, message:"...", error:{ code:"...", message:"..." } }
                 if (o.contains("error")) {
-                    const QJsonValue v = o.value("error");
+                    const QJsonValue v = o["error"];
                     if (v.isObject()) {
                         QJsonObject eo = v.toObject();
-                        serverCode = eo.value("code").toString();
+                        serverCode = eo["code"].toString();
                         if (serverMessage.isEmpty()) {
-                            serverMessage = eo.value("message").toString();
+                            serverMessage = eo["message"].toString();
                         }
                     } else if (v.isString()) {
                         // 若直接把 error 作为字符串错误码
                         serverCode = v.toString();
                     }
                 }
-                if (serverMessage.isEmpty() && o.value("message").isString()) {
-                    serverMessage = o.value("message").toString();
+                if (serverMessage.isEmpty() && o["message"].isString()) {
+                    serverMessage = o["message"].toString();
                 }
             }
 

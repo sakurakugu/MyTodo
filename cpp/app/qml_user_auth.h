@@ -57,6 +57,9 @@ class QmlUserAuth : public QObject {
     void loginRequired();
     void logoutSuccessful();
 
+  private slots:
+    void onBaseUrlChanged(); // 服务器基础URL变化槽
+
   private:
     UserAuth &m_auth; ///< 引用底层认证逻辑
     void connectSignals();

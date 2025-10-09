@@ -96,7 +96,6 @@ class UserAuth : public QObject, public IDataExporter {
 
   private slots:
     void onTokenExpiryCheck(); // 定时检查令牌过期
-    void onBaseUrlChanged();   // 服务器基础URL变化槽
 
   private:
     // 私有方法

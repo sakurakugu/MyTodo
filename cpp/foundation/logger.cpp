@@ -13,22 +13,24 @@
 #include "version.h"
 
 #include <QCoreApplication>
-#include <QFileInfo>
 #include <QStandardPaths>
+
+#include <QTimeZone>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <mutex>
 
 Logger::Logger(QObject *parent) noexcept
-    : QObject(parent),                    // 初始化父对象
-      m_logFile(nullptr),                 // 初始化日志文件流
-      m_logLevel(LogLevel::Info),         // 初始化日志级别为Info
-      m_logToFile(true),                  // 初始化是否记录到文件为true
-      m_logToConsole(true),               // 初始化是否记录到控制台为true
-      m_maxLogFileSize(10 * 1024 * 1024), // 初始化最大日志文件大小为10MB
-      m_maxLogFiles(5),                   // 初始化最大日志文件数量为5
-      m_appName(APP_NAME)                 // 初始化应用程序名称
+    : QObject(parent),                                         // 初始化父对象
+      m_logFile(nullptr),                                      // 初始化日志文件流
+      m_logLevel(LogLevel::Info),                              // 初始化日志级别为Info
+      m_logToFile(true),                                       // 初始化是否记录到文件为true
+      m_logToConsole(true),                                    // 初始化是否记录到控制台为true
+      m_maxLogFileSize(10 * 1024 * 1024),                      // 初始化最大日志文件大小为10MB
+      m_maxLogFiles(5),                                        // 初始化最大日志文件数量为5
+      m_appName(APP_NAME),                                     // 初始化应用程序名称
+      m_timeZone(QTimeZone::systemTimeZone().id().constData()) // 初始化时区为系统时区
 {
     // 编译时检查应用名
     static_assert(std::string_view(APP_NAME).empty() == false, "应用名不能为空");
@@ -371,8 +373,11 @@ std::expected<void, LogError> Logger::checkLogRotation() noexcept {
 
         // 文件轮转
         const std::string currentLogPath = getLogFilePath();
-        const auto timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
-        const auto rotatedLogPath = std::format("{}/{}_{}.log", m_logDir, m_logFileName, timestamp.toStdString());
+        const auto now = std::chrono::system_clock::now();
+        const auto localTime = std::chrono::zoned_time{m_timeZone, now};
+        const auto timestamp =
+            std::format("{:%Y%m%d_%H%M%S}", std::chrono::floor<std::chrono::seconds>(localTime.get_local_time()));
+        const auto rotatedLogPath = std::format("{}/{}_{}.log", m_logDir, m_logFileName, timestamp);
 
         // 重命名文件
         std::filesystem::rename(std::filesystem::path{currentLogPath}, std::filesystem::path{rotatedLogPath}, ec);
@@ -443,15 +448,16 @@ std::string Logger::formatLogMessage(QtMsgType type, [[maybe_unused]] const QMes
     const auto levelStr = (levelIndex < levelNames.size()) ? levelNames[levelIndex] : "未知";
     // 时间戳生成
     const auto now = std::chrono::system_clock::now();
-    const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+    const auto localTime = std::chrono::zoned_time{m_timeZone, now}.get_local_time();
 #if defined(QT_DEBUG)
     // 文件名提取
     const auto fileName = context.file ? std::filesystem::path{context.file}.filename().string() : "未知文件";
-    return std::format("[{:%Y-%m-%d %H:%M:%S}.{:03d}] [{}] [{}:{}] {}", std::chrono::floor<std::chrono::seconds>(now),
-                       ms.count(), levelStr, fileName, context.line, msg.toStdString());
+    return std::format("[{:%Y-%m-%d %H:%M:%S}] [{}] [{}:{}] {}",
+                       std::chrono::floor<std::chrono::microseconds>(localTime), levelStr, fileName, context.line,
+                       msg.toStdString());
 #else
-    return std::format("[{:%Y-%m-%d %H:%M:%S}.{:03d}] [{}] {}", std::chrono::floor<std::chrono::seconds>(now),
-                       ms.count(), levelStr, msg.toStdString());
+    return std::format("[{:%Y-%m-%d %H:%M:%S}] [{}] {}", std::chrono::floor<std::chrono::microseconds>(localTime),
+                       levelStr, msg.toStdString());
 #endif
 }
 

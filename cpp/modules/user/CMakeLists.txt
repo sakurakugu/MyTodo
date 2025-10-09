@@ -33,5 +33,4 @@ target_link_libraries(mytodo_user
         Qt6::Core
         Qt6::Network
         mytodo_foundation    # 基础模块（Database, NetworkRequest类等）
-        mytodo_setting       # 设置模块
 )

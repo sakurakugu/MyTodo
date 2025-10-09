@@ -166,7 +166,6 @@ void NetworkProxy::saveProxyConfigToSettings() noexcept {
         config.save("proxy/username", m_proxyUsername);
         config.save("proxy/password", m_proxyPassword);
 
-        qDebug() << "代理设置已保存到配置文件";
         return;
     } catch (const std::exception &e) {
         qWarning() << "保存代理配置时发生异常" << ": " << e.what();

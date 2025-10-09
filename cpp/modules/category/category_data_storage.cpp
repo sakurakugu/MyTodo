@@ -421,25 +421,25 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
                 continue;
             }
 
-            QString name = obj.value("name").toString();
-            QUuid userUuid = QUuid::fromString(obj.value("user_uuid").toString());
+            QString name = obj["name"].toString();
+            QUuid userUuid = QUuid::fromString(obj["user_uuid"].toString());
             if (userUuid.isNull()) {
                 qWarning() << "跳过无效类别（user_uuid 无效）";
                 ++skipCount;
                 continue;
             }
 
-            QUuid uuid = obj.contains("uuid") ? QUuid::fromString(obj.value("uuid").toString()) : QUuid::createUuid();
+            QUuid uuid = obj.contains("uuid") ? QUuid::fromString(obj["uuid"].toString()) : QUuid::createUuid();
             if (uuid.isNull())
                 uuid = QUuid::createUuid();
 
             QDateTime createdAt = obj.contains("created_at")
-                                      ? Utility::fromIsoString(obj.value("created_at").toString())
+                                      ? Utility::fromIsoString(obj["created_at"].toString())
                                       : QDateTime::currentDateTime();
             if (!createdAt.isValid())
                 createdAt = QDateTime::currentDateTime();
             QDateTime updatedAt =
-                obj.contains("updated_at") ? Utility::fromIsoString(obj.value("updated_at").toString()) : createdAt;
+                obj.contains("updated_at") ? Utility::fromIsoString(obj["updated_at"].toString()) : createdAt;
             if (!updatedAt.isValid())
                 updatedAt = createdAt;
 
@@ -630,13 +630,13 @@ bool CategoryDataStorage::导入从JSON(const QJsonObject &input, bool replaceAl
         // TODO:id 是自增主键，不应该从JSON导入
         query.prepare("INSERT OR REPLACE INTO categories (id, uuid, name, user_uuid, created_at, updated_at, synced) "
                       "VALUES (?,?,?,?,?,?,?)");
-        query.addBindValue(obj.value("id").toVariant());
-        query.addBindValue(obj.value("uuid").toString());
-        query.addBindValue(obj.value("name").toString());
-        query.addBindValue(obj.value("user_uuid").toString());
-        query.addBindValue(Utility::fromJsonValue(obj.value("created_at")));
-        query.addBindValue(Utility::fromJsonValue(obj.value("updated_at")));
-        query.addBindValue(obj.value("synced").toInt());
+        query.addBindValue(obj["id"].toVariant());
+        query.addBindValue(obj["uuid"].toString());
+        query.addBindValue(obj["name"].toString());
+        query.addBindValue(obj["user_uuid"].toString());
+        query.addBindValue(Utility::fromJsonValue(obj["created_at"]));
+        query.addBindValue(Utility::fromJsonValue(obj["updated_at"]));
+        query.addBindValue(obj["synced"].toInt());
         if (!query.exec()) {
             qWarning() << "导入类别数据失败:" << query.lastError().text();
             return false;

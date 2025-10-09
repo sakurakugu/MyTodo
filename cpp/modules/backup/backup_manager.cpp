@@ -13,12 +13,14 @@
 #include "database.h"
 
 #include <QDateTime>
-#include <QDir>
-#include <QFileInfo>
 #include <QStandardPaths>
+#include <filesystem>
 
 BackupManager::BackupManager(QObject *parent)
-    : QObject(parent), m_config(Config::GetInstance()), m_backupTimer(new QTimer(this)) {
+    : QObject(parent),                 //
+      m_config(Config::GetInstance()), //
+      m_backupTimer(new QTimer(this))  //
+{
     // 初始化自动备份定时器
     m_backupTimer->setSingleShot(false);
     m_backupTimer->setInterval(60 * 60 * 1000); // 每小时检查一次
@@ -48,28 +50,35 @@ void BackupManager::初始化() {
  * @return 备份是否成功
  */
 bool BackupManager::执行备份() {
+    namespace fs = std::filesystem;
     try {
         // 获取备份路径
-        QString backupPath = m_config.get("backup/autoBackupPath", 获取默认备份路径()).toString();
-
-        // 确保备份目录存在
-        QDir backupDir(backupPath);
-        if (!backupDir.exists()) {
-            if (!backupDir.mkpath(".")) {
+        std::string backupPath = m_config.get("backup/autoBackupPath", 获取默认备份路径()).toString().toStdString();
+        // 如果备份目录不存在，且不是目录，创建它
+        if (fs::exists(backupPath)) {
+            if (!fs::is_directory(backupPath)) { // 如果不是目录
+                if (!fs::create_directory(backupPath)) {
+                    qWarning() << "无法创建备份目录:" << backupPath;
+                    return false;
+                }
+            }
+        } else {
+            if (!fs::create_directory(backupPath)) {
                 qWarning() << "无法创建备份目录:" << backupPath;
                 return false;
             }
         }
 
         // 生成备份路径
-        QString ConfigBackupFilePath = backupDir.absoluteFilePath(生成备份路径("config"));
-        QString DatabaseBackupFilePath = backupDir.absoluteFilePath(生成备份路径("database"));
+        std::string ConfigBackupFilePath = backupPath + "/" + 生成备份路径("config");
+        std::string DatabaseBackupFilePath = backupPath + "/" + 生成备份路径("database");
 
         // 执行配置文件备份
         std::vector<std::string> excludeKeys = {"proxy"};
-        bool configBackupSuccess = m_config.exportToJsonFile(ConfigBackupFilePath.toStdString(), excludeKeys);
+        bool configBackupSuccess = m_config.exportToJsonFile(ConfigBackupFilePath, excludeKeys);
         // 执行数据库备份
-        bool dbBackupSuccess = Database::GetInstance().exportDatabaseToJsonFile(DatabaseBackupFilePath);
+        bool dbBackupSuccess =
+            Database::GetInstance().exportDatabaseToJsonFile(QString::fromStdString(DatabaseBackupFilePath));
 
         if (configBackupSuccess && dbBackupSuccess) {
             // 更新最后备份时间
@@ -81,8 +90,8 @@ bool BackupManager::执行备份() {
             清理旧备份文件(backupPath, maxFiles);
 
             qInfo() << "备份成功完成:";
-            qInfo() << "\t配置文件备份路径:" << ConfigBackupFilePath;
-            qInfo() << "\t数据库备份路径:" << DatabaseBackupFilePath;
+            qInfo() << "\t配置文件备份路径:" << QString::fromStdString(ConfigBackupFilePath);
+            qInfo() << "\t数据库备份路径:" << QString::fromStdString(DatabaseBackupFilePath);
             emit backupCompleted(true, "备份成功完成");
             return true;
         } else {
@@ -103,45 +112,70 @@ bool BackupManager::执行备份() {
  * @param maxFiles 最大保留文件数
  * @return 清理是否成功
  */
-bool BackupManager::清理旧备份文件(const QString &backupDir, int maxFiles) {
-    QDir dir(backupDir);
-    if (!dir.exists()) {
-        return true;
-    }
+bool BackupManager::清理旧备份文件(const std::string &backupDir, int maxFiles) {
+    namespace fs = std::filesystem;
 
-    // 获取所有备份文件
-    QStringList filters;
-    filters << "*_config.json" << "*_database.json";
-    QFileInfoList fileList = dir.entryInfoList(filters, QDir::Files, QDir::Time | QDir::Reversed);
+    try {
+        fs::path backupPath(backupDir);
 
-    // 按类型分组文件
-    QFileInfoList configFiles;
-    QFileInfoList dbFiles;
-
-    for (const QFileInfo &fileInfo : fileList) {
-        if (fileInfo.fileName().contains("_config.json")) {
-            configFiles.append(fileInfo);
-        } else if (fileInfo.fileName().contains("_database.json")) {
-            dbFiles.append(fileInfo);
+        // 检查目录是否存在
+        if (!fs::exists(backupPath) || !fs::is_directory(backupPath)) {
+            return true;
         }
-    }
 
-    // 删除超出数量限制的文件
-    auto deleteOldFiles = [this](QFileInfoList &files, int maxCount) {
-        while (files.size() > maxCount) {
-            QFileInfo oldestFile = files.takeLast();
-            if (!QFile::remove(oldestFile.absoluteFilePath())) {
-                qWarning() << "无法删除旧备份文件:" << oldestFile.absoluteFilePath();
-            } else {
-                qDebug() << "已删除旧备份文件:" << oldestFile.absoluteFilePath();
+        // 存储文件信息的结构体
+        struct FileInfo {
+            fs::path path;
+            fs::file_time_type lastWriteTime;
+
+            bool operator<(const FileInfo &other) const {
+                return lastWriteTime > other.lastWriteTime; // 按时间降序排列（最新的在前）
+            }
+        };
+
+        std::vector<FileInfo> configFiles;
+        std::vector<FileInfo> dbFiles;
+
+        // 遍历目录获取备份文件
+        for (const auto &entry : fs::directory_iterator(backupPath)) {
+            if (entry.is_regular_file()) {
+                std::string filename = entry.path().filename().string();
+
+                if (filename.find("_config.json") != std::string::npos) {
+                    configFiles.push_back({entry.path(), entry.last_write_time()});
+                } else if (filename.find("_database.json") != std::string::npos) {
+                    dbFiles.push_back({entry.path(), entry.last_write_time()});
+                }
             }
         }
-    };
 
-    deleteOldFiles(configFiles, maxFiles);
-    deleteOldFiles(dbFiles, maxFiles);
+        // 按时间排序（最新的在前）
+        std::sort(configFiles.begin(), configFiles.end());
+        std::sort(dbFiles.begin(), dbFiles.end());
 
-    return true;
+        // 删除超出数量限制的文件
+        auto deleteOldFiles = [this](std::vector<FileInfo> &files, int maxCount) {
+            while (static_cast<int>(files.size()) > maxCount) {
+                const auto &oldestFile = files.back();
+                std::error_code ec;
+                if (fs::remove(oldestFile.path, ec)) {
+                    qDebug() << "已删除旧备份文件:" << QString::fromStdString(oldestFile.path.string());
+                } else {
+                    qWarning() << "无法删除旧备份文件:" << QString::fromStdString(oldestFile.path.string())
+                               << "错误:" << ec.message();
+                }
+                files.pop_back();
+            }
+        };
+
+        deleteOldFiles(configFiles, maxFiles);
+        deleteOldFiles(dbFiles, maxFiles);
+
+        return true;
+    } catch (const std::exception &e) {
+        qCritical() << "清理备份文件时发生异常:" << e.what();
+        return false;
+    }
 }
 
 /**
@@ -149,9 +183,9 @@ bool BackupManager::清理旧备份文件(const QString &backupDir, int maxFiles
  * @param fileType 备份文件类型（config/database）
  * @return 备份路径
  */
-QString BackupManager::生成备份路径(const QString &fileType) const {
+std::string BackupManager::生成备份路径(const QString &fileType) const {
     QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
-    return QString("%1_备份_%2_%3.json").arg(APP_NAME, timestamp, fileType);
+    return QString("%1_备份_%2_%3.json").arg(APP_NAME, timestamp, fileType).toStdString();
 }
 
 /**
@@ -159,8 +193,9 @@ QString BackupManager::生成备份路径(const QString &fileType) const {
  * @return 默认备份路径
  */
 QString BackupManager::获取默认备份路径() const {
-    QString documentsPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-    return QDir(documentsPath).absoluteFilePath(QString(APP_NAME) + "/backups");
+    std::filesystem::path documentsPath =
+        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation).toStdString();
+    return QString::fromStdString((documentsPath / APP_NAME / "backups").string());
 }
 
 /**
