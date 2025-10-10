@@ -18,13 +18,12 @@ add_library(mytodo_user STATIC
 find_package(Qt6 REQUIRED COMPONENTS 
     Core        # 核心功能（QObject, QString, QTimer, QUuid等）
     Network     # 网络功能（网络请求需要）
-    Sql         # SQL数据库支持（用户数据持久化）
 )
 
 # 设置包含目录
 target_include_directories(mytodo_user PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}                    # 当前目录
-    ${CMAKE_SOURCE_DIR}/cpp/foundation             # 基础模块（database.h, network_request.h等）
+    ${CMAKE_SOURCE_DIR}/cpp/foundation             # 基础模块（Qdatabase.h, network_request.h等）
 )
 
 # 链接依赖库
@@ -32,5 +31,6 @@ target_link_libraries(mytodo_user
     PUBLIC
         Qt6::Core
         Qt6::Network
-        mytodo_foundation    # 基础模块（Database, NetworkRequest类等）
+        mytodo_foundation    # 基础模块（QDatabase, NetworkRequest类等）
+        mytodo_database      # 数据库模块（SQLite数据库连接等）     
 )

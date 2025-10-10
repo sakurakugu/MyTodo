@@ -995,7 +995,7 @@ std::string Config::getConfigLocationPath(Location location) const {
     }
     case Location::AppDataRoaming: {
         // AppData/Roaming/${APP_NAME}目录
-        basePath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/" + APP_NAME;
+        basePath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
         // 如果目录不存在，创建它
         if (!QDir(basePath).exists()) {
             if (!QDir(basePath).mkpath(basePath)) {

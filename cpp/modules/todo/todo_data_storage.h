@@ -105,8 +105,8 @@ class TodoDataStorage : public BaseDataStorage {
     QList<int> 查询待办ID列表(const QueryOptions &options);
 
     // IDataExporter接口实现
-    bool 导出到JSON(QJsonObject &output) override;
-    bool 导入从JSON(const QJsonObject &input, bool replaceAll) override;
+    bool exportToJson(QJsonObject &output) override;
+    bool importFromJson(const QJsonObject &input, bool replaceAll) override;
 
   private:
     static QString 构建SQL排序语句(int sortType, bool descending); // 构建查询SQL

@@ -12,8 +12,6 @@
 
 #include "base_data_storage.h"
 #include <QDebug>
-#include <QSqlError>
-#include <QSqlQuery>
 
 /**
  * @brief 构造函数
@@ -23,7 +21,7 @@
 BaseDataStorage::BaseDataStorage(const QString &exporterName, QObject *parent)
     : QObject(parent), m_database(Database::GetInstance()), m_exporterName(exporterName) {
     // 注册到数据库导出器
-    m_database.registerDataExporter(m_exporterName, this);
+    m_database.registerDataExporter(m_exporterName.toStdString(), this);
 }
 
 /**
@@ -31,7 +29,7 @@ BaseDataStorage::BaseDataStorage(const QString &exporterName, QObject *parent)
  */
 BaseDataStorage::~BaseDataStorage() {
     // 从数据库导出器中注销
-    m_database.unregisterDataExporter(m_exporterName);
+    m_database.unregisterDataExporter(m_exporterName.toStdString());
 }
 
 /**
@@ -39,6 +37,10 @@ BaseDataStorage::~BaseDataStorage() {
  * @return 初始化是否成功
  */
 bool BaseDataStorage::初始化() {
+    if (!m_database.initialize()) {
+        qCritical() << m_exporterName << "数据库初始化失败";
+        return false;
+    }
     // 初始化数据表
     if (!初始化数据表()) {
         qCritical() << m_exporterName << "数据表初始化失败";
@@ -48,51 +50,33 @@ bool BaseDataStorage::初始化() {
 }
 
 /**
- * @brief 获取最后插入行的ID
- * @param db 数据库连接
- * @return 最后插入行的ID，失败返回-1
- */
-int BaseDataStorage::获取最后插入行ID(QSqlDatabase &db) const {
-    QSqlQuery idQuery(db);
-    int newId = -1;
-
-    if (idQuery.exec("SELECT last_insert_rowid()") && idQuery.next()) {
-        newId = idQuery.value(0).toInt();
-    }
-
-    if (newId <= 0) {
-        qWarning() << "获取自增ID失败，使用临时ID -1";
-        return -1;
-    }
-
-    return newId;
-}
-
-/**
- * @brief 执行SQL查询（带返回结果）
+ * @brief 执行SQL查询（无参数）
  * @param queryString SQL查询语句
- * @param query 查询对象引用
  * @return 执行是否成功
  */
-bool BaseDataStorage::执行SQL查询(const QString &queryString, QSqlQuery &query) {
-    if (!query.exec(queryString)) {
-        qCritical() << "SQL查询执行失败:" << query.lastError().text();
-        qCritical() << "查询语句:" << queryString;
+bool BaseDataStorage::执行SQL查询(const std::string &queryString) {
+    auto query = m_database.createQuery();
+    if (!query->exec(queryString)) {
+        qCritical() << "SQL查询执行失败:" << QString::fromStdString(m_database.lastError());
+        qCritical() << "查询语句:" << QString::fromStdString(queryString);
         return false;
     }
     return true;
 }
 
 /**
- * @brief 执行SQL查询（无返回结果）
+ * @brief 执行SQL查询（带参数）
  * @param queryString SQL查询语句
+ * @param params 查询参数
  * @return 执行是否成功
  */
-bool BaseDataStorage::执行SQL查询(const QString &queryString) {
-    QSqlDatabase db;
-    if (!m_database.getDatabase(db))
+bool BaseDataStorage::执行SQL查询(const std::string &queryString, const std::vector<SqlValue> &params) {
+    auto query = m_database.createQuery();
+    query->bindValues(params);
+    if (!query->exec(queryString)) {
+        qCritical() << "SQL查询执行失败:" << QString::fromStdString(m_database.lastError());
+        qCritical() << "查询语句:" << QString::fromStdString(queryString);
         return false;
-
-    QSqlQuery query(db);
-    return 执行SQL查询(queryString, query);
+    }
+    return true;
 }

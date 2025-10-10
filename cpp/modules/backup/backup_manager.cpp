@@ -69,14 +69,14 @@ bool BackupManager::执行备份() {
 
         // 生成备份路径
         std::string ConfigBackupFilePath = dir + "/" + 生成备份路径("config");
-        std::string DatabaseBackupFilePath = dir + "/" + 生成备份路径("database");
+        std::string DatabaseBackupFilePath = dir + "/" + 生成备份路径("Qdatabase");
 
         // 执行配置文件备份
         std::vector<std::string> excludeKeys = {"proxy"};
         bool configBackupSuccess = m_config.exportToJsonFile(ConfigBackupFilePath, excludeKeys);
         // 执行数据库备份
-        bool dbBackupSuccess =
-            Database::GetInstance().exportDatabaseToJsonFile(QString::fromStdString(DatabaseBackupFilePath));
+        bool dbBackupSuccess = false;
+        // TODO: dbBackupSuccess =Database::GetInstance().exportDatabaseToJsonFile(QString::fromStdString(DatabaseBackupFilePath));
 
         if (configBackupSuccess && dbBackupSuccess) {
             // 更新最后备份时间
@@ -178,7 +178,7 @@ bool BackupManager::清理旧备份文件(const std::string &backupDir, int maxF
 
 /**
  * @brief 生成备份路径
- * @param fileType 备份文件类型（config/database）
+ * @param fileType 备份文件类型（config/Qdatabase）
  * @return 备份路径
  */
 std::string BackupManager::生成备份路径(const QString &fileType) const {

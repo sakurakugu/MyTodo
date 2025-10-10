@@ -31,7 +31,6 @@ find_package(Qt6 REQUIRED COMPONENTS
     Core        # 核心功能（QObject, QString, QDateTime等）
     Gui         # GUI功能（QAbstractListModel等）
     Network     # 网络功能（同步服务器需要）
-    Sql         # SQL数据库支持
 )
 
 # 设置包含目录
@@ -47,6 +46,7 @@ target_link_libraries(mytodo_category
         Qt6::Core
         Qt6::Gui
         Qt6::Network
-        mytodo_foundation    # 基础模块（配置、日志、数据库等）
+        mytodo_foundation    # 基础模块（配置、日志、工具等）
         mytodo_domain        # 领域模块（BaseDataStorage等）
+        mytodo_database      # 数据库模块（SQLite数据库连接等）
 )

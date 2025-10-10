@@ -74,8 +74,8 @@ class CategoryDataStorage : public BaseDataStorage {
                         解决冲突方案 resolution = 解决冲突方案::Merge);
 
     // IDataExporter接口实现
-    bool 导出到JSON(QJsonObject &output) override;
-    bool 导入从JSON(const QJsonObject &input, bool replaceAll) override;
+    bool exportToJson(QJsonObject &output) override;
+    bool importFromJson(const QJsonObject &input, bool replaceAll) override;
 
   protected:
     // 基类虚函数实现

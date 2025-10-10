@@ -9,8 +9,6 @@
 add_library(mytodo_foundation STATIC
     config.cpp
     config.h
-    database.cpp
-    database.h
     default_value.h
     global_data.cpp
     global_data.h
@@ -28,7 +26,7 @@ add_library(mytodo_foundation STATIC
 
 # 查找 Qt 库
 find_package(Qt6 REQUIRED COMPONENTS 
-    Core Network Sql Gui)
+    Core Network Gui)
 
 # 将包含目录添加到库中
 target_include_directories(mytodo_foundation PUBLIC
@@ -42,7 +40,5 @@ target_link_libraries(mytodo_foundation
         Qt6::Core
         Qt6::Network
         Qt6::Gui
-        Qt6::Sql
         tomlplusplus::tomlplusplus
-        SQLite::SQLite3
 )

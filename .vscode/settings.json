@@ -107,7 +107,6 @@
         "qnetworkaccessmanager": "cpp",
         "*.in": "cpp",
         "cinttypes": "cpp",
-        "qsqlerror": "cpp",
         "qdatetime": "cpp",
         "qabstractlistmodel": "cpp",
         "qjsonvalue": "cpp",
@@ -123,7 +122,6 @@
         "qurl": "cpp",
         "qvariant": "cpp",
         "qsavefile": "cpp",
-        "qsqlquery": "cpp",
         "qfileinfo": "cpp",
         "qnetworkreply": "cpp",
         "qjsonparseerror": "cpp",
@@ -142,12 +140,12 @@
         "qqmlcontext": "cpp",
         "qdiriterator": "cpp",
         "qregularexpression": "cpp",
-        "qsqldatabase": "cpp",
         "queue": "cpp",
         "stack": "cpp",
         "filesystem": "cpp",
         "qversionnumber": "cpp",
-        "qtimezone": "cpp"
+        "qtimezone": "cpp",
+        "*.def": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "search.useIgnoreFiles": false, // 禁用git忽略文件

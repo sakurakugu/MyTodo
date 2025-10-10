@@ -66,9 +66,9 @@ class UserAuth : public QObject, public IDataExporter {
     // 数据库初始化相关
     bool 初始化用户表();
 
-    // IDataExporter接口实现
-    bool 导出到JSON(QJsonObject &output) override;
-    bool 导入从JSON(const QJsonObject &input, bool replaceAll) override;
+    // 数据导入导出接口
+    bool exportToJson(QJsonObject &output) override;
+    bool importFromJson(const QJsonObject &input, bool replaceAll) override;
 
   signals:
     // 要转发到Qml的信号

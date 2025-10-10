@@ -17,7 +17,7 @@ project(${APP_NAME}
     VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
     DESCRIPTION "待办事项管理应用"
     HOMEPAGE_URL "https://github.com/sakurakugu/MyTodo"
-    LANGUAGES CXX
+    LANGUAGES C CXX
 )
 
 # C++ 标准设置
@@ -71,6 +71,7 @@ else()
 endif()
 
 add_subdirectory(cpp/foundation)
+add_subdirectory(cpp/foundation/database)
 add_subdirectory(cpp/domain)
 add_subdirectory(cpp/modules/category)
 add_subdirectory(cpp/modules/todo)

@@ -27,7 +27,7 @@ find_package(Qt6 REQUIRED COMPONENTS
 # 设置包含目录
 target_include_directories(mytodo_domain PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}                    # 当前目录
-    ${CMAKE_SOURCE_DIR}/cpp/foundation             # 基础模块（database.h等）
+    ${CMAKE_SOURCE_DIR}/cpp/foundation             # 基础模块（Qdatabase.h等）
     ${CMAKE_SOURCE_DIR}/cpp/app    # 应用层目录
 )
 

@@ -17,12 +17,26 @@
 # 1. `cmake/FetchSQLite3.cmake` 是通过 FetchContent 从 sqlite.org 下载 amalgamation 压缩包，然后创建 `sqlite3` 目标，并根据开关启用 JSON1/FTS5/RTREE。
 # 2. 通过顶层 `CMakeLists.txt` 暴露上述开关；若启用，将链接 `SQLite::SQLite3`。
 # 3. 安装时会将生成的库与头文件安装到标准目录（bin/lib/include）。
+# 4. 记得在 project() 中添加C语言支持，否则可能会因为没有启用C语言而导致sqlite3.c被当作C++编译，从而引发链接错误。例如：
+#    project(MyProject LANGUAGES C CXX)
 
 # 若遇到下载 404，请确认 `SQLITE3_VERSION` 与 `SQLITE3_RELEASE_YEAR` 是否匹配；必要时直接指定 `SQLITE3_AMALGAMATION_URL`。
 
 include_guard(GLOBAL)
 
 include(FetchContent)
+
+# 可选：使用系统自带的 SQLite3（若可用）。默认关闭，保持当前行为（下载并内置构建）。
+option(SQLITE3_USE_SYSTEM "若为 ON 则优先查找并使用系统 SQLite3，而非下载归并版构建" OFF)
+
+# 可选：设置 SQLite3 C 标准（不强制全局）。仅在本目标上应用。
+set(SQLITE3_C_STANDARD "11" CACHE STRING "为 sqlite3.c 目标设置的 C 标准（如 99/11/17）")
+
+# 可选：用户自定义传递给 sqlite3 的额外编译宏（以分号分隔）。例如：SQLITE3_EXTRA_DEFINES="SQLITE_OMIT_LOAD_EXTENSION;SQLITE_USE_URI"。
+set(SQLITE3_EXTRA_DEFINES "" CACHE STRING "传递给 sqlite3 的额外宏，分号分隔")
+
+# 可选：构建 SQLite shell（sqlite3 命令行工具），默认关闭；开启需可执行入口和控制台。
+option(SQLITE3_BUILD_SHELL "构建 sqlite3 命令行 shell（可执行文件）" OFF)
 
 # 将语义化版本转换为归并版的整数版本码（若未提供）
 # 例如: 3.50.4 -> 3500400
@@ -90,6 +104,23 @@ endif()
 
 # 将 SQLite3 归并版源码下载并添加为库，供项目使用
 function(add_sqlite3)
+    # 若用户希望优先使用系统 SQLite3，则尝试 find_package
+    if(SQLITE3_USE_SYSTEM)
+        find_path(SQLITE3_SYS_INCLUDE_DIR sqlite3.h)
+        find_library(SQLITE3_SYS_LIBRARY NAMES sqlite3)
+        if(SQLITE3_SYS_INCLUDE_DIR AND SQLITE3_SYS_LIBRARY)
+            add_library(sqlite3 UNKNOWN IMPORTED)
+            set_target_properties(sqlite3 PROPERTIES
+                IMPORTED_LOCATION "${SQLITE3_SYS_LIBRARY}"
+                INTERFACE_INCLUDE_DIRECTORIES "${SQLITE3_SYS_INCLUDE_DIR}"
+            )
+            add_library(SQLite::SQLite3 ALIAS sqlite3)
+            message(STATUS "SQLite3: 使用系统库 -> ${SQLITE3_SYS_LIBRARY}")
+            return()
+        else()
+            message(WARNING "SQLite3: 未找到系统库，回退到下载归并版构建")
+        endif()
+    endif()
     # 使用独立的子构建名称，避免先前尝试的缓存影响
     set(_proj sqlite_amalgamation)
     FetchContent_Declare(
@@ -129,6 +160,18 @@ function(add_sqlite3)
         "${_SQLITE_SRC_DIR}/sqlite3.c"
     )
 
+    # 确保以 C 语言编译 sqlite3.c（项目可能只启用了 CXX，会导致被当作 C++ 编译从而符号被修饰）
+    set_source_files_properties("${_SQLITE_SRC_DIR}/sqlite3.c" PROPERTIES LANGUAGE C)
+    # 对该目标关闭 Qt 的自动处理，避免对纯 C 源触发不必要的 AUTOGEN
+    set_target_properties(sqlite3 PROPERTIES
+        AUTOMOC OFF
+        AUTOUIC OFF
+        AUTORCC OFF
+        LINKER_LANGUAGE C
+        C_STANDARD ${SQLITE3_C_STANDARD}
+        C_EXTENSIONS OFF
+    )
+
     target_include_directories(sqlite3 PUBLIC "${_SQLITE_SRC_DIR}")
 
     # 通用编译宏定义
@@ -152,7 +195,12 @@ function(add_sqlite3)
         target_compile_definitions(sqlite3 PRIVATE _CRT_SECURE_NO_WARNINGS) # 关闭 MSVC 安全警告
         target_compile_options(sqlite3 PRIVATE /W3)                          # 适度的编译警告等级
     else()
-        target_compile_options(sqlite3 PRIVATE -w) # sqlite 归并版源码警告很多，这里关闭编译警告
+        # sqlite 归并版源码警告很多，这里关闭编译警告
+        target_compile_options(sqlite3 PRIVATE -w)
+        # MinGW/Clang 常见设置：确保按 C 规则处理
+        if(MINGW)
+            target_compile_definitions(sqlite3 PRIVATE _WIN32_WINNT=0x0601)
+        endif()
     endif()
 
     if(WIN32 AND SQLITE3_BUILD_SHARED)
@@ -163,6 +211,16 @@ function(add_sqlite3)
     # 创建别名目标，便于在项目中以 SQLite::SQLite3 引用
     add_library(SQLite::SQLite3 ALIAS sqlite3)
 
+    # 用户自定义额外宏（可选）
+    if(SQLITE3_EXTRA_DEFINES)
+        separate_arguments(_EXTRA_DEFS NATIVE_COMMAND "${SQLITE3_EXTRA_DEFINES}")
+        foreach(_d IN LISTS _EXTRA_DEFS)
+            if(NOT _d STREQUAL "")
+                target_compile_definitions(sqlite3 PRIVATE ${_d})
+            endif()
+        endforeach()
+    endif()
+
     # 安装规则
     include(GNUInstallDirs)
     install(TARGETS sqlite3
@@ -172,4 +230,26 @@ function(add_sqlite3)
     )
     install(FILES "${_SQLITE_SRC_DIR}/sqlite3.h"
             DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+    # 可选：构建 sqlite3 shell（需要 shell.c）
+    if(SQLITE3_BUILD_SHELL)
+        if(EXISTS "${_SQLITE_SRC_DIR}/shell.c")
+            add_executable(sqlite3_shell "${_SQLITE_SRC_DIR}/shell.c")
+            set_target_properties(sqlite3_shell PROPERTIES
+                AUTOMOC OFF AUTOUIC OFF AUTORCC OFF
+                LINKER_LANGUAGE C
+                C_STANDARD ${SQLITE3_C_STANDARD}
+                C_EXTENSIONS OFF
+                RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+            )
+            target_include_directories(sqlite3_shell PRIVATE "${_SQLITE_SRC_DIR}")
+            target_link_libraries(sqlite3_shell PRIVATE sqlite3)
+            if(WIN32)
+                target_compile_definitions(sqlite3_shell PRIVATE _CRT_SECURE_NO_WARNINGS)
+            endif()
+            install(TARGETS sqlite3_shell RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+        else()
+            message(WARNING "SQLite3: 未找到 shell.c，跳过 shell 构建")
+        endif()
+    endif()
 endfunction()

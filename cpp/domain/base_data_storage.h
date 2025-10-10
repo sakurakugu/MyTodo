@@ -14,7 +14,6 @@
 
 #include "database.h"
 #include <QObject>
-#include <QSqlDatabase>
 #include <QUuid>
 
 // Todo和Category的Item类型概念
@@ -79,14 +78,13 @@ class BaseDataStorage : public QObject, public IDataExporter {
     virtual bool 初始化数据表() = 0;
 
     // IDataExporter接口实现 - 子类必须重写
-    bool 导出到JSON(QJsonObject &output) override = 0;
-    bool 导入从JSON(const QJsonObject &input, bool replaceAll) override = 0;
+    bool exportToJson(QJsonObject &output) override = 0;
+    bool importFromJson(const QJsonObject &input, bool replaceAll) override = 0;
 
   protected:
     // 通用的数据库操作方法
-    int 获取最后插入行ID(QSqlDatabase &db) const;
-    bool 执行SQL查询(const QString &queryString, QSqlQuery &query);
-    bool 执行SQL查询(const QString &queryString);
+    bool 执行SQL查询(const std::string &queryString);
+    bool 执行SQL查询(const std::string &queryString, const std::vector<SqlValue> &params);
 
     // 通用的表创建方法
     virtual bool 创建数据表() = 0;
