@@ -68,11 +68,10 @@ Database::~Database() {
 }
 
 bool Database::initialize() {
-    std::lock_guard<std::mutex> lock(m_mutex);
-
-    if (m_initialized) {
+    if (m_initialized.load(std::memory_order_acquire))
         return true;
-    }
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_initialized.store(true, std::memory_order_release);
 
     clearError();
 
@@ -84,25 +83,31 @@ bool Database::initialize() {
             sqlite3_close(m_db);
             m_db = nullptr;
         }
+        m_initialized.store(false, std::memory_order_release);
         return false;
     }
 
     // 设置数据库配置
     if (!setupDatabase()) {
         close();
+        m_initialized.store(false, std::memory_order_release);
         return false;
     }
 
     // 创建版本信息表
     if (!createVersionTable()) {
+        close();
+        m_initialized.store(false, std::memory_order_release);
         return false;
     }
     // 设置数据库版本
     if (!updateDatabaseVersion(DATABASE_VERSION)) {
+        close();
+        m_initialized.store(false, std::memory_order_release);
         return false;
     }
 
-    m_initialized = true;
+    m_initialized.store(true, std::memory_order_release);
 
 #ifdef QT_CORE_LIB
     qInfo() << "数据库初始化成功:" << m_databasePath << "版本:" << DATABASE_VERSION;
@@ -114,8 +119,7 @@ bool Database::initialize() {
 }
 
 bool Database::isInitialized() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_initialized && m_db != nullptr;
+    return m_initialized.load(std::memory_order_acquire) && m_db != nullptr;
 }
 
 void Database::close() {
@@ -142,8 +146,7 @@ sqlite3 *Database::getHandle() {
 }
 
 sqlite3 *Database::getHandleInternal() {
-    if (!m_db) {
-    // if (!m_initialized || !m_db) {
+    if (!isInitialized()) {
         setError("数据库未初始化");
         return nullptr;
     }
@@ -390,8 +393,7 @@ std::string Database::lastError() const {
 }
 
 bool Database::hasError() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_hasError;
+    return m_hasError.load(std::memory_order_acquire);
 }
 
 bool Database::vacuum() {
@@ -509,7 +511,7 @@ bool Database::setupDatabase() {
 
 void Database::setError(const std::string &error) {
     m_lastError = error;
-    m_hasError = true;
+    m_hasError.store(true, std::memory_order_release);
 
 #ifdef QT_CORE_LIB
     qCritical() << QString::fromStdString(error);
@@ -520,7 +522,7 @@ void Database::setError(const std::string &error) {
 
 void Database::clearError() {
     m_lastError.clear();
-    m_hasError = false;
+    m_hasError.store(false, std::memory_order_release);
 }
 
 #ifdef QT_CORE_LIB
@@ -622,22 +624,22 @@ QJsonArray Database::exportTable(const QString &table, const QStringList &column
         for (int i = 0; i < columns.size(); ++i) {
             auto v = query->value(i);
             if (std::holds_alternative<bool>(v))
-                obj[columns[i]] = std::get<bool>(v);
+                obj[columns[i]] = sqlValueCast<bool>(v);
             // else if (std::holds_alternative<int32_t>(v) || std::holds_alternative<int64_t>(v))
             //     obj[columns[i]] = QJsonValue::fromVariant(v);
             else if (std::holds_alternative<double>(v))
-                obj[columns[i]] = std::get<double>(v);
+                obj[columns[i]] = sqlValueCast<double>(v);
             // else if (std::holds_alternative<std::string>(v))
             //     obj[columns[i]] = QString::fromStdString(v);
             // else if (std::holds_alternative<QString>(v))
             //     obj[columns[i]] = v;
             else if (std::holds_alternative<QUuid>(v))
-                obj[columns[i]] = std::get<QUuid>(v).toString();
+                obj[columns[i]] = QString::fromStdString(sqlValueCast<std::string>(v));
             else if (std::holds_alternative<QDateTime>(v))
-                obj[columns[i]] = std::get<QDateTime>(v).toString(Qt::ISODate);
+                obj[columns[i]] = QString::fromStdString(sqlValueCast<std::string>(v));
             // else if (std::holds_alternative<std::vector<uint8_t>>(v))
             //     obj[columns[i]] =
-            //     QJsonValue::fromVariant(QByteArray::fromStdVector(std::get<std::vector<uint8_t>>(v)));
+            //     QJsonValue::fromVariant(QByteArray::fromStdVector(sqlValueCast<std::vector<uint8_t>>(v)));
             else if (std::holds_alternative<std::nullptr_t>(v))
                 obj[columns[i]] = QJsonValue();
             // else

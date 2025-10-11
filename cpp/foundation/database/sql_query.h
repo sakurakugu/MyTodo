@@ -11,55 +11,12 @@
 
 #pragma once
 
-#include <functional>
-#include <memory>
+#include "sql_value.h"
 #include <sqlite3.h>
 #include <string>
 #include <type_traits>
 #include <variant>
 #include <vector>
-
-#ifdef QT_CORE_LIB
-#include <QDateTime>
-#include <QString>
-#include <QUuid>
-#endif
-
-/**
- * @brief SQL值类型定义
- * 支持多种数据类型的SQL值，用于参数绑定和结果获取
- * @note 若要新增类型，记得在bindValue中也添加对应的处理
- */
-using SqlValue = std::variant< //
-    int32_t,                   // 32位整数
-    int64_t,                   // 64位整数
-    double,                    // 双精度浮点数
-    bool,                      // 布尔值
-    std::string,               // 标准字符串
-    const char *,              // C字符串
-    std::vector<uint8_t>,      // 二进制数据(BLOB)
-    std::nullptr_t             // NULL值
-#ifdef QT_CORE_LIB
-    ,
-    QString,  // Qt字符串
-    QUuid,    // Qt UUID
-    QDateTime // Qt日期时间
-#endif
-    >;
-
-/**
- * @brief 查询结果行类型
- * 表示查询结果的一行数据，使用列名作为键
- */
-using SqlRow = std::vector<std::pair<std::string, SqlValue>>;
-using SqlMap = std::map<std::string, SqlValue>;
-
-/**
- * @brief 查询结果集类型
- * 表示完整的查询结果，包含多行数据
- */
-using SqlResultSet = std::vector<SqlRow>;
-using SqlMapResultSet = std::vector<SqlMap>;
 
 /**
  * @class SqlQuery
@@ -138,9 +95,12 @@ class SqlQuery {
     std::string columnName(int index) const;             // 获取列名
     int rowsAffected() const;                            // 获取受影响的行数
     int64_t lastInsertRowId() const;                     // 获取最后插入的行ID
-    std::string lastError() const;                       // 获取最后的错误信息
-    bool hasError() const;                               // 检查是否有错误
     int parameterCount() const;                          // 获取参数数量
+    bool hasError() const;                               // 检查是否有错误
+    std::string lastError() const;                       // 获取最后的错误信息
+#ifdef QT_CORE_LIB
+    QString lastErrorQt() const; // 获取最后的错误信息（Qt QString）
+#endif
 
   private:
     sqlite3 *m_db;           ///< 数据库句柄

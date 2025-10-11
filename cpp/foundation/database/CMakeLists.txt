@@ -11,6 +11,8 @@ add_library(mytodo_database STATIC
     database.h
     sql_query.cpp
     sql_query.h
+    sql_value.cpp
+    sql_value.h
 )
 
 # 查找 Qt 库
@@ -23,7 +25,7 @@ target_include_directories(mytodo_database PUBLIC
     ${INCLUDE_DIR}                 # 允许包含生成的 version.h 
 )
 
-# 链接 Qt 库和 toml++ 库
+# 链接 Qt 库和 SQLite3 库
 target_link_libraries(mytodo_database
     PUBLIC
         Qt6::Core

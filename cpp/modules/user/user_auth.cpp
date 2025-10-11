@@ -61,19 +61,24 @@ void UserAuth::加载数据() {
     // 尝试从数据库中加载存储的凭据
     auto query = m_database.createQuery();
 
-    if (!query->exec("SELECT uuid, username, email, refreshToken FROM users LIMIT 1")) {
-        const auto &row = query->fetchAll()[0];
-        for (const auto &[columnName, value] : row) {
-            if (columnName == "uuid") {
-                m_uuid = QUuid::fromString(QString::fromStdString(std::get<std::string>(value)));
-            } else if (columnName == "username") {
-                m_username = QString::fromStdString(std::get<std::string>(value));
-            } else if (columnName == "email") {
-                m_email = QString::fromStdString(std::get<std::string>(value));
-            } else if (columnName == "refreshToken") {
-                m_refreshToken = QString::fromStdString(std::get<std::string>(value));
+    if (query->exec("SELECT uuid, username, email, refreshToken FROM users LIMIT 1")) {
+        auto rows = query->fetchAll();
+        if (!rows.empty()) {
+            const auto &row = rows[0];
+            for (const auto &[columnName, value] : row) {
+                if (columnName == "uuid") {
+                    m_uuid = QUuid::fromString(sqlValueCast<std::string>(value));
+                } else if (columnName == "username") {
+                    m_username = QString::fromStdString(sqlValueCast<std::string>(value));
+                } else if (columnName == "email") {
+                    m_email = QString::fromStdString(sqlValueCast<std::string>(value));
+                } else if (columnName == "refreshToken") {
+                    m_refreshToken = QString::fromStdString(sqlValueCast<std::string>(value));
+                }
             }
         }
+    } else {
+        qWarning() << "查询用户凭据失败:" << query->lastErrorQt();
     }
 
     刷新访问令牌(); // 使用刷新令牌获取新的访问令牌
@@ -413,7 +418,7 @@ void UserAuth::保存凭据() {
         );
 
         if (!query->exec()) {
-            qWarning() << "保存用户凭据到数据库失败:" << query->lastError();
+            qWarning() << "保存用户凭据到数据库失败:" << query->lastErrorQt();
         }
 
         emit usernameChanged();
@@ -442,7 +447,7 @@ void UserAuth::清除凭据() {
     // 清除数据库中的凭据
     auto query = m_database.createQuery();
     if (!query->exec("DELETE FROM users")) {
-        qWarning() << "清除数据库中的用户凭据失败:" << query->lastError();
+        qWarning() << "清除数据库中的用户凭据失败:" << query->lastErrorQt();
     }
 
     // 清除网络管理器的认证令牌
@@ -554,7 +559,7 @@ bool UserAuth::创建用户表() {
     )";
 
     if (!query->exec(createTableQuery)) {
-        qCritical() << "创建用户表失败:" << QString::fromStdString(query->lastError());
+        qCritical() << "创建用户表失败:" << query->lastErrorQt();
         return false;
     }
 
@@ -568,23 +573,23 @@ bool UserAuth::创建用户表() {
 bool UserAuth::exportToJson(QJsonObject &output) {
     auto query = m_database.createQuery();
     if (!query->exec("SELECT uuid, username, email FROM users")) {
-        qWarning() << "查询用户数据失败:" << QString::fromStdString(query->lastError());
+        qWarning() << "查询用户数据失败:" << query->lastErrorQt();
         return false;
     }
 
     SqlMapResultSet resultMap = query->fetchAllMap();
 
     if (resultMap.empty()) {
-        qWarning() << "查询用户数据失败:" << QString::fromStdString(query->lastError());
+        qWarning() << "查询用户数据失败:" << query->lastErrorQt();
         return false;
     }
 
     QJsonArray usersArray;
     for (const auto &row : resultMap) {
         QJsonObject userObj;
-        userObj["uuid"] = QString::fromStdString(std::get<std::string>(row.at("uuid")));
-        userObj["username"] = QString::fromStdString(std::get<std::string>(row.at("username")));
-        userObj["email"] = QString::fromStdString(std::get<std::string>(row.at("email")));
+        userObj["uuid"] = QString::fromStdString(sqlValueCast<std::string>(row.at("uuid")));
+        userObj["username"] = QString::fromStdString(sqlValueCast<std::string>(row.at("username")));
+        userObj["email"] = QString::fromStdString(sqlValueCast<std::string>(row.at("email")));
         usersArray.append(userObj);
     }
 
@@ -605,7 +610,7 @@ bool UserAuth::importFromJson(const QJsonObject &input, bool replaceAll) {
     if (replaceAll) {
         auto query = m_database.createQuery();
         if (!query->exec("DELETE FROM users")) {
-            qWarning() << "清空用户表失败:" << QString::fromStdString(query->lastError());
+            qWarning() << "清空用户表失败:" << query->lastErrorQt();
             return false;
         }
     }
@@ -623,7 +628,7 @@ bool UserAuth::importFromJson(const QJsonObject &input, bool replaceAll) {
                           userObj["email"].toString().toStdString());
 
         if (!query->exec(insertQuery)) {
-            qWarning() << "导入用户数据失败:" << QString::fromStdString(query->lastError());
+            qWarning() << "导入用户数据失败:" << query->lastErrorQt();
             return false;
         }
     }

@@ -104,8 +104,8 @@ class Database {
     std::string getDatabasePath() const; ///< 获取数据库文件路径
 
     // 数据库操作
-    std::unique_ptr<SqlQuery> createQuery();                                        ///< 创建查询对象
-    std::unique_ptr<SqlQuery> createQuery(const std::string &sql);                  ///< 创建并准备查询对象
+    std::unique_ptr<SqlQuery> createQuery();                       ///< 创建查询对象
+    std::unique_ptr<SqlQuery> createQuery(const std::string &sql); ///< 创建并准备查询对象
 
     // 事务管理
     bool beginTransaction();    ///< 开始事务
@@ -127,10 +127,10 @@ class Database {
     };
 
     // 数据库信息
-    int getDatabaseVersion() const;   ///< 获取数据库版本
-    std::string getSqliteVersion();   ///< 获取SQLite版本
-    std::string lastError() const; ///< 获取最后一次错误信息
-    bool hasError() const;            ///< 检查是否有错误
+    int getDatabaseVersion() const; ///< 获取数据库版本
+    std::string getSqliteVersion(); ///< 获取SQLite版本
+    std::string lastError() const;  ///< 获取最后一次错误信息
+    bool hasError() const;          ///< 检查是否有错误
 
     // 表管理
     bool tableExists(const std::string &tableName);                                 ///< 检查表是否存在
@@ -142,11 +142,11 @@ class Database {
     // 数据导入导出
 #ifdef QT_CORE_LIB
     void registerDataExporter(const std::string &name, IDataExporter *exporter); ///< 注册数据导出器
-    void unregisterDataExporter(const std::string &name);                              ///< 注销数据导出器
-    bool exportDataToJson(QJsonObject &output);                                        ///< 导出所有数据到JSON对象
-    bool importDataFromJson(const QJsonObject &input, bool replaceAll);                ///< 从JSON对象导入数据
-    bool exportToJsonFile(const std::string &filePath);                                ///< 导出数据到JSON文件
-    bool importFromJsonFile(const std::string &filePath, bool replaceAll);             ///< 从JSON文件导入数据
+    void unregisterDataExporter(const std::string &name);                        ///< 注销数据导出器
+    bool exportDataToJson(QJsonObject &output);                                  ///< 导出所有数据到JSON对象
+    bool importDataFromJson(const QJsonObject &input, bool replaceAll);          ///< 从JSON对象导入数据
+    bool exportToJsonFile(const std::string &filePath);                          ///< 导出数据到JSON文件
+    bool importFromJsonFile(const std::string &filePath, bool replaceAll);       ///< 从JSON文件导入数据
 #endif
 
     // 数据库优化
@@ -166,8 +166,8 @@ class Database {
     bool setupDatabase();                                 ///< 设置数据库配置
 
     // 内部方法（不加锁）
-    sqlite3 *getHandleInternal();                                        ///< 获取数据库句柄（内部使用，不加锁）
-    std::unique_ptr<SqlQuery> createQueryInternal();                     ///< 创建查询对象（内部使用，不加锁）
+    sqlite3 *getHandleInternal();                                          ///< 获取数据库句柄（内部使用，不加锁）
+    std::unique_ptr<SqlQuery> createQueryInternal();                       ///< 创建查询对象（内部使用，不加锁）
     std::unique_ptr<SqlQuery> createQueryInternal(const std::string &sql); ///< 创建并准备查询对象（内部使用，不加锁）
     bool setPragmaInternal(const std::string &pragma, const std::string &value); ///< 设置PRAGMA（内部使用，不加锁）
 
@@ -176,16 +176,16 @@ class Database {
     void clearError();                       ///< 清除错误状态
 
     // 成员变量
-    mutable std::mutex m_mutex; ///< 线程安全保护
-    sqlite3 *m_db;              ///< 数据库句柄
-    std::string m_databasePath; ///< 数据库文件路径
-    std::string m_lastError;    ///< 最后一次错误信息
-    bool m_initialized;         ///< 是否已初始化
-    bool m_hasError;            ///< 是否有错误
-    int m_transactionLevel;     ///< 事务嵌套级别
+    mutable std::mutex m_mutex;      ///< 线程安全保护
+    sqlite3 *m_db;                   ///< 数据库句柄
+    std::string m_databasePath;      ///< 数据库文件路径
+    std::string m_lastError;         ///< 最后一次错误信息
+    std::atomic<bool> m_initialized; ///< 是否已初始化
+    std::atomic<bool> m_hasError;    ///< 是否有错误
+    int m_transactionLevel;          ///< 事务嵌套级别
 
 #ifdef QT_CORE_LIB
-    std::map<std::string, IDataExporter *> m_dataExporters;             ///< 注册的数据导出器
+    std::map<std::string, IDataExporter *> m_dataExporters;                   ///< 注册的数据导出器
     QJsonArray exportTable(const QString &table, const QStringList &columns); ///< 导出指定表到JSON数组
 #endif
 

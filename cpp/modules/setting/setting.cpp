@@ -80,10 +80,12 @@ bool Setting::导入配置从JSON文件(const QString &filePath, bool replaceAll
 
 bool Setting::导出数据库到JSON文件(const QString &filePath) {
     // return Database::GetInstance().exportDatabaseToJsonFile(filePath);
+    return false;
 }
 
 bool Setting::导入数据库从JSON文件(const QString &filePath, bool replaceAll) {
     // return Database::GetInstance().importDatabaseFromJsonFile(filePath, replaceAll);
+    return false;
 }
 
 // 日志配置相关方法实现

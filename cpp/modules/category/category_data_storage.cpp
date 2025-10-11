@@ -44,18 +44,18 @@ bool CategoryDataStorage::加载类别(CategorieList &categories) {
         const std::string queryString =
             "SELECT id, uuid, name, user_uuid, created_at, updated_at, synced FROM categories ORDER BY updated_at";
         if (!query->exec(queryString)) {
-            qCritical() << "加载类别查询失败:" << query->lastError();
+            qCritical() << "加载类别查询失败:" << query->lastErrorQt();
             return false;
         }
 
         while (query->next()) {
-            int id = std::get<int>(query->value("id"));
-            QUuid uuid = QUuid::fromString(std::get<QString>(query->value("uuid")));
-            QString name = std::get<QString>(query->value("name"));
-            QUuid userUuid = QUuid::fromString(std::get<QString>(query->value("user_uuid")));
-            QDateTime createdAt = Utility::timestampToDateTime(std::get<int64_t>(query->value("created_at")));
-            QDateTime updatedAt = Utility::timestampToDateTime(std::get<int64_t>(query->value("updated_at")));
-            int synced = std::get<int>(query->value("synced"));
+            int id = sqlValueCast<int>(query->value("id"));
+            QUuid uuid = QUuid::fromString(sqlValueCast<std::string>(query->value("uuid")));
+            QString name = QString::fromStdString(sqlValueCast<std::string>(query->value("name")));
+            QUuid userUuid = QUuid::fromString(sqlValueCast<std::string>(query->value("user_uuid")));
+            QDateTime createdAt = Utility::timestampToDateTime(sqlValueCast<int64_t>(query->value("created_at")));
+            QDateTime updatedAt = Utility::timestampToDateTime(sqlValueCast<int64_t>(query->value("updated_at")));
+            int synced = sqlValueCast<int>(query->value("synced"));
 
             auto item = std::make_unique<CategorieItem>( //
                 id,                                      // 唯一标识符
@@ -109,7 +109,7 @@ std::unique_ptr<CategorieItem> CategoryDataStorage::新增类别( //
             source == ImportSource::Server ? 0 : 1);
 
         if (!query->exec()) {
-            qCritical() << "插入类别到数据库失败:" << query->lastError();
+            qCritical() << "插入类别到数据库失败:" << query->lastErrorQt();
             return nullptr;
         }
 
@@ -152,14 +152,14 @@ bool CategoryDataStorage::更新类别(CategorieList &categories, const QString 
     auto query = m_database.createQuery();
     QDateTime now = QDateTime::currentDateTimeUtc();
     const std::string updateString = "UPDATE categories SET name = ?, updated_at = ?, synced = ? WHERE name = ?";
+    query->prepare(updateString);
     query->bindValues(                //
         newName,                      //
-        now.toMSecsSinceEpoch(),      //
         now.toMSecsSinceEpoch(),      //
         (*it)->synced() != 1 ? 2 : 1, // 如果之前是插入状态，不要改成更新状态
         name);
     if (!query->exec()) {
-        qCritical() << "更新数据库中的类别失败:" << query->lastError();
+        qCritical() << "更新数据库中的类别失败:" << query->lastErrorQt();
         return false;
     }
     if (query->rowsAffected() == 0) {
@@ -186,16 +186,16 @@ bool CategoryDataStorage::删除类别(CategorieList &categories, const QString 
 
     try {
         // 从数据库中删除类别
-        auto deleteQuery = m_database.createQuery();
-        deleteQuery->prepare("DELETE FROM categories WHERE name = ?");
-        deleteQuery->bindValues(0, name);
+        auto query = m_database.createQuery();
+        query->prepare("DELETE FROM categories WHERE name = ?");
+        query->addBindValue( name.toStdString());
 
-        if (!deleteQuery->exec()) {
-            qCritical() << "从数据库删除类别失败:" << deleteQuery->lastError();
+        if (!query->exec()) {
+            qCritical() << "从数据库删除类别失败:" << query->lastErrorQt();
             return false;
         }
 
-        if (deleteQuery->rowsAffected() == 0) {
+        if (query->rowsAffected() == 0) {
             qWarning() << "未找到要删除的类别，名称:" << name;
             return false;
         }
@@ -260,16 +260,18 @@ bool CategoryDataStorage::软删除类别(CategorieList &categories, const QStri
  * @return 成功返回item在待办类别中的指针，否则返回nullptr
  */
 bool CategoryDataStorage::更新同步状态(CategorieList &categories, const QString &name, int synced) {
-    auto updateQuery = m_database.createQuery();
+    auto query = m_database.createQuery();
     QDateTime now = QDateTime::currentDateTimeUtc();
     const std::string updateString = "UPDATE categories SET synced = ?, updated_at = ? WHERE name = ?";
-    updateQuery->bindValues( //
+    // 需要先准备语句再绑定参数
+    query->prepare(updateString);
+    query->bindValues( //
         synced, now.toMSecsSinceEpoch(), name);
-    if (!updateQuery->exec()) {
-        qCritical() << "更新数据库中的类别同步状态失败:" << updateQuery->lastError();
+    if (!query->exec()) {
+        qCritical() << "更新数据库中的类别同步状态失败:" << query->lastErrorQt();
         return false;
     }
-    if (updateQuery->rowsAffected() == 0) {
+    if (query->rowsAffected() == 0) {
         qWarning() << "未找到要更新的类别，名称:" << name;
         return false;
     }
@@ -311,7 +313,7 @@ bool CategoryDataStorage::创建默认类别(CategorieList &categories, const QU
                             createdAt.toMSecsSinceEpoch(), //
                             0);
     if (!insertQuery->exec()) {
-        qCritical() << "插入默认类别失败:" << insertQuery->lastError();
+        qCritical() << "插入默认类别失败:" << insertQuery->lastErrorQt();
         m_database.rollbackTransaction();
         return false;
     }
@@ -323,24 +325,21 @@ bool CategoryDataStorage::创建默认类别(CategorieList &categories, const QU
     auto selectQuery = m_database.createQuery();
     selectQuery->prepare(
         "SELECT id, uuid, name, user_uuid, created_at, updated_at, synced FROM categories WHERE id=1 AND user_uuid=?");
-    selectQuery->bindValue(0, userUuid.toString().toStdString());
-    if (!selectQuery->exec()) {
-        qCritical() << "查询默认类别失败:" << selectQuery->lastError();
-        return false;
-    }
-    if (selectQuery->next()) {
-        int id = std::get<int>(selectQuery->value("id"));
-        QUuid uuid = QUuid::fromString(std::get<QString>(selectQuery->value("uuid")));
-        QString name = std::get<QString>(selectQuery->value("name"));
-        QUuid dbUserUuid = QUuid::fromString(std::get<QString>(selectQuery->value("user_uuid")));
-        QDateTime createdAt = Utility::timestampToDateTime(std::get<QDateTime>(selectQuery->value("created_at")));
-        QDateTime updatedAt = Utility::timestampToDateTime(std::get<QDateTime>(selectQuery->value("updated_at")));
-        int synced = std::get<int>(selectQuery->value("synced"));
+    // 参数索引从1开始
+    selectQuery->addBindValue(userUuid.toString().toStdString());
+    if (selectQuery->exec()) {
+        int id = sqlValueCast<int>(selectQuery->value("id"));
+        QUuid uuid = QUuid::fromString(sqlValueCast<std::string>(selectQuery->value("uuid")));
+        QString name = QString::fromStdString(sqlValueCast<std::string>(selectQuery->value("name")));
+        QUuid dbUserUuid = QUuid::fromString(sqlValueCast<std::string>(selectQuery->value("user_uuid")));
+        QDateTime createdAt = Utility::timestampToDateTime(sqlValueCast<int64_t>(selectQuery->value("created_at")));
+        QDateTime updatedAt = Utility::timestampToDateTime(sqlValueCast<int64_t>(selectQuery->value("updated_at")));
+        int synced = sqlValueCast<int>(selectQuery->value("synced"));
         auto defaultItem = std::make_unique<CategorieItem>(id, uuid, name, dbUserUuid, createdAt, updatedAt, synced);
         categories.push_back(std::move(defaultItem));
         qDebug() << (wasInserted ? "成功创建默认类别" : "默认类别已存在，已加载到内存");
     } else {
-        qWarning() << "无法从数据库加载默认类别:" << selectQuery->lastError();
+        qCritical() << "查询默认类别失败:" << selectQuery->lastErrorQt();
         return false;
     }
     return true;
@@ -447,7 +446,7 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
                 );
 
                 if (!updateQuery->exec()) {
-                    qCritical() << "更新类别失败(uuid=" << existing->uuid() << "):" << updateQuery->lastError();
+                    qCritical() << "更新类别失败(uuid=" << existing->uuid() << "):" << updateQuery->lastErrorQt();
                     success = false;
                     break;
                 }
@@ -514,7 +513,7 @@ bool CategoryDataStorage::创建数据表() {
     )";
     auto createQuery = m_database.createQuery();
     if (!createQuery->exec(createTableQuery)) {
-        qCritical() << "创建categories表失败:" << createQuery->lastError();
+        qCritical() << "创建categories表失败:" << createQuery->lastErrorQt();
         return false;
     }
 
@@ -525,7 +524,7 @@ bool CategoryDataStorage::创建数据表() {
          "CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name)"};
     for (const std::string &idx : indexes)
         if (!createQuery->exec(idx))
-            qWarning() << "创建categories表索引失败:" << createQuery->lastError();
+            qWarning() << "创建categories表索引失败:" << createQuery->lastErrorQt();
     qDebug() << "categories表初始化成功";
     return true;
 }
@@ -539,20 +538,20 @@ bool CategoryDataStorage::exportToJson(QJsonObject &output) {
     auto query = m_database.createQuery();
     const std::string queryString = "SELECT id, uuid, name, user_uuid, created_at, updated_at, synced FROM categories";
     if (!query->exec(queryString)) {
-        qWarning() << "查询类别数据失败:" << query->lastError();
+        qWarning() << "查询类别数据失败:" << query->lastErrorQt();
         return false;
     }
     QJsonArray arr;
     while (query->next()) {
         QJsonObject obj;
         // TODO:id 是自增主键，不应该导出
-        obj["id"] = std::get<int>(query->value("id"));
-        obj["uuid"] = std::get<QString>(query->value("uuid"));
-        obj["name"] = std::get<QString>(query->value("name"));
-        obj["user_uuid"] = std::get<QString>(query->value("user_uuid"));
-        obj["created_at"] = Utility::timestampToIsoJson(std::get<QDateTime>(query->value("created_at")));
-        obj["updated_at"] = Utility::timestampToIsoJson(std::get<QDateTime>(query->value("updated_at")));
-        obj["synced"] = std::get<int>(query->value("synced"));
+        obj["id"] = sqlValueCast<int>(query->value("id"));
+        obj["uuid"] = QString::fromStdString(sqlValueCast<std::string>(query->value("uuid")));
+        obj["name"] = QString::fromStdString(sqlValueCast<std::string>(query->value("name")));
+        obj["user_uuid"] = QString::fromStdString(sqlValueCast<std::string>(query->value("user_uuid")));
+        obj["created_at"] = Utility::timestampToIsoJson(sqlValueCast<int64_t>(query->value("created_at")));
+        obj["updated_at"] = Utility::timestampToIsoJson(sqlValueCast<int64_t>(query->value("updated_at")));
+        obj["synced"] = sqlValueCast<int>(query->value("synced"));
         arr.append(obj);
     }
     output["categories"] = arr;
@@ -575,7 +574,7 @@ bool CategoryDataStorage::importFromJson(const QJsonObject &input, bool replaceA
     // 如果是替换模式，先清空表
     if (replaceAll) {
         if (!query->exec("DELETE FROM categories")) {
-            qWarning() << "清空类别表失败:" << query->lastError();
+            qWarning() << "清空类别表失败:" << query->lastErrorQt();
             return false;
         }
     }
@@ -598,7 +597,7 @@ bool CategoryDataStorage::importFromJson(const QJsonObject &input, bool replaceA
             obj["synced"].toInt()                      //
         );
         if (!query->exec()) {
-            qWarning() << "导入类别数据失败:" << query->lastError();
+            qWarning() << "导入类别数据失败:" << query->lastErrorQt();
             return false;
         }
     }

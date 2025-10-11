@@ -19,10 +19,10 @@
  * @param db_handle SQLite数据库句柄
  */
 SqlQuery::SqlQuery(sqlite3 *db_handle)
-    : m_db(db_handle),  //
-      m_stmt(nullptr),  //
+    : m_db(db_handle),   //
+      m_stmt(nullptr),   //
       m_hasError(false), //
-      m_bindIndex(1)    //
+      m_bindIndex(1)     //
 {
     if (!m_db)
         setError("无效的数据库句柄");
@@ -92,10 +92,10 @@ bool SqlQuery::prepare(const std::string &sql) {
         sqlite3_finalize(m_stmt);
         m_stmt = nullptr;
     }
-    
+
     // 重置绑定索引
     m_bindIndex = 1;
-    
+
     int result = sqlite3_prepare_v2(m_db, sql.c_str(), -1, &m_stmt, nullptr);
     if (result != SQLITE_OK) {
         setError(std::string("预编译语句失败: ") + sqlite3_errmsg(m_db));
@@ -155,6 +155,8 @@ bool SqlQuery::bindValue(int index, const SqlValue &value) {
                 else
                     result = sqlite3_bind_blob(m_stmt, index, v.data(), v.size(), SQLITE_TRANSIENT);
             } else if constexpr (std::is_same_v<T, std::nullptr_t>) {
+                result = sqlite3_bind_null(m_stmt, index);
+            } else if constexpr (std::is_same_v<T, std::monostate>) {
                 result = sqlite3_bind_null(m_stmt, index);
             }
         },
@@ -359,8 +361,6 @@ SqlMap SqlQuery::currentMap() const {
     return row;
 }
 
-
-
 /**
  * @brief 获取所有结果行
  * @return 完整结果集
@@ -495,6 +495,18 @@ std::string SqlQuery::lastError() const {
     return m_lastError;
 }
 
+#ifdef QT_CORE_LIB
+/**
+ * @brief 获取最后的错误信息（Qt QString）
+ * @return 错误信息
+ */
+QString SqlQuery::lastErrorQt() const {
+    return QString::fromStdString(m_lastError);
+}
+#endif
+
+
+
 /**
  * @brief 检查是否有错误
  * @return 是否有错误
@@ -508,13 +520,11 @@ bool SqlQuery::hasError() const {
  * @return 参数数量
  */
 int SqlQuery::parameterCount() const {
-    if (!m_stmt) 
+    if (!m_stmt)
         return 0;
 
     return sqlite3_bind_parameter_count(m_stmt);
 }
-
-
 
 /**
  * @brief 设置错误信息
