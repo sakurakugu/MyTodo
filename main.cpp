@@ -33,6 +33,7 @@
 #include "app/qml_update_checker.h"
 #include "app/qml_user_auth.h"
 #include "logger.h"
+#include "log_stream.h"
 #include "modules/user/user_auth.h"
 #include "qt_debug.h"
 #include "version.h"

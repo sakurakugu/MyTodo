@@ -147,7 +147,8 @@
         "qtimezone": "cpp",
         "*.def": "cpp",
         "coroutine": "cpp",
-        "generator": "cpp"
+        "generator": "cpp",
+        "ios": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "search.useIgnoreFiles": false, // 禁用git忽略文件

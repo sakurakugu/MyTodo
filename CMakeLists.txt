@@ -72,6 +72,7 @@ endif()
 
 add_subdirectory(cpp/foundation)
 add_subdirectory(cpp/foundation/database)
+add_subdirectory(cpp/foundation/logger)
 add_subdirectory(cpp/domain)
 add_subdirectory(cpp/modules/category)
 add_subdirectory(cpp/modules/todo)
@@ -188,11 +189,6 @@ target_link_libraries(${APP_NAME} PRIVATE ${PRIVATE_LIBRARIES})
 # 包含目录配置
 target_include_directories(${APP_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/cpp                   # 根 cpp（放置全局头）
-    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/domain_base       # 领域基类
-    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/modules/category
-    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/modules/todo
-    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/modules/setting
-    ${CMAKE_CURRENT_SOURCE_DIR}/cpp/modules/user
 )
 
 # TODO: 到时候打包安装部分改一下

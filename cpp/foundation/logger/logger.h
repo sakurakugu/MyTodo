@@ -11,28 +11,50 @@
 
 /**
  * 使用方法
- * 1. 包含头文件
- *    #include "logger.h"
- * 2. 初始化日志系统（main.cpp中即可）
- *        qInstallMessageHandler(Logger::messageHandler);
- * 3. 设置日志级别
- *    日志级别从低到高依次为：Debug、Info、Warning、Critical、Fatal
- *        Logger::GetInstance().setLogLevel(Logger::LogLevel::Info);
- * 4. 记录日志
- *       qDebug() << "这是一条调试日志";  // 因为设置级别为Info，调试日志不显示
- *       qInfo() << "这是一条信息日志";
- * 5. 日志文件
- *    日志文件默认存放在Appdata/Local/应用名/logs目录下
- *    日志文件名称为应用名.log
- *    日志文件大小为10MB，超过10MB会自动轮转
- *    日志文件轮转时会保留5个备份文件
+ *
+ * 一、作为 Qt 的消息处理回调函数
+ *   1. 包含头文件
+ *      #include "logger.h"
+ *   2. 初始化日志系统（main.cpp中即可）
+ *          qInstallMessageHandler(Logger::messageHandler);
+ *   3. 设置日志级别
+ *      日志级别从低到高依次为：Debug、Info、Warning、Critical、Fatal
+ *          Logger::GetInstance().setLogLevel(Logger::LogLevel::Info);
+ *   4. 记录日志
+ *         qDebug() << "这是一条调试日志";  // 因为设置级别为Info，调试日志不显示
+ *         qInfo() << "这是一条信息日志";
+ *   5. 日志文件
+ *      日志文件默认存放在Appdata/Local/应用名/logs目录下
+ *      日志文件名称为应用名.log
+ *      日志文件大小为10MB，超过10MB会自动轮转
+ *      日志文件轮转时会保留5个备份文件
+ *
+ * 二、作为普通的日志记录器
+ *   1. 包含头文件
+ *      #include "log_stream.h"
+ *   2. 初始化日志系统（main.cpp中即可）
+ *          Logger::GetInstance();
+ *   3. 设置日志级别
+ *      日志级别从低到高依次为：Debug、Info、Warning、Critical、Fatal
+ *          Logger::GetInstance().setLogLevel(Logger::LogLevel::Info);
+ *   4. 记录日志
+ *         logDebug() << "这是一条调试日志"; // 因为设置级别为Info，调试日志不显示
+ *         logInfo() << "这是一条信息日志";
+ *   5. 日志文件
+ *      日志文件默认存放在Appdata/Local/应用名/logs目录下
+ *      日志文件名称为应用名.log
+ *      日志文件大小为10MB，超过10MB会自动轮转
+ *      日志文件轮转时会保留5个备份文件
  */
 
 #pragma once
 
-#include <QObject>
 #include <expected>
 #include <shared_mutex>
+
+#ifdef QT_CORE_LIB
+#include <QObject>
+#endif
 
 // 强类型枚举比较
 template <typename T>
@@ -62,9 +84,17 @@ enum class LogLevel : std::uint8_t {
     Fatal = 4
 };
 
-class Logger : public QObject {
-    Q_OBJECT
+/**
+ * @brief 日志上下文结构体
+ * @details 该结构体用于存储日志记录的上下文信息，包括文件名、行号、函数名等。
+ */
+struct LogContext {
+    const char *file;
+    int line;
+    const char *function;
+};
 
+class Logger {
   public:
     // 枚举比较概念
     template <LogLevelType T> static constexpr bool isValidLevel(T level) noexcept {
@@ -85,8 +115,11 @@ class Logger : public QObject {
     Logger(Logger &&) = delete;
     Logger &operator=(Logger &&) = delete;
 
-    // 消息处理函数
+// 消息处理函数
+#ifdef QT_CORE_LIB
     static void messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) noexcept;
+#endif
+    static void messageHandler(LogLevel type, const LogContext &context, const std::string &msg) noexcept;
 
     // 使用 std::expected 错误处理
     std::expected<void, LogError> setLogLevel(LogLevel level) noexcept;   // 设置日志级别
@@ -97,24 +130,26 @@ class Logger : public QObject {
     std::expected<void, LogError> setMaxLogFileSize(T maxSize) noexcept; // 最大日志文件大小（字节）
     template <std::integral T> std::expected<void, LogError> setMaxLogFiles(T maxFiles) noexcept; // 最大日志文件数量
 
-    std::string getLogFilePath() const noexcept;        // 获取日志文件路径
-    std::expected<void, LogError> clearLogs() noexcept; // 清空日志文件
-
-  public slots:
+    std::string getLogFilePath() const noexcept;            // 获取日志文件路径
+    std::expected<void, LogError> clearLogs() noexcept;     // 清空日志文件
     std::expected<void, LogError> rotateLogFile() noexcept; // 轮转日志文件
 
   private:
-    explicit Logger(QObject *parent = nullptr) noexcept;
-    ~Logger() noexcept override;
+    explicit Logger() noexcept;
+    ~Logger() noexcept;
 
-    void writeLog(QtMsgType type, const QMessageLogContext &context, const QString &msg) noexcept; // 写入日志
-    std::expected<void, LogError> initLogFile() noexcept;                                          // 初始化日志文件
-    std::expected<void, LogError> checkLogRotation() noexcept;                                     // 检查日志轮转
+    void writeLog(LogLevel type, const LogContext &context, const std::string &msg) noexcept; // 写入日志
+    std::expected<void, LogError> initLogFile() noexcept;                                     // 初始化日志文件
+    std::expected<void, LogError> checkLogRotation() noexcept;                                // 检查日志轮转
 
     // 格式化日志消息
-    std::string formatLogMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg) const noexcept;
+    std::string formatLogMessage(LogLevel type, const LogContext &context, const std::string &msg) const noexcept;
     // 格式化带颜色的控制台日志消息
-    std::string formatColoredLogMessage(QtMsgType type, const std::string &msg) const noexcept;
+    std::string formatColoredLogMessage(LogLevel type, const std::string &msg) const noexcept;
+
+#ifdef QT_CORE_LIB
+    inline LogLevel QtMsgTypeToLogLevel(QtMsgType type) noexcept; // Qt消息类型转换为日志级别
+#endif
 
     std::unique_ptr<std::ofstream> m_logFile; // 日志文件流
     mutable std::shared_mutex m_shared_mutex; // 读写分离的共享互斥锁

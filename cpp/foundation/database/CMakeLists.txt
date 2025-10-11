@@ -11,7 +11,6 @@ add_library(mytodo_database STATIC
     database.h
     sql_query.cpp
     sql_query.h
-    sql_value.cpp
     sql_value.h
 )
 

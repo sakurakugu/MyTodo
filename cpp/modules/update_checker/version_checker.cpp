@@ -10,7 +10,6 @@
  */
 
 #include "version_checker.h"
-#include "logger.h"
 #include "network_request.h"
 #include "version.h"
 

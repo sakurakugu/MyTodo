@@ -886,7 +886,7 @@ QList<int> TodoDataStorage::查询待办ID列表(const QueryOptions &opt) {
         query->addBindValue(like);
         query->addBindValue(like);
     }
-    qInfo() << "查询待办ID列表 SQL:" << QString::fromStdString(sql);
+    // qInfo() << "查询待办ID列表 SQL:" << QString::fromStdString(sql);
     if (!query->exec()) {
         qCritical() << "查询待办事项ID失败:" << query->lastErrorQt();
         return indexs;

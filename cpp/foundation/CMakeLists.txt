@@ -1,6 +1,6 @@
 # ============================================================
-# 基础底座：配置 / 日志 / 工具 / 数据库 / 网络 / QtDebug
-# 负责基础功能的实现，包括配置管理、日志记录、工具函数、数据库访问、网络请求和 Qt 调试输出
+# 基础底座：配置 / 工具 / 数据库 / 网络 / QtDebug
+# 负责基础功能的实现，包括配置管理、工具函数、数据库访问、网络请求和 Qt 调试输出
 #
 # 作者： sakurakugu
 # 创建日期： 2025-10-05 02:42:00(UTC+8) 周日
@@ -12,8 +12,6 @@ add_library(mytodo_foundation STATIC
     default_value.h
     global_data.cpp
     global_data.h
-    logger.cpp
-    logger.h
     network_proxy.cpp
     network_proxy.h
     network_request.cpp

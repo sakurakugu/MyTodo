@@ -11,8 +11,6 @@
 
 #pragma once
 
-#include "logger.h"
-
 #include <QObject>
 #include <QString>
 #include <QTimer>
