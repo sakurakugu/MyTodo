@@ -67,7 +67,7 @@ void UserAuth::加载数据() {
             const auto &row = rows[0];
             for (const auto &[columnName, value] : row) {
                 if (columnName == "uuid") {
-                    m_uuid = QUuid::fromString(sqlValueCast<std::string>(value));
+                    m_uuid = uuids::uuid::from_string(sqlValueCast<std::string>(value)).value_or(uuids::uuid{});
                 } else if (columnName == "username") {
                     m_username = QString::fromStdString(sqlValueCast<std::string>(value));
                 } else if (columnName == "email") {
@@ -165,12 +165,12 @@ QString UserAuth::获取邮箱() const {
     return m_email;
 }
 
-QUuid UserAuth::获取UUID() const {
+uuids::uuid UserAuth::获取UUID() const {
     return m_uuid;
 }
 
 void UserAuth::刷新访问令牌() {
-    if (m_uuid.isNull()) {
+    if (m_uuid.is_nil()) {
         qDebug() << "无法刷新令牌：用户未登录";
         emit tokenRefreshFailed("用户未登录");
         return;
@@ -327,9 +327,9 @@ void UserAuth::处理登录成功(const QJsonObject &response) {
         qWarning() << "登录响应中缺少 email 字段，使用空字符串";
     }
     m_email = userObj["email"].toString();
-    m_uuid = QUuid::fromString(userObj["uuid"].toString());
+    m_uuid = uuids::uuid::from_string(userObj["uuid"].toString().toStdString()).value_or(uuids::uuid{});
 
-    if (m_uuid.isNull()) {
+    if (m_uuid.is_nil()) {
         emit loginFailed("服务器响应缺少有效的用户UUID");
         return;
     }
@@ -408,13 +408,13 @@ void UserAuth::处理令牌刷新成功(const QJsonObject &response) {
 
 void UserAuth::保存凭据() {
     // 保存凭据到数据库
-    if (!m_refreshToken.isEmpty() && !m_uuid.isNull()) {
+    if (!m_refreshToken.isEmpty() && !m_uuid.is_nil()) {
         auto query = m_database.createQuery();
         query->prepare(R"(REPLACE INTO users (uuid, username, email, refreshToken) VALUES (?, ?, ?, ?))");
-        query->bindValues(m_uuid.toString().toStdString(), //
-                          m_username.toStdString(),        //
-                          m_email.toStdString(),           //
-                          m_refreshToken.toStdString()     //
+        query->bindValues(uuids::to_string(m_uuid),          //
+                          m_username.toStdString(),    //
+                          m_email.toStdString(),       //
+                          m_refreshToken.toStdString() //
         );
 
         if (!query->exec()) {
@@ -441,7 +441,7 @@ void UserAuth::清除凭据() {
     m_refreshToken.clear();
     m_username.clear();
     m_email.clear();
-    m_uuid = QUuid();
+    m_uuid = uuids::uuid{};
     m_tokenExpiryTime = 0;
 
     // 清除数据库中的凭据

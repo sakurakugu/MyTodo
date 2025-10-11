@@ -13,7 +13,7 @@
 
 #include <QDateTime>
 #include <QString>
-#include <QUuid>
+#include <uuid.h>
 
 /**
  * @class TodoItem
@@ -39,8 +39,8 @@ class TodoItem {
 
     explicit TodoItem();
     TodoItem(int id,                           ///< 唯一标识符
-             const QUuid &uuid,                ///< 唯一标识符（UUID）
-             const QUuid &userUuid,            ///< 用户UUID
+             const uuids::uuid &uuid,          ///< 唯一标识符（UUID）
+             const uuids::uuid &userUuid,      ///< 用户UUID
              const QString &title,             ///< 待办事项标题
              const QString &description,       ///< 待办事项详细描述
              const QString &category,          ///< 待办事项分类
@@ -62,11 +62,11 @@ class TodoItem {
     int id() const noexcept { return m_id; } // 获取ID
     void setId(int id);                      // 设置ID
 
-    QUuid uuid() const noexcept { return m_uuid; } // 获取UUID
-    void setUuid(const QUuid &uuid);               // 设置UUID
+    uuids::uuid uuid() const noexcept { return m_uuid; } // 获取UUID
+    void setUuid(const uuids::uuid &uuid);               // 设置UUID
 
-    QUuid userUuid() const noexcept { return m_userUuid; } // 获取用户UUID
-    void setUserUuid(const QUuid &userUuid);               // 设置用户UUID
+    uuids::uuid userUuid() const noexcept { return m_userUuid; } // 获取用户UUID
+    void setUserUuid(const uuids::uuid &userUuid);               // 设置用户UUID
 
     QString title() const noexcept { return m_title; } // 获取标题
     void setTitle(const QString &title);               // 设置标题
@@ -126,8 +126,8 @@ class TodoItem {
   private:
     // 成员变量
     int m_id;                    // 任务ID
-    QUuid m_uuid;                // 任务UUID
-    QUuid m_userUuid;            // 用户UUID
+    uuids::uuid m_uuid;          // 任务UUID
+    uuids::uuid m_userUuid;      // 用户UUID
     QString m_title;             // 任务标题
     QString m_description;       // 任务描述
     QString m_category;          // 任务分类

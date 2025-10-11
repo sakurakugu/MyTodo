@@ -189,7 +189,7 @@ bool TodoModel::加载待办() {
     return true;
 }
 
-bool TodoModel::新增待办(const QString &title, const QUuid &userUuid, const QString &description,      //
+bool TodoModel::新增待办(const QString &title, const uuids::uuid &userUuid, const QString &description,      //
                          const QString &category, bool important, const QDateTime &deadline,           //
                          int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate //
 ) {
@@ -418,7 +418,7 @@ bool TodoModel::删除待办(int index) {
     }
 }
 
-bool TodoModel::删除所有待办(bool deleteLocal, const QUuid &userUuid) {
+bool TodoModel::删除所有待办(bool deleteLocal, const uuids::uuid &userUuid) {
     bool success = false;
     try {
         qDebug() << "删除所有待办事项" << deleteLocal;
@@ -629,9 +629,9 @@ QVariant TodoModel::获取项目数据(const TodoItem *item, int role) const {
     case IdRole:
         return item->id();
     case UuidRole:
-        return item->uuid();
+        return QUuid::fromString(QString::fromStdString(uuids::to_string(item->uuid())));
     case UserUuidRole:
-        return item->userUuid();
+        return QUuid::fromString(QString::fromStdString(uuids::to_string(item->userUuid())));
     case TitleRole:
         return item->title();
     case DescriptionRole:

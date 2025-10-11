@@ -14,7 +14,7 @@
 
 #include "database.h"
 #include <QObject>
-#include <QUuid>
+#include <uuid.h>
 
 // Todo和Category的Item类型概念
 template <typename T>

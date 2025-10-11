@@ -24,8 +24,8 @@
  */
 TodoItem::TodoItem()
     : m_id(0),                                   // 初始化待办事项ID为0
-      m_uuid(QUuid::createUuid()),               // 初始化UUID
-      m_userUuid(""),                            // 初始化用户UUID为空字符串
+      m_uuid(uuids::uuid()),                     // 初始化UUID
+      m_userUuid(uuids::uuid()),                 // 初始化用户UUID为空字符串
       m_important(false),                        // 初始化重要程度为false
       m_deadline(QDateTime()),                   // 初始化截止日期为空
       m_recurrenceInterval(0),                   // 初始化循环间隔为0
@@ -45,8 +45,8 @@ TodoItem::TodoItem()
  * 从数据库或网络加载已存在的待办事项数据。
  */
 TodoItem::TodoItem(int id,                           ///< 待办事项唯一标识符
-                   const QUuid &uuid,                ///< 唯一标识符
-                   const QUuid &userUuid,            ///< 用户UUID
+                   const uuids::uuid &uuid,          ///< 唯一标识符
+                   const uuids::uuid &userUuid,      ///< 用户UUID
                    const QString &title,             ///< 待办事项标题
                    const QString &description,       ///< 待办事项详细描述
                    const QString &category,          ///< 待办事项分类
@@ -96,7 +96,7 @@ void TodoItem::setId(int id) {
  * @brief 设置待办事项的UUID
  * @param uuid 新的UUID
  */
-void TodoItem::setUuid(const QUuid &uuid) {
+void TodoItem::setUuid(const uuids::uuid &uuid) {
     if (m_uuid != uuid) {
         m_uuid = uuid;
     }
@@ -106,7 +106,7 @@ void TodoItem::setUuid(const QUuid &uuid) {
  * @brief 设置用户UUID
  * @param userUuid 新的用户UUID
  */
-void TodoItem::setUserUuid(const QUuid &userUuid) {
+void TodoItem::setUserUuid(const uuids::uuid &userUuid) {
     if (m_userUuid != userUuid) {
         m_userUuid = userUuid;
     }

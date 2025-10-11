@@ -16,7 +16,7 @@
 #include "utility.h"
 
 #include <QJsonDocument>
-#include <QUuid>
+#include <uuid.h>
 
 TodoSyncServer::TodoSyncServer(UserAuth &userAuth, QObject *parent)
     : BaseSyncServer(userAuth, parent), //
@@ -189,8 +189,8 @@ void TodoSyncServer::推送批次到服务器(const std::vector<TodoItem *> &bat
         QJsonArray jsonArray;
         for (TodoItem *item : std::as_const(batch)) {
             QJsonObject obj;
-            obj["uuid"] = item->uuid().toString(QUuid::WithoutBraces);
-            obj["user_uuid"] = item->userUuid().toString(QUuid::WithoutBraces);
+            obj["uuid"] = QString::fromStdString(uuids::to_string(item->uuid()));
+            obj["user_uuid"] = QString::fromStdString(uuids::to_string(item->userUuid()));
             obj["title"] = item->title();
             obj["description"] = item->description();
             obj["category"] = item->category();
@@ -341,7 +341,8 @@ void TodoSyncServer::处理推送更改成功(const QJsonObject &response) {
                 if (index >= 0 && index < static_cast<int>(m_pendingUnsyncedItems.size())) {
                     TodoItem *item = m_pendingUnsyncedItems[index];
                     if (item) {
-                        qInfo() << QString("检测到重复UUID错误，将项目 %1 转换为更新模式").arg(item->uuid().toString());
+                        qInfo() << QString("检测到重复UUID错误，将项目 %1 转换为更新模式")
+                                       .arg(QString::fromStdString(uuids::to_string(item->uuid())));
                         // 将synced设置为2表示需要更新而不是创建
                         item->forceSetSynced(2);
                         // 到时候重新上传更新

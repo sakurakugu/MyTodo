@@ -17,7 +17,6 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QTimeZone>
-#include <QUuid>
 #include <QVariant>
 #include <algorithm>
 
@@ -55,8 +54,9 @@ bool TodoDataStorage::加载待办(TodoList &todos) {
 
         while (query->next()) {
             int id = sqlValueCast<int32_t>(query->value("id"));
-            QUuid uuid = QUuid::fromString(sqlValueCast<std::string>(query->value("uuid")));
-            QUuid userUuid = QUuid::fromString(sqlValueCast<std::string>(query->value("user_uuid")));
+            uuids::uuid uuid = uuids::uuid::from_string(sqlValueCast<std::string>(query->value("uuid"))).value();
+            uuids::uuid userUuid =
+                uuids::uuid::from_string(sqlValueCast<std::string>(query->value("user_uuid"))).value();
             QString title = QString::fromStdString(sqlValueCast<std::string>(query->value("title")));
             QString description = QString::fromStdString(sqlValueCast<std::string>(query->value("description")));
             QString category = QString::fromStdString(sqlValueCast<std::string>(query->value("category")));
@@ -125,9 +125,9 @@ bool TodoDataStorage::加载待办(TodoList &todos) {
 bool TodoDataStorage::新增待办(TodoList &todos, const QString &title, const QString &description,
                                const QString &category, bool important, const QDateTime &deadline,
                                int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate,
-                               QUuid userUuid) {
+                               uuids::uuid userUuid) {
     QDateTime now = QDateTime::currentDateTimeUtc();
-    QUuid newUuid = QUuid::createUuid();
+    uuids::uuid newUuid = uuids::uuid_system_generator{}();
     QDateTime nullTime; // 代表空
 
     // 创建新的待办事项
@@ -159,12 +159,12 @@ bool TodoDataStorage::新增待办(TodoList &todos, const QString &title, const 
         "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, "
         "is_trashed, trashed_at, created_at, updated_at, synced) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     insertQuery->prepare(insertString);
-    insertQuery->bindValues(newTodo->uuid().toString(),     //
-                            newTodo->userUuid().toString(), //
-                            newTodo->title(),               //
-                            newTodo->description(),         //
-                            newTodo->category(),            //
-                            newTodo->important(),           //
+    insertQuery->bindValues(uuids::to_string(newTodo->uuid()),     //
+                            uuids::to_string(newTodo->userUuid()), //
+                            newTodo->title(),                      //
+                            newTodo->description(),                //
+                            newTodo->category(),                   //
+                            newTodo->important(),                  //
                             newTodo->deadline().isValid() ? SqlValue(newTodo->deadline().toUTC().toMSecsSinceEpoch())
                                                           : SqlValue(nullptr),    //
                             newTodo->recurrenceInterval(),                        //
@@ -211,8 +211,8 @@ bool TodoDataStorage::新增待办(TodoList &todos, std::unique_ptr<TodoItem> it
         "is_trashed, trashed_at, created_at, updated_at, synced) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     insertQuery->prepare(insertString);
     insertQuery->bindValues(
-        item->uuid().toString(),                                                                                 //
-        item->userUuid().toString(),                                                                             //
+        uuids::to_string(item->uuid()),                                                                          //
+        uuids::to_string(item->userUuid()),                                                                      //
         item->title(),                                                                                           //
         item->description(),                                                                                     //
         item->category(),                                                                                        //
@@ -248,11 +248,11 @@ bool TodoDataStorage::新增待办(TodoList &todos, std::unique_ptr<TodoItem> it
  * @param todoData 待办事项数据映射
  * @return 更新是否成功
  */
-bool TodoDataStorage::更新待办(TodoList &todos, const QUuid &uuid, const QVariantMap &todoData) {
+bool TodoDataStorage::更新待办(TodoList &todos, const uuids::uuid &uuid, const QVariantMap &todoData) {
     auto it = std::find_if(todos.begin(), todos.end(),
                            [uuid](const std::unique_ptr<TodoItem> &item) { return item->uuid() == uuid; });
     if (it == todos.end()) {
-        qWarning() << "未找到待办事项，UUID:" << uuid.toString();
+        qWarning() << "未找到待办事项，UUID:" << uuids::to_string(uuid);
         return false;
     }
 
@@ -337,18 +337,18 @@ bool TodoDataStorage::更新待办(TodoList &todos, const QUuid &uuid, const QVa
     QDateTime now = QDateTime::currentDateTimeUtc();
     updateQuery->addBindValue(now.toMSecsSinceEpoch());
     updateQuery->addBindValue(((*it)->synced() != 1) ? 2 : 1);
-    updateQuery->addBindValue(uuid);
+    updateQuery->addBindValue(uuids::to_string(uuid));
     if (!updateQuery->exec()) {
         qCritical() << "更新待办事项到数据库失败:" << updateQuery->lastErrorQt();
         return false;
     }
     if (updateQuery->rowsAffected() == 0) {
-        qWarning() << "未找到UUID为" << uuid << "的待办事项";
+        qWarning() << "未找到UUID为" << uuids::to_string(uuid) << "的待办事项";
         return false;
     }
     (*it)->setUpdatedAt(now);
     (*it)->setSynced(2);
-    qDebug() << "成功更新待办事项，UUID:" << uuid;
+    qDebug() << "成功更新待办事项，UUID:" << uuids::to_string(uuid);
     return true;
 }
 
@@ -381,7 +381,7 @@ bool TodoDataStorage::更新待办([[maybe_unused]] TodoList &todos, TodoItem &i
         item.trashedAt().isValid() ? SqlValue(item.trashedAt().toUTC().toMSecsSinceEpoch()) : SqlValue(nullptr),     //
         item.updatedAt().toUTC().toMSecsSinceEpoch(),                                                                //
         item.synced(),                                                                                               //
-        item.uuid()                                                                                                  //
+        uuids::to_string(item.uuid())                                                                                //
     );
 
     if (!updateQuery->exec()) {
@@ -389,10 +389,10 @@ bool TodoDataStorage::更新待办([[maybe_unused]] TodoList &todos, TodoItem &i
         return false;
     }
     if (updateQuery->rowsAffected() == 0) {
-        qWarning() << "未找到UUID为" << item.uuid() << "的待办事项";
+        qWarning() << "未找到UUID为" << uuids::to_string(item.uuid()) << "的待办事项";
         return false;
     }
-    qDebug() << "成功更新待办事项，UUID:" << item.uuid();
+    qDebug() << "成功更新待办事项，UUID:" << uuids::to_string(item.uuid());
     return true;
 }
 
@@ -402,7 +402,7 @@ bool TodoDataStorage::更新待办([[maybe_unused]] TodoList &todos, TodoItem &i
  * @param uuid 待办事项UUID
  * @return 回收是否成功
  */
-bool TodoDataStorage::回收待办(TodoList &todos, const QUuid &uuid) {
+bool TodoDataStorage::回收待办(TodoList &todos, const uuids::uuid &uuid) {
     QVariantMap todoData;
     todoData["is_trashed"] = true;
     todoData["trashed_at"] = QDateTime::currentDateTimeUtc();
@@ -415,23 +415,23 @@ bool TodoDataStorage::回收待办(TodoList &todos, const QUuid &uuid) {
  * @param uuid 待办事项UUID
  * @return 回收是否成功
  */
-bool TodoDataStorage::软删除待办([[maybe_unused]] TodoList &todos, const QUuid &uuid) {
+bool TodoDataStorage::软删除待办([[maybe_unused]] TodoList &todos, const uuids::uuid &uuid) {
     auto updateQuery = m_database.createQuery();
     const std::string updateString = "UPDATE todos SET synced = ? WHERE uuid = ?";
     updateQuery->prepare(updateString);
-    updateQuery->bindValues( //
-        3,                   // 已删除
-        uuid                 //
+    updateQuery->bindValues(   //
+        3,                     // 已删除
+        uuids::to_string(uuid) //
     );
     if (!updateQuery->exec()) {
         qCritical() << "软删除待办事项失败:" << updateQuery->lastErrorQt();
         return false;
     }
     if (updateQuery->rowsAffected() == 0) {
-        qWarning() << "未找到UUID为" << uuid << "的待办事项";
+        qWarning() << "未找到UUID为" << uuids::to_string(uuid) << "的待办事项";
         return false;
     }
-    qDebug() << "成功软删除待办事项，UUID:" << uuid;
+    qDebug() << "成功软删除待办事项，UUID:" << uuids::to_string(uuid);
     return true;
 }
 
@@ -472,16 +472,16 @@ bool TodoDataStorage::删除所有待办(TodoList &todos) {
  * @param todos 待办事项容器引用
  * @param newUserUuid 新的用户UUID
  */
-bool TodoDataStorage::更新所有待办用户UUID(TodoList &todos, const QUuid &newUserUuid, int synced) {
+bool TodoDataStorage::更新所有待办用户UUID(TodoList &todos, const uuids::uuid &newUserUuid, int synced) {
     bool success = false;
     try {
         // 更新数据库中所有待办事项的用户UUID
         auto updateQuery = m_database.createQuery();
         const std::string updateString = "UPDATE todos SET user_uuid = ?, synced = ?";
         updateQuery->prepare(updateString);
-        updateQuery->bindValues(    //
-            newUserUuid.toString(), // user_uuid
-            synced                  // synced
+        updateQuery->bindValues(           //
+            uuids::to_string(newUserUuid), // user_uuid
+            synced                         // synced
         );
         if (!updateQuery->exec()) {
             qCritical() << "更新待办事项的用户UUID失败:" << updateQuery->lastErrorQt();
@@ -496,7 +496,7 @@ bool TodoDataStorage::更新所有待办用户UUID(TodoList &todos, const QUuid 
             }
         }
 
-        qDebug() << "成功更新所有待办事项的用户UUID为" << newUserUuid.toString();
+        qDebug() << "成功更新所有待办事项的用户UUID为" << uuids::to_string(newUserUuid);
         return true;
     } catch (const std::exception &e) {
         qCritical() << "更新待办事项的用户UUID时发生异常:" << e.what();
@@ -513,27 +513,27 @@ bool TodoDataStorage::更新所有待办用户UUID(TodoList &todos, const QUuid 
  * @param todos 待办事项容器引用
  * @param id 待办事项ID
  */
-bool TodoDataStorage::删除待办([[maybe_unused]] TodoList &todos, const QUuid &uuid) {
+bool TodoDataStorage::删除待办([[maybe_unused]] TodoList &todos, const uuids::uuid &uuid) {
     bool success = false;
     try {
         // 从数据库中永久删除待办事项
         auto deleteQuery = m_database.createQuery();
         const std::string deleteString = "DELETE FROM todos WHERE uuid = ?";
         deleteQuery->prepare(deleteString);
-        deleteQuery->addBindValue(uuid.toString());
+        deleteQuery->addBindValue(uuids::to_string(uuid));
         if (!deleteQuery->exec()) {
             qCritical() << "永久删除待办事项失败:" << deleteQuery->lastErrorQt();
             return false;
         }
         if (deleteQuery->rowsAffected() == 0) {
-            qWarning() << "未找到UUID为" << uuid << "的待办事项，无法删除";
+            qWarning() << "未找到UUID为" << uuids::to_string(uuid) << "的待办事项，无法删除";
             return false;
         }
         // 要更新qml视图，所以不在这里删除
         // todos.erase(std::remove_if(todos.begin(), todos.end(),
         //                            [&](const std::unique_ptr<TodoItem> &p) { return p && p->uuid() == uuid; }),
         //             todos.end());
-        qDebug() << "成功永久删除待办事项，UUID:" << uuid;
+        qDebug() << "成功永久删除待办事项，UUID:" << uuids::to_string(uuid);
         return true;
     } catch (const std::exception &e) {
         qCritical() << "删除待办事项时发生异常:" << e.what();
@@ -556,10 +556,10 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
                                          ImportSource source, 解决冲突方案 resolution) {
     bool success = true;
     // 建立内存索引
-    QHash<QString, TodoItem *> uuidIndex;
+    std::unordered_map<uuids::uuid, TodoItem *> uuidIndex;
     for (auto &it : todos) {
         if (it)
-            uuidIndex.insert(it->uuid().toString(QUuid::WithoutBraces), it.get());
+            uuidIndex.insert({it->uuid(), it.get()});
     }
 
     if (!m_database.beginTransaction()) {
@@ -584,15 +584,19 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
                 ++skipCount;
                 continue;
             }
-            QUuid userUuid = QUuid::fromString(obj["user_uuid"].toString());
-            if (userUuid.isNull()) {
+            uuids::uuid userUuid = uuids::uuid::from_string(obj["user_uuid"].toString().toStdString()).value();
+            if (userUuid.is_nil()) {
                 qWarning() << "跳过无效待办（user_uuid 无效）";
                 ++skipCount;
                 continue;
             }
-            QUuid uuid = obj.contains("uuid") ? QUuid::fromString(obj["uuid"].toString()) : QUuid::createUuid();
-            if (uuid.isNull())
-                uuid = QUuid::createUuid();
+            uuids::uuid uuid;
+            if (obj.contains("uuid")) {
+                auto opt = uuids::uuid::from_string(obj["uuid"].toString().toStdString());
+                uuid = opt.has_value() ? opt.value() : uuids::uuid_system_generator{}();
+            } else {
+                uuid = uuids::uuid_system_generator{}();
+            }
             QString title = obj["title"].toString();
             QString description = obj["description"].toString();
             QString category = obj["category"].toString();
@@ -635,7 +639,7 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
             );
 
             // 查找现有
-            TodoItem *existing = uuidIndex.value(uuid.toString(QUuid::WithoutBraces), nullptr);
+            TodoItem *existing = uuidIndex[uuid];
 
             解决冲突方案 action = 评估冲突(existing, incoming, resolution);
             if (action == 解决冲突方案::Skip) {
@@ -672,13 +676,13 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
                     "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, "
                     "is_trashed, trashed_at, created_at, updated_at, synced) VALUES "
                     "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-                insertQuery->bindValues(       //
-                    ref.uuid().toString(),     // uuid
-                    ref.userUuid().toString(), // user_uuid
-                    ref.title(),               // title
-                    ref.description(),         // description
-                    ref.category(),            // category
-                    ref.important(),           // important
+                insertQuery->bindValues(              //
+                    uuids::to_string(ref.uuid()),     // uuid
+                    uuids::to_string(ref.userUuid()), // user_uuid
+                    ref.title(),                      // title
+                    ref.description(),                // description
+                    ref.category(),                   // category
+                    ref.important(),                  // important
                     ref.deadline().isValid() ? SqlValue(ref.deadline().toUTC().toMSecsSinceEpoch())
                                              : SqlValue(nullptr),    // deadline
                     ref.recurrenceInterval(),                        // recurrence_interval
@@ -702,7 +706,7 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
                 auto idQuery = m_database.createQuery();
                 if (idQuery->exec("SELECT last_insert_rowid()") && idQuery->next())
                     ref.setId(sqlValueCast<int32_t>(idQuery->value(0)));
-                uuidIndex.insert(uuid.toString(QUuid::WithoutBraces), newItem.get());
+                uuidIndex[uuid] = newItem.get();
                 todos.push_back(std::move(newItem));
                 ++insertCount;
                 continue;
@@ -713,12 +717,12 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
                     "UPDATE todos SET user_uuid=?, title=?, description=?, category=?, important=?, deadline=?, "
                     "recurrence_interval=?, recurrence_count=?, recurrence_start_date=?, is_completed=?, "
                     "completed_at=?, is_trashed=?, trashed_at=?, created_at=?, updated_at=?, synced=? WHERE uuid=?");
-                updateQuery->bindValues( //
-                    userUuid,            // user_uuid
-                    title,               // title
-                    description,         // description
-                    category,            // category
-                    important,           // important
+                updateQuery->bindValues(        //
+                    uuids::to_string(userUuid), // user_uuid
+                    title,                      // title
+                    description,                // description
+                    category,                   // category
+                    important,                  // important
                     deadline.isValid() ? SqlValue(deadline.toUTC().toMSecsSinceEpoch()) : SqlValue(nullptr), // deadline
                     recurrenceInterval,                        // recurrence_interval
                     recurrenceCount,                           // recurrence_count
@@ -732,7 +736,7 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
                     createdAt.toUTC().toMSecsSinceEpoch(),                                  // created_at
                     updatedAt.toUTC().toMSecsSinceEpoch(),                                  // updated_at
                     source == ImportSource::Server ? 0 : (existing->synced() == 1 ? 1 : 2), // synced
-                    existing->uuid().toString()                                             // uuid
+                    uuids::to_string(existing->uuid())                                      // uuid
                 );
                 if (!updateQuery->exec()) {
                     qCritical() << "更新导入待办失败:" << updateQuery->lastErrorQt();

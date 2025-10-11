@@ -61,14 +61,14 @@ class CategoryDataStorage : public BaseDataStorage {
     bool 加载类别(CategorieList &categorieList);
 
     // CRUD操作
-    std::unique_ptr<CategorieItem> 新增类别(CategorieList &categories, const QString &name, const QUuid &userUuid,
+    std::unique_ptr<CategorieItem> 新增类别(CategorieList &categories, const QString &name, const uuids::uuid &userUuid,
                                             ImportSource source = Local);
     bool 更新类别(CategorieList &categories, const QString &name, const QString &newName);
     bool 删除类别(CategorieList &categories, const QString &name);
     bool 软删除类别(CategorieList &categories, const QString &name);
     bool 更新同步状态(CategorieList &categories, const QString &name, int synced = 0);
 
-    bool 创建默认类别(CategorieList &categories, const QUuid &userUuid);
+    bool 创建默认类别(CategorieList &categories, const uuids::uuid &userUuid);
     bool 导入类别从JSON(CategorieList &categories, const QJsonArray &categoriesArray,
                         ImportSource source = ImportSource::Server,
                         解决冲突方案 resolution = 解决冲突方案::Merge);

@@ -6,8 +6,8 @@
  * 日志级别控制、文件轮转等特性。
  *
  * @author Sakurakugu
- * @date 2025-08-19 05:57:09(UTC+8) 周二
- * @change 2025-09-20 23:17:33(UTC+8) 周六
+ * @date 2025-08-19 05:57:09 (UTC+8) 周二
+ * @change 2025-10-11 23:01:43 (UTC+8) 周六
  */
 #include "logger.h"
 #include "version.h"

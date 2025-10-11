@@ -75,13 +75,13 @@ class CategoryModel : public QAbstractListModel {
 
     // 数据访问方法
     QStringList 获取类别() const;
-    bool 加载类别(const QUuid &userUuid); // 从存储加载类别数据
+    bool 加载类别(const uuids::uuid &userUuid); // 从存储加载类别数据
 
     CategorieItem *寻找类别(const QString &name) const;
     CategorieItem *寻找类别(int id) const;
-    CategorieItem *寻找类别(const QUuid &uuid) const;
+    CategorieItem *寻找类别(const uuids::uuid &uuid) const;
 
-    bool 新增类别(const QString &name, const QUuid &userUuid);
+    bool 新增类别(const QString &name, const uuids::uuid &userUuid);
     bool 更新类别(const QString &name, const QString &newName);
     bool 删除类别(const QString &name);
 

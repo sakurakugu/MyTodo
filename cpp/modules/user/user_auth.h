@@ -19,7 +19,7 @@
 #include <QObject>
 #include <QString>
 #include <QTimer>
-#include <QUuid>
+#include <uuid.h>
 
 #include "database.h"
 #include "network_request.h"
@@ -61,7 +61,7 @@ class UserAuth : public QObject, public IDataExporter {
     // 用户信息获取
     QString 获取用户名() const;
     QString 获取邮箱() const;
-    QUuid 获取UUID() const;
+    uuids::uuid 获取UUID() const;
 
     // 数据库初始化相关
     bool 初始化用户表();
@@ -122,7 +122,7 @@ class UserAuth : public QObject, public IDataExporter {
     QString m_refreshToken; ///< 刷新令牌
     QString m_username;     ///< 用户名
     QString m_email;        ///< 邮箱
-    QUuid m_uuid;           ///< 用户UUID
+    uuids::uuid m_uuid;     ///< 用户UUID
 
     // 令牌管理
     QTimer *m_tokenExpiryTimer;      ///< 令牌过期检查定时器

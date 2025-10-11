@@ -13,6 +13,7 @@
 #include "category_model.h"
 #include "category_item.h"
 #include "category_sync_server.h"
+#include <QUuid>
 
 CategoryModel::CategoryModel(CategoryDataStorage &dataStorage, CategorySyncServer &syncServer, QObject *parent)
     : QAbstractListModel(parent), //
@@ -129,11 +130,11 @@ QVariant CategoryModel::获取项目数据(const CategorieItem *item, int role) 
     case IdRole:
         return item->id();
     case UuidRole:
-        return item->uuid();
+        return QUuid(QString::fromStdString(uuids::to_string(item->uuid())));
     case NameRole:
         return item->name();
     case UserUuidRole:
-        return item->userUuid();
+        return QUuid(QString::fromStdString(uuids::to_string(item->userUuid())));
     case CreatedAtRole:
         return item->createdAt();
     case UpdatedAtRole:
@@ -172,13 +173,13 @@ CategorieItem *CategoryModel::寻找类别(int id) const {
  * @param uuid 类别UUID
  * @return 找到的类别项目指针，如果未找到则返回nullptr
  */
-CategorieItem *CategoryModel::寻找类别(const QUuid &uuid) const {
+CategorieItem *CategoryModel::寻找类别(const uuids::uuid &uuid) const {
     auto it = std::find_if(m_categoryItems.begin(), m_categoryItems.end(),
-                           [uuid](const std::unique_ptr<CategorieItem> &item) { return item->uuid() == uuid; });
+                           [uuid](const std::unique_ptr<CategorieItem> &item) { return uuids::to_string(item->uuid()) == uuids::to_string(uuid); });
     return (it != m_categoryItems.end()) ? it->get() : nullptr;
 }
 
-bool CategoryModel::新增类别(const QString &name, const QUuid &userUuid) {
+bool CategoryModel::新增类别(const QString &name, const uuids::uuid &userUuid) {
     qDebug() << "=== 开始创建类别 ===" << name;
 
     if (!是否是有效名称(name))
@@ -259,7 +260,7 @@ bool CategoryModel::删除类别(const QString &name) {
 /**
  * @brief 从存储加载类别
  */
-bool CategoryModel::加载类别(const QUuid &userUuid) {
+bool CategoryModel::加载类别(const uuids::uuid &userUuid) {
     qDebug() << "开始从存储加载类别数据";
 
     开始更新模型();

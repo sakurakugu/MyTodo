@@ -26,7 +26,7 @@ QString QmlUserAuth::email() const {
     return m_auth.获取邮箱();
 }
 QUuid QmlUserAuth::uuid() const {
-    return m_auth.获取UUID();
+    return QUuid(QString::fromStdString(uuids::to_string(m_auth.获取UUID())));
 }
 bool QmlUserAuth::isLoggedIn() const {
     return m_auth.是否已登录();

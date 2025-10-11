@@ -14,7 +14,7 @@
 #include <QDateTime>
 #include <QJsonObject>
 #include <QString>
-#include <QUuid>
+#include <uuid.h>
 
 /**
  * @class CategorieItem
@@ -37,27 +37,27 @@ class CategorieItem {
     bool operator!=(const CategorieItem &other) const;
 
     explicit CategorieItem();
-    CategorieItem(int id,                     ///< 分类唯一标识符
-                  const QUuid &uuid,          ///< 分类唯一标识符（UUID）
-                  const QString &name,        ///< 分类名称
-                  const QUuid &userUuid,      ///< 用户UUID
-                  const QDateTime &createdAt, ///< 创建时间
-                  const QDateTime &updatedAt, ///< 更新时间
-                  int synced                  ///< 是否已与服务器同步
-                                              ///< 0表示已同步，1表示待插入，2表示待更新，3表示待删除
+    CategorieItem(int id,                      ///< 分类唯一标识符
+                  const uuids::uuid &uuid,     ///< 分类唯一标识符（UUID）
+                  const QString &name,         ///< 分类名称
+                  const uuids::uuid &userUuid, ///< 用户UUID
+                  const QDateTime &createdAt,  ///< 创建时间
+                  const QDateTime &updatedAt,  ///< 更新时间
+                  int synced                   ///< 是否已与服务器同步
+                                               ///< 0表示已同步，1表示待插入，2表示待更新，3表示待删除
     );
 
     int id() const noexcept { return m_id; } // 获取ID
     void setId(int id);                      // 设置ID
 
-    QUuid uuid() const { return m_uuid; } // 获取UUID
-    void setUuid(const QUuid &uuid);      // 设置UUID
+    uuids::uuid uuid() const { return m_uuid; } // 获取UUID
+    void setUuid(const uuids::uuid &uuid);      // 设置UUID
 
     QString name() const noexcept { return m_name; } // 获取分类名称
     void setName(const QString &name);               // 设置分类名称
 
-    QUuid userUuid() const noexcept { return m_userUuid; } // 获取用户UUID
-    void setUserUuid(const QUuid &userUuid);               // 设置用户UUID
+    uuids::uuid userUuid() const noexcept { return m_userUuid; } // 获取用户UUID
+    void setUserUuid(const uuids::uuid &userUuid);               // 设置用户UUID
 
     QDateTime createdAt() const noexcept { return m_createdAt; } // 获取创建时间
     void setCreatedAt(const QDateTime &createdAt);               // 设置创建时间
@@ -78,11 +78,11 @@ class CategorieItem {
 
   private:
     // 成员变量
-    int m_id;              // 分类ID
-    QUuid m_uuid;          // 分类UUID
-    QString m_name;        // 分类名称
-    QUuid m_userUuid;      // 用户UUID
-    QDateTime m_createdAt; // 分类创建时间
-    QDateTime m_updatedAt; // 分类更新时间
-    int m_synced;          // 分类是否已同步
+    int m_id;               // 分类ID
+    uuids::uuid m_uuid;     // 分类UUID
+    QString m_name;         // 分类名称
+    uuids::uuid m_userUuid; // 用户UUID
+    QDateTime m_createdAt;  // 分类创建时间
+    QDateTime m_updatedAt;  // 分类更新时间
+    int m_synced;           // 分类是否已同步
 };

@@ -32,5 +32,6 @@ target_link_libraries(mytodo_user
         Qt6::Core
         Qt6::Network
         mytodo_foundation    # 基础模块（QDatabase, NetworkRequest类等）
-        mytodo_database      # 数据库模块（SQLite数据库连接等）     
+        mytodo_database      # 数据库模块（SQLite数据库连接等）   
+        stduuid::stduuid     # UUID 库
 )

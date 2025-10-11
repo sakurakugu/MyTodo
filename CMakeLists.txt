@@ -44,9 +44,11 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake") # 包含自定义 CMa
 include(cmake/SQLite3.cmake)
 include(cmake/nlohmann_json.cmake)
 include(cmake/tomlplusplus.cmake)
+include(cmake/stduuid.cmake)
 add_sqlite3()
 add_nlohmann_json()
 add_tomlplusplus()
+add_stduuid()
 
 
 # 构建类型优化
@@ -108,8 +110,8 @@ set(PRIVATE_LIBRARIES
     Qt6::Widgets
     Qt6::Quick
     Qt6::Concurrent
-    SQLite::SQLite3
     nlohmann_json::nlohmann_json
+    stduuid::stduuid
 )
 
 # 单例组件

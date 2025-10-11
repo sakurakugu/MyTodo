@@ -15,6 +15,7 @@
 #include <QAbstractListModel>
 #include <QDateTime>
 #include <QVariant>
+#include <uuid.h>
 
 class TodoDataStorage;
 class TodoSyncServer;
@@ -92,16 +93,16 @@ class TodoModel : public QAbstractListModel {
 
     bool 加载待办(); // 从数据库加载待办事项
 
-    bool 新增待办(const QString &title, const QUuid &userUuid, const QString &description = QString(), //
+    bool 新增待办(const QString &title, const uuids::uuid &userUuid, const QString &description = QString(), //
                   const QString &category = "未分类", bool important = false,                          //
                   const QDateTime &deadline = QDateTime(), int recurrenceInterval = 0,                 //
                   int recurrenceCount = 0, const QDate &recurrenceStartDate = QDate());                //
     bool 更新待办(int index, const QVariantMap &todoData);
     bool 标记完成(int index, bool completed);
-    bool 标记删除(int index, bool trashed);                     // isTrashed = 1/0 回收或删除
-    bool 软删除待办(int index);                                 // synced = 3
-    bool 删除待办(int index);                                   // 永久删除
-    bool 删除所有待办(bool deleteLocal, const QUuid &userUuid); // 永久删除所有
+    bool 标记删除(int index, bool trashed);                           // isTrashed = 1/0 回收或删除
+    bool 软删除待办(int index);                                       // synced = 3
+    bool 删除待办(int index);                                         // 永久删除
+    bool 删除所有待办(bool deleteLocal, const uuids::uuid &userUuid); // 永久删除所有
 
     void 更新过滤后的待办();
     void 需要重新筛选();
@@ -109,7 +110,7 @@ class TodoModel : public QAbstractListModel {
     void 更新同步管理器的数据();
 
     // 网络同步操作
-    void 与服务器同步();     // 与服务器同步待办事项数据
+    void 与服务器同步(); // 与服务器同步待办事项数据
 
   signals:
     void dataUpdated(); ///< 数据更新信号

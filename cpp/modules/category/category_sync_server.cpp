@@ -19,7 +19,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QSet>
-#include <QUuid>
+#include <uuid.h>
 
 CategorySyncServer::CategorySyncServer(UserAuth &userAuth, QObject *parent) : BaseSyncServer(userAuth, parent) {
     // 设置类别特有的API端点
@@ -222,7 +222,7 @@ void CategorySyncServer::推送数据() {
         QJsonArray jsonArray;
         for (CategorieItem *item : std::as_const(m_unsyncedItems)) {
             QJsonObject obj;
-            obj["uuid"] = item->uuid().toString(QUuid::WithoutBraces);
+            obj["uuid"] = QString::fromStdString(uuids::to_string(item->uuid()));
             obj["name"] = item->name();
             obj["created_at"] = Utility::toRfc3339Json(item->createdAt());
             obj["updated_at"] = Utility::toRfc3339Json(item->updatedAt());
