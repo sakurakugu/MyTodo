@@ -34,10 +34,10 @@ class Date {
     // 构造函数
     Date() = default;
     explicit Date(const year_month_day &ymd) noexcept;
-    Date(int year, unsigned month, unsigned day) noexcept;
+    Date(int32_t year, uint8_t month, uint8_t day) noexcept;
     explicit Date(const sys_days &days) noexcept;
     explicit Date(const std::string &dateStr); // 从字符串构造 (YYYY-MM-DD格式)
-    explicit Date(const Date &other);          // 拷贝构造函数
+    Date(const Date &other);                   // 拷贝构造函数
 
     // 静态工厂方法
     static Date today() noexcept;
@@ -45,32 +45,32 @@ class Date {
     static Date fromISOString(std::string_view str) noexcept;
 
     // 访问器
-    int year() const noexcept;
-    unsigned month() const noexcept;
-    unsigned day() const noexcept;
+    int32_t year() const noexcept;
+    uint8_t month() const noexcept;
+    uint8_t day() const noexcept;
     std::chrono::weekday weekday() const noexcept;
-    int dayOfWeek() const;               // 返回星期几 (0=周日, 1=周一, ..., 6=周六)
-    unsigned dayOfYear() const noexcept; // 返回一年中的第几天 (1-366)
+    uint8_t dayOfWeek() const noexcept; // 返回星期几 (0=周日, 1=周一, ..., 6=周六)
+    uint8_t dayOfYear() const noexcept; // 返回一年中的第几天 (1-366)
 
     // 验证
     bool isValid() const noexcept;
-    bool isLeapYear() const noexcept;
+    bool isLeapYear() const noexcept; // 是否闰年
 
     /* 日期操作 */
     // 增加/减少时间
-    Date &addDays(int days) noexcept;
-    Date &addMonths(int months) noexcept;
-    Date &addYears(int years) noexcept;
+    Date &addDays(int32_t days) noexcept;
+    Date &addMonths(int32_t months) noexcept;
+    Date &addYears(int32_t years) noexcept;
 
     // 日期计算
-    Date plusDays(int days) const noexcept;
-    Date plusMonths(int months) const noexcept;
-    Date plusYears(int years) const noexcept;
+    Date plusDays(int32_t days) const noexcept;
+    Date plusMonths(int32_t months) const noexcept;
+    Date plusYears(int32_t years) const noexcept;
 
     // 日期差值
-    int daysTo(const Date &other) const noexcept;
-    int monthsTo(const Date &other) const noexcept;
-    int yearsTo(const Date &other) const noexcept;
+    int32_t daysTo(const Date &other) const noexcept;
+    int32_t monthsTo(const Date &other) const noexcept;
+    int32_t yearsTo(const Date &other) const noexcept;
 
     // 格式化
     std::string toString(std::string_view format = "yyyy-MM-dd") const;
@@ -99,15 +99,17 @@ class Date {
     Date &operator-=(const months &m) noexcept;
     Date &operator+=(const years &y) noexcept;
     Date &operator-=(const years &y) noexcept;
+    Date &operator+=(const Date &other) noexcept;
+    Date &operator-=(const Date &other) noexcept;
 
-    Date operator+(const days &d) const noexcept;   // 加天数
-    Date operator-(const days &d) const noexcept;   // 减天数
-    Date operator+(const months &m) const noexcept; // 加月份
-    Date operator-(const months &m) const noexcept; // 减月份
-    Date operator+(const years &y) const noexcept;  // 加年份
-    Date operator-(const years &y) const noexcept;  // 减年份
-
-    days operator-(const Date &other) const noexcept; // 两个日期相减，返回天数差
+    Date operator+(const days &d) const noexcept;     // 加天数
+    Date operator-(const days &d) const noexcept;     // 减天数
+    Date operator+(const months &m) const noexcept;   // 加月份
+    Date operator-(const months &m) const noexcept;   // 减月份
+    Date operator+(const years &y) const noexcept;    // 加年份
+    Date operator-(const years &y) const noexcept;    // 减年份
+    Date operator+(const Date &other) const noexcept; // 加日期
+    Date operator-(const Date &other) const noexcept; // 减日期
 
   private:
     year_month_day m_ymd{std::chrono::year{1900}, std::chrono::month{1}, std::chrono::day{1}};

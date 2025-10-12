@@ -9,7 +9,7 @@
 #pragma once
 
 #include "date.h"
-#include "time.h"
+#include "time.hpp"
 #include <chrono>
 #include <compare>
 #include <expected>
@@ -46,12 +46,15 @@ class DateTime {
 
     // 构造函数
     DateTime() = default;
+    DateTime(const DateTime &other) = default;
     explicit DateTime(const time_point &tp) noexcept;
-    DateTime(const Date &date, int hour = 0, int minute = 0, int second = 0, int millisecond = 0) noexcept;
-    DateTime(int year, unsigned month, unsigned day, int hour = 0, int minute = 0, int second = 0,
-             int millisecond = 0) noexcept;
+    DateTime(const Date &date, const Time &time = Time{}) noexcept;
+    DateTime(const Date &date, uint8_t hour = 0, uint8_t minute = 0, uint8_t second = 0,
+             uint16_t millisecond = 0) noexcept;
+    DateTime(int year, uint8_t month, uint8_t day, const Time &time) noexcept;
+    DateTime(int year, uint8_t month, uint8_t day, uint8_t hour = 0, uint8_t minute = 0, uint8_t second = 0,
+             uint16_t millisecond = 0) noexcept;
     DateTime(const std::string &dateTimeStr); // 从字符串构造
-    DateTime(const DateTime &other);          // 拷贝构造函数
 
     // 静态工厂方法
     static DateTime now(TimeZone tz = TimeZone::Local) noexcept;
@@ -64,40 +67,23 @@ class DateTime {
 
     // 访问器 - 日期部分
     Date date() const noexcept;
-    int year() const noexcept;
-    unsigned month() const noexcept;
-    unsigned day() const noexcept;
+    int32_t year() const noexcept;
+    uint8_t month() const noexcept;
+    uint8_t day() const noexcept;
     std::chrono::weekday weekday() const noexcept;
-    int dayOfWeek() const;
-    unsigned dayOfYear() const noexcept;
+    uint8_t dayOfWeek() const noexcept;
+    uint8_t dayOfYear() const noexcept;
 
     // 访问器 - 时间部分
     Time time() const noexcept;
-    int hour() const noexcept;
-    int minute() const noexcept;
-    int second() const noexcept;
-    int millisecond() const noexcept;
+    uint8_t hour() const noexcept;
+    uint8_t minute() const noexcept;
+    uint8_t second() const noexcept;
+    uint16_t millisecond() const noexcept;
 
     // 验证
     bool isValid() const noexcept;
     bool isLeapYear() const noexcept;
-
-    // 日期时间操作
-    DateTime &addMilliseconds(int64_t ms) noexcept;
-    DateTime &addSeconds(int64_t seconds) noexcept;
-    DateTime &addMinutes(int64_t minutes) noexcept;
-    DateTime &addHours(int64_t hours) noexcept;
-    DateTime &addDays(int days) noexcept;
-    DateTime &addMonths(int months) noexcept;
-    DateTime &addYears(int years) noexcept;
-
-    DateTime plusMilliseconds(int64_t ms) const noexcept;
-    DateTime plusSeconds(int64_t seconds) const noexcept;
-    DateTime plusMinutes(int64_t minutes) const noexcept;
-    DateTime plusHours(int64_t hours) const noexcept;
-    DateTime plusDays(int days) const noexcept;
-    DateTime plusMonths(int months) const noexcept;
-    DateTime plusYears(int years) const noexcept;
 
     // 日期时间差值
     int64_t millisecondsTo(const DateTime &other) const noexcept;
@@ -122,7 +108,7 @@ class DateTime {
     DateTime toLocal() const noexcept;
 
     // 赋值操作符
-    DateTime &operator=(const DateTime &other);
+    DateTime &operator=(const DateTime &other) = default;
 
     // 比较运算符
     auto operator<=>(const DateTime &other) const noexcept = default;
@@ -167,13 +153,31 @@ class DateTime {
     duration operator-(const DateTime &other) const noexcept;
 
   private:
-    time_point m_timePoint{};
+    Date m_date{};
+    Time m_time{};
 
     // 辅助方法
-    static std::optional<time_point> parseISO(std::string_view str) noexcept;
-    static std::optional<time_point> parseCustom(std::string_view str, std::string_view format) noexcept;
-    static time_point makeTimePoint(int year, unsigned month, unsigned day, int hour, int minute, int second,
-                                    int millisecond) noexcept;
+    static std::optional<DateTime> parseISO(std::string_view str) noexcept;
+    static std::optional<DateTime> parseCustom(std::string_view str, std::string_view format) noexcept;
+    static std::chrono::minutes getUTCOffset() noexcept;
+    void normalizeDateTime() noexcept; // 处理跨日期边界
+
+    // 日期时间操作
+    DateTime &addMilliseconds(int64_t ms) noexcept;
+    DateTime &addSeconds(int64_t seconds) noexcept;
+    DateTime &addMinutes(int64_t minutes) noexcept;
+    DateTime &addHours(int64_t hours) noexcept;
+    DateTime &addDays(int32_t days) noexcept;
+    DateTime &addMonths(int32_t months) noexcept;
+    DateTime &addYears(int32_t years) noexcept;
+
+    DateTime plusMilliseconds(int64_t ms) const noexcept;
+    DateTime plusSeconds(int64_t seconds) const noexcept;
+    DateTime plusMinutes(int64_t minutes) const noexcept;
+    DateTime plusHours(int64_t hours) const noexcept;
+    DateTime plusDays(int32_t days) const noexcept;
+    DateTime plusMonths(int32_t months) const noexcept;
+    DateTime plusYears(int32_t years) const noexcept;
 };
 
 } // namespace my

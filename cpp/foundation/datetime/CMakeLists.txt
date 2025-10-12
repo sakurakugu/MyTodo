@@ -12,7 +12,9 @@ add_library(my_datetime STATIC
     datetime.cpp
     datetime.h
     time.cpp
-    time.h
+    time.hpp
+    formatter.cpp
+    formatter.h
 )
 
 # 查找 Qt 库
@@ -21,7 +23,6 @@ find_package(Qt6 COMPONENTS Core QUIET)
 # 将包含目录添加到库中
 target_include_directories(my_datetime PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}    # 允许其它模块用 #include "database.h" 等   
-    ${INCLUDE_DIR}                 # 允许包含生成的 version.h 
 )
 
 # 定义编译时宏，方便别的模块判断是否启用该库

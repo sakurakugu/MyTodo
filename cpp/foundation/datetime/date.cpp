@@ -6,22 +6,23 @@
 // ============================================================
 
 #include "date.h"
-#include <sstream>
+#include "formatter.h"
 #include <iomanip>
 #include <regex>
+#include <sstream>
 #include <stdexcept>
 
 namespace my {
 
 // 构造函数
-Date::Date(const year_month_day& ymd) noexcept : m_ymd(ymd) {}
+Date::Date(const year_month_day &ymd) noexcept : m_ymd(ymd) {}
 
-Date::Date(int year, unsigned month, unsigned day) noexcept 
+Date::Date(int32_t year, uint8_t month, uint8_t day) noexcept
     : m_ymd(std::chrono::year{year}, std::chrono::month{month}, std::chrono::day{day}) {}
 
-Date::Date(const sys_days& days) noexcept : m_ymd(days) {}
+Date::Date(const sys_days &days) noexcept : m_ymd(days) {}
 
-Date::Date(const std::string& dateStr) {
+Date::Date(const std::string &dateStr) {
     auto ymd = parseISO(dateStr);
     if (!ymd || !ymd->ok()) {
         m_ymd = year_month_day{std::chrono::year{1900}, std::chrono::month{1}, std::chrono::day{1}};
@@ -30,7 +31,7 @@ Date::Date(const std::string& dateStr) {
     }
 }
 
-Date::Date(const Date& other) : m_ymd(other.m_ymd) {}
+Date::Date(const Date &other) : m_ymd(other.m_ymd) {}
 
 // 静态工厂方法
 Date Date::today() noexcept {
@@ -48,39 +49,39 @@ Date Date::fromISOString(std::string_view str) noexcept {
     if (!ymd) {
         return Date{};
     }
-    
+
     if (!ymd->ok()) {
         return Date{};
     }
-    
+
     return Date{*ymd};
 }
 
 // 访问器
-int Date::year() const noexcept {
-    return static_cast<int>(m_ymd.year());
+int32_t Date::year() const noexcept {
+    return static_cast<int32_t>(m_ymd.year());
 }
 
-unsigned Date::month() const noexcept {
-    return static_cast<unsigned>(m_ymd.month());
+uint8_t Date::month() const noexcept {
+    return static_cast<uint8_t>(unsigned(m_ymd.month()));
 }
 
-unsigned Date::day() const noexcept {
-    return static_cast<unsigned>(m_ymd.day());
+uint8_t Date::day() const noexcept {
+    return static_cast<uint8_t>(unsigned(m_ymd.day()));
 }
 
 std::chrono::weekday Date::weekday() const noexcept {
     return std::chrono::weekday{toSysDays()};
 }
 
-int Date::dayOfWeek() const {
+uint8_t Date::dayOfWeek() const noexcept {
     auto wd = weekday();
-    return static_cast<int>(wd.c_encoding()); // 0=周日, 1=周一, ..., 6=周六
+    return static_cast<uint8_t>(wd.iso_encoding()); // 0=周日, 1=周一, ..., 6=周六
 }
 
-unsigned Date::dayOfYear() const noexcept {
+uint8_t Date::dayOfYear() const noexcept {
     auto jan1 = std::chrono::year_month_day{m_ymd.year(), std::chrono::month{1}, std::chrono::day{1}};
-    return static_cast<unsigned>((toSysDays() - std::chrono::sys_days{jan1}).count()) + 1;
+    return static_cast<uint8_t>((toSysDays() - std::chrono::sys_days{jan1}).count()) + 1;
 }
 
 // 验证
@@ -93,86 +94,69 @@ bool Date::isLeapYear() const noexcept {
 }
 
 // 日期操作
-Date& Date::addDays(int days) noexcept {
+Date &Date::addDays(int32_t days) noexcept {
     m_ymd = toSysDays() + std::chrono::days{days};
     return *this;
 }
 
-Date& Date::addMonths(int months) noexcept {
+Date &Date::addMonths(int32_t months) noexcept {
     m_ymd = m_ymd + std::chrono::months{months};
     return *this;
 }
 
-Date& Date::addYears(int years) noexcept {
+Date &Date::addYears(int32_t years) noexcept {
     m_ymd = m_ymd + std::chrono::years{years};
     return *this;
 }
 
-Date Date::plusDays(int days) const noexcept {
+Date Date::plusDays(int32_t days) const noexcept {
     return Date{*this}.addDays(days);
 }
 
-Date Date::plusMonths(int months) const noexcept {
+Date Date::plusMonths(int32_t months) const noexcept {
     return Date{*this}.addMonths(months);
 }
 
-Date Date::plusYears(int years) const noexcept {
+Date Date::plusYears(int32_t years) const noexcept {
     return Date{*this}.addYears(years);
 }
 
 // 日期差值
-int Date::daysTo(const Date& other) const noexcept {
-    return static_cast<int>((other.toSysDays() - toSysDays()).count());
+int32_t Date::daysTo(const Date &other) const noexcept {
+    return static_cast<int32_t>((other.toSysDays() - toSysDays()).count());
 }
 
-int Date::monthsTo(const Date& other) const noexcept {
-    auto months = (other.year() - year()) * 12 + (static_cast<int>(other.month()) - static_cast<int>(month()));
-    
+int32_t Date::monthsTo(const Date &other) const noexcept {
+    auto months = (other.year() - year()) * 12 + (static_cast<uint8_t>(other.month()) - static_cast<uint8_t>(month()));
+
     // 如果目标日期的天数小于当前日期的天数，则减去一个月
     if (other.day() < day()) {
         months--;
     }
-    
+
     return months;
 }
 
-int Date::yearsTo(const Date& other) const noexcept {
+int Date::yearsTo(const Date &other) const noexcept {
     auto years = other.year() - year();
-    
+
     // 如果目标日期的月日小于当前日期的月日，则减去一年
-    if (other.month() < month() || 
-        (other.month() == month() && other.day() < day())) {
+    if (other.month() < month() || (other.month() == month() && other.day() < day())) {
         years--;
     }
-    
+
     return years;
 }
 
 // 格式化
 std::string Date::toString(std::string_view format) const {
-    if (format == "yyyy-MM-dd" || format.empty()) {
+    if (format.empty()) {
         return toISOString();
     }
-    
-    // 简单的格式化实现
-    std::string result{format};
-    
-    // 替换年份
-    if (auto pos = result.find("yyyy"); pos != std::string::npos) {
-        result.replace(pos, 4, std::format("{:04d}", year()));
-    }
-    
-    // 替换月份
-    if (auto pos = result.find("MM"); pos != std::string::npos) {
-        result.replace(pos, 2, std::format("{:02d}", month()));
-    }
-    
-    // 替换日期
-    if (auto pos = result.find("dd"); pos != std::string::npos) {
-        result.replace(pos, 2, std::format("{:02d}", day()));
-    }
-    
-    return result;
+
+    // 使用统一的格式化工具
+    auto replacements = DateTimeFormatter::createDateReplacements(year(), month(), day());
+    return DateTimeFormatter::format(format, replacements);
 }
 
 std::string Date::toISOString() const {
@@ -180,6 +164,7 @@ std::string Date::toISOString() const {
 }
 
 // 转换
+// 转换为 std::chrono::sys_days
 Date::sys_days Date::toSysDays() const noexcept {
     return std::chrono::sys_days{m_ymd};
 }
@@ -189,7 +174,7 @@ Date::year_month_day Date::toYearMonthDay() const noexcept {
 }
 
 // 赋值操作符
-Date& Date::operator=(const Date& other) {
+Date &Date::operator=(const Date &other) {
     if (this != &other) {
         m_ymd = other.m_ymd;
     }
@@ -197,77 +182,89 @@ Date& Date::operator=(const Date& other) {
 }
 
 // 比较运算符
-bool Date::operator!=(const Date& other) const {
+bool Date::operator!=(const Date &other) const {
     return m_ymd != other.m_ymd;
 }
 
-bool Date::operator<(const Date& other) const {
+bool Date::operator<(const Date &other) const {
     return toSysDays() < other.toSysDays();
 }
 
-bool Date::operator<=(const Date& other) const {
+bool Date::operator<=(const Date &other) const {
     return toSysDays() <= other.toSysDays();
 }
 
-bool Date::operator>(const Date& other) const {
+bool Date::operator>(const Date &other) const {
     return toSysDays() > other.toSysDays();
 }
 
-bool Date::operator>=(const Date& other) const {
+bool Date::operator>=(const Date &other) const {
     return toSysDays() >= other.toSysDays();
 }
 
 // 算术运算符
-Date& Date::operator+=(const days& d) noexcept {
+Date &Date::operator+=(const days &d) noexcept {
     return addDays(static_cast<int>(d.count()));
 }
 
-Date& Date::operator-=(const days& d) noexcept {
+Date &Date::operator-=(const days &d) noexcept {
     return addDays(-static_cast<int>(d.count()));
 }
 
-Date& Date::operator+=(const months& m) noexcept {
+Date &Date::operator+=(const months &m) noexcept {
     return addMonths(static_cast<int>(m.count()));
 }
 
-Date& Date::operator-=(const months& m) noexcept {
+Date &Date::operator-=(const months &m) noexcept {
     return addMonths(-static_cast<int>(m.count()));
 }
 
-Date& Date::operator+=(const years& y) noexcept {
+Date &Date::operator+=(const years &y) noexcept {
     return addYears(static_cast<int>(y.count()));
 }
 
-Date& Date::operator-=(const years& y) noexcept {
+Date &Date::operator-=(const years &y) noexcept {
     return addYears(-static_cast<int>(y.count()));
 }
 
-Date Date::operator+(const days& d) const noexcept {
+Date &Date::operator+=(const Date &other) noexcept {
+    return addYears(daysTo(other));
+}
+
+Date &Date::operator-=(const Date &other) noexcept {
+    return addYears(-daysTo(other));
+}
+
+Date Date::operator+(const days &d) const noexcept {
     return plusDays(static_cast<int>(d.count()));
 }
 
-Date Date::operator-(const days& d) const noexcept {
+Date Date::operator-(const days &d) const noexcept {
     return plusDays(-static_cast<int>(d.count()));
 }
 
-Date Date::operator+(const months& m) const noexcept {
+Date Date::operator+(const months &m) const noexcept {
     return plusMonths(static_cast<int>(m.count()));
 }
 
-Date Date::operator-(const months& m) const noexcept {
+Date Date::operator-(const months &m) const noexcept {
     return plusMonths(-static_cast<int>(m.count()));
 }
 
-Date Date::operator+(const years& y) const noexcept {
+Date Date::operator+(const years &y) const noexcept {
     return plusYears(static_cast<int>(y.count()));
 }
 
-Date Date::operator-(const years& y) const noexcept {
+Date Date::operator-(const years &y) const noexcept {
     return plusYears(-static_cast<int>(y.count()));
 }
 
-Date::days Date::operator-(const Date& other) const noexcept {
-    return toSysDays() - other.toSysDays();
+Date Date::operator+(const Date &other) const noexcept {
+    return plusYears(daysTo(other));
+}
+
+Date Date::operator-(const Date &other) const noexcept {
+    return plusYears(-daysTo(other));
 }
 
 // 辅助方法
@@ -276,31 +273,28 @@ std::optional<Date::year_month_day> Date::parseISO(std::string_view str) noexcep
     std::regex iso_regex(R"((\d{4})-(\d{1,2})-(\d{1,2}))");
     std::string s{str};
     std::smatch match;
-    
+
     if (!std::regex_match(s, match, iso_regex)) {
         return std::nullopt;
     }
-    
+
     try {
         int year = std::stoi(match[1].str());
         unsigned month = std::stoul(match[2].str());
         unsigned day = std::stoul(match[3].str());
-        
+
         if (year < 1900 || year > 3000 || month < 1 || month > 12 || day < 1 || day > 31) {
             return std::nullopt;
         }
-        
-        return std::chrono::year_month_day{
-            std::chrono::year{year},
-            std::chrono::month{month},
-            std::chrono::day{day}
-        };
+
+        return std::chrono::year_month_day{std::chrono::year{year}, std::chrono::month{month}, std::chrono::day{day}};
     } catch (...) {
         return std::nullopt;
     }
 }
 
-std::optional<Date::year_month_day> Date::parseCustom(std::string_view str, std::string_view format) noexcept {
+std::optional<Date::year_month_day> Date::parseCustom(std::string_view str,
+                                                      [[maybe_unused]] std::string_view format) noexcept {
     // 简化实现，仅支持基本格式
     return parseISO(str);
 }

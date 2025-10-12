@@ -74,6 +74,7 @@ endif()
 
 add_subdirectory(cpp/foundation)
 add_subdirectory(cpp/foundation/database)
+add_subdirectory(cpp/foundation/datetime)
 add_subdirectory(cpp/foundation/logger)
 add_subdirectory(cpp/domain)
 add_subdirectory(cpp/modules/category)

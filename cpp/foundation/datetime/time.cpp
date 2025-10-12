@@ -5,7 +5,8 @@
 // 创建日期： 2025-10-12 18:16:00 (UTC+8)
 // ============================================================
 
-#include "time.h"
+#include "time.hpp"
+#include "formatter.h"
 #include <iomanip>
 #include <regex>
 #include <sstream>
@@ -14,7 +15,7 @@
 namespace my {
 
 // 构造函数
-Time::Time(int hour, int minute, int second, int millisecond) noexcept {
+Time::Time(uint8_t hour, uint8_t minute, uint8_t second, uint16_t millisecond) noexcept {
     m_duration = hours{hour} + minutes{minute} + seconds{second} + milliseconds{millisecond};
     normalize();
 }
@@ -33,22 +34,33 @@ Time::Time(const std::string &timeStr) {
     }
 }
 
+// 从 ClockTime 构造
+Time::Time(const ClockTime &ct) noexcept : Time(ct.hour, ct.minute, ct.second, ct.millisecond) {}
+
 Time::Time(const Time &other) : m_duration(other.m_duration) {}
 
 // 静态工厂方法
 Time Time::now() noexcept {
     auto now = std::chrono::system_clock::now();
-    auto time_t = std::chrono::system_clock::to_time_t(now);
-    auto tm = *std::localtime(&time_t);
-    
-    auto ms = std::chrono::duration_cast<milliseconds>(
-        now.time_since_epoch() % std::chrono::seconds{1}
-    ).count();
-    
-    return Time{tm.tm_hour, tm.tm_min, tm.tm_sec, static_cast<int>(ms)};
+
+    // 使用现代 C++ chrono 库，线程安全
+    auto local_time = std::chrono::current_zone()->to_local(now); // 转换为本地时间
+    auto days = std::chrono::floor<std::chrono::days>(local_time);
+    auto time_of_day = local_time - days;
+
+    auto h = duration_cast<hours>(time_of_day);
+    auto m = duration_cast<minutes>(time_of_day - h);
+    auto s = duration_cast<seconds>(time_of_day - h - m);
+    auto ms = duration_cast<milliseconds>(time_of_day - h - m - s);
+
+    return Time{static_cast<uint8_t>(h.count()), //
+                static_cast<uint8_t>(m.count()), //
+                static_cast<uint8_t>(s.count()), //
+                static_cast<uint16_t>(ms.count())};
 }
 
 Time Time::fromString(std::string_view str) noexcept {
+    // TODO: 支持自定义格式
     return fromISOString(str);
 }
 
@@ -76,31 +88,40 @@ Time Time::fromHours(int64_t hours) noexcept {
     return Time{std::chrono::hours{hours}};
 }
 
+// 一次性计算所有组件
+ClockTime Time::getComponents() const noexcept {
+    int64_t total_ms = std::chrono::duration_cast<milliseconds>(m_duration).count();
+
+    // 保证只在一天范围内
+    total_ms %= 24 * 60 * 60 * 1000;
+
+    uint8_t h = static_cast<uint8_t>(total_ms / (60 * 60 * 1000));
+    total_ms %= (60 * 60 * 1000);
+
+    uint8_t m = static_cast<uint8_t>(total_ms / (60 * 1000));
+    total_ms %= (60 * 1000);
+
+    uint8_t s = static_cast<uint8_t>(total_ms / 1000);
+    uint16_t ms = static_cast<uint16_t>(total_ms % 1000);
+
+    return ClockTime{h, m, s, ms};
+}
+
 // 访问器
 int Time::hour() const noexcept {
-    auto h = std::chrono::duration_cast<hours>(m_duration);
-    return static_cast<int>(h.count());
+    return getComponents().hour;
 }
 
 int Time::minute() const noexcept {
-    auto h = std::chrono::duration_cast<hours>(m_duration);
-    auto m = std::chrono::duration_cast<minutes>(m_duration - h);
-    return static_cast<int>(m.count());
+    return getComponents().minute;
 }
 
 int Time::second() const noexcept {
-    auto h = std::chrono::duration_cast<hours>(m_duration);
-    auto m = std::chrono::duration_cast<minutes>(m_duration - h);
-    auto s = std::chrono::duration_cast<seconds>(m_duration - h - m);
-    return static_cast<int>(s.count());
+    return getComponents().second;
 }
 
 int Time::millisecond() const noexcept {
-    auto h = std::chrono::duration_cast<hours>(m_duration);
-    auto m = std::chrono::duration_cast<minutes>(m_duration - h);
-    auto s = std::chrono::duration_cast<seconds>(m_duration - h - m);
-    auto ms = std::chrono::duration_cast<milliseconds>(m_duration - h - m - s);
-    return static_cast<int>(ms.count());
+    return getComponents().millisecond;
 }
 
 // 验证
@@ -177,34 +198,13 @@ int64_t Time::hoursTo(const Time &other) const noexcept {
 
 // 格式化
 std::string Time::toString(std::string_view format) const {
-    if (format == "hh:mm:ss" || format.empty()) {
-        return to24HourString();
+    if (format.empty()) {
+        return toISOString();
     }
-    
-    // 简单的格式化实现
-    std::string result{format};
-    
-    // 替换小时
-    if (auto pos = result.find("hh"); pos != std::string::npos) {
-        result.replace(pos, 2, std::format("{:02d}", hour()));
-    }
-    
-    // 替换分钟
-    if (auto pos = result.find("mm"); pos != std::string::npos) {
-        result.replace(pos, 2, std::format("{:02d}", minute()));
-    }
-    
-    // 替换秒
-    if (auto pos = result.find("ss"); pos != std::string::npos) {
-        result.replace(pos, 2, std::format("{:02d}", second()));
-    }
-    
-    // 替换毫秒
-    if (auto pos = result.find("fff"); pos != std::string::npos) {
-        result.replace(pos, 3, std::format("{:03d}", millisecond()));
-    }
-    
-    return result;
+
+    // 使用统一的格式化工具
+    auto replacements = DateTimeFormatter::createTimeReplacements(hour(), minute(), second(), millisecond());
+    return DateTimeFormatter::format(format, replacements);
 }
 
 std::string Time::toISOString() const {
@@ -214,13 +214,13 @@ std::string Time::toISOString() const {
 std::string Time::to12HourString() const {
     int h = hour();
     std::string ampm = isAM() ? "AM" : "PM";
-    
+
     if (h == 0) {
         h = 12; // 午夜显示为12 AM
     } else if (h > 12) {
         h -= 12; // 下午时间转换为12小时制
     }
-    
+
     return std::format("{:02d}:{:02d}:{:02d} {}", h, minute(), second(), ampm);
 }
 
@@ -311,6 +311,14 @@ Time &Time::operator-=(const hours &h) noexcept {
     return addHours(-h.count());
 }
 
+Time &Time::operator+=(const Time &other) noexcept {
+    return addMilliseconds(other.toMilliseconds());
+}
+
+Time &Time::operator-=(const Time &other) noexcept {
+    return addMilliseconds(-other.toMilliseconds());
+}
+
 Time Time::operator+(const milliseconds &ms) const noexcept {
     return plusMilliseconds(ms.count());
 }
@@ -343,39 +351,43 @@ Time Time::operator-(const hours &h) const noexcept {
     return plusHours(-h.count());
 }
 
-Time::duration Time::operator-(const Time &other) const noexcept {
-    return m_duration - other.m_duration;
+Time Time::operator+(const Time &other) const noexcept {
+    return plusMilliseconds(other.toMilliseconds());
+}
+
+Time Time::operator-(const Time &other) const noexcept {
+    return plusMilliseconds(-other.toMilliseconds());
 }
 
 // 辅助方法
 std::optional<Time::duration> Time::parseISO(std::string_view str) noexcept {
     // 匹配 HH:MM:SS.sss 或 HH:MM:SS 格式
-    std::regex iso_regex(R"((\d{1,2}):(\d{1,2}):(\d{1,2})(?:\.(\d{1,3}))?)");
+    static const std::regex iso_regex(R"((\d{1,2}):(\d{1,2}):(\d{1,2})(?:\.(\d{1,3}))?)");
     std::string s{str};
     std::smatch match;
-    
+
     if (!std::regex_match(s, match, iso_regex)) {
         return std::nullopt;
     }
-    
+
     try {
-        int hour = std::stoi(match[1].str());
-        int minute = std::stoi(match[2].str());
-        int second = std::stoi(match[3].str());
-        int millisecond = match[4].matched ? std::stoi(match[4].str()) : 0;
-        
-        if (hour < 0 || hour > 23 || minute < 0 || minute > 59 || 
-            second < 0 || second > 59 || millisecond < 0 || millisecond > 999) {
+        uint8_t hour = std::stoi(match[1].str());
+        uint8_t minute = std::stoi(match[2].str());
+        uint8_t second = std::stoi(match[3].str());
+        uint16_t millisecond = match[4].matched ? std::stoi(match[4].str()) : 0;
+
+        if (hour > 23 || minute > 59 || second > 59 || millisecond > 999) {
             return std::nullopt;
         }
-        
+
         return hours{hour} + minutes{minute} + seconds{second} + milliseconds{millisecond};
     } catch (...) {
         return std::nullopt;
     }
 }
 
-std::optional<Time::duration> Time::parseCustom(std::string_view str, std::string_view format) noexcept {
+std::optional<Time::duration> Time::parseCustom(std::string_view str,
+                                                [[maybe_unused]] std::string_view format) noexcept {
     // 简化实现，仅支持基本格式
     return parseISO(str);
 }
@@ -383,12 +395,12 @@ std::optional<Time::duration> Time::parseCustom(std::string_view str, std::strin
 void Time::normalize() noexcept {
     // 确保时间在0-24小时范围内
     auto day_duration = hours{24};
-    
+
     // 处理负数时间
     while (m_duration < duration{0}) {
         m_duration += day_duration;
     }
-    
+
     // 处理超过24小时的时间
     while (m_duration >= day_duration) {
         m_duration -= day_duration;

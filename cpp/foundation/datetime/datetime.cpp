@@ -6,37 +6,70 @@
 // ============================================================
 
 #include "datetime.h"
+#include "formatter.h"
 #include <iomanip>
 #include <regex>
 #include <sstream>
 #include <stdexcept>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 namespace my {
 
 // 构造函数
-DateTime::DateTime(const time_point &tp) noexcept : m_timePoint(tp) {}
+DateTime::DateTime(const time_point &tp) noexcept {
+    auto days = std::chrono::floor<std::chrono::days>(tp);
+    auto time_since_midnight = tp - days;
 
-DateTime::DateTime(const Date &date, int hour, int minute, int second, int millisecond) noexcept
-    : m_timePoint(makeTimePoint(date.year(), date.month(), date.day(), hour, minute, second, millisecond)) {}
+    auto h = std::chrono::floor<std::chrono::hours>(time_since_midnight);
+    auto m = std::chrono::floor<std::chrono::minutes>(time_since_midnight - h);
+    auto s = std::chrono::floor<std::chrono::seconds>(time_since_midnight - h - m);
+    auto ms = std::chrono::floor<std::chrono::milliseconds>(time_since_midnight - h - m - s);
 
-DateTime::DateTime(int year, unsigned month, unsigned day, int hour, int minute, int second, int millisecond) noexcept
-    : m_timePoint(makeTimePoint(year, month, day, hour, minute, second, millisecond)) {}
+    m_date = Date{days};
+    m_time = Time{static_cast<uint8_t>(h.count()), static_cast<uint8_t>(m.count()), static_cast<uint8_t>(s.count()),
+                  static_cast<uint16_t>(ms.count())};
+}
 
-DateTime::DateTime(const std::string& dateTimeStr) {
-    auto tp = parseISO(dateTimeStr);
-    if (!tp) {
-        m_timePoint = time_point{};
+DateTime::DateTime(const Date &date, const Time &time) noexcept : m_date(date), m_time(time) {}
+DateTime::DateTime(int year, uint8_t month, uint8_t day, const Time &time) noexcept
+    : m_date(year, month, day), m_time(time) {}
+
+DateTime::DateTime(const Date &date, uint8_t hour, uint8_t minute, uint8_t second, uint16_t millisecond) noexcept
+    : m_date(date), m_time(hour, minute, second, millisecond) {}
+
+DateTime::DateTime(int year, uint8_t month, uint8_t day, uint8_t hour, uint8_t minute, uint8_t second,
+                   uint16_t millisecond) noexcept
+    : m_date(year, month, day), m_time(hour, minute, second, millisecond) {}
+
+DateTime::DateTime(const std::string &dateTimeStr) {
+    auto dt = parseISO(dateTimeStr);
+    if (!dt) {
+        m_date = Date{};
+        m_time = Time{};
     } else {
-        m_timePoint = *tp;
+        m_date = dt->m_date;
+        m_time = dt->m_time;
     }
 }
 
-DateTime::DateTime(const DateTime& other) : m_timePoint(other.m_timePoint) {}
-
 // 静态工厂方法
+/**
+ * @brief 获取当前日期时间
+ *
+ * @param tz 时区，默认本地时区
+ * @return DateTime 当前日期时间
+ */
 DateTime DateTime::now(TimeZone tz) noexcept {
+    // TODO: 实现时区转换
     auto now = system_clock::now();
-    return DateTime{now};
+    if (tz == TimeZone::UTC) {
+        return DateTime{now};
+    } else {
+        return DateTime{now + getUTCOffset()};
+    }
 }
 
 DateTime DateTime::utcNow() noexcept {
@@ -73,119 +106,100 @@ DateTime DateTime::fromUnixTimestampMs(int64_t timestampMs) noexcept {
 
 // 访问器 - 日期部分
 Date DateTime::date() const noexcept {
-    auto days = std::chrono::floor<std::chrono::days>(m_timePoint);
-    return Date{days};
+    return m_date;
 }
 
-int DateTime::year() const noexcept {
-    return date().year();
+int32_t DateTime::year() const noexcept {
+    return m_date.year();
 }
 
-unsigned DateTime::month() const noexcept {
-    return date().month();
+uint8_t DateTime::month() const noexcept {
+    return m_date.month();
 }
 
-unsigned DateTime::day() const noexcept {
-    return date().day();
+uint8_t DateTime::day() const noexcept {
+    return m_date.day();
 }
 
 std::chrono::weekday DateTime::weekday() const noexcept {
-    return date().weekday();
+    return m_date.weekday();
 }
 
-int DateTime::dayOfWeek() const {
-    return date().dayOfWeek();
+uint8_t DateTime::dayOfWeek() const noexcept {
+    return m_date.dayOfWeek();
 }
 
-unsigned DateTime::dayOfYear() const noexcept {
-    return date().dayOfYear();
+uint8_t DateTime::dayOfYear() const noexcept {
+    return m_date.dayOfYear();
 }
 
 // 访问器 - 时间部分
 Time DateTime::time() const noexcept {
-    return Time{hour(), minute(), second(), millisecond()};
+    return m_time;
 }
 
-int DateTime::hour() const noexcept {
-    auto days = std::chrono::floor<std::chrono::days>(m_timePoint);
-    auto time_since_midnight = m_timePoint - days;
-    auto h = std::chrono::floor<hours>(time_since_midnight);
-    return static_cast<int>(h.count());
+uint8_t DateTime::hour() const noexcept {
+    return m_time.hour();
 }
 
-int DateTime::minute() const noexcept {
-    auto days = std::chrono::floor<std::chrono::days>(m_timePoint);
-    auto time_since_midnight = m_timePoint - days;
-    auto h = std::chrono::floor<hours>(time_since_midnight);
-    auto m = std::chrono::floor<minutes>(time_since_midnight - h);
-    return static_cast<int>(m.count());
+uint8_t DateTime::minute() const noexcept {
+    return m_time.minute();
 }
 
-int DateTime::second() const noexcept {
-    auto days = std::chrono::floor<std::chrono::days>(m_timePoint);
-    auto time_since_midnight = m_timePoint - days;
-    auto h = std::chrono::floor<hours>(time_since_midnight);
-    auto m = std::chrono::floor<minutes>(time_since_midnight - h);
-    auto s = std::chrono::floor<seconds>(time_since_midnight - h - m);
-    return static_cast<int>(s.count());
+uint8_t DateTime::second() const noexcept {
+    return m_time.second();
 }
 
-int DateTime::millisecond() const noexcept {
-    auto days = std::chrono::floor<std::chrono::days>(m_timePoint);
-    auto time_since_midnight = m_timePoint - days;
-    auto h = std::chrono::floor<hours>(time_since_midnight);
-    auto m = std::chrono::floor<minutes>(time_since_midnight - h);
-    auto s = std::chrono::floor<seconds>(time_since_midnight - h - m);
-    auto ms = std::chrono::floor<milliseconds>(time_since_midnight - h - m - s);
-    return static_cast<int>(ms.count());
+uint16_t DateTime::millisecond() const noexcept {
+    return m_time.millisecond();
 }
 
 // 验证
 bool DateTime::isValid() const noexcept {
-    return date().isValid();
+    return m_date.isValid() && m_time.isValid();
 }
 
 bool DateTime::isLeapYear() const noexcept {
-    return date().isLeapYear();
+    return m_date.isLeapYear();
 }
 
 // 日期时间操作
 DateTime &DateTime::addMilliseconds(int64_t ms) noexcept {
-    m_timePoint += milliseconds{ms};
+    m_time += milliseconds{ms};
+    normalizeDateTime();
     return *this;
 }
 
 DateTime &DateTime::addSeconds(int64_t seconds) noexcept {
-    m_timePoint += std::chrono::seconds{seconds};
+    m_time.addSeconds(seconds);
+    normalizeDateTime();
     return *this;
 }
 
 DateTime &DateTime::addMinutes(int64_t minutes) noexcept {
-    m_timePoint += std::chrono::minutes{minutes};
+    m_time.addMinutes(minutes);
+    normalizeDateTime();
     return *this;
 }
 
 DateTime &DateTime::addHours(int64_t hours) noexcept {
-    m_timePoint += std::chrono::hours{hours};
+    m_time.addHours(hours);
+    normalizeDateTime();
     return *this;
 }
 
 DateTime &DateTime::addDays(int days) noexcept {
-    m_timePoint += std::chrono::days{days};
+    m_date.addDays(days);
     return *this;
 }
 
 DateTime &DateTime::addMonths(int months) noexcept {
-    auto d = date().plusMonths(months);
-    auto time_part = m_timePoint - std::chrono::floor<std::chrono::days>(m_timePoint);
-    m_timePoint = d.toSysDays() + time_part;
+    m_date.addMonths(months);
     return *this;
 }
 
 DateTime &DateTime::addYears(int years) noexcept {
-    auto d = date().plusYears(years);
-    auto time_part = m_timePoint - std::chrono::floor<std::chrono::days>(m_timePoint);
-    m_timePoint = d.toSysDays() + time_part;
+    m_date.addYears(years);
     return *this;
 }
 
@@ -219,22 +233,22 @@ DateTime DateTime::plusYears(int years) const noexcept {
 
 // 日期时间差值
 int64_t DateTime::millisecondsTo(const DateTime &other) const noexcept {
-    auto diff = other.m_timePoint - m_timePoint;
+    auto diff = other.toTimePoint() - toTimePoint();
     return std::chrono::duration_cast<milliseconds>(diff).count();
 }
 
 int64_t DateTime::secondsTo(const DateTime &other) const noexcept {
-    auto diff = other.m_timePoint - m_timePoint;
+    auto diff = other.toTimePoint() - toTimePoint();
     return std::chrono::duration_cast<seconds>(diff).count();
 }
 
 int64_t DateTime::minutesTo(const DateTime &other) const noexcept {
-    auto diff = other.m_timePoint - m_timePoint;
+    auto diff = other.toTimePoint() - toTimePoint();
     return std::chrono::duration_cast<minutes>(diff).count();
 }
 
 int64_t DateTime::hoursTo(const DateTime &other) const noexcept {
-    auto diff = other.m_timePoint - m_timePoint;
+    auto diff = other.toTimePoint() - toTimePoint();
     return std::chrono::duration_cast<hours>(diff).count();
 }
 
@@ -244,56 +258,26 @@ int DateTime::daysTo(const DateTime &other) const noexcept {
 
 // 时间戳
 int64_t DateTime::toUnixTimestamp() const noexcept {
-    auto duration = m_timePoint.time_since_epoch();
+    auto duration = toTimePoint().time_since_epoch();
     return std::chrono::duration_cast<seconds>(duration).count();
 }
 
 int64_t DateTime::toUnixTimestampMs() const noexcept {
-    auto duration = m_timePoint.time_since_epoch();
+    auto duration = toTimePoint().time_since_epoch();
     return std::chrono::duration_cast<milliseconds>(duration).count();
 }
 
 // 格式化
 std::string DateTime::toString(std::string_view format) const {
-    if (format == "yyyy-MM-dd hh:mm:ss" || format.empty()) {
+    if (format.empty()) {
         return std::format("{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}", year(), month(), day(), hour(), minute(),
                            second());
     }
 
-    // 简单的格式化实现
-    std::string result{format};
-
-    // 替换年份
-    if (auto pos = result.find("yyyy"); pos != std::string::npos) {
-        result.replace(pos, 4, std::format("{:04d}", year()));
-    }
-
-    // 替换月份
-    if (auto pos = result.find("MM"); pos != std::string::npos) {
-        result.replace(pos, 2, std::format("{:02d}", month()));
-    }
-
-    // 替换日期
-    if (auto pos = result.find("dd"); pos != std::string::npos) {
-        result.replace(pos, 2, std::format("{:02d}", day()));
-    }
-
-    // 替换小时
-    if (auto pos = result.find("hh"); pos != std::string::npos) {
-        result.replace(pos, 2, std::format("{:02d}", hour()));
-    }
-
-    // 替换分钟
-    if (auto pos = result.find("mm"); pos != std::string::npos) {
-        result.replace(pos, 2, std::format("{:02d}", minute()));
-    }
-
-    // 替换秒
-    if (auto pos = result.find("ss"); pos != std::string::npos) {
-        result.replace(pos, 2, std::format("{:02d}", second()));
-    }
-
-    return result;
+    // 使用统一的格式化工具
+    auto replacements = DateTimeFormatter::createDateTimeReplacements(year(), month(), day(), hour(), minute(),
+                                                                      second(), millisecond());
+    return DateTimeFormatter::format(format, replacements);
 }
 
 std::string DateTime::toISOString() const {
@@ -310,47 +294,127 @@ std::string DateTime::toTimeString() const {
 }
 
 // 转换
-DateTime::time_point DateTime::toTimePoint() const noexcept {
-    return m_timePoint;
+std::chrono::system_clock::time_point DateTime::toTimePoint() const noexcept {
+    auto days = m_date.toSysDays();
+    auto time_duration = std::chrono::hours{m_time.hour()} + std::chrono::minutes{m_time.minute()} +
+                         std::chrono::seconds{m_time.second()} + std::chrono::milliseconds{m_time.millisecond()};
+    return days + time_duration;
+}
+
+// 处理跨日期边界的私有方法
+void DateTime::normalizeDateTime() noexcept {
+    // 如果时间超过了一天的范围，需要调整日期
+    int32_t totalMilliseconds =
+        m_time.hour() * 3600000 + m_time.minute() * 60000 + m_time.second() * 1000 + m_time.millisecond();
+
+    if (totalMilliseconds >= 86400000) { // 超过一天
+        int32_t days = totalMilliseconds / 86400000;
+        m_date.addDays(days);
+        totalMilliseconds %= 86400000;
+
+        uint8_t hours = totalMilliseconds / 3600000;
+        totalMilliseconds %= 3600000;
+        uint8_t minutes = totalMilliseconds / 60000;
+        totalMilliseconds %= 60000;
+        uint8_t seconds = totalMilliseconds / 1000;
+        uint16_t milliseconds = totalMilliseconds % 1000;
+
+        m_time = Time{hours, minutes, seconds, milliseconds};
+    } else if (totalMilliseconds < 0) { // 小于零
+        int32_t days = (-totalMilliseconds - 1) / 86400000 + 1;
+        m_date.addDays(-days);
+        totalMilliseconds += days * 86400000;
+
+        uint8_t hours = totalMilliseconds / 3600000;
+        totalMilliseconds %= 3600000;
+        uint8_t minutes = totalMilliseconds / 60000;
+        totalMilliseconds %= 60000;
+        uint8_t seconds = totalMilliseconds / 1000;
+        uint16_t milliseconds = totalMilliseconds % 1000;
+
+        m_time = Time{hours, minutes, seconds, milliseconds};
+    }
 }
 
 DateTime DateTime::toUTC() const noexcept {
-    // 简化实现，假设当前已经是UTC
-    return *this;
+    try {
+        // 假设当前时间是本地时间，转换为 UTC
+        auto timePoint = toTimePoint();
+        auto local_time = std::chrono::current_zone()->to_local(timePoint);
+        auto utc_time = std::chrono::current_zone()->to_sys(local_time);
+
+        auto days = std::chrono::floor<std::chrono::days>(utc_time);
+        auto time_since_midnight = utc_time - days;
+
+        auto h = std::chrono::floor<std::chrono::hours>(time_since_midnight);
+        auto m = std::chrono::floor<std::chrono::minutes>(time_since_midnight - h);
+        auto s = std::chrono::floor<std::chrono::seconds>(time_since_midnight - h - m);
+        auto ms = std::chrono::floor<std::chrono::milliseconds>(time_since_midnight - h - m - s);
+
+        Date utcDate{days};
+        Time utcTime{static_cast<uint8_t>(h.count()), //
+                     static_cast<uint8_t>(m.count()), //
+                     static_cast<uint8_t>(s.count()), //
+                     static_cast<uint16_t>(ms.count())};
+
+        return DateTime{utcDate, utcTime};
+    } catch (...) {
+        // 如果转换失败，返回原始时间
+        return *this;
+    }
 }
 
 DateTime DateTime::toLocal() const noexcept {
-    // 简化实现，假设当前已经是本地时间
-    return *this;
-}
+    try {
+        // 假设当前时间是 UTC，转换为本地时间
+        auto timePoint = toTimePoint();
+        auto local_time = std::chrono::current_zone()->to_local(timePoint);
 
-// 赋值操作符
-DateTime& DateTime::operator=(const DateTime& other) {
-    if (this != &other) {
-        m_timePoint = other.m_timePoint;
+        auto days = std::chrono::floor<std::chrono::days>(local_time);
+        auto time_since_midnight = local_time - days;
+
+        auto h = std::chrono::floor<std::chrono::hours>(time_since_midnight);
+        auto m = std::chrono::floor<std::chrono::minutes>(time_since_midnight - h);
+        auto s = std::chrono::floor<std::chrono::seconds>(time_since_midnight - h - m);
+        auto ms = std::chrono::floor<std::chrono::milliseconds>(time_since_midnight - h - m - s);
+
+        // 将本地日期转换为系统日期以便用于日期构造函数中
+        auto sys_days = std::chrono::sys_days{days.time_since_epoch()};
+        Date localDate{sys_days};
+        Time localTime{static_cast<uint8_t>(h.count()), //
+                       static_cast<uint8_t>(m.count()), //
+                       static_cast<uint8_t>(s.count()), //
+                       static_cast<uint16_t>(ms.count())};
+
+        return DateTime{localDate, localTime};
+    } catch (...) {
+        // 如果转换失败，返回原始时间
+        return *this;
     }
-    return *this;
 }
 
 // 比较运算符
-bool DateTime::operator!=(const DateTime& other) const {
-    return m_timePoint != other.m_timePoint;
+bool DateTime::operator!=(const DateTime &other) const {
+    return m_date != other.m_date || m_time != other.m_time;
 }
 
-bool DateTime::operator<(const DateTime& other) const {
-    return m_timePoint < other.m_timePoint;
+bool DateTime::operator<(const DateTime &other) const {
+    if (m_date != other.m_date) {
+        return m_date < other.m_date;
+    }
+    return m_time < other.m_time;
 }
 
-bool DateTime::operator<=(const DateTime& other) const {
-    return m_timePoint <= other.m_timePoint;
+bool DateTime::operator<=(const DateTime &other) const {
+    return *this < other || *this == other;
 }
 
-bool DateTime::operator>(const DateTime& other) const {
-    return m_timePoint > other.m_timePoint;
+bool DateTime::operator>(const DateTime &other) const {
+    return !(*this <= other);
 }
 
-bool DateTime::operator>=(const DateTime& other) const {
-    return m_timePoint >= other.m_timePoint;
+bool DateTime::operator>=(const DateTime &other) const {
+    return !(*this < other);
 }
 
 // 算术运算符
@@ -467,13 +531,14 @@ DateTime DateTime::operator-(const years &y) const noexcept {
 }
 
 DateTime::duration DateTime::operator-(const DateTime &other) const noexcept {
-    return m_timePoint - other.m_timePoint;
+    return toTimePoint() - other.toTimePoint();
 }
 
 // 辅助方法
-std::optional<DateTime::time_point> DateTime::parseISO(std::string_view str) noexcept {
-    // 匹配 YYYY-MM-DDTHH:MM:SS.sssZ 或 YYYY-MM-DD HH:MM:SS 格式
-    std::regex iso_regex(R"((\d{4})-(\d{1,2})-(\d{1,2})[T ](\d{1,2}):(\d{1,2}):(\d{1,2})(?:\.(\d{1,3}))?(?:Z|$))");
+std::optional<DateTime> DateTime::parseISO(std::string_view str) noexcept {
+    // 匹配 YYYY-MM-DDTHH:MM:SS.sssZ 或 YYYY-MM-DD HH:MM:SS 格式，支持时区
+    std::regex iso_regex(
+        R"((\d{4})-(\d{1,2})-(\d{1,2})[T ](\d{1,2}):(\d{1,2}):(\d{1,2})(?:\.(\d{1,3}))?(?:(Z)|([+-])(\d{2}):(\d{2}))?$)");
     std::string s{str};
     std::smatch match;
 
@@ -483,37 +548,99 @@ std::optional<DateTime::time_point> DateTime::parseISO(std::string_view str) noe
 
     try {
         int year = std::stoi(match[1].str());
-        unsigned month = std::stoul(match[2].str());
-        unsigned day = std::stoul(match[3].str());
-        int hour = std::stoi(match[4].str());
-        int minute = std::stoi(match[5].str());
-        int second = std::stoi(match[6].str());
-        int millisecond = match[7].matched ? std::stoi(match[7].str()) : 0;
+        uint8_t month = std::stoi(match[2].str());
+        uint8_t day = std::stoi(match[3].str());
+        uint8_t hour = std::stoi(match[4].str());
+        uint8_t minute = std::stoi(match[5].str());
+        uint8_t second = std::stoi(match[6].str());
+        uint16_t millisecond = match[7].matched ? std::stoi(match[7].str()) : 0;
 
-        if (year < 1900 || year > 3000 || month < 1 || month > 12 || day < 1 || day > 31 || hour < 0 || hour > 23 ||
-            minute < 0 || minute > 59 || second < 0 || second > 59 || millisecond < 0 || millisecond > 999) {
+        // 处理毫秒数的位数（如果只有1-2位，需要补齐到3位）
+        if (match[7].matched) {
+            std::string ms_str = match[7].str();
+            if (ms_str.length() == 1) {
+                millisecond *= 100;
+            } else if (ms_str.length() == 2) {
+                millisecond *= 10;
+            }
+        }
+
+        if (year < 1900 || year > 3000 || month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59 ||
+            second > 59 || millisecond > 999) {
             return std::nullopt;
         }
 
-        return makeTimePoint(year, month, day, hour, minute, second, millisecond);
+        Date date{year, month, day};
+        Time time{hour, minute, second, millisecond};
+
+        if (!date.isValid() || !time.isValid()) {
+            return std::nullopt;
+        }
+
+        DateTime result{date, time};
+
+        // 处理时区信息
+        if (match[8].matched) {
+            // UTC时区 (Z)
+            // 输入已经是UTC时间，无需转换
+        } else if (match[9].matched && match[10].matched && match[11].matched) {
+            // 有时区偏移 (+/-HH:MM)
+            std::string sign = match[9].str();
+            int tz_hours = std::stoi(match[10].str());
+            int tz_minutes = std::stoi(match[11].str());
+
+            if (tz_hours < 0 || tz_hours > 23 || tz_minutes < 0 || tz_minutes > 59) {
+                return std::nullopt;
+            }
+
+            // 计算总的偏移分钟数
+            int total_offset_minutes = tz_hours * 60 + tz_minutes;
+            if (sign == "-") {
+                total_offset_minutes = -total_offset_minutes;
+            }
+
+            // 将时间转换为UTC（减去时区偏移）
+            result = result.plusMinutes(-total_offset_minutes);
+        }
+        // 如果没有时区信息，假设为本地时间
+
+        return result;
     } catch (...) {
         return std::nullopt;
     }
 }
 
-std::optional<DateTime::time_point> DateTime::parseCustom(std::string_view str, std::string_view format) noexcept {
+std::optional<DateTime> DateTime::parseCustom(std::string_view str, [[maybe_unused]] std::string_view format) noexcept {
     // 简化实现，仅支持基本格式
     return parseISO(str);
 }
 
-DateTime::time_point DateTime::makeTimePoint(int year, unsigned month, unsigned day, int hour, int minute, int second,
-                                             int millisecond) noexcept {
-    auto ymd = std::chrono::year_month_day{std::chrono::year{year}, std::chrono::month{month}, std::chrono::day{day}};
-
-    auto days = std::chrono::sys_days{ymd};
-    auto time_part = hours{hour} + minutes{minute} + seconds{second} + milliseconds{millisecond};
-
-    return days + time_part;
+/**
+ * @brief 获取当前日期时间的UTC偏移
+ *
+ * @return std::chrono::minutes UTC偏移（分钟）
+ */
+std::chrono::minutes DateTime::getUTCOffset() noexcept {
+    try {
+#ifdef _WIN32
+        TIME_ZONE_INFORMATION tz_info;
+        DWORD result = GetTimeZoneInformation(&tz_info);
+        // 计算UTC偏移（分钟）
+        int offset = -tz_info.Bias;
+        if (result == TIME_ZONE_ID_DAYLIGHT) {
+            offset -= tz_info.DaylightBias;
+        } else {
+            offset -= tz_info.StandardBias;
+        }
+        return std::chrono::hours(offset / 60) + std::chrono::minutes(offset % 60);
+#else
+        [[deprecated("不支持的平台（暂未实现）")]]
+        int a = 1,
+            b = a;
+#endif
+    } catch (const std::exception &) {
+        return std::chrono::minutes(0);
+    }
 }
 
 } // namespace my

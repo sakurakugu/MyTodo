@@ -150,7 +150,8 @@
         "generator": "cpp",
         "ios": "cpp",
         "qmap": "cpp",
-        "qloggingcategory": "cpp"
+        "qloggingcategory": "cpp",
+        "gsl_util": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "search.useIgnoreFiles": false, // 禁用git忽略文件
