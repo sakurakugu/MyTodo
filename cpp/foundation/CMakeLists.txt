@@ -10,8 +10,6 @@ add_library(mytodo_foundation STATIC
     config.cpp
     config.h
     default_value.h
-    global_data.cpp
-    global_data.h
     network_proxy.cpp
     network_proxy.h
     network_request.cpp
@@ -39,4 +37,5 @@ target_link_libraries(mytodo_foundation
         Qt6::Network
         Qt6::Gui
         tomlplusplus::tomlplusplus
+        my_logger
 )

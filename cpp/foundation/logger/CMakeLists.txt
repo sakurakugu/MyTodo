@@ -13,7 +13,7 @@ add_library(my_logger STATIC
 )
 
 # 查找 Qt 库
-find_package(Qt6 COMPONENTS Core QUIET )
+find_package(Qt6 COMPONENTS Core QUIET)
 
 # 将包含目录添加到库中
 target_include_directories(my_logger PUBLIC
@@ -28,3 +28,8 @@ target_link_libraries(my_logger
         Qt6::Core
 )
 endif()
+
+# 定义编译时宏，方便别的模块判断是否启用该库
+target_compile_definitions(my_logger PUBLIC
+    MY_LOGGER_ENABLED
+)

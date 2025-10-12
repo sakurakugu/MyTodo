@@ -12,11 +12,15 @@ include_guard(GLOBAL) # 防止重复包含
 
 include(FetchContent)
 
+if(NOT DEFINED STDUUID_VERSION)
+    set(STDUUID_VERSION "1.2.3" CACHE STRING "stduuid 版本号")
+endif()
+
 function(add_stduuid)
     FetchContent_Declare(
         stduuid
         GIT_REPOSITORY https://github.com/mariusbancila/stduuid.git
-        GIT_TAG master
+        GIT_TAG v${STDUUID_VERSION}
         GIT_SHALLOW TRUE
     )
     

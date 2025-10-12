@@ -15,8 +15,7 @@ add_library(mytodo_database STATIC
 )
 
 # 查找 Qt 库
-find_package(Qt6 REQUIRED COMPONENTS 
-    Core)
+find_package(Qt6 COMPONENTS Core QUIET)
 
 # 将包含目录添加到库中
 target_include_directories(mytodo_database PUBLIC
@@ -29,4 +28,10 @@ target_link_libraries(mytodo_database
     PUBLIC
         Qt6::Core
         SQLite::SQLite3
+        my_logger
+)
+
+# 定义编译时宏，方便别的模块判断是否启用该库
+target_compile_definitions(mytodo_database PUBLIC
+    MY_DATABASE_ENABLED
 )
