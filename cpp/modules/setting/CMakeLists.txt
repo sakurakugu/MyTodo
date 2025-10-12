@@ -33,6 +33,6 @@ target_link_libraries(mytodo_setting
         Qt6::Network
         mytodo_foundation        # 基础模块（Logger, Config类等）
         mytodo_backup            # 备份模块（BackupManager类等）
-        mytodo_database          # 数据库模块（Database类等）
+        my_database          # 数据库模块（Database类等）
         my_logger                # 日志模块（Logger类等）
 )

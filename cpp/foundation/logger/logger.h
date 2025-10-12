@@ -6,7 +6,7 @@
  *
  * @author Sakurakugu
  * @date 2025-08-19 05:57:09 (UTC+8) 周二
- * @change 2025-10-11 23:01:43 (UTC+8) 周六
+ * @change 2025-10-12 20:16:20 (UTC+8) 周日
  */
 
 /**
@@ -47,13 +47,17 @@
  *      日志文件轮转时会保留5个备份文件
  */
 
+// TODO: 实现存放到不同日志文件的功能，比如先注册要存放到的位置，与别名，然后再记录时输入别名即可
+//           比如： Logger::GetInstance().registerLogFile("database.log", database);
+//           然后： logInfo(database) << "这是一条数据库日志";  // database.log文件中
+
 #pragma once
 
 #include <expected>
 #include <shared_mutex>
 
 #ifdef QT_CORE_LIB
-#include <QObject>
+#include <QLoggingCategory>
 #endif
 
 // 强类型枚举比较
@@ -77,11 +81,12 @@ enum class LogError : std::uint8_t {
 };
 
 enum class LogLevel : std::uint8_t {
-    Debug = 0,
-    Info = 1,
-    Warning = 2,
-    Critical = 3,
-    Fatal = 4
+    Debug = 0,    // 调试等级
+    Info = 1,     // 信息等级
+    Warning = 2,  // 警告等级
+    Critical = 3, // 严重错误等级
+    Fatal = 4,    // 致命错误等级
+    None = 5      // 空等级 - 用于表示无日志等级
 };
 
 /**
@@ -161,7 +166,7 @@ class Logger {
     std::string m_logDir;                     // 日志目录路径
     std::string m_logFileName;                // 日志文件名
     std::string m_appName;                    // 应用程序名称
-    std::string m_timeZone;                   // 时区
+    std::chrono::minutes m_utcOffset;         // UTC偏移分钟数
 };
 
 // 最大日志文件大小（字节）

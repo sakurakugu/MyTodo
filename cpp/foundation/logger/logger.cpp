@@ -7,46 +7,73 @@
  *
  * @author Sakurakugu
  * @date 2025-08-19 05:57:09 (UTC+8) 周二
- * @change 2025-10-11 23:01:43 (UTC+8) 周六
+ * @change 2025-10-12 20:16:20 (UTC+8) 周日
  */
 #include "logger.h"
-#include "version.h"
-
-#ifdef QT_CORE_LIB
-// TODO: 这三个还没用其他的实现，到时候再说
-#include <QCoreApplication>
-#include <QStandardPaths>
-#include <QTimeZone>
-#endif
+#include "version.h" // 导入 APP_NAME 和 APP_VERSION_STRING
 
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <mutex>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 Logger::Logger() noexcept
-    : m_logFile(nullptr),                                      // 初始化日志文件流
-      m_logLevel(LogLevel::Info),                              // 初始化日志级别为Info
-      m_logToFile(true),                                       // 初始化是否记录到文件为true
-      m_logToConsole(true),                                    // 初始化是否记录到控制台为true
-      m_maxLogFileSize(10 * 1024 * 1024),                      // 初始化最大日志文件大小为10MB
-      m_maxLogFiles(5),                                        // 初始化最大日志文件数量为5
-      m_appName(APP_NAME),                                     // 初始化应用程序名称
-      m_timeZone(QTimeZone::systemTimeZone().id().constData()) // 初始化时区为系统时区
+    : m_logFile(nullptr),                 // 初始化日志文件流
+      m_logLevel(LogLevel::Info),         // 初始化日志级别为Info
+      m_logToFile(true),                  // 初始化是否记录到文件为true
+      m_logToConsole(true),               // 初始化是否记录到控制台为true
+      m_maxLogFileSize(10 * 1024 * 1024), // 初始化最大日志文件大小为10MB
+      m_maxLogFiles(5),                   // 初始化最大日志文件数量为5
+      m_appName(APP_NAME)                 // 初始化应用程序名称
 {
     // 编译时检查应用名
-    static_assert(std::string_view(APP_NAME).empty() == false, "应用名不能为空");
+    static_assert(std::string_view(APP_NAME).empty() == false, "应用名为空或未定义");
     static_assert(std::string_view(APP_NAME).size() > 0, "应用名长度必须大于0");
+    try {
+#ifdef _WIN32
+        TIME_ZONE_INFORMATION tz_info;
+        DWORD result = GetTimeZoneInformation(&tz_info);
+        // 计算UTC偏移（分钟）
+        int offset = -tz_info.Bias;
+        if (result == TIME_ZONE_ID_DAYLIGHT) {
+            offset -= tz_info.DaylightBias;
+        } else {
+            offset -= tz_info.StandardBias;
+        }
+        m_utcOffset = std::chrono::hours(offset / 60) + std::chrono::minutes(offset % 60);
+#else
+        [[deprecated("不支持的平台（暂未实现）")]]
+        int a = 1,
+            b = a;
+#endif
+    } catch (const std::exception &) {}
 
     // 设置日志目录
     try {
         // 设置日志目录，默认存放在Appdata/Local/应用名/logs
         // 测试时存放在可执行文件所在文件夹中的/logs
 #if defined(QT_DEBUG) || defined(NDEBUG) || defined(_DEBUG)
-        m_logDir = std::format("{}/logs", QCoreApplication::applicationDirPath().toStdString());
+#ifdef _WIN32
+        wchar_t path[MAX_PATH];
+        GetModuleFileNameW(nullptr, path, MAX_PATH);
+        std::filesystem::path exePath = path;
+        std::filesystem::path exeDir = exePath.parent_path();
+        m_logDir = (exeDir / "logs").string();
 #else
-        m_logDir = std::format("{}/logs",
-                               QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation).toStdString());
+#error "不支持的平台（暂未实现）"
+#endif
+#else
+#ifdef _WIN32
+        // 获取环境变量 LocalAppData
+        std::filesystem::path path_env = std::getenv("LocalAppData");
+        m_logDir = (path_env / "logs").string();
+#else
+#error "不支持的平台（暂未实现）"
+#endif
 #endif
         m_logFileName = m_appName + ".log";
 
@@ -363,8 +390,13 @@ std::expected<void, LogError> Logger::initLogFile() noexcept {
 
         // 启动标记
         const auto now = std::chrono::system_clock::now();
+#ifdef APP_VERSION_STRING
         const auto startMsg = std::format("\n=== {} ({}) 应用启动 [{:%Y-%m-%d %H:%M:%S}] ===\n", APP_NAME,
                                           APP_VERSION_STRING, std::chrono::floor<std::chrono::seconds>(now));
+#else
+        const auto startMsg = std::format("\n=== {} 应用启动 [{:%Y-%m-%d %H:%M:%S}] ===\n", APP_NAME,
+                                          std::chrono::floor<std::chrono::seconds>(now));
+#endif
 
         *m_logFile << startMsg;
         m_logFile->flush();
@@ -408,9 +440,8 @@ std::expected<void, LogError> Logger::checkLogRotation() noexcept {
         // 文件轮转
         const std::string currentLogPath = getLogFilePath();
         const auto now = std::chrono::system_clock::now();
-        const auto localTime = std::chrono::zoned_time{m_timeZone, now};
-        const auto timestamp =
-            std::format("{:%Y%m%d_%H%M%S}", std::chrono::floor<std::chrono::seconds>(localTime.get_local_time()));
+        const auto localTime = now + m_utcOffset;
+        const auto timestamp = std::format("{:%Y%m%d_%H%M%S}", std::chrono::floor<std::chrono::seconds>(localTime));
         const auto rotatedLogPath = std::format("{}/{}_{}.log", m_logDir, m_logFileName, timestamp);
 
         // 重命名文件
@@ -471,13 +502,13 @@ std::expected<void, LogError> Logger::checkLogRotation() noexcept {
  */
 std::string Logger::formatLogMessage(LogLevel type, [[maybe_unused]] const LogContext &context,
                                      const std::string &msg) const noexcept {
-    static constexpr std::array<std::string_view, 5> levelNames = {"调试", "信息", "警告", "错误", "致命"};
+    static constexpr std::array<std::string_view, 6> levelNames = {"调试", "信息", "警告", "错误", "致命", "默认"};
     const auto levelIndex = static_cast<size_t>(type);
     const auto levelStr = (levelIndex < levelNames.size()) ? levelNames[levelIndex] : "未知";
 
     // 时间戳生成
     const auto now = std::chrono::system_clock::now();
-    const auto localTime = std::chrono::zoned_time{m_timeZone, now}.get_local_time();
+    const auto localTime = now + m_utcOffset;
 #if defined(QT_DEBUG) || defined(NDEBUG) || defined(_DEBUG)
     // 文件名提取
     const auto fileName = context.file ? std::filesystem::path{context.file}.filename().string() : "未知文件";
@@ -499,12 +530,13 @@ std::string Logger::formatLogMessage(LogLevel type, [[maybe_unused]] const LogCo
  */
 std::string Logger::formatColoredLogMessage(LogLevel type, const std::string &msg) const noexcept {
     // 如果 Qt 版本小于 7.0.0
-    static constexpr std::array<std::string_view, 5> colorCodes = {
+    static constexpr std::array<std::string_view, 6> colorCodes = {
         "\033[36m", // 青色 - Debug
         "\033[32m", // 绿色 - Info
         "\033[33m", // 黄色 - Warning
         "\033[31m", // 红色 - Critical
-        "\033[35m"  // 紫色 - Fatal
+        "\033[35m", // 紫色 - Fatal
+        "\033[37m"  // 白色 - None
     };
 
     const auto levelIndex = static_cast<size_t>(type);

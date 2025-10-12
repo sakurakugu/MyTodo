@@ -11,6 +11,7 @@
  */
 
 #include "qt_debug.h"
+#include "log_stream.h"
 #include <QDirIterator>
 
 // Windows 相关头文件
@@ -31,4 +32,7 @@ void QtDebug::设置终端编码(int codePage) {
     SetConsoleCP(codePage);
     SetConsoleOutputCP(codePage);
 #endif
+}
+
+void QtDebug::测试用() {
 }

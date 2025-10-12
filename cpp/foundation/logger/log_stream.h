@@ -9,7 +9,7 @@
  *
  * @author Sakurakugu
  * @date 2025-10-11 21:42:09(UTC+8) 周二
- * @change 2025-10-11 23:01:43 (UTC+8) 周六
+ * @change 2025-10-12 19:24:05 (UTC+8) 周日
 
  * @file log_stream.h*/
 
@@ -50,6 +50,9 @@ class LogStream {
 inline LogStream logStream(LogLevel type, const std::source_location &loc = std::source_location::current()) {
     return LogStream(type, loc.file_name(), loc.line(), loc.function_name());
 }
+inline LogStream logStream(const std::source_location &loc = std::source_location::current()) {
+    return logStream(LogLevel::None, loc);
+}
 inline LogStream logDebug(const std::source_location &loc = std::source_location::current()) {
     return logStream(LogLevel::Debug, loc);
 }
@@ -58,6 +61,9 @@ inline LogStream logInfo(const std::source_location &loc = std::source_location:
 }
 inline LogStream logWarning(const std::source_location &loc = std::source_location::current()) {
     return logStream(LogLevel::Warning, loc);
+}
+inline LogStream logError(const std::source_location &loc = std::source_location::current()) {
+    return logStream(LogLevel::Critical, loc);
 }
 inline LogStream logCritical(const std::source_location &loc = std::source_location::current()) {
     return logStream(LogLevel::Critical, loc);

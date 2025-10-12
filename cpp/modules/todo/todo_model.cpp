@@ -11,7 +11,6 @@
  */
 
 #include "todo_model.h"
-#include "global_data.h"
 #include "todo_data_storage.h"
 #include "todo_item.h"
 #include "todo_queryer.h"
