@@ -23,19 +23,19 @@
  * @param parent 父对象指针，用于Qt的对象树管理
  */
 TodoItem::TodoItem()
-    : m_id(0),                                   // 初始化待办事项ID为0
-      m_uuid(uuids::uuid()),                     // 初始化UUID
-      m_userUuid(uuids::uuid()),                 // 初始化用户UUID为空字符串
-      m_important(false),                        // 初始化重要程度为false
-      m_deadline(QDateTime()),                   // 初始化截止日期为空
-      m_recurrenceInterval(0),                   // 初始化循环间隔为0
-      m_recurrenceCount(0),                      // 初始化循环次数为0
-      m_recurrenceStartDate(QDate()),            // 初始化重复开始日期为空
-      m_isCompleted(false),                      // 初始化是否已完成为false
-      m_isTrashed(false),                        // 初始化是否已回收为false
-      m_createdAt(QDateTime::currentDateTime()), // 初始化创建时间为当前时间
-      m_updatedAt(QDateTime::currentDateTime()), // 初始化更新时间为当前时间
-      m_synced(1)                                // 初始化是否已同步为false
+    : m_id(0),                            // 初始化待办事项ID为0
+      m_uuid(uuids::uuid()),              // 初始化UUID
+      m_userUuid(uuids::uuid()),          // 初始化用户UUID为空字符串
+      m_important(false),                 // 初始化重要程度为false
+      m_deadline(QDateTime()),            // 初始化截止日期为空
+      m_recurrenceInterval(0),            // 初始化循环间隔为0
+      m_recurrenceCount(0),               // 初始化循环次数为0
+      m_recurrenceStartDate(QDate()),     // 初始化重复开始日期为空
+      m_isCompleted(false),               // 初始化是否已完成为false
+      m_isTrashed(false),                 // 初始化是否已回收为false
+      m_createdAt(my::DateTime::today()), // 初始化创建时间为当前时间
+      m_updatedAt(my::DateTime::today()), // 初始化更新时间为当前时间
+      m_synced(1)                         // 初始化是否已同步为false
 {}
 
 /**
@@ -44,42 +44,42 @@ TodoItem::TodoItem()
  * 使用指定的参数创建TodoItem对象。这个构造函数通常用于
  * 从数据库或网络加载已存在的待办事项数据。
  */
-TodoItem::TodoItem(int id,                           ///< 待办事项唯一标识符
-                   const uuids::uuid &uuid,          ///< 唯一标识符
-                   const uuids::uuid &userUuid,      ///< 用户UUID
-                   const QString &title,             ///< 待办事项标题
-                   const QString &description,       ///< 待办事项详细描述
-                   const QString &category,          ///< 待办事项分类
-                   bool important,                   ///< 重要程度
-                   const QDateTime &deadline,        ///< 截止日期、重复结束日期
-                   int recurrenceInterval,           ///< 重复间隔
-                   int recurrenceCount,              ///< 重复次数
-                   const QDate &recurrenceStartDate, ///< 重复开始日期
-                   bool isCompleted,                 ///< 是否已完成
-                   const QDateTime &completedAt,     ///< 完成时间
-                   bool isTrashed,                   ///< 是否已回收
-                   const QDateTime &trashedAt,       ///< 回收时间
-                   const QDateTime &createdAt,       ///< 创建时间
-                   const QDateTime &updatedAt,       ///< 最后更新时间
-                   int synced)                       ///< 是否已与服务器同步
-    : m_id(id),                                      ///< 初始化待办事项ID
-      m_uuid(uuid),                                  ///< 初始化待办事项UUID
-      m_userUuid(userUuid),                          ///< 初始化用户UUID
-      m_title(title),                                ///< 初始化待办事项标题
-      m_description(description),                    ///< 初始化待办事项描述
-      m_category(category),                          ///< 初始化待办事项分类
-      m_important(important),                        ///< 初始化待办事项重要程度
-      m_deadline(deadline),                          ///< 初始化待办事项截止日期
-      m_recurrenceInterval(recurrenceInterval),      ///< 初始化循环间隔
-      m_recurrenceCount(recurrenceCount),            ///< 初始化循环次数
-      m_recurrenceStartDate(recurrenceStartDate),    ///< 初始化循环开始日期
-      m_isCompleted(isCompleted),                    ///< 初始化完成状态
-      m_completedAt(completedAt),                    ///< 初始化完成时间
-      m_isTrashed(isTrashed),                        ///< 初始化回收状态
-      m_trashedAt(trashedAt),                        ///< 初始化回收时间
-      m_createdAt(createdAt),                        ///< 初始化待办事项创建时间
-      m_updatedAt(updatedAt),                        ///< 初始化待办事项更新时间
-      m_synced(synced)                               ///< 初始化待办事项同步状态
+TodoItem::TodoItem(int id,                              ///< 待办事项唯一标识符
+                   const uuids::uuid &uuid,             ///< 唯一标识符
+                   const uuids::uuid &userUuid,         ///< 用户UUID
+                   const std::string &title,            ///< 待办事项标题
+                   const std::string &description,      ///< 待办事项详细描述
+                   const std::string &category,         ///< 待办事项分类
+                   bool important,                      ///< 重要程度
+                   const my::DateTime &deadline,        ///< 截止日期、重复结束日期
+                   int recurrenceInterval,              ///< 重复间隔
+                   int recurrenceCount,                 ///< 重复次数
+                   const my::Date &recurrenceStartDate, ///< 重复开始日期
+                   bool isCompleted,                    ///< 是否已完成
+                   const my::DateTime &completedAt,     ///< 完成时间
+                   bool isTrashed,                      ///< 是否已回收
+                   const my::DateTime &trashedAt,       ///< 回收时间
+                   const my::DateTime &createdAt,       ///< 创建时间
+                   const my::DateTime &updatedAt,       ///< 最后更新时间
+                   int synced)                          ///< 是否已与服务器同步
+    : m_id(id),                                         ///< 初始化待办事项ID
+      m_uuid(uuid),                                     ///< 初始化待办事项UUID
+      m_userUuid(userUuid),                             ///< 初始化用户UUID
+      m_title(title),                                   ///< 初始化待办事项标题
+      m_description(description),                       ///< 初始化待办事项描述
+      m_category(category),                             ///< 初始化待办事项分类
+      m_important(important),                           ///< 初始化待办事项重要程度
+      m_deadline(deadline),                             ///< 初始化待办事项截止日期
+      m_recurrenceInterval(recurrenceInterval),         ///< 初始化循环间隔
+      m_recurrenceCount(recurrenceCount),               ///< 初始化循环次数
+      m_recurrenceStartDate(recurrenceStartDate),       ///< 初始化循环开始日期
+      m_isCompleted(isCompleted),                       ///< 初始化完成状态
+      m_completedAt(completedAt),                       ///< 初始化完成时间
+      m_isTrashed(isTrashed),                           ///< 初始化回收状态
+      m_trashedAt(trashedAt),                           ///< 初始化回收时间
+      m_createdAt(createdAt),                           ///< 初始化待办事项创建时间
+      m_updatedAt(updatedAt),                           ///< 初始化待办事项更新时间
+      m_synced(synced)                                  ///< 初始化待办事项同步状态
 {}
 
 /**
@@ -116,10 +116,10 @@ void TodoItem::setUserUuid(const uuids::uuid &userUuid) {
  * @brief 设置待办事项标题
  * @param title 新的待办事项标题
  */
-void TodoItem::setTitle(const QString &title) {
-    QString title_;
+void TodoItem::setTitle(const std::string &title) {
+    std::string title_;
     if (title.length() > 255) {
-        title_ = title.left(240) + "......";
+        title_ = title.substr(0, 240) + "......";
     } else [[likely]] {
         title_ = title;
     }
@@ -132,7 +132,7 @@ void TodoItem::setTitle(const QString &title) {
  * @brief 设置待办事项描述
  * @param description 新的待办事项描述
  */
-void TodoItem::setDescription(const QString &description) {
+void TodoItem::setDescription(const std::string &description) {
     if (m_description != description) {
         m_description = description;
     }
@@ -142,10 +142,10 @@ void TodoItem::setDescription(const QString &description) {
  * @brief 设置待办事项分类
  * @param category 新的待办事项分类
  */
-void TodoItem::setCategory(const QString &category) {
-    QString category_;
+void TodoItem::setCategory(const std::string &category) {
+    std::string category_;
     if (category.length() > 50) {
-        category_ = category.left(40) + "......";
+        category_ = category.substr(0, 40) + "......";
     } else [[likely]] {
         category_ = category;
     }
@@ -168,7 +168,7 @@ void TodoItem::setImportant(bool important) {
  * @brief 设置待办事项截止日期
  * @param deadline 新的截止日期
  */
-void TodoItem::setDeadline(const QDateTime &deadline) {
+void TodoItem::setDeadline(const my::DateTime &deadline) {
     if (m_deadline != deadline) {
         m_deadline = deadline;
     }
@@ -215,7 +215,7 @@ void TodoItem::setRecurrenceCount(int recurrenceCount) {
  * @brief 设置循环开始日期
  * @param recurrenceStartDate 新的循环开始日期
  */
-void TodoItem::setRecurrenceStartDate(const QDate &recurrenceStartDate) {
+void TodoItem::setRecurrenceStartDate(const my::Date &recurrenceStartDate) {
     if (m_recurrenceStartDate != recurrenceStartDate) {
         m_recurrenceStartDate = recurrenceStartDate;
     }
@@ -235,7 +235,7 @@ void TodoItem::setIsCompleted(bool completed) {
  * @brief 设置完成时间
  * @param completedAt 新的完成时间
  */
-void TodoItem::setCompletedAt(const QDateTime &completedAt) {
+void TodoItem::setCompletedAt(const my::DateTime &completedAt) {
     if (m_completedAt != completedAt) {
         m_completedAt = completedAt;
     }
@@ -255,7 +255,7 @@ void TodoItem::setIsTrashed(bool trashed) {
  * @brief 设置回收时间
  * @param trashedAt 新的回收时间
  */
-void TodoItem::setTrashedAt(const QDateTime &trashedAt) {
+void TodoItem::setTrashedAt(const my::DateTime &trashedAt) {
     if (m_trashedAt != trashedAt) {
         m_trashedAt = trashedAt;
     }
@@ -265,7 +265,7 @@ void TodoItem::setTrashedAt(const QDateTime &trashedAt) {
  * @brief 设置待办事项创建时间
  * @param createdAt 新的创建时间
  */
-void TodoItem::setCreatedAt(const QDateTime &createdAt) {
+void TodoItem::setCreatedAt(const my::DateTime &createdAt) {
     if (m_createdAt != createdAt) {
         m_createdAt = createdAt;
     }
@@ -275,7 +275,7 @@ void TodoItem::setCreatedAt(const QDateTime &createdAt) {
  * @brief 设置待办事项最后更新时间
  * @param updatedAt 新的更新时间
  */
-void TodoItem::setUpdatedAt(const QDateTime &updatedAt) {
+void TodoItem::setUpdatedAt(const my::DateTime &updatedAt) {
     if (m_updatedAt != updatedAt) {
         m_updatedAt = updatedAt;
     }
@@ -314,7 +314,7 @@ void TodoItem::forceSetSynced(int synced) {
  * @return 如果已过期返回true，否则返回false
  */
 bool TodoItem::isOverdue() const noexcept {
-    return m_deadline.isValid() && m_deadline < QDateTime::currentDateTime() && !m_isCompleted;
+    return m_deadline.isValid() && m_deadline < my::DateTime::today() && !m_isCompleted;
 }
 
 /**
@@ -329,23 +329,24 @@ constexpr bool TodoItem::isRecurring() const noexcept {
  * @brief 检查待办事项是否即将到期（24小时内）
  * @return 如果即将到期返回true，否则返回false
  */
-bool TodoItem::isDue(const QDateTime &checkTime) const noexcept {
+bool TodoItem::isDue(const my::DateTime &checkTime) const noexcept {
     if (!m_deadline.isValid() || m_isCompleted) {
         return false;
     }
-    return m_deadline <= checkTime.addDays(1);
+    auto time = checkTime;
+    return m_deadline <= time.addDays(1);
 }
 
 /**
  * @brief 计算距离截止日期的天数
- * @param checkTime 检查时间
+ * @param checkTime 检查时间，无截止日期时默认当前时间
  * @return 距离截止日期的天数，负数表示已过期
  */
 int TodoItem::daysUntilDeadline() const noexcept {
     if (!m_deadline.isValid()) {
         return INT_MAX; // 表示无截止日期
     }
-    return QDateTime::currentDateTime().daysTo(m_deadline);
+    return my::DateTime::today().daysTo(m_deadline);
 }
 
 /**
@@ -365,17 +366,17 @@ bool TodoItem::isInRecurrencePeriod(const my::Date &checkDate) const noexcept {
     }
 
     // 检查日期是否在重复开始日期之前
-    if (checkDate < my::Date(m_recurrenceStartDate)) {
+    if (checkDate < m_recurrenceStartDate) {
         return false;
     }
 
     // 如果有截止日期，检查是否超过截止日期
-    if (m_deadline.isValid() && checkDate > my::Date(m_deadline.date())) {
+    if (m_deadline.isValid() && checkDate > m_deadline.date()) {
         return false;
     }
 
     // 计算从开始日期到检查日期的天数
-    int daysSinceStart = my::Date(m_recurrenceStartDate).daysTo(checkDate);
+    int daysSinceStart = m_recurrenceStartDate.daysTo(checkDate);
 
     bool isValidInterval = false; // 检查是否符合循环间隔
     int occurrenceNumber = 0;     // 循环次数，从1开始计算
@@ -402,7 +403,7 @@ bool TodoItem::isInRecurrencePeriod(const my::Date &checkDate) const noexcept {
             }
             break;
         case -30: { // 每月（检查是否为同一天）
-            const QDate &startDate = m_recurrenceStartDate;
+            const my::Date &startDate = m_recurrenceStartDate;
             if (checkDate.day() == startDate.day()) {
                 int monthsDiff = (checkDate.year() - startDate.year()) * 12 + (checkDate.month() - startDate.month());
                 if (monthsDiff >= 0) {
@@ -413,7 +414,7 @@ bool TodoItem::isInRecurrencePeriod(const my::Date &checkDate) const noexcept {
             break;
         }
         case -365: { // 每年（检查是否为同一月同一天）
-            const my::Date &startDate = my::Date(m_recurrenceStartDate);
+            const my::Date &startDate = m_recurrenceStartDate;
             if (checkDate.month() == startDate.month() && checkDate.day() == startDate.day()) {
                 int yearsDiff = checkDate.year() - startDate.year();
                 if (yearsDiff >= 0) {
@@ -429,8 +430,8 @@ bool TodoItem::isInRecurrencePeriod(const my::Date &checkDate) const noexcept {
                 isValidInterval = true;
                 // 计算从开始日期到当前日期的工作日数量
                 int workDayCount = 0;
-                my::Date currentDate = my::Date(m_recurrenceStartDate);
-                while (currentDate <= my::Date(checkDate)) {
+                my::Date currentDate = m_recurrenceStartDate;
+                while (currentDate <= checkDate) {
                     if (holidayManager.getDateType(currentDate) == HolidayManager::DateType::WorkDay) {
                         workDayCount++;
                     }
@@ -446,7 +447,7 @@ bool TodoItem::isInRecurrencePeriod(const my::Date &checkDate) const noexcept {
                 isValidInterval = true;
                 // 计算从开始日期到当前日期的节假日数量
                 int holidayCount = 0;
-                my::Date currentDate = my::Date(m_recurrenceStartDate);
+                my::Date currentDate = m_recurrenceStartDate;
                 while (currentDate <= checkDate) {
                     if (holidayManager.getDateType(currentDate) == HolidayManager::DateType::Holiday) {
                         holidayCount++;

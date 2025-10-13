@@ -152,7 +152,8 @@
         "qmap": "cpp",
         "qloggingcategory": "cpp",
         "gsl_util": "cpp",
-        "gsl_byte": "cpp"
+        "gsl_byte": "cpp",
+        "gsl_assert": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "search.useIgnoreFiles": false, // 禁用git忽略文件

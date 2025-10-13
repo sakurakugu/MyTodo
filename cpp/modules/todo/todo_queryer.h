@@ -70,7 +70,6 @@ class TodoQueryer : public QObject {
         SortByUpdatedTime = 4, // 按修改时间排序
         SortByCompletedTime = 5 // 按完成时间排序
     };
-    Q_ENUM(SortType)
 
     // 构造函数与析构函数
     explicit TodoQueryer(QObject *parent = nullptr);

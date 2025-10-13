@@ -52,7 +52,7 @@ int TodoModel::rowCount(const QModelIndex &parent) const {
 
     // 使用缓存的过滤结果
     const_cast<TodoModel *>(this)->更新过滤后的待办();
-    return m_filteredTodos.count();
+    return m_filteredTodos.size();
 }
 
 /**
@@ -74,7 +74,7 @@ QVariant TodoModel::data(const QModelIndex &index, int role) const {
 
     // 使用缓存的过滤结果
     const_cast<TodoModel *>(this)->更新过滤后的待办();
-    if (index.row() >= m_filteredTodos.size())
+    if (static_cast<size_t>(index.row()) >= m_filteredTodos.size())
         return QVariant();
 
     return 获取项目数据(m_filteredTodos[index.row()], role);
@@ -123,15 +123,15 @@ bool TodoModel::setData(const QModelIndex &index, const QVariant &value, int rol
 
     switch (role) {
     case TitleRole:
-        item->setTitle(value.toString());
+        item->setTitle(value.toString().toStdString());
         changed = true;
         break;
     case DescriptionRole:
-        item->setDescription(value.toString());
+        item->setDescription(value.toString().toStdString());
         changed = true;
         break;
     case CategoryRole:
-        item->setCategory(value.toString());
+        item->setCategory(value.toString().toStdString());
         changed = true;
         break;
     case ImportantRole:
@@ -147,11 +147,11 @@ bool TodoModel::setData(const QModelIndex &index, const QVariant &value, int rol
         changed = true;
         break;
     case RecurrenceStartDateRole:
-        item->setRecurrenceStartDate(value.toDate());
+        item->setRecurrenceStartDate(my::Date(value.toDate()));
         changed = true;
         break;
     case DeadlineRole:
-        item->setDeadline(value.toDateTime());
+        item->setDeadline(my::DateTime(value.toDateTime()));
         changed = true;
         break;
     case IsCompletedRole:
@@ -165,7 +165,7 @@ bool TodoModel::setData(const QModelIndex &index, const QVariant &value, int rol
     }
 
     if (changed) {
-        item->setUpdatedAt(QDateTime::currentDateTime());
+        item->setUpdatedAt(my::DateTime::now());
         item->setSynced(2); // 标记为未同步，待更新
 
         需要重新筛选();
@@ -188,14 +188,14 @@ bool TodoModel::加载待办() {
     return true;
 }
 
-bool TodoModel::新增待办(const QString &title, const uuids::uuid &userUuid, const QString &description,      //
-                         const QString &category, bool important, const QDateTime &deadline,           //
-                         int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate //
+bool TodoModel::新增待办(const QString &title, const uuids::uuid &userUuid, const QString &description, //
+                         const QString &category, bool important, const QDateTime &deadline,             //
+                         int recurrenceInterval, int recurrenceCount, const QDate &recurrenceStartDate       //
 ) {
     // 因为显示的是排序后的结果，所以直接重置模型
     beginResetModel();
-    auto result = m_dataManager.新增待办(m_todos, title, description, category, important, //
-                                         deadline, recurrenceInterval, recurrenceCount, recurrenceStartDate, userUuid);
+    auto result = m_dataManager.新增待办(m_todos, title.toStdString(), description.toStdString(), category.toStdString(), important, //
+                                         my::DateTime(deadline), recurrenceInterval, recurrenceCount, my::Date(recurrenceStartDate), userUuid);
     if (!result) {
         endInsertRows();
         return false;
@@ -465,21 +465,21 @@ void TodoModel::更新过滤后的待办() {
 
     // 组装查询参数（数据库端过滤 + 排序）
     TodoDataStorage::QueryOptions opt{
-        .category = m_queryer.currentCategory(),            //
-        .statusFilter = m_queryer.currentFilter(),          //
-        .searchText = m_queryer.searchText(),               //
+        .category = m_queryer.currentCategory().toStdString(),            //
+        .statusFilter = m_queryer.currentFilter().toStdString(),          //
+        .searchText = m_queryer.searchText().toStdString(),               //
         .dateFilterEnabled = m_queryer.dateFilterEnabled(), //
-        .dateStart = m_queryer.dateFilterStart(),           //
-        .dateEnd = m_queryer.dateFilterEnd(),               //
+        .dateStart = my::Date(m_queryer.dateFilterStart()),           //
+        .dateEnd = my::Date(m_queryer.dateFilterEnd()),               //
         .sortType = m_queryer.sortType(),                   //
         .descending = m_queryer.descending()                //
     }; // 暂不分页，后续可加入 opt.limit/offset
 
-    QList<int> ids = m_dataManager.查询待办ID列表(opt);
+    std::vector<int> ids = m_dataManager.查询待办ID列表(opt);
     for (int id : ids) {
         auto it = m_idIndex.find(id);
         if (it != m_idIndex.end()) {
-            m_filteredTodos.append(it->second);
+            m_filteredTodos.push_back(it->second);
         }
     }
 
@@ -632,33 +632,33 @@ QVariant TodoModel::获取项目数据(const TodoItem *item, int role) const {
     case UserUuidRole:
         return QUuid::fromString(QString::fromStdString(uuids::to_string(item->userUuid())));
     case TitleRole:
-        return item->title();
+        return QString::fromStdString(item->title());
     case DescriptionRole:
-        return item->description();
+        return QString::fromStdString(item->description());
     case CategoryRole:
-        return item->category();
+        return QString::fromStdString(item->category());
     case ImportantRole:
         return item->important();
     case DeadlineRole:
-        return item->deadline();
+        return item->deadline().toQDateTime();
     case RecurrenceIntervalRole:
         return item->recurrenceInterval();
     case RecurrenceCountRole:
         return item->recurrenceCount();
     case RecurrenceStartDateRole:
-        return item->recurrenceStartDate();
+        return item->recurrenceStartDate().toQDate();
     case IsCompletedRole:
         return item->isCompleted();
     case CompletedAtRole:
-        return item->completedAt();
+        return item->completedAt().toQDateTime();
     case IsTrashedRole:
         return item->isTrashed();
     case TrashedAtRole:
-        return item->trashedAt();
+        return item->trashedAt().toQDateTime();
     case CreatedAtRole:
-        return item->createdAt();
+        return item->createdAt().toQDateTime();
     case UpdatedAtRole:
-        return item->updatedAt();
+        return item->updatedAt().toQDateTime();
     case SyncedRole:
         return item->synced();
     default:

@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include "datetime.h"
 #include <QAbstractListModel>
 #include <QDateTime>
 #include <QVariant>
@@ -93,10 +94,11 @@ class TodoModel : public QAbstractListModel {
 
     bool 加载待办(); // 从数据库加载待办事项
 
-    bool 新增待办(const QString &title, const uuids::uuid &userUuid, const QString &description = QString(), //
-                  const QString &category = "未分类", bool important = false,                          //
-                  const QDateTime &deadline = QDateTime(), int recurrenceInterval = 0,                 //
-                  int recurrenceCount = 0, const QDate &recurrenceStartDate = QDate());                //
+    bool 新增待办(const QString &title, const uuids::uuid &userUuid,
+                  const QString &description = QString(),                               //
+                  const QString &category = "未分类", bool important = false,           //
+                  const QDateTime &deadline = QDateTime(), int recurrenceInterval = 0,  //
+                  int recurrenceCount = 0, const QDate &recurrenceStartDate = QDate()); //
     bool 更新待办(int index, const QVariantMap &todoData);
     bool 标记完成(int index, bool completed);
     bool 标记删除(int index, bool trashed);                           // isTrashed = 1/0 回收或删除
@@ -123,7 +125,7 @@ class TodoModel : public QAbstractListModel {
 
   private:
     std::vector<std::unique_ptr<TodoItem>> m_todos; ///< 待办事项列表
-    QList<TodoItem *> m_filteredTodos;              ///< 过滤后的待办事项列表
+    std::vector<TodoItem *> m_filteredTodos;        ///< 过滤后的待办事项列表
     bool m_filterCacheDirty;                        ///< 过滤缓存是否需要更新
     std::unordered_map<int, TodoItem *> m_idIndex;  ///< id -> TodoItem* 快速索引
 

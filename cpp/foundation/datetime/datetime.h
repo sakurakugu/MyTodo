@@ -112,6 +112,23 @@ class DateTime {
     bool isValid() const noexcept;
     bool isLeapYear() const noexcept;
 
+    // 日期时间操作
+    DateTime &addMilliseconds(int64_t ms) noexcept;
+    DateTime &addSeconds(int64_t seconds) noexcept;
+    DateTime &addMinutes(int64_t minutes) noexcept;
+    DateTime &addHours(int64_t hours) noexcept;
+    DateTime &addDays(int32_t days) noexcept;
+    DateTime &addMonths(int32_t months) noexcept;
+    DateTime &addYears(int32_t years) noexcept;
+
+    DateTime plusMilliseconds(int64_t ms) const noexcept;
+    DateTime plusSeconds(int64_t seconds) const noexcept;
+    DateTime plusMinutes(int64_t minutes) const noexcept;
+    DateTime plusHours(int64_t hours) const noexcept;
+    DateTime plusDays(int32_t days) const noexcept;
+    DateTime plusMonths(int32_t months) const noexcept;
+    DateTime plusYears(int32_t years) const noexcept;
+
     // 日期时间差值
     int64_t millisecondsTo(const DateTime &other) const noexcept;
     int64_t secondsTo(const DateTime &other) const noexcept;
@@ -191,23 +208,6 @@ class DateTime {
     static std::optional<DateTime> parseISO(std::string_view str) noexcept;
     static std::optional<DateTime> parseCustom(std::string_view str, std::string_view format) noexcept;
     void normalizeDateTime() noexcept; // 处理跨日期边界
-
-    // 日期时间操作
-    DateTime &addMilliseconds(int64_t ms) noexcept;
-    DateTime &addSeconds(int64_t seconds) noexcept;
-    DateTime &addMinutes(int64_t minutes) noexcept;
-    DateTime &addHours(int64_t hours) noexcept;
-    DateTime &addDays(int32_t days) noexcept;
-    DateTime &addMonths(int32_t months) noexcept;
-    DateTime &addYears(int32_t years) noexcept;
-
-    DateTime plusMilliseconds(int64_t ms) const noexcept;
-    DateTime plusSeconds(int64_t seconds) const noexcept;
-    DateTime plusMinutes(int64_t minutes) const noexcept;
-    DateTime plusHours(int64_t hours) const noexcept;
-    DateTime plusDays(int32_t days) const noexcept;
-    DateTime plusMonths(int32_t months) const noexcept;
-    DateTime plusYears(int32_t years) const noexcept;
 };
 
 // << 运算符重载

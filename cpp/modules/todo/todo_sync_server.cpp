@@ -191,23 +191,23 @@ void TodoSyncServer::推送批次到服务器(const std::vector<TodoItem *> &bat
             QJsonObject obj;
             obj["uuid"] = QString::fromStdString(uuids::to_string(item->uuid()));
             obj["user_uuid"] = QString::fromStdString(uuids::to_string(item->userUuid()));
-            obj["title"] = item->title();
-            obj["description"] = item->description();
-            obj["category"] = item->category();
+            obj["title"] = QString::fromStdString(item->title());
+            obj["description"] = QString::fromStdString(item->description());
+            obj["category"] = QString::fromStdString(item->category());
             obj["important"] = item->important();
-            obj["deadline"] = Utility::toRfc3339Json(item->deadline());
+            obj["deadline"] = Utility::toRfc3339Json(item->deadline().toQDateTime());
             obj["recurrenceInterval"] = item->recurrenceInterval();
             obj["recurrenceCount"] = item->recurrenceCount();
             // recurrenceStartDate 仅在有效时写入
             if (item->recurrenceStartDate().isValid()) {
-                obj["recurrenceStartDate"] = item->recurrenceStartDate().toString(Qt::ISODate);
+                obj["recurrenceStartDate"] = QString::fromStdString(item->recurrenceStartDate().toString());
             }
             obj["is_completed"] = item->isCompleted();
-            obj["completed_at"] = Utility::toRfc3339Json(item->completedAt());
+            obj["completed_at"] = Utility::toRfc3339Json(item->completedAt().toQDateTime());
             obj["is_trashed"] = item->isTrashed();
-            obj["trashed_at"] = Utility::toRfc3339Json(item->trashedAt());
-            obj["created_at"] = Utility::toRfc3339Json(item->createdAt());
-            obj["updated_at"] = Utility::toRfc3339Json(item->updatedAt());
+            obj["trashed_at"] = Utility::toRfc3339Json(item->trashedAt().toQDateTime());
+            obj["created_at"] = Utility::toRfc3339Json(item->createdAt().toQDateTime());
+            obj["updated_at"] = Utility::toRfc3339Json(item->updatedAt().toQDateTime());
             obj["synced"] = item->synced();
             jsonArray.append(obj);
         }

@@ -23,6 +23,8 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QRegularExpression>
+#include <chrono>
+#include <regex>
 
 UserAuth::UserAuth(QObject *parent)
     : QObject(parent),                                 //
@@ -55,8 +57,10 @@ UserAuth::UserAuth(QObject *parent)
 
 void UserAuth::加载数据() {
     // 从设置中加载服务器配置
-    m_authApiEndpoint =
-        Config::GetInstance().get("server/authApiEndpoint", QString(DefaultValues::userAuthApiEndpoint)).toString();
+    m_authApiEndpoint = Config::GetInstance()
+                            .get("server/authApiEndpoint", QString(DefaultValues::userAuthApiEndpoint))
+                            .toString()
+                            .toStdString();
 
     // 尝试从数据库中加载存储的凭据
     auto query = m_database.createQuery();
@@ -67,13 +71,13 @@ void UserAuth::加载数据() {
             const auto &row = rows[0];
             for (const auto &[columnName, value] : row) {
                 if (columnName == "uuid") {
-                    m_uuid = uuids::uuid::from_string(sqlValueCast<std::string>(value)).value_or(uuids::uuid{});
+                    m_uuid = sqlValueCast<uuids::uuid>(value);
                 } else if (columnName == "username") {
-                    m_username = QString::fromStdString(sqlValueCast<std::string>(value));
+                    m_username = sqlValueCast<std::string>(value);
                 } else if (columnName == "email") {
-                    m_email = QString::fromStdString(sqlValueCast<std::string>(value));
+                    m_email = sqlValueCast<std::string>(value);
                 } else if (columnName == "refreshToken") {
-                    m_refreshToken = QString::fromStdString(sqlValueCast<std::string>(value));
+                    m_refreshToken = sqlValueCast<std::string>(value);
                 }
             }
         }
@@ -83,7 +87,7 @@ void UserAuth::加载数据() {
 
     刷新访问令牌(); // 使用刷新令牌获取新的访问令牌
 
-    qDebug() << "服务器配置: " << m_networkRequest.getApiUrl(m_authApiEndpoint);
+    qDebug() << "服务器配置: " << m_networkRequest.getApiUrl(QString::fromStdString(m_authApiEndpoint));
 }
 
 UserAuth::~UserAuth() {
@@ -100,23 +104,24 @@ UserAuth::~UserAuth() {
  *
  * 登录结果会通过loginSuccessful或loginFailed信号通知。
  */
-void UserAuth::登录(const QString &account, const QString &password) {
-    if (password.isEmpty()) {
+void UserAuth::登录(const std::string &account, const std::string &password) {
+    if (password.empty()) {
         emit loginFailed("密码不能为空");
         return;
     }
 
     // 简单区分用户名和邮箱
-    if (account.contains('@')) {
+    if (account.find('@') != std::string::npos) {
         // 简单的邮箱格式验证
-        if (!account.contains('.') || account.startsWith('@') || account.endsWith('@')) {
+        if (account.find('.') == std::string::npos || account.find('@') == 0 ||
+            account.find('@') == account.size() - 1) {
             emit loginFailed("无效的邮箱格式");
             return;
         }
     } else {
         // 用户名严格验证：仅字母、数字、下划线，长度 3-20
-        static const QRegularExpression re("^[A-Za-z0-9_]{3,20}$");
-        if (!re.match(account).hasMatch()) {
+        static const std::regex re("^[A-Za-z0-9_]{3,20}$");
+        if (!std::regex_match(account, re)) {
             emit loginFailed("用户名只能包含字母、数字或下划线，长度应为3-20个字符");
             return;
         }
@@ -126,13 +131,13 @@ void UserAuth::登录(const QString &account, const QString &password) {
 
     // 准备请求配置
     NetworkRequest::RequestConfig config;
-    config.url = m_networkRequest.getApiUrl(m_authApiEndpoint) + "?action=login";
+    config.url = m_networkRequest.getApiUrl(QString::fromStdString(m_authApiEndpoint)) + "?action=login";
     config.method = "POST";      // 登录使用POST方法
     config.requiresAuth = false; // 登录请求不需要认证
 
     // 创建登录数据
-    config.data["account"] = account;
-    config.data["password"] = password;
+    config.data["account"] = QString::fromStdString(account);
+    config.data["password"] = QString::fromStdString(password);
 
     // 发送登录请求
     m_networkRequest.sendRequest(Network::RequestType::Login, config);
@@ -150,18 +155,18 @@ void UserAuth::注销() {
 
 bool UserAuth::是否已登录() const {
     // 检查访问令牌是否存在
-    if (m_accessToken.isEmpty()) {
+    if (m_accessToken.empty()) {
         return false;
     } else [[likely]] {
         return true;
     }
 }
 
-QString UserAuth::获取用户名() const {
+std::string UserAuth::获取用户名() const {
     return m_username;
 }
 
-QString UserAuth::获取邮箱() const {
+std::string UserAuth::获取邮箱() const {
     return m_email;
 }
 
@@ -176,7 +181,7 @@ void UserAuth::刷新访问令牌() {
         return;
     }
 
-    if (m_refreshToken.isEmpty()) {
+    if (m_refreshToken.empty()) {
         qWarning() << "无法刷新令牌：刷新令牌为空";
         emit tokenRefreshFailed("刷新令牌不存在");
         return;
@@ -194,10 +199,10 @@ void UserAuth::刷新访问令牌() {
 
     // 准备刷新请求
     NetworkRequest::RequestConfig config;
-    config.url = m_networkRequest.getApiUrl(m_authApiEndpoint) + "?action=refresh";
+    config.url = m_networkRequest.getApiUrl(QString::fromStdString(m_authApiEndpoint)) + "?action=refresh";
     config.method = "POST";
     config.requiresAuth = false; // 刷新请求不需要访问令牌认证
-    config.data["refresh_token"] = m_refreshToken;
+    config.data["refresh_token"] = QString::fromStdString(m_refreshToken);
 
     // 发送刷新请求
     m_networkRequest.sendRequest(Network::RequestType::RefreshToken, config);
@@ -257,7 +262,7 @@ void UserAuth::onNetworkRequestFailed(Network::RequestType type, Network::Error 
         // 如果是token验证请求失败，说明token无效
         if (error == Network::Error::AuthenticationError) {
             qWarning() << "存储的访问令牌无效，尝试静默刷新";
-            if (!m_isRefreshing && !m_refreshToken.isEmpty()) {
+            if (!m_isRefreshing && !m_refreshToken.empty()) {
                 刷新访问令牌();
             } else {
                 清除凭据();
@@ -270,7 +275,7 @@ void UserAuth::onNetworkRequestFailed(Network::RequestType type, Network::Error 
         // 其他请求类型的错误处理
         if (error == Network::Error::AuthenticationError) {
             qWarning() << "认证错误，尝试静默刷新:" << message;
-            if (!m_isRefreshing && !m_refreshToken.isEmpty()) {
+            if (!m_isRefreshing && !m_refreshToken.empty()) {
                 刷新访问令牌();
             } else {
                 emit authTokenExpired();
@@ -287,11 +292,11 @@ void UserAuth::onAuthTokenExpired() {
     停止令牌过期计时器();
 
     // 尝试使用refresh token自动刷新
-    if (!m_refreshToken.isEmpty() && !m_isRefreshing) {
+    if (!m_refreshToken.empty() && !m_isRefreshing) {
         qDebug() << "尝试使用refresh token自动刷新访问令牌";
         刷新访问令牌();
     } else {
-        if (m_refreshToken.isEmpty()) {
+        if (m_refreshToken.empty()) {
             qWarning() << "刷新令牌为空，无法自动刷新，需要重新登录";
         } else if (m_isRefreshing) {
             qWarning() << "令牌刷新已在进行中，等待刷新结果";
@@ -312,12 +317,12 @@ void UserAuth::处理登录成功(const QJsonObject &response) {
     }
 
     // 提取认证信息
-    m_accessToken = response["access_token"].toString();
-    m_refreshToken = response["refresh_token"].toString();
+    m_accessToken = response["access_token"].toString().toStdString();
+    m_refreshToken = response["refresh_token"].toString().toStdString();
 
     QJsonObject userObj = response["user"].toObject();
-    m_username = userObj["username"].toString();
-    if (m_username.isEmpty()) {
+    m_username = userObj["username"].toString().toStdString();
+    if (m_username.empty()) {
         emit loginFailed("服务器响应缺少用户名");
         return;
     }
@@ -326,7 +331,7 @@ void UserAuth::处理登录成功(const QJsonObject &response) {
     if (!userObj.contains("email")) {
         qWarning() << "登录响应中缺少 email 字段，使用空字符串";
     }
-    m_email = userObj["email"].toString();
+    m_email = userObj["email"].toString().toStdString();
     m_uuid = uuids::uuid::from_string(userObj["uuid"].toString().toStdString()).value_or(uuids::uuid{});
 
     if (m_uuid.is_nil()) {
@@ -345,7 +350,7 @@ void UserAuth::处理登录成功(const QJsonObject &response) {
         m_tokenExpiryTime = QDateTime::currentSecsSinceEpoch() + ACCESS_TOKEN_LIFETIME;
     }
 
-    m_networkRequest.setAuthToken(m_accessToken);
+    m_networkRequest.setAuthToken(m_accessToken.c_str());
     开启令牌过期计时器();
     保存凭据();
 
@@ -353,7 +358,7 @@ void UserAuth::处理登录成功(const QJsonObject &response) {
     qDebug() << "用户" << m_username;
 
     emit isLoggedInChanged();
-    emit loginSuccessful(m_username);
+    emit loginSuccessful(QString::fromStdString(m_username));
     是否发送首次认证信号();
 }
 
@@ -368,34 +373,36 @@ void UserAuth::处理令牌刷新成功(const QJsonObject &response) {
     }
 
     // 更新访问令牌
-    m_accessToken = response["access_token"].toString();
-    QString refreshToken = response["refresh_token"].toString();
-    if (!refreshToken.isEmpty()) {
+    m_accessToken = response["access_token"].toString().toStdString();
+    std::string refreshToken = response["refresh_token"].toString().toStdString();
+    if (!refreshToken.empty()) {
         m_refreshToken = refreshToken;
     }
 
     // 设置令牌过期时间（若服务端未返回，用默认访问令牌生命周期）
+    int64_t now =
+        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     if (response.contains("expires_in")) {
-        qint64 expiresIn = response["expires_in"].toInt();
+        int64_t expiresIn = response["expires_in"].toInt();
         if (expiresIn <= 0 || expiresIn > ACCESS_TOKEN_LIFETIME) {
             expiresIn = ACCESS_TOKEN_LIFETIME;
         }
-        m_tokenExpiryTime = QDateTime::currentSecsSinceEpoch() + expiresIn;
+        m_tokenExpiryTime = now + expiresIn;
         qDebug() << "令牌过期时间已更新:" << m_tokenExpiryTime << "有效期:" << expiresIn << "秒";
     } else {
-        m_tokenExpiryTime = QDateTime::currentSecsSinceEpoch() + ACCESS_TOKEN_LIFETIME;
+        m_tokenExpiryTime = now + ACCESS_TOKEN_LIFETIME;
         qDebug() << "令牌过期时间使用默认生命周期 ACCESS_TOKEN_LIFETIME:" << ACCESS_TOKEN_LIFETIME;
     }
 
     // 更新刷新令牌（如果提供）
     if (response.contains("refresh_token")) {
-        m_refreshToken = response["refresh_token"].toString();
+        m_refreshToken = response["refresh_token"].toString().toStdString();
         保存凭据();
         qDebug() << "刷新令牌已更新";
     }
 
     // 设置网络管理器的认证令牌
-    m_networkRequest.setAuthToken(m_accessToken);
+    m_networkRequest.setAuthToken(m_accessToken.c_str());
 
     // 重新启动令牌过期检查定时器
     开启令牌过期计时器();
@@ -408,13 +415,13 @@ void UserAuth::处理令牌刷新成功(const QJsonObject &response) {
 
 void UserAuth::保存凭据() {
     // 保存凭据到数据库
-    if (!m_refreshToken.isEmpty() && !m_uuid.is_nil()) {
+    if (!m_refreshToken.empty() && !m_uuid.is_nil()) {
         auto query = m_database.createQuery();
         query->prepare(R"(REPLACE INTO users (uuid, username, email, refreshToken) VALUES (?, ?, ?, ?))");
-        query->bindValues(uuids::to_string(m_uuid),          //
-                          m_username.toStdString(),    //
-                          m_email.toStdString(),       //
-                          m_refreshToken.toStdString() //
+        query->bindValues(m_uuid,        //
+                          m_username,    //
+                          m_email,       //
+                          m_refreshToken //
         );
 
         if (!query->exec()) {
@@ -462,7 +469,7 @@ void UserAuth::清除凭据() {
 }
 
 void UserAuth::是否发送首次认证信号() {
-    if (!m_firstAuthEmitted && !m_accessToken.isEmpty()) {
+    if (!m_firstAuthEmitted && !m_accessToken.empty()) {
         m_firstAuthEmitted = true;
         emit firstAuthCompleted();
         qDebug() << "首次认证完成信号已发出";
@@ -499,15 +506,16 @@ void UserAuth::开启令牌过期计时器() {
         return;
     }
 
-    qint64 now = QDateTime::currentSecsSinceEpoch();
-    qint64 timeUntilExpiry = m_tokenExpiryTime - now;
+    int64_t now =
+        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    int64_t timeUntilExpiry = m_tokenExpiryTime - now;
     if (timeUntilExpiry <= 0) {
         qWarning() << "访问令牌已过期或时间异常，立即尝试刷新";
         onTokenExpiryCheck();
         return;
     }
 
-    qint64 refreshDelaySec = timeUntilExpiry - ACCESS_TOKEN_REFRESH_AHEAD;
+    int64_t refreshDelaySec = timeUntilExpiry - ACCESS_TOKEN_REFRESH_AHEAD;
     if (refreshDelaySec < 0) {
         // 已经进入预刷新窗口，立即（稍微延迟 100ms）刷新，避免紧贴事件循环造成阻塞
         refreshDelaySec = 0;
@@ -616,23 +624,19 @@ bool UserAuth::importFromJson(const QJsonObject &input, bool replaceAll) {
     }
 
     // 导入用户数据
-    // TODO: 用户数据只有一个，不需要循环
-    QJsonArray usersArray = input["users"].toArray();
-    for (const auto &userValue : usersArray) {
-        QJsonObject userObj = userValue.toObject();
+    QJsonObject userObj = input["users"].toObject();
 
-        std::string insertQuery = "INSERT OR REPLACE INTO users (uuid, username, email) VALUES (?, ?, ?)";
-        auto query = m_database.createQuery();
-        query->bindValues(userObj["uuid"].toString().toStdString(),     //
-                          userObj["username"].toString().toStdString(), //
-                          userObj["email"].toString().toStdString());
+    std::string insertQuery = "INSERT OR REPLACE INTO users (uuid, username, email) VALUES (?, ?, ?)";
+    auto query = m_database.createQuery();
+    query->bindValues(userObj["uuid"].toString().toStdString(),     //
+                      userObj["username"].toString().toStdString(), //
+                      userObj["email"].toString().toStdString());
 
-        if (!query->exec(insertQuery)) {
-            qWarning() << "导入用户数据失败:" << query->lastErrorQt();
-            return false;
-        }
+    if (!query->exec(insertQuery)) {
+        qWarning() << "导入用户数据失败:" << query->lastErrorQt();
+        return false;
     }
 
-    qInfo() << "成功导入" << usersArray.size() << "条用户记录";
+    qInfo() << "成功导入用户记录";
     return true;
 }

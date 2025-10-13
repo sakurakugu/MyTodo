@@ -60,12 +60,12 @@ class TodoDataStorage : public BaseDataStorage {
      * 允许按分类、状态、搜索文本、日期范围、排序等生成 SQL。
      */
     struct QueryOptions {
-        QString category;              // 分类过滤，空=全部
-        QString statusFilter;          // "" | "todo" | "done" | "recycle" | "all"
-        QString searchText;            // 模糊搜索（title/description/category）
+        std::string category;          // 分类过滤，空=全部
+        std::string statusFilter;      // "" | "todo" | "done" | "recycle" | "all"
+        std::string searchText;        // 模糊搜索（title/description/category）
         bool dateFilterEnabled{false}; // 是否启用日期范围过滤
-        QDate dateStart;               // 起始日期（deadline）
-        QDate dateEnd;                 // 截止日期（deadline）
+        my::Date dateStart;            // 起始日期（deadline）
+        my::Date dateEnd;              // 截止日期（deadline）
         int sortType{0};               // 对应 TodoSorter::SortType
         bool descending{false};        // 是否倒序
         int limit{0};  // 分页限制，0=不限制 // 未来可支持分页，目前数据量不大，而且是滚动的，且有搜索功能
@@ -83,9 +83,9 @@ class TodoDataStorage : public BaseDataStorage {
     bool 加载待办(TodoList &todos);
 
     // CRUD操作
-    bool 新增待办(TodoList &todos, const QString &title, const QString &description, const QString &category,
-                  bool important, const QDateTime &deadline, int recurrenceInterval, int recurrenceCount,
-                  const QDate &recurrenceStartDate, uuids::uuid userUuid);
+    bool 新增待办(TodoList &todos, const std::string &title, const std::string &description,
+                  const std::string &category, bool important, const my::DateTime &deadline, int recurrenceInterval,
+                  int recurrenceCount, const my::Date &recurrenceStartDate, uuids::uuid userUuid);
     bool 新增待办(TodoList &todos, std::unique_ptr<TodoItem> item);
     bool 更新待办(TodoList &todos, const uuids::uuid &uuid, const QVariantMap &todoData);
     bool 更新待办(TodoList &todos, TodoItem &item);
@@ -102,14 +102,14 @@ class TodoDataStorage : public BaseDataStorage {
                             解决冲突方案 resolution = 解决冲突方案::Merge);
 
     // 数据库侧过滤 + 排序查询（仅返回符合条件的 id 列表，后续由上层映射为对象）
-    QList<int> 查询待办ID列表(const QueryOptions &options);
+    std::vector<int> 查询待办ID列表(const QueryOptions &options);
 
     // IDataExporter接口实现
     bool exportToJson(QJsonObject &output) override;
     bool importFromJson(const QJsonObject &input, bool replaceAll) override;
 
   private:
-    static QString 构建SQL排序语句(int sortType, bool descending); // 构建查询SQL
+    static std::string 构建SQL排序语句(int sortType, bool descending); // 构建查询SQL
 
     // 数据库操作
     bool 创建数据表() override; // 创建todos表

@@ -541,7 +541,7 @@ bool CategoryDataStorage::创建数据表() {
  */
 bool CategoryDataStorage::exportToJson(QJsonObject &output) {
     auto query = m_database.createQuery();
-    const std::string queryString = "SELECT id, uuid, name, user_uuid, created_at, updated_at, synced FROM categories";
+    const std::string queryString = "SELECT uuid, name, user_uuid, created_at, updated_at, synced FROM categories";
     if (!query->exec(queryString)) {
         qWarning() << "查询类别数据失败:" << query->lastErrorQt();
         return false;

@@ -9,12 +9,12 @@
  * @change 2025-10-06 02:13:23(UTC+8) 周一
  */
 #include "qml_todo.h"
-#include "qml_global_data.h"
 #include "modules/todo/todo_data_storage.h" // 数据管理器
 #include "modules/todo/todo_item.h"         // 待办事项数据结构
 #include "modules/todo/todo_sync_server.h"  // 服务器同步管理器
 #include "network_request.h"                // 网络请求
 #include "qml_category.h"                   // 类别管理器
+#include "qml_global_data.h"
 #include "user_auth.h"
 
 #include <QDateTime>

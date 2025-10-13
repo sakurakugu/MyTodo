@@ -19,7 +19,7 @@ TodoQueryer::TodoQueryer(QObject *parent)
       m_searchText(""),              //
       m_dateFilterEnabled(false),    //
       m_sortType(SortByUpdatedTime), //
-      m_descending(true)            //
+      m_descending(true)             //
 {}
 
 TodoQueryer::~TodoQueryer() {}
@@ -208,9 +208,10 @@ bool TodoQueryer::checkSearchMatch(const TodoItem *item) const {
     }
 
     // 在标题、描述和分类中搜索
-    QString searchLower = m_searchText.toLower();
-    return item->title().toLower().contains(searchLower) || item->description().toLower().contains(searchLower) ||
-           item->category().toLower().contains(searchLower);
+    std::string searchLower = m_searchText.toStdString();
+    return item->title().find(searchLower) != std::string::npos ||
+           item->description().find(searchLower) != std::string::npos ||
+           item->category().find(searchLower) != std::string::npos;
 }
 
 /**
@@ -230,7 +231,7 @@ bool TodoQueryer::checkDateMatch(const TodoItem *item) const {
         return false;
     }
 
-    QDate itemDate = item->deadline().date();
+    QDate itemDate = item->deadline().date().toQDate();
     bool startMatch = !m_dateFilterStart.isValid() || itemDate >= m_dateFilterStart;
     bool endMatch = !m_dateFilterEnd.isValid() || itemDate <= m_dateFilterEnd;
 

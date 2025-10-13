@@ -20,10 +20,10 @@ QmlUserAuth::QmlUserAuth(UserAuth &auth, QObject *parent) //
 
 // ============== 属性访问 ==============
 QString QmlUserAuth::username() const {
-    return m_auth.获取用户名();
+    return QString::fromStdString(m_auth.获取用户名());
 }
 QString QmlUserAuth::email() const {
-    return m_auth.获取邮箱();
+    return QString::fromStdString(m_auth.获取邮箱());
 }
 QUuid QmlUserAuth::uuid() const {
     return QUuid(QString::fromStdString(uuids::to_string(m_auth.获取UUID())));
@@ -34,7 +34,7 @@ bool QmlUserAuth::isLoggedIn() const {
 
 // ============== 方法转发 ==============
 void QmlUserAuth::login(const QString &account, const QString &password) {
-    m_auth.登录(account, password);
+    m_auth.登录(account.toStdString(), password.toStdString());
 }
 void QmlUserAuth::logout() {
     m_auth.注销();

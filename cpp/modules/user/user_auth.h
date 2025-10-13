@@ -54,13 +54,13 @@ class UserAuth : public QObject, public IDataExporter {
     ~UserAuth();
 
     // 认证操作
-    void 登录(const QString &account, const QString &password);
+    void 登录(const std::string &account, const std::string &password);
     void 注销();
     bool 是否已登录() const;
 
     // 用户信息获取
-    QString 获取用户名() const;
-    QString 获取邮箱() const;
+    std::string 获取用户名() const;
+    std::string 获取邮箱() const;
     uuids::uuid 获取UUID() const;
 
     // 数据库初始化相关
@@ -118,15 +118,15 @@ class UserAuth : public QObject, public IDataExporter {
     NetworkRequest &m_networkRequest; ///< 网络管理器引用
     Database &m_database;             ///< 数据库管理器引用
 
-    QString m_accessToken;  ///< 访问令牌
-    QString m_refreshToken; ///< 刷新令牌
-    QString m_username;     ///< 用户名
-    QString m_email;        ///< 邮箱
+    std::string m_accessToken;  ///< 访问令牌
+    std::string m_refreshToken; ///< 刷新令牌
+    std::string m_username;     ///< 用户名
+    std::string m_email;        ///< 邮箱
     uuids::uuid m_uuid;     ///< 用户UUID
 
     // 令牌管理
     QTimer *m_tokenExpiryTimer;      ///< 令牌过期检查定时器
-    qint64 m_tokenExpiryTime;        ///< 令牌过期时间戳
+    int64_t m_tokenExpiryTime;        ///< 令牌过期时间戳
     bool m_isRefreshing;             ///< 是否正在刷新令牌
     bool m_firstAuthEmitted = false; ///< 首次认证信号是否已经发出
 
@@ -139,5 +139,5 @@ class UserAuth : public QObject, public IDataExporter {
     static const int ACCESS_TOKEN_REFRESH_AHEAD = 300; // 5 分钟，可根据需要调整
 
     // 服务器配置
-    QString m_authApiEndpoint; ///< 认证API端点
+    std::string m_authApiEndpoint; ///< 认证API端点
 };
