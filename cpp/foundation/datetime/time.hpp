@@ -170,6 +170,12 @@ class Time {
     void normalize() noexcept; // 规范化时间（确保在0-24小时范围内）
 };
 
+// << 运算符重载
+inline std::ostream &operator<<(std::ostream &os, const my::Time &time) {
+    os << time.toISOString();
+    return os;
+}
+
 } // namespace my
 
 // std::format 支持

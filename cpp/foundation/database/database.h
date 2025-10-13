@@ -36,7 +36,6 @@ class IDataExporter {
   public:
     virtual ~IDataExporter() = default;
 
-#ifdef QT_CORE_LIB
     /**
      * @brief 导出数据到JSON对象
      * @param output 输出的JSON对象，各类将自己的数据填入对应的键
@@ -51,7 +50,6 @@ class IDataExporter {
      * @return 导入是否成功
      */
     virtual bool importFromJson(const QJsonObject &input, bool replaceAll) = 0;
-#endif
 };
 
 /**

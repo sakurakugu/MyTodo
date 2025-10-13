@@ -135,6 +135,12 @@ class Date {
                                                      std::string_view format) noexcept; // 解析自定义格式日期字符串
 };
 
+// << 运算符重载
+inline std::ostream &operator<<(std::ostream &os, const my::Date &date) {
+    os << date.toISOString();
+    return os;
+}
+
 } // namespace my
 
 // std::format 支持

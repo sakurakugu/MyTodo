@@ -9,14 +9,11 @@
 
 #include "datetime.h"
 #include "formatter.h"
+#include "timezone.h"
 #include <iomanip>
 #include <regex>
 #include <sstream>
 #include <stdexcept>
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
 
 #ifdef QT_CORE_LIB
 #include <QDateTime>
@@ -25,7 +22,7 @@
 namespace my {
 
 // 构造函数
-DateTime::DateTime(const time_point &tp) noexcept {
+DateTime::DateTime(const time_point &tp, std::optional<minutes> tzOffset) noexcept {
     auto days = std::chrono::floor<std::chrono::days>(tp);
     auto time_since_midnight = tp - days;
 
@@ -37,27 +34,32 @@ DateTime::DateTime(const time_point &tp) noexcept {
     m_date = Date{days};
     m_time = Time{static_cast<uint8_t>(h.count()), static_cast<uint8_t>(m.count()), static_cast<uint8_t>(s.count()),
                   static_cast<uint16_t>(ms.count())};
+    m_tzOffset = tzOffset.value_or(my::TimeZone::GetInstance().getUTCOffset());
 }
 
-DateTime::DateTime(const Date &date, const Time &time) noexcept : m_date(date), m_time(time) {}
-DateTime::DateTime(int32_t year, uint8_t month, uint8_t day, const Time &time) noexcept
-    : m_date(year, month, day), m_time(time) {}
+DateTime::DateTime(const Date &date, const Time &time, std::optional<minutes> tzOffset) noexcept
+    : m_date(date), m_time(time), m_tzOffset(tzOffset.value_or(minutes{0})) {}
+DateTime::DateTime(int32_t year, uint8_t month, uint8_t day, const Time &time, std::optional<minutes> tzOffset) noexcept
+    : m_date(year, month, day), m_time(time), m_tzOffset(tzOffset.value_or(minutes{0})) {}
 
-DateTime::DateTime(const Date &date, uint8_t hour, uint8_t minute, uint8_t second, uint16_t millisecond) noexcept
-    : m_date(date), m_time(hour, minute, second, millisecond) {}
+DateTime::DateTime(const Date &date, uint8_t hour, uint8_t minute, uint8_t second, uint16_t millisecond,
+                   std::optional<minutes> tzOffset) noexcept
+    : m_date(date), m_time(hour, minute, second, millisecond), m_tzOffset(tzOffset.value_or(minutes{0})) {}
 
 DateTime::DateTime(int32_t year, uint8_t month, uint8_t day, uint8_t hour, uint8_t minute, uint8_t second,
-                   uint16_t millisecond) noexcept
-    : m_date(year, month, day), m_time(hour, minute, second, millisecond) {}
+                   uint16_t millisecond, std::optional<minutes> tzOffset) noexcept
+    : m_date(year, month, day), m_time(hour, minute, second, millisecond), m_tzOffset(tzOffset.value_or(minutes{0})) {}
 
 DateTime::DateTime(const std::string &dateTimeStr) {
     auto dt = parseISO(dateTimeStr);
     if (!dt) {
         m_date = Date{};
         m_time = Time{};
+        m_tzOffset = std::chrono::minutes{0};
     } else {
         m_date = dt->m_date;
         m_time = dt->m_time;
+        m_tzOffset = dt->m_tzOffset;
     }
 }
 
@@ -69,12 +71,12 @@ DateTime::DateTime(const std::string &dateTimeStr) {
  * @return DateTime 当前日期时间
  */
 DateTime DateTime::now(TimeZone tz) noexcept {
-    // TODO: 实现时区转换
     auto now = system_clock::now();
     if (tz == TimeZone::UTC) {
         return DateTime{now};
     } else {
-        return DateTime{now + getUTCOffset()};
+        auto offset = my::TimeZone::GetInstance().getUTCOffset();
+        return DateTime{now, offset};
     }
 }
 
@@ -84,7 +86,7 @@ DateTime DateTime::utcNow() noexcept {
 
 DateTime DateTime::today(TimeZone tz) noexcept {
     auto now = DateTime::now(tz);
-    return DateTime{now.year(), now.month(), now.day(), 0, 0, 0, 0};
+    return DateTime{now.year(), now.month(), now.day(), 0, 0, 0, 0, now.m_tzOffset};
 }
 
 DateTime DateTime::fromString(std::string_view str) noexcept {
@@ -160,6 +162,10 @@ uint16_t DateTime::millisecond() const noexcept {
     return m_time.millisecond();
 }
 
+std::chrono::minutes DateTime::tzOffset() const noexcept {
+    return m_tzOffset;
+}
+
 // 验证
 bool DateTime::isValid() const noexcept {
     return m_date.isValid() && m_time.isValid();
@@ -194,17 +200,17 @@ DateTime &DateTime::addHours(int64_t hours) noexcept {
     return *this;
 }
 
-DateTime &DateTime::addDays(int days) noexcept {
+DateTime &DateTime::addDays(int32_t days) noexcept {
     m_date.addDays(days);
     return *this;
 }
 
-DateTime &DateTime::addMonths(int months) noexcept {
+DateTime &DateTime::addMonths(int32_t months) noexcept {
     m_date.addMonths(months);
     return *this;
 }
 
-DateTime &DateTime::addYears(int years) noexcept {
+DateTime &DateTime::addYears(int32_t years) noexcept {
     m_date.addYears(years);
     return *this;
 }
@@ -225,15 +231,15 @@ DateTime DateTime::plusHours(int64_t hours) const noexcept {
     return DateTime{*this}.addHours(hours);
 }
 
-DateTime DateTime::plusDays(int days) const noexcept {
+DateTime DateTime::plusDays(int32_t days) const noexcept {
     return DateTime{*this}.addDays(days);
 }
 
-DateTime DateTime::plusMonths(int months) const noexcept {
+DateTime DateTime::plusMonths(int32_t months) const noexcept {
     return DateTime{*this}.addMonths(months);
 }
 
-DateTime DateTime::plusYears(int years) const noexcept {
+DateTime DateTime::plusYears(int32_t years) const noexcept {
     return DateTime{*this}.addYears(years);
 }
 
@@ -302,8 +308,7 @@ std::string DateTime::toTimeString() const {
 // 转换
 std::chrono::system_clock::time_point DateTime::toTimePoint() const noexcept {
     auto days = m_date.toSysDays();
-    auto time_duration = std::chrono::hours{m_time.hour()} + std::chrono::minutes{m_time.minute()} +
-                         std::chrono::seconds{m_time.second()} + std::chrono::milliseconds{m_time.millisecond()};
+    auto time_duration = m_time.toDuration();
     return days + time_duration;
 }
 
@@ -344,6 +349,15 @@ void DateTime::normalizeDateTime() noexcept {
 
 DateTime DateTime::toUTC() const noexcept {
     try {
+        // 如果当前时间已经有时区偏移信息，使用它进行转换
+        if (m_tzOffset != minutes{0}) {
+            // 减去时区偏移得到UTC时间
+            auto result = *this;
+            result.addMinutes(-m_tzOffset.count());
+            result.m_tzOffset = minutes{0};
+            return result;
+        }
+
         // 假设当前时间是本地时间，转换为 UTC
         auto timePoint = toTimePoint();
         auto local_time = std::chrono::current_zone()->to_local(timePoint);
@@ -365,13 +379,24 @@ DateTime DateTime::toUTC() const noexcept {
 
         return DateTime{utcDate, utcTime};
     } catch (...) {
-        // 如果转换失败，返回原始时间
-        return *this;
+        // 如果转换失败，使用简单的偏移计算
+        auto offset = my::TimeZone::GetInstance().getUTCOffset();
+        auto result = *this;
+        result.addMinutes(-offset.count());
+        result.m_tzOffset = minutes{0};
+        return result;
     }
 }
 
 DateTime DateTime::toLocal() const noexcept {
     try {
+        // 如果当前时间已经有时区偏移信息，检查是否需要转换
+        auto localOffset = my::TimeZone::GetInstance().getUTCOffset();
+        if (m_tzOffset == localOffset) {
+            // 已经是本地时间
+            return *this;
+        }
+
         // 假设当前时间是 UTC，转换为本地时间
         auto timePoint = toTimePoint();
         auto local_time = std::chrono::current_zone()->to_local(timePoint);
@@ -392,20 +417,25 @@ DateTime DateTime::toLocal() const noexcept {
                        static_cast<uint8_t>(s.count()), //
                        static_cast<uint16_t>(ms.count())};
 
-        return DateTime{localDate, localTime};
+        return DateTime{localDate, localTime, localOffset};
     } catch (...) {
-        // 如果转换失败，返回原始时间
-        return *this;
+        // 如果转换失败，使用简单的偏移计算
+        auto offset = my::TimeZone::GetInstance().getUTCOffset();
+        auto result = *this;
+        result.addMinutes(offset.count());
+        result.m_tzOffset = offset;
+        return result;
     }
 }
 
 bool DateTime::operator==(const DateTime &other) const noexcept {
+    // 储存的是UTC时间，直接比较，时间是单独储存的，不需要考虑时区偏移
     return m_date == other.m_date && m_time == other.m_time;
 }
 
 // 比较运算符
 bool DateTime::operator!=(const DateTime &other) const noexcept {
-    return m_date != other.m_date || m_time != other.m_time;
+    return !(*this == other);
 }
 
 bool DateTime::operator<(const DateTime &other) const noexcept {
@@ -587,9 +617,8 @@ std::optional<DateTime> DateTime::parseISO(std::string_view str) noexcept {
             return std::nullopt;
         }
 
-        DateTime result{date, time};
-
         // 处理时区信息
+        int tzOffset = 0;
         if (match[8].matched) {
             // UTC时区 (Z)
             // 输入已经是UTC时间，无需转换
@@ -604,17 +633,12 @@ std::optional<DateTime> DateTime::parseISO(std::string_view str) noexcept {
             }
 
             // 计算总的偏移分钟数
-            int total_offset_minutes = tz_hours * 60 + tz_minutes;
+            int tzOffset = tz_hours * 60 + tz_minutes;
             if (sign == "-") {
-                total_offset_minutes = -total_offset_minutes;
+                tzOffset = -tzOffset;
             }
-
-            // 将时间转换为UTC（减去时区偏移）
-            result = result.plusMinutes(-total_offset_minutes);
         }
-        // 如果没有时区信息，假设为本地时间
-
-        return result;
+        return DateTime{date, time, minutes(tzOffset)};
     } catch (...) {
         return std::nullopt;
     }
@@ -625,43 +649,16 @@ std::optional<DateTime> DateTime::parseCustom(std::string_view str, [[maybe_unus
     return parseISO(str);
 }
 
-/**
- * @brief 获取当前日期时间的UTC偏移
- *
- * @return std::chrono::minutes UTC偏移（分钟）
- */
-std::chrono::minutes DateTime::getUTCOffset() noexcept {
-    try {
-#ifdef _WIN32
-        TIME_ZONE_INFORMATION tz_info;
-        DWORD result = GetTimeZoneInformation(&tz_info);
-        // 计算UTC偏移（分钟）
-        int offset = -tz_info.Bias;
-        if (result == TIME_ZONE_ID_DAYLIGHT) {
-            offset -= tz_info.DaylightBias;
-        } else {
-            offset -= tz_info.StandardBias;
-        }
-        return std::chrono::hours(offset / 60) + std::chrono::minutes(offset % 60);
-#else
-        [[deprecated("不支持的平台（暂未实现）")]]
-        int a = 1,
-            b = a;
-#endif
-    } catch (const std::exception &) {
-        return std::chrono::minutes(0);
-    }
-}
-
 #ifdef QT_CORE_LIB
 // Qt 转换构造函数
 DateTime::DateTime(const QDateTime &qdatetime) noexcept {
-    if (qdatetime.isValid()) { // 如果 Qt 日期时间有效
+    if (qdatetime.isValid()) {           // 如果 Qt 日期时间有效
         m_date = Date{qdatetime.date()}; // 从 Qt 日期转换为 my::Date
         m_time = Time{qdatetime.time()}; // 从 Qt 时间转换为 my::Time
     } else {
         m_date = Date{1970, 1, 1};
         m_time = Time{0, 0, 0, 0};
+        m_tzOffset = std::chrono::minutes{0};
     }
 }
 

@@ -11,17 +11,17 @@
  */
 
 #include "base_data_storage.h"
-#include <QDebug>
+#include "log_stream.h"
 
 /**
  * @brief 构造函数
  * @param exporterName 导出器名称，用于在数据库中注册
  * @param parent 父对象
  */
-BaseDataStorage::BaseDataStorage(const QString &exporterName, QObject *parent)
+BaseDataStorage::BaseDataStorage(const std::string &exporterName, QObject *parent)
     : QObject(parent), m_database(Database::GetInstance()), m_exporterName(exporterName) {
     // 注册到数据库导出器
-    m_database.registerDataExporter(m_exporterName.toStdString(), this);
+    m_database.registerDataExporter(m_exporterName, this);
 }
 
 /**
@@ -29,7 +29,7 @@ BaseDataStorage::BaseDataStorage(const QString &exporterName, QObject *parent)
  */
 BaseDataStorage::~BaseDataStorage() {
     // 从数据库导出器中注销
-    m_database.unregisterDataExporter(m_exporterName.toStdString());
+    m_database.unregisterDataExporter(m_exporterName);
 }
 
 /**
@@ -57,8 +57,8 @@ bool BaseDataStorage::初始化() {
 bool BaseDataStorage::执行SQL查询(const std::string &queryString) {
     auto query = m_database.createQuery();
     if (!query->exec(queryString)) {
-        qCritical() << "SQL查询执行失败:" << QString::fromStdString(m_database.lastError());
-        qCritical() << "查询语句:" << QString::fromStdString(queryString);
+        logCritical() << "SQL查询执行失败:" << m_database.lastError();
+        logCritical() << "查询语句:" << queryString;
         return false;
     }
     return true;
@@ -74,8 +74,8 @@ bool BaseDataStorage::执行SQL查询(const std::string &queryString, const std:
     auto query = m_database.createQuery();
     query->bindValues(params);
     if (!query->exec(queryString)) {
-        qCritical() << "SQL查询执行失败:" << QString::fromStdString(m_database.lastError());
-        qCritical() << "查询语句:" << QString::fromStdString(queryString);
+        logCritical() << "SQL查询执行失败:" << m_database.lastError();
+        logCritical() << "查询语句:" << queryString;
         return false;
     }
     return true;

@@ -78,8 +78,8 @@ bool CategoryModel::setData(const QModelIndex &index, const QVariant &value, int
 
     switch (role) {
     case NameRole:
-        if (item->name() != value.toString()) {
-            item->setName(value.toString());
+        if (item->name() != value.toString().toStdString()) {
+            item->setName(value.toString().toStdString());
             changed = true;
         }
         break;
@@ -103,7 +103,7 @@ QStringList CategoryModel::获取类别() const {
     QStringList categories;
     for (const auto &item : m_categoryItems) {
         if (item && item->synced() != 3) // 只返回未删除的类别
-            categories << item->name();
+            categories << QString::fromStdString(item->name());
     }
     return categories;
 }
@@ -132,13 +132,13 @@ QVariant CategoryModel::获取项目数据(const CategorieItem *item, int role) 
     case UuidRole:
         return QUuid(QString::fromStdString(uuids::to_string(item->uuid())));
     case NameRole:
-        return item->name();
+        return QString::fromStdString(item->name());
     case UserUuidRole:
         return QUuid(QString::fromStdString(uuids::to_string(item->userUuid())));
     case CreatedAtRole:
-        return item->createdAt();
+        return item->createdAt().toQDateTime();
     case UpdatedAtRole:
-        return item->updatedAt();
+        return item->updatedAt().toQDateTime();
     case SyncedRole:
         return item->synced();
     default:
@@ -284,9 +284,9 @@ void CategoryModel::更新同步成功状态(const std::vector<CategorieItem *> 
     开始更新模型();
     for (auto item : categories) {
         if (item->synced() != 3) { // 保留已删除状态
-            m_dataStorage.更新同步状态(m_categoryItems, item->name());
+            m_dataStorage.更新同步状态(m_categoryItems, QString::fromStdString(item->name()));
         } else {
-            m_dataStorage.删除类别(m_categoryItems, item->name());
+            m_dataStorage.删除类别(m_categoryItems, QString::fromStdString(item->name()));
         }
     }
     结束更新模型();

@@ -11,8 +11,10 @@
  */
 
 #include "qt_debug.h"
+// #include "datetime.h"
 #include "log_stream.h"
 #include <QDirIterator>
+#include <chrono>
 
 // Windows 相关头文件
 #ifdef Q_OS_WIN
@@ -35,4 +37,11 @@ void QtDebug::设置终端编码(int codePage) {
 }
 
 void QtDebug::测试用() {
+    // my::DateTime dt = my::DateTime::now();
+    // logWarning() << dt.toISOString();
+
+    // std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+    // std::chrono::zoned_time local_time{std::chrono::current_zone(), now};
+
+    // logWarning() << "Local time: " << local_time << '\n';
 }

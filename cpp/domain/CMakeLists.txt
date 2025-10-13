@@ -38,4 +38,5 @@ target_link_libraries(mytodo_domain
         Qt6::Network
         mytodo_foundation    # 基础模块（Database类等）
         mytodo_user          # 用户模块
+        my_logger             # 日志模块
 )

@@ -22,13 +22,13 @@
  * @param parent 父对象指针，用于Qt的对象树管理
  */
 CategorieItem::CategorieItem()
-    : m_id(0),                                   // 初始化分类ID为0
-      m_uuid(uuids::uuid()),                     // 初始化分类UUID为空UUID
-      m_name(""),                                // 初始化分类名称为空字符串
-      m_userUuid(uuids::uuid()),                 // 初始化用户UUID为空UUID
-      m_createdAt(QDateTime::currentDateTime()), // 初始化创建时间为当前时间
-      m_updatedAt(QDateTime::currentDateTime()), // 初始化更新时间为当前时间
-      m_synced(1)                                // 初始化是否已同步为false
+    : m_id(0),                          // 初始化分类ID为0
+      m_uuid(uuids::uuid()),            // 初始化分类UUID为空UUID
+      m_name(""),                       // 初始化分类名称为空字符串
+      m_userUuid(uuids::uuid()),        // 初始化用户UUID为空UUID
+      m_createdAt(my::DateTime::now()), // 初始化创建时间为当前时间
+      m_updatedAt(my::DateTime::now()), // 初始化更新时间为当前时间
+      m_synced(1)                       // 初始化是否已同步为false
 {}
 
 /**
@@ -37,21 +37,21 @@ CategorieItem::CategorieItem()
  * 使用指定的参数创建CategorieItem对象。这个构造函数通常用于
  * 从数据库或网络加载已存在的分类数据。
  */
-CategorieItem::CategorieItem(    //
-    int id,                      ///< 分类唯一标识符
-    const uuids::uuid &uuid,     ///< 分类唯一标识符（UUID)
-    const QString &name,         ///< 分类名称
-    const uuids::uuid &userUuid, ///< 用户UUID
-    const QDateTime &createdAt,  ///< 创建时间
-    const QDateTime &updatedAt,  ///< 更新时间
-    int synced)                  ///< 是否已与服务器同步
-    : m_id(id),                  ///< 初始化分类ID
-      m_uuid(uuid),              ///< 初始化分类UUID
-      m_name(name),              ///< 初始化分类名称
-      m_userUuid(userUuid),      ///< 初始化用户UUID
-      m_createdAt(createdAt),    ///< 初始化创建时间
-      m_updatedAt(updatedAt),    ///< 初始化更新时间
-      m_synced(synced)           ///< 初始化同步状态
+CategorieItem::CategorieItem(      //
+    int id,                        ///< 分类唯一标识符
+    const uuids::uuid &uuid,       ///< 分类唯一标识符（UUID)
+    const std::string &name,       ///< 分类名称
+    const uuids::uuid &userUuid,   ///< 用户UUID
+    const my::DateTime &createdAt, ///< 创建时间
+    const my::DateTime &updatedAt, ///< 更新时间
+    int synced)                    ///< 是否已与服务器同步
+    : m_id(id),                    ///< 初始化分类ID
+      m_uuid(uuid),                ///< 初始化分类UUID
+      m_name(name),                ///< 初始化分类名称
+      m_userUuid(userUuid),        ///< 初始化用户UUID
+      m_createdAt(createdAt),      ///< 初始化创建时间
+      m_updatedAt(updatedAt),      ///< 初始化更新时间
+      m_synced(synced)             ///< 初始化同步状态
 {}
 
 /**
@@ -76,10 +76,10 @@ void CategorieItem::setUuid(const uuids::uuid &uuid) {
  * @brief 设置分类名称
  * @param name 新的分类名称
  */
-void CategorieItem::setName(const QString &name) {
-    QString name_;
+void CategorieItem::setName(const std::string &name) {
+    std::string name_;
     if (name.length() > 50) {
-        name_ = name.left(40) + "......";
+        name_ = name.substr(0, 40) + "......";
     } else [[likely]] {
         name_ = name;
     }
@@ -101,7 +101,7 @@ void CategorieItem::setUserUuid(const uuids::uuid &userUuid) {
  * @brief 设置分类创建时间
  * @param createdAt 新的创建时间
  */
-void CategorieItem::setCreatedAt(const QDateTime &createdAt) {
+void CategorieItem::setCreatedAt(const my::DateTime &createdAt) {
     if (m_createdAt != createdAt)
         m_createdAt = createdAt;
 }
@@ -110,7 +110,7 @@ void CategorieItem::setCreatedAt(const QDateTime &createdAt) {
  * @brief 设置分类更新时间
  * @param updatedAt 新的更新时间
  */
-void CategorieItem::setUpdatedAt(const QDateTime &updatedAt) {
+void CategorieItem::setUpdatedAt(const my::DateTime &updatedAt) {
     if (m_updatedAt != updatedAt)
         m_updatedAt = updatedAt;
 }
@@ -148,7 +148,7 @@ void CategorieItem::forceSetSynced(int synced) {
  * @return 如果名称有效返回true，否则返回false
  */
 bool CategorieItem::isValidName() const noexcept {
-    return !m_name.isEmpty() && !m_name.trimmed().isEmpty() && m_name.length() <= 50;
+    return !m_name.empty() && m_name.length() <= 50;
 }
 
 /**
@@ -163,8 +163,8 @@ bool CategorieItem::isSystemDefault() const noexcept {
  * @brief 获取显示名称
  * @return 用于显示的分类名称
  */
-QString CategorieItem::displayName() const noexcept {
-    if (m_name.isEmpty()) {
+std::string CategorieItem::displayName() const noexcept {
+    if (m_name.empty()) {
         return "未命名分类";
     }
     return m_name;

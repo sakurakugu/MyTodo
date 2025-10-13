@@ -51,10 +51,11 @@ bool CategoryDataStorage::加载类别(CategorieList &categories) {
         while (query->next()) {
             int id = sqlValueCast<int>(query->value("id"));
             uuids::uuid uuid = uuids::uuid::from_string(sqlValueCast<std::string>(query->value("uuid"))).value();
-            QString name = QString::fromStdString(sqlValueCast<std::string>(query->value("name")));
-            uuids::uuid userUuid = uuids::uuid::from_string(sqlValueCast<std::string>(query->value("user_uuid"))).value();
-            QDateTime createdAt = Utility::timestampToDateTime(sqlValueCast<int64_t>(query->value("created_at")));
-            QDateTime updatedAt = Utility::timestampToDateTime(sqlValueCast<int64_t>(query->value("updated_at")));
+            std::string name = sqlValueCast<std::string>(query->value("name"));
+            uuids::uuid userUuid =
+                uuids::uuid::from_string(sqlValueCast<std::string>(query->value("user_uuid"))).value();
+            my::DateTime createdAt = Utility::timestampToDateTime(sqlValueCast<int64_t>(query->value("created_at")));
+            my::DateTime updatedAt = Utility::timestampToDateTime(sqlValueCast<int64_t>(query->value("updated_at")));
             int synced = sqlValueCast<int>(query->value("synced"));
 
             auto item = std::make_unique<CategorieItem>( //
@@ -94,18 +95,18 @@ std::unique_ptr<CategorieItem> CategoryDataStorage::新增类别( //
     try {
         // 创建新的类别项
         uuids::uuid newUuid = uuids::uuid_system_generator{}();
-        QDateTime createdAt = QDateTime::currentDateTimeUtc();
+        my::DateTime createdAt = QDateTime::currentDateTimeUtc();
 
         // 插入到数据库
         auto query = m_database.createQuery();
         query->prepare( //
             "INSERT INTO categories (uuid, name, user_uuid, created_at, updated_at, synced) VALUES (?,?,?,?,?,?)");
-        query->bindValues(                 //
-            uuids::to_string(newUuid),            //
-            name,                          //
-            uuids::to_string(userUuid),           //
-            createdAt.toMSecsSinceEpoch(), //
-            createdAt.toMSecsSinceEpoch(), //
+        query->bindValues(                               //
+            uuids::to_string(newUuid),                   //
+            name,                                        //
+            uuids::to_string(userUuid),                  //
+            createdAt.toQDateTime().toMSecsSinceEpoch(), //
+            createdAt.toQDateTime().toMSecsSinceEpoch(), //
             source == ImportSource::Server ? 0 : 1);
 
         if (!query->exec()) {
@@ -118,7 +119,7 @@ std::unique_ptr<CategorieItem> CategoryDataStorage::新增类别( //
         auto newItem = std::make_unique<CategorieItem>( //
             newId,                                      // 占位ID，插入后回填
             newUuid,                                    // 新的UUID
-            name,                                       // 类别名称
+            name.toStdString(),                         // 类别名称
             userUuid,                                   // 用户UUID
             createdAt,                                  // 创建时间
             createdAt,                                  // 更新时间
@@ -167,7 +168,7 @@ bool CategoryDataStorage::更新类别(CategorieList &categories, const QString 
         return false;
     }
     if (it != categories.end()) {
-        (*it)->setName(newName);
+        (*it)->setName(newName.toStdString());
         (*it)->setSynced(2); // 标记为未同步，待更新
         (*it)->setUpdatedAt(now);
     }
@@ -188,7 +189,7 @@ bool CategoryDataStorage::删除类别(CategorieList &categories, const QString 
         // 从数据库中删除类别
         auto query = m_database.createQuery();
         query->prepare("DELETE FROM categories WHERE name = ?");
-        query->addBindValue( name.toStdString());
+        query->addBindValue(name.toStdString());
 
         if (!query->exec()) {
             qCritical() << "从数据库删除类别失败:" << query->lastErrorQt();
@@ -306,9 +307,9 @@ bool CategoryDataStorage::创建默认类别(CategorieList &categories, const uu
     insertQuery->prepare("INSERT OR IGNORE INTO categories (id, uuid, name, user_uuid, created_at, updated_at, synced) "
                          "VALUES (?,?,?,?,?,?,?)");
     insertQuery->bindValues(1,                             //
-                            uuids::to_string(defaultUuid),        //
+                            uuids::to_string(defaultUuid), //
                             "未分类",                      //
-                            uuids::to_string(userUuid),           //
+                            uuids::to_string(userUuid),    //
                             createdAt.toMSecsSinceEpoch(), //
                             createdAt.toMSecsSinceEpoch(), //
                             0);
@@ -330,10 +331,11 @@ bool CategoryDataStorage::创建默认类别(CategorieList &categories, const uu
     if (selectQuery->exec()) {
         int id = sqlValueCast<int>(selectQuery->value("id"));
         uuids::uuid uuid = uuids::uuid::from_string(sqlValueCast<std::string>(selectQuery->value("uuid"))).value();
-        QString name = QString::fromStdString(sqlValueCast<std::string>(selectQuery->value("name")));
-        uuids::uuid dbUserUuid = uuids::uuid::from_string(sqlValueCast<std::string>(selectQuery->value("user_uuid"))).value();
-        QDateTime createdAt = Utility::timestampToDateTime(sqlValueCast<int64_t>(selectQuery->value("created_at")));
-        QDateTime updatedAt = Utility::timestampToDateTime(sqlValueCast<int64_t>(selectQuery->value("updated_at")));
+        std::string name = sqlValueCast<std::string>(selectQuery->value("name"));
+        uuids::uuid dbUserUuid =
+            uuids::uuid::from_string(sqlValueCast<std::string>(selectQuery->value("user_uuid"))).value();
+        my::DateTime createdAt = Utility::timestampToDateTime(sqlValueCast<int64_t>(selectQuery->value("created_at")));
+        my::DateTime updatedAt = Utility::timestampToDateTime(sqlValueCast<int64_t>(selectQuery->value("updated_at")));
         int synced = sqlValueCast<int>(selectQuery->value("synced"));
         auto defaultItem = std::make_unique<CategorieItem>(id, uuid, name, dbUserUuid, createdAt, updatedAt, synced);
         categories.push_back(std::move(defaultItem));
@@ -362,7 +364,7 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
     for (auto &item : categories) {
         if (item) {
             uuidIndex.insert({item->uuid(), item.get()});
-            nameIndex.insert({item->name().toStdString(), item.get()});
+            nameIndex.insert({item->name(), item.get()});
         }
     }
 
@@ -397,7 +399,9 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
                 continue;
             }
 
-            uuids::uuid uuid = obj.contains("uuid") ? uuids::uuid::from_string(obj["uuid"].toString().toStdString()).value() : uuids::uuid_system_generator{}();
+            uuids::uuid uuid = obj.contains("uuid")
+                                   ? uuids::uuid::from_string(obj["uuid"].toString().toStdString()).value()
+                                   : uuids::uuid_system_generator{}();
             if (uuid.is_nil())
                 uuid = uuids::uuid_system_generator{}();
 
@@ -411,8 +415,8 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
                 updatedAt = createdAt;
 
             // 构造临时 incoming 对象（不立即放入列表）
-            CategorieItem incoming(-1, uuid, name, userUuid, createdAt, updatedAt,
-                                   source == ImportSource::Server ? 0 : 1);
+            CategorieItem incoming(-1, uuid, name.toStdString(), userUuid, my::DateTime(createdAt),
+                                   my::DateTime(updatedAt), source == ImportSource::Server ? 0 : 1);
 
             // 查找现有
             CategorieItem *existing = uuidIndex[uuid];
@@ -437,24 +441,25 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
                                      "synced = ? WHERE uuid = ? OR name = ?");
                 updateQuery->bindValues(                                                    //
                     name,                                                                   //
-                    uuids::to_string(userUuid),                                                    //
+                    uuids::to_string(userUuid),                                             //
                     createdAt.toUTC().toMSecsSinceEpoch(),                                  //
                     updatedAt.toUTC().toMSecsSinceEpoch(),                                  //
                     source == ImportSource::Server ? 0 : (existing->synced() == 1 ? 1 : 2), //
-                    uuids::to_string(uuid),                                            //
+                    uuids::to_string(uuid),                                                 //
                     existing->name()                                                        //
                 );
 
                 if (!updateQuery->exec()) {
-                    qCritical() << "更新类别失败(uuid=" << uuids::to_string(existing->uuid()) << "):" << updateQuery->lastErrorQt();
+                    qCritical() << "更新类别失败(uuid=" << uuids::to_string(existing->uuid())
+                                << "):" << updateQuery->lastErrorQt();
                     success = false;
                     break;
                 }
                 // 更新内存
-                existing->setName(name);
+                existing->setName(name.toStdString());
                 existing->setUserUuid(userUuid);
-                existing->setCreatedAt(createdAt);
-                existing->setUpdatedAt(updatedAt);
+                existing->setCreatedAt(my::DateTime(createdAt));
+                existing->setUpdatedAt(my::DateTime(updatedAt));
                 existing->setSynced(source == ImportSource::Server ? 0 : 2);
                 ++updateCount;
             }

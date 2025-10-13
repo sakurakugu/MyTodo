@@ -21,6 +21,8 @@ class QDateTime;
 
 namespace my {
 
+class TimeZone;
+
 /**
  * @brief DateTime 类：结合日期和时间的完整日期时间处理类
  *
@@ -53,20 +55,29 @@ class DateTime {
     // 构造函数
     DateTime() = default;
     DateTime(const DateTime &other) = default;
-    explicit DateTime(const time_point &tp) noexcept;
-    DateTime(const Date &date, const Time &time = Time{}) noexcept;
-    DateTime(const Date &date, uint8_t hour = 0, uint8_t minute = 0, uint8_t second = 0,
-             uint16_t millisecond = 0) noexcept;
-    DateTime(int32_t year, uint8_t month, uint8_t day, const Time &time) noexcept;
-    DateTime(int32_t year, uint8_t month, uint8_t day, uint8_t hour = 0, uint8_t minute = 0, uint8_t second = 0,
-             uint16_t millisecond = 0) noexcept;
+    explicit DateTime(const time_point &tp, std::optional<minutes> tzOffset = std::nullopt) noexcept; // UTC
+    DateTime(const Date &date,                                                                        //
+             const Time &time = Time{},                                                               //
+             std::optional<minutes> tzOffset = std::nullopt                                           //
+             ) noexcept;
+    DateTime(const Date &date,                                                                   //
+             uint8_t hour = 0, uint8_t minute = 0, uint8_t second = 0, uint16_t millisecond = 0, //
+             std::optional<minutes> tzOffset = std::nullopt                                      //
+             ) noexcept;
+    DateTime(int32_t year, uint8_t month, uint8_t day, const Time &time,
+             std::optional<minutes> tzOffset = std::nullopt //
+             ) noexcept;
+    DateTime(int32_t year, uint8_t month, uint8_t day,                                           //
+             uint8_t hour = 0, uint8_t minute = 0, uint8_t second = 0, uint16_t millisecond = 0, //
+             std::optional<minutes> tzOffset = std::nullopt                                      //
+             ) noexcept;
     DateTime(const std::string &dateTimeStr); // 从字符串构造
 #ifdef QT_CORE_LIB
     DateTime(const QDateTime &qdatetime) noexcept;
 #endif
 
     // 静态工厂方法
-    static DateTime now(TimeZone tz = TimeZone::Local) noexcept;
+    static DateTime now(TimeZone tz = TimeZone::Local) noexcept; // 获取当前日期时间
     static DateTime utcNow() noexcept;
     static DateTime today(TimeZone tz = TimeZone::Local) noexcept;
     static DateTime fromString(std::string_view str) noexcept;
@@ -92,6 +103,9 @@ class DateTime {
     uint8_t minute() const noexcept;
     uint8_t second() const noexcept;
     uint16_t millisecond() const noexcept;
+
+    // 访问器 - 时区部分
+    minutes tzOffset() const noexcept;
 
     // 验证
     bool isValid() const noexcept;
@@ -167,13 +181,14 @@ class DateTime {
     duration operator-(const DateTime &other) const noexcept;
 
   private:
-    Date m_date{};
-    Time m_time{};
+    // 储存UTC时间和日期
+    Date m_date; // 日期部分
+    Time m_time; // 时间部分
+    minutes m_tzOffset; // 时区偏移，单位：分钟
 
     // 辅助方法
     static std::optional<DateTime> parseISO(std::string_view str) noexcept;
     static std::optional<DateTime> parseCustom(std::string_view str, std::string_view format) noexcept;
-    static std::chrono::minutes getUTCOffset() noexcept;
     void normalizeDateTime() noexcept; // 处理跨日期边界
 
     // 日期时间操作
@@ -194,7 +209,14 @@ class DateTime {
     DateTime plusYears(int32_t years) const noexcept;
 };
 
+// << 运算符重载
+inline std::ostream &operator<<(std::ostream &os, const my::DateTime &dt) {
+    os << dt.toISOString();
+    return os;
+}
+
 } // namespace my
+
 // std::format 支持
 template <> struct std::formatter<my::DateTime> : std::formatter<std::string> {
     auto format(const my::DateTime &dt, std::format_context &ctx) const {

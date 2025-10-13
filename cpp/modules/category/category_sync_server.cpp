@@ -223,9 +223,9 @@ void CategorySyncServer::推送数据() {
         for (CategorieItem *item : std::as_const(m_unsyncedItems)) {
             QJsonObject obj;
             obj["uuid"] = QString::fromStdString(uuids::to_string(item->uuid()));
-            obj["name"] = item->name();
-            obj["created_at"] = Utility::toRfc3339Json(item->createdAt());
-            obj["updated_at"] = Utility::toRfc3339Json(item->updatedAt());
+            obj["name"] = QString::fromStdString(item->name());
+            obj["created_at"] = Utility::toRfc3339Json(item->createdAt().toQDateTime());
+            obj["updated_at"] = Utility::toRfc3339Json(item->updatedAt().toQDateTime());
             obj["synced"] = item->synced();
             jsonArray.append(obj);
         }

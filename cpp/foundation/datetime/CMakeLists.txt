@@ -15,6 +15,8 @@ add_library(my_datetime STATIC
     time.hpp
     formatter.cpp
     formatter.h
+    timezone.cpp
+    timezone.h
 )
 
 # 查找 Qt 库

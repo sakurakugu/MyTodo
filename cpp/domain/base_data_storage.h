@@ -68,7 +68,7 @@ class BaseDataStorage : public QObject, public IDataExporter {
     };
 
     // 构造函数和析构函数
-    explicit BaseDataStorage(const QString &exporterName, QObject *parent = nullptr);
+    explicit BaseDataStorage(const std::string &exporterName, QObject *parent = nullptr);
     ~BaseDataStorage() override;
 
     // 公共初始化方法 - 子类构造完成后调用
@@ -96,7 +96,7 @@ class BaseDataStorage : public QObject, public IDataExporter {
 
     // 成员变量
     Database &m_database;   ///< 数据库管理器引用
-    QString m_exporterName; ///< 导出器名称
+    std::string m_exporterName; ///< 导出器名称
 
   private:
     // 禁用拷贝构造和赋值操作
