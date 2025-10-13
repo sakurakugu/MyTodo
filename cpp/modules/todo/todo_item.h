@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include "datetime.h"
 #include <QDateTime>
 #include <QString>
 #include <uuid.h>
@@ -121,7 +122,7 @@ class TodoItem {
     bool isDue(const QDateTime &checkTime = QDateTime::currentDateTime()) const noexcept; // 检查是否到期
     int daysUntilDeadline() const noexcept;                                               // 距离截止日期的天数
     bool isInRecurrencePeriod(
-        const QDate &checkDate = QDate::currentDate()) const noexcept; // 检查指定日期是否在重复周期内
+        const my::Date &checkDate = my::Date::today()) const noexcept; // 检查指定日期是否在重复周期内
 
   private:
     // 成员变量

@@ -55,10 +55,11 @@ class DateTime {
     // 构造函数
     DateTime() = default;
     DateTime(const DateTime &other) = default;
-    explicit DateTime(const time_point &tp, std::optional<minutes> tzOffset = std::nullopt) noexcept; // UTC
-    DateTime(const Date &date,                                                                        //
-             const Time &time = Time{},                                                               //
-             std::optional<minutes> tzOffset = std::nullopt                                           //
+    DateTime(const int64_t timestamp, std::optional<minutes> tzOffset = std::nullopt) noexcept; // 从Unix时间戳构造
+    DateTime(const time_point &tp, std::optional<minutes> tzOffset = std::nullopt) noexcept;    // UTC
+    DateTime(const Date &date,                                                                  //
+             const Time &time = Time{},                                                         //
+             std::optional<minutes> tzOffset = std::nullopt                                     //
              ) noexcept;
     DateTime(const Date &date,                                                                   //
              uint8_t hour = 0, uint8_t minute = 0, uint8_t second = 0, uint16_t millisecond = 0, //
@@ -182,8 +183,8 @@ class DateTime {
 
   private:
     // 储存UTC时间和日期
-    Date m_date; // 日期部分
-    Time m_time; // 时间部分
+    Date m_date;        // 日期部分
+    Time m_time;        // 时间部分
     minutes m_tzOffset; // 时区偏移，单位：分钟
 
     // 辅助方法

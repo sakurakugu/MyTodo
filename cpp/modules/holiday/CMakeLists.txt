@@ -35,4 +35,6 @@ target_link_libraries(mytodo_holiday
         Qt6::Core
         Qt6::Network
         mytodo_foundation    # 基础模块（网络请求、配置等）
+        my_datetime          # 日期时间模块（日期解析、格式化等）
+        nlohmann_json::nlohmann_json # JSON库（用于API数据解析）
 )

@@ -22,6 +22,9 @@
 namespace my {
 
 // 构造函数
+DateTime::DateTime(const int64_t timestamp, std::optional<minutes> tzOffset) noexcept
+    : DateTime(system_clock::from_time_t(timestamp), tzOffset) {}
+    
 DateTime::DateTime(const time_point &tp, std::optional<minutes> tzOffset) noexcept {
     auto days = std::chrono::floor<std::chrono::days>(tp);
     auto time_since_midnight = tp - days;

@@ -23,21 +23,18 @@ target_include_directories(my_database PUBLIC
     ${INCLUDE_DIR}                 # 允许包含生成的 version.h 
 )
 
-# 链接 SQLite3 库
-# target_link_libraries(my_database PUBLIC SQLite::SQLite3)
+# 如果编译失败，检查主CMake中导入的顺序是否正确
+# 比如确保先导入 my_datetime 再导入 my_database
 
-target_link_libraries(my_database
-    PUBLIC
-        SQLite::SQLite3
-        # my_datetime
-)
-# 如果找到了 my_datetime，则链接 my_datetime
-if(TARGET my_datetime)
-    target_link_libraries(my_database PUBLIC my_datetime)
-endif()
+# 链接 SQLite3 库
+target_link_libraries(my_database PUBLIC SQLite::SQLite3)
 # 如果找到了 Qt6，则链接 Qt6::Core
 if(Qt6_FOUND)
     target_link_libraries(my_database PUBLIC Qt6::Core)
+endif()
+# 如果找到了 my_datetime，则链接 my_datetime
+if(TARGET my_datetime)
+    target_link_libraries(my_database PUBLIC my_datetime)
 endif()
 # 如果找到了 my_logger，则链接 my_logger
 if(TARGET my_logger)

@@ -77,13 +77,13 @@ class CategoryModel : public QAbstractListModel {
     QStringList 获取类别() const;
     bool 加载类别(const uuids::uuid &userUuid); // 从存储加载类别数据
 
-    CategorieItem *寻找类别(const QString &name) const;
+    CategorieItem *寻找类别(const std::string &name) const;
     CategorieItem *寻找类别(int id) const;
     CategorieItem *寻找类别(const uuids::uuid &uuid) const;
 
-    bool 新增类别(const QString &name, const uuids::uuid &userUuid);
-    bool 更新类别(const QString &name, const QString &newName);
-    bool 删除类别(const QString &name);
+    bool 新增类别(const std::string &name, const uuids::uuid &userUuid);
+    bool 更新类别(const std::string &name, const std::string &newName);
+    bool 删除类别(const std::string &name);
 
     void 与服务器同步();
     void 更新同步成功状态(const std::vector<CategorieItem *> &categories);
@@ -99,7 +99,7 @@ class CategoryModel : public QAbstractListModel {
   private:
     // 辅助方法
     QVariant 获取项目数据(const CategorieItem *item, int role) const; ///< 根据角色获取项目数据
-    bool 是否是有效名称(const QString &name) const;
+    bool 是否是有效名称(const std::string &name) const;
     void 开始更新模型(); ///< 开始模型更新
     void 结束更新模型(); ///< 结束模型更新
 

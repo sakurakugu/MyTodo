@@ -25,7 +25,7 @@ QmlHolidayManager::QmlHolidayManager(QObject *parent)
  * @return 日期类型（0=工作日，1=节假日，2=周末，3=节假日调休）
  */
 int QmlHolidayManager::getDateType(const QDate &date) const {
-    return static_cast<int>(m_holidayManager.获取日期类型(date));
+    return static_cast<int>(m_holidayManager.获取日期类型(my::Date(date)));
 }
 
 /**
@@ -34,7 +34,7 @@ int QmlHolidayManager::getDateType(const QDate &date) const {
  * @return 是否为节假日
  */
 bool QmlHolidayManager::isHoliday(const QDate &date) const {
-    return m_holidayManager.是否为节假日(date);
+    return m_holidayManager.是否为节假日(my::Date(date));
 }
 
 /**
@@ -43,7 +43,7 @@ bool QmlHolidayManager::isHoliday(const QDate &date) const {
  * @return 是否为工作日
  */
 bool QmlHolidayManager::isWorkDay(const QDate &date) const {
-    return m_holidayManager.是否为工作日(date);
+    return m_holidayManager.是否为工作日(my::Date(date));
 }
 
 /**
@@ -52,7 +52,7 @@ bool QmlHolidayManager::isWorkDay(const QDate &date) const {
  * @return 是否为周末
  */
 bool QmlHolidayManager::isWeekend(const QDate &date) const {
-    return m_holidayManager.是否为周末(date);
+    return m_holidayManager.是否为周末(my::Date(date));
 }
 
 /**
@@ -61,7 +61,7 @@ bool QmlHolidayManager::isWeekend(const QDate &date) const {
  * @return 节假日名称，如果不是节假日返回空字符串
  */
 QString QmlHolidayManager::getHolidayName(const QDate &date) const {
-    return m_holidayManager.获取节假日名称(date);
+    return QString::fromStdString(m_holidayManager.获取节假日名称(my::Date(date)));
 }
 
 /**
@@ -79,7 +79,7 @@ void QmlHolidayManager::refreshHolidayData(int year) {
  * @return 下一个工作日
  */
 QDate QmlHolidayManager::getNextWorkDay(const QDate &fromDate, int daysToAdd) const {
-    return m_holidayManager.获取下一个工作日(fromDate, daysToAdd);
+    return m_holidayManager.获取下一个工作日(my::Date(fromDate), daysToAdd).toQDate();
 }
 
 /**
@@ -89,7 +89,7 @@ QDate QmlHolidayManager::getNextWorkDay(const QDate &fromDate, int daysToAdd) co
  * @return 下一个节假日
  */
 QDate QmlHolidayManager::getNextHoliday(const QDate &fromDate, int daysToAdd) const {
-    return m_holidayManager.获取下一个节假日(fromDate, daysToAdd);
+    return m_holidayManager.获取下一个节假日(my::Date(fromDate), daysToAdd).toQDate();
 }
 
 /**
@@ -99,7 +99,7 @@ QDate QmlHolidayManager::getNextHoliday(const QDate &fromDate, int daysToAdd) co
  * @return 下一个周末
  */
 QDate QmlHolidayManager::getNextWeekend(const QDate &fromDate, int daysToAdd) const {
-    return m_holidayManager.获取下一个周末(fromDate, daysToAdd);
+    return m_holidayManager.获取下一个周末(my::Date(fromDate), daysToAdd).toQDate();
 }
 
 /**
@@ -109,8 +109,8 @@ QDate QmlHolidayManager::getNextWeekend(const QDate &fromDate, int daysToAdd) co
  */
 QVariantMap QmlHolidayManager::holidayItemToVariantMap(const HolidayItem &holiday) const {
     QVariantMap map;
-    map["date"] = holiday.date();
-    map["name"] = holiday.name();
+    map["date"] = holiday.date().toQDate();
+    map["name"] = QString::fromStdString(holiday.name());
     map["isOffDay"] = holiday.isOffDay();
     return map;
 }

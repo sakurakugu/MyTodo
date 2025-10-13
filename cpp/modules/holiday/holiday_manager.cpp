@@ -9,18 +9,20 @@
  */
 
 #include "holiday_manager.h"
-#include <QCoreApplication>
-#include <QDebug>
-#include <QDir>
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QJsonObject>
+#include "datetime.h"
 #include <QStandardPaths>
+#include <nlohmann/json.hpp>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <chrono>
+#include <iomanip>
+#include <sstream>
 
 // 常量定义
-const QString HolidayManager::HOLIDAY_API_BASE_URL = "https://api.jiejiariapi.com/v1/holidays";
+const std::string HolidayManager::HOLIDAY_API_BASE_URL = "https://api.jiejiariapi.com/v1/holidays";
 const int HolidayManager::UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24小时
-const QString HolidayManager::HOLIDAY_DATA_DIR = "data/holiday";
+const std::string HolidayManager::HOLIDAY_DATA_DIR = "data/holiday";
 
 HolidayManager::HolidayManager(QObject *parent)
     : QObject(parent),                                  //
@@ -28,7 +30,7 @@ HolidayManager::HolidayManager(QObject *parent)
       m_networkRequest(&NetworkRequest::GetInstance()), //
       m_initialized(false) {
 
-    m_holidayDataDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/" + HOLIDAY_DATA_DIR;
+    m_holidayDataDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation).toStdString() + "/" + HOLIDAY_DATA_DIR;
 
     // 设置定时器
     设置定时器();
@@ -45,10 +47,11 @@ bool HolidayManager::初始化() {
     qDebug() << "初始化节假日管理器...";
 
     // 创建数据目录
-    QDir dir;
-    if (!dir.exists(m_holidayDataDir)) {
-        if (!dir.mkpath(m_holidayDataDir)) {
-            qWarning() << "无法创建节假日数据目录:" << m_holidayDataDir;
+    std::filesystem::path dirPath(m_holidayDataDir);
+    if (!std::filesystem::exists(dirPath)) {
+        std::error_code ec;
+        if (!std::filesystem::create_directories(dirPath, ec)) {
+            qWarning() << "无法创建节假日数据目录:" << m_holidayDataDir.c_str() << "错误:" << ec.message().c_str();
             return false;
         }
     }
@@ -76,7 +79,7 @@ bool HolidayManager::初始化() {
  * @param date 日期
  * @return 日期类型
  */
-HolidayManager::DateType HolidayManager::获取日期类型(const QDate &date) const {
+HolidayManager::DateType HolidayManager::获取日期类型(const my::Date &date) const {
     if (!date.isValid()) {
         return DateType::WorkDay;
     }
@@ -84,20 +87,21 @@ HolidayManager::DateType HolidayManager::获取日期类型(const QDate &date) c
     int year = date.year();
     if (!m_holidayData.contains(year)) {
         // 如果没有该年份的数据，根据星期判断
-        int dayOfWeek = date.dayOfWeek();
-        return (dayOfWeek == Qt::Saturday || dayOfWeek == Qt::Sunday) ? Weekend : WorkDay;
+        uint8_t dayOfWeek = date.dayOfWeek();
+        return (dayOfWeek == my::DayOfWeek::Saturday || dayOfWeek == my::DayOfWeek::Sunday) ? Weekend : WorkDay;
     }
 
-    const std::vector<HolidayItem> &holidays = m_holidayData[year];
+    // 检查是否为节假日
+    const std::vector<HolidayItem> &holidays = m_holidayData.find(year)->second;
     for (const HolidayItem &holiday : holidays) {
         if (holiday.date() == date) {
-            return holiday.isOffDay() ? Holiday : HolidayWork;
+            return holiday.isOffDay() ? DateType::Holiday : DateType::HolidayWork;
         }
     }
 
     // 不是节假日，检查是否为周末
-    int dayOfWeek = date.dayOfWeek();
-    return (dayOfWeek == Qt::Saturday || dayOfWeek == Qt::Sunday) ? Weekend : WorkDay;
+    uint8_t dayOfWeek = date.dayOfWeek();
+    return (dayOfWeek == my::DayOfWeek::Saturday || dayOfWeek == my::DayOfWeek::Sunday) ? Weekend : WorkDay;
 }
 
 /**
@@ -105,8 +109,8 @@ HolidayManager::DateType HolidayManager::获取日期类型(const QDate &date) c
  * @param date 日期
  * @return 是否为节假日
  */
-bool HolidayManager::是否为节假日(const QDate &date) const {
-    return 获取日期类型(date) == Holiday;
+bool HolidayManager::是否为节假日(const my::Date &date) const {
+    return 获取日期类型(date) == DateType::Holiday;
 }
 
 /**
@@ -114,9 +118,9 @@ bool HolidayManager::是否为节假日(const QDate &date) const {
  * @param date 日期
  * @return 是否为工作日
  */
-bool HolidayManager::是否为工作日(const QDate &date) const {
+bool HolidayManager::是否为工作日(const my::Date &date) const {
     DateType type = 获取日期类型(date);
-    return type == WorkDay || type == HolidayWork;
+    return type == DateType::WorkDay || type == DateType::HolidayWork;
 }
 
 /**
@@ -124,8 +128,8 @@ bool HolidayManager::是否为工作日(const QDate &date) const {
  * @param date 日期
  * @return 是否为周末
  */
-bool HolidayManager::是否为周末(const QDate &date) const {
-    return 获取日期类型(date) == Weekend;
+bool HolidayManager::是否为周末(const my::Date &date) const {
+    return 获取日期类型(date) == DateType::Weekend;
 }
 
 /**
@@ -133,24 +137,24 @@ bool HolidayManager::是否为周末(const QDate &date) const {
  * @param date 日期
  * @return 节假日名称，如果不是节假日返回空字符串
  */
-QString HolidayManager::获取节假日名称(const QDate &date) const {
+std::string HolidayManager::获取节假日名称(const my::Date &date) const {
     if (!date.isValid()) {
-        return QString();
+        return std::string();
     }
 
     int year = date.year();
     if (!m_holidayData.contains(year)) {
-        return QString();
+        return std::string();
     }
 
-    const std::vector<HolidayItem> &holidays = m_holidayData[year];
+    const std::vector<HolidayItem> &holidays = m_holidayData.find(year)->second;
     for (const HolidayItem &holiday : holidays) {
         if (holiday.date() == date) {
             return holiday.name();
         }
     }
 
-    return QString();
+    return std::string();
 }
 
 /**
@@ -159,7 +163,7 @@ QString HolidayManager::获取节假日名称(const QDate &date) const {
  * @return 节假日列表
  */
 std::vector<HolidayItem> HolidayManager::获取指定年份的所有节假日(int year) const {
-    return m_holidayData.value(year, std::vector<HolidayItem>());
+    return m_holidayData.find(year)->second;
 }
 
 /**
@@ -177,8 +181,8 @@ void HolidayManager::手动刷新指定年份的节假日数据(int year) {
  * @param daysToAdd 要添加的工作日数量
  * @return 下一个工作日
  */
-QDate HolidayManager::获取下一个工作日(const QDate &fromDate, int daysToAdd) const {
-    QDate currentDate = fromDate;
+my::Date HolidayManager::获取下一个工作日(const my::Date &fromDate, int daysToAdd) const {
+    my::Date currentDate = fromDate;
     int addedDays = 0;
 
     while (addedDays < daysToAdd) {
@@ -197,14 +201,14 @@ QDate HolidayManager::获取下一个工作日(const QDate &fromDate, int daysTo
  * @param daysToAdd 要添加的节假日数量
  * @return 下一个节假日
  */
-QDate HolidayManager::获取下一个节假日(const QDate &fromDate, int daysToAdd) const {
-    QDate currentDate = fromDate;
+my::Date HolidayManager::获取下一个节假日(const my::Date &fromDate, int daysToAdd) const {
+    my::Date currentDate = fromDate;
     int addedDays = 0;
 
     while (addedDays < daysToAdd) {
         currentDate = currentDate.addDays(1);
         DateType type = 获取日期类型(currentDate);
-        if (type == Holiday || type == Weekend) {
+        if (type == DateType::Holiday || type == DateType::Weekend) {
             addedDays++;
         }
     }
@@ -218,8 +222,8 @@ QDate HolidayManager::获取下一个节假日(const QDate &fromDate, int daysTo
  * @param daysToAdd 要添加的周末数量
  * @return 下一个周末
  */
-QDate HolidayManager::获取下一个周末(const QDate &fromDate, int daysToAdd) const {
-    QDate currentDate = fromDate;
+my::Date HolidayManager::获取下一个周末(const my::Date &fromDate, int daysToAdd) const {
+    my::Date currentDate = fromDate;
     int addedDays = 0;
 
     while (addedDays < daysToAdd) {
@@ -274,28 +278,26 @@ bool HolidayManager::加载本地节假日数据() {
  * @return 是否成功
  */
 bool HolidayManager::保存节假日数据到本地文件(int year, const std::vector<HolidayItem> &holidays) {
-    QString filePath = 获取节假日数据文件路径(year);
+    std::string filePath = 获取节假日数据文件路径(year);
 
-    QJsonObject jsonObject;
-    QJsonArray holidayArray;
+    nlohmann::json jsonObject;
+    nlohmann::json holidayArray = nlohmann::json::array();
 
     for (const HolidayItem &holiday : holidays) {
-        holidayArray.append(holiday.toJson());
+        holidayArray.push_back(holiday.toJson());
     }
 
     jsonObject["year"] = year;
     jsonObject["holidays"] = holidayArray;
-    jsonObject["updateTime"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+    jsonObject["updateTime"] = my::DateTime::now().toISOString();
 
-    QJsonDocument doc(jsonObject);
-
-    QFile file(filePath);
-    if (!file.open(QIODevice::WriteOnly)) {
-        qWarning() << "无法打开文件进行写入:" << filePath;
+    std::ofstream file(filePath);
+    if (!file.is_open()) {
+        qWarning() << "无法打开文件进行写入:" << filePath.c_str();
         return false;
     }
 
-    file.write(doc.toJson());
+    file << jsonObject.dump(4); // 格式化输出，缩进4个空格
     file.close();
 
     return true;
@@ -307,38 +309,36 @@ bool HolidayManager::保存节假日数据到本地文件(int year, const std::v
  * @return 节假日列表
  */
 std::vector<HolidayItem> HolidayManager::从本地文件加载节假日数据(int year) {
-    QString filePath = 获取节假日数据文件路径(year);
+    std::string filePath = 获取节假日数据文件路径(year);
     std::vector<HolidayItem> holidays;
 
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly)) {
+    std::ifstream file(filePath);
+    if (!file.is_open()) {
         return holidays; // 文件不存在或无法打开
     }
 
-    QByteArray data = file.readAll();
-    file.close();
+    try {
+        nlohmann::json jsonObject;
+        file >> jsonObject;
+        file.close();
 
-    QJsonParseError error;
-    QJsonDocument doc = QJsonDocument::fromJson(data, &error);
-    if (error.error != QJsonParseError::NoError) {
-        qWarning() << "解析节假日数据文件失败:" << error.errorString();
-        return holidays;
-    }
+        if (!jsonObject.contains("holidays") || !jsonObject["holidays"].is_array()) {
+            qWarning() << "节假日数据文件格式错误";
+            return holidays;
+        }
 
-    QJsonObject jsonObject = doc.object();
-    if (!jsonObject.contains("holidays") || !jsonObject["holidays"].isArray()) {
-        qWarning() << "节假日数据文件格式错误";
-        return holidays;
-    }
-
-    QJsonArray holidayArray = jsonObject["holidays"].toArray();
-    for (const QJsonValue &value : holidayArray) {
-        if (value.isObject()) {
-            HolidayItem holiday(value.toObject());
-            if (holiday.isValid()) {
-                holidays.push_back(holiday);
+        const auto& holidayArray = jsonObject["holidays"];
+        for (const auto& value : holidayArray) {
+            if (value.is_object()) {
+                HolidayItem holiday(value);
+                if (holiday.isValid()) {
+                    holidays.push_back(holiday);
+                }
             }
         }
+    } catch (const nlohmann::json::exception& e) {
+        qWarning() << "解析节假日数据文件失败:" << e.what();
+        return holidays;
     }
 
     return holidays;
@@ -349,8 +349,8 @@ std::vector<HolidayItem> HolidayManager::从本地文件加载节假日数据(in
  * @param year 年份
  * @return 文件路径
  */
-QString HolidayManager::获取节假日数据文件路径(int year) const {
-    return m_holidayDataDir + QString("/%1_holidays.json").arg(year);
+std::string HolidayManager::获取节假日数据文件路径(int year) const {
+    return m_holidayDataDir + "/" + std::to_string(year) + "_holidays.json";
 }
 
 /**
@@ -358,10 +358,10 @@ QString HolidayManager::获取节假日数据文件路径(int year) const {
  * @param year 年份
  */
 void HolidayManager::从网络获取节假日数据(int year) {
-    QString url = QString("%1/%2").arg(HOLIDAY_API_BASE_URL).arg(year);
+    std::string url = HOLIDAY_API_BASE_URL + "/" + std::to_string(year);
 
     NetworkRequest::RequestConfig config;
-    config.url = url;
+    config.url = url.c_str();
     config.method = "GET";
     config.requiresAuth = false; // 节假日API不需要认证
     config.timeout = 15000;      // 15秒超时
@@ -373,25 +373,21 @@ void HolidayManager::从网络获取节假日数据(int year) {
         if (httpStatusCode == 200) {
             // 首先检查原始响应是否是纯字符串（如"Year not found"）
             QString responseText = QString::fromUtf8(rawResponse).trimmed();
-            
+
             // 如果响应不以 '{' 开头，很可能是错误字符串而不是JSON
             if (!responseText.startsWith('{')) {
                 qWarning() << "API返回错误信息:" << responseText << "（年份:" << year << "）";
-                
+
                 // 记录最后检查时间，避免重复请求
-                m_lastUpdateCheck[year] = QDate::currentDate();
+                m_lastUpdateCheck[year] = my::Date::today();
                 emit holidayDataUpdated(year, false);
-                
+
                 result["success"] = false;
                 result["error"] = QString("API错误: %1").arg(responseText);
             } else {
                 // 尝试解析JSON
-                QJsonParseError parseError;
-                QJsonDocument doc = QJsonDocument::fromJson(rawResponse, &parseError);
-
-                if (parseError.error == QJsonParseError::NoError && doc.isObject()) {
-                    // 正常的JSON对象响应
-                    QJsonObject apiResponse = doc.object();
+                try {
+                    nlohmann::json apiResponse = nlohmann::json::parse(rawResponse.toStdString());
 
                     // 解析节假日数据
                     std::vector<HolidayItem> holidays = 解析API响应数据(year, apiResponse);
@@ -401,7 +397,7 @@ void HolidayManager::从网络获取节假日数据(int year) {
                         m_holidayData[year] = holidays;
                         if (保存节假日数据到本地文件(year, holidays)) {
                             qDebug() << "成功保存" << year << "年节假日数据，共" << holidays.size() << "条";
-                            m_lastUpdateCheck[year] = QDate::currentDate();
+                            m_lastUpdateCheck[year] = my::Date::today();
                             emit holidayDataUpdated(year, true);
                         } else {
                             qWarning() << "保存" << year << "年节假日数据失败";
@@ -417,12 +413,12 @@ void HolidayManager::从网络获取节假日数据(int year) {
                         result["success"] = false;
                         result["error"] = "解析节假日数据失败";
                     }
-                } else {
-                    qWarning() << "解析" << year << "年节假日响应JSON失败:" << parseError.errorString();
+                } catch (const nlohmann::json::exception& e) {
+                    qWarning() << "解析" << year << "年节假日响应JSON失败:" << e.what();
                     qWarning() << "原始响应内容:" << rawResponse;
                     emit holidayDataUpdated(year, false);
                     result["success"] = false;
-                    result["error"] = QString("JSON解析失败: %1").arg(parseError.errorString());
+                    result["error"] = QString("JSON解析失败: %1").arg(e.what());
                 }
             }
         } else {
@@ -445,20 +441,19 @@ void HolidayManager::从网络获取节假日数据(int year) {
  * @param response API响应
  * @return 节假日列表
  */
-std::vector<HolidayItem> HolidayManager::解析API响应数据(int year, const QJsonObject &response) {
+std::vector<HolidayItem> HolidayManager::解析API响应数据(int year, const nlohmann::json &response) {
     std::vector<HolidayItem> holidays;
 
     // API返回的是一个对象，每个键是日期，值是节假日信息
     for (auto it = response.begin(); it != response.end(); ++it) {
-        QString dateStr = it.key();
-        QJsonValue value = it.value();
+        std::string dateStr = it.key();
+        const auto& value = it.value();
 
-        if (!value.isObject()) {
+        if (!value.is_object()) {
             continue;
         }
 
-        QJsonObject holidayObj = value.toObject();
-        HolidayItem holiday(holidayObj);
+        HolidayItem holiday(value);
 
         if (holiday.isValid() && holiday.date().year() == year) {
             holidays.push_back(holiday);
@@ -478,17 +473,17 @@ std::vector<HolidayItem> HolidayManager::解析API响应数据(int year, const Q
  */
 bool HolidayManager::是否需要更新节假日数据(int year) const {
     // 检查是否有本地数据，如果没有则需要从网络获取
-    if (!m_holidayData.contains(year) || m_holidayData[year].empty())
+    if (!m_holidayData.contains(year) || m_holidayData.find(year)->second.empty())
         return true;
 
     // 检查文件是否存在，如果不存在则需要从网络获取
-    QString filePath = 获取节假日数据文件路径(year);
-    if (!QFile::exists(filePath))
+    std::string filePath = 获取节假日数据文件路径(year);
+    if (!std::filesystem::exists(filePath))
         return true;
 
     // 检查今天是否已经检查过这个year的数据（避免重复请求）
-    QDate currentDate = QDate::currentDate();
-    if (m_lastUpdateCheck.contains(year) && m_lastUpdateCheck[year] == currentDate)
+    my::Date currentDate = my::Date::today();
+    if (m_lastUpdateCheck.contains(year) && m_lastUpdateCheck.find(year)->second == currentDate)
         return false;
 
     // 如果是下一年，且现在是12月，要检查下一年的数据
@@ -519,7 +514,7 @@ void HolidayManager::设置定时器() {
  * @return 年份列表
  */
 std::vector<int> HolidayManager::获取需要管理的年份列表() const {
-    QDate currentDate = QDate::currentDate();
+    my::Date currentDate = my::Date::today();
     int currentYear = currentDate.year();
 
     std::vector<int> years;

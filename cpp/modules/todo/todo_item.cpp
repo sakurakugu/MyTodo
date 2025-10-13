@@ -12,7 +12,7 @@
  */
 
 #include "todo_item.h"
-#include "../holiday/holiday_manager.h"
+#include "holiday_manager.h"
 
 /**
  * @brief 默认构造函数
@@ -353,7 +353,7 @@ int TodoItem::daysUntilDeadline() const noexcept {
  * @param checkDate 要检查的日期，默认为当前日期
  * @return 如果在重复周期内返回true，否则返回false
  */
-bool TodoItem::isInRecurrencePeriod(const QDate &checkDate) const noexcept {
+bool TodoItem::isInRecurrencePeriod(const my::Date &checkDate) const noexcept {
     // 如果不是重复任务，返回false
     if (!isRecurring()) {
         return false;
@@ -365,17 +365,17 @@ bool TodoItem::isInRecurrencePeriod(const QDate &checkDate) const noexcept {
     }
 
     // 检查日期是否在重复开始日期之前
-    if (checkDate < m_recurrenceStartDate) {
+    if (checkDate < my::Date(m_recurrenceStartDate)) {
         return false;
     }
 
     // 如果有截止日期，检查是否超过截止日期
-    if (m_deadline.isValid() && checkDate > m_deadline.date()) {
+    if (m_deadline.isValid() && checkDate > my::Date(m_deadline.date())) {
         return false;
     }
 
     // 计算从开始日期到检查日期的天数
-    int daysSinceStart = m_recurrenceStartDate.daysTo(checkDate);
+    int daysSinceStart = my::Date(m_recurrenceStartDate).daysTo(checkDate);
 
     bool isValidInterval = false; // 检查是否符合循环间隔
     int occurrenceNumber = 0;     // 循环次数，从1开始计算
@@ -413,7 +413,7 @@ bool TodoItem::isInRecurrencePeriod(const QDate &checkDate) const noexcept {
             break;
         }
         case -365: { // 每年（检查是否为同一月同一天）
-            const QDate &startDate = m_recurrenceStartDate;
+            const my::Date &startDate = my::Date(m_recurrenceStartDate);
             if (checkDate.month() == startDate.month() && checkDate.day() == startDate.day()) {
                 int yearsDiff = checkDate.year() - startDate.year();
                 if (yearsDiff >= 0) {
@@ -429,8 +429,8 @@ bool TodoItem::isInRecurrencePeriod(const QDate &checkDate) const noexcept {
                 isValidInterval = true;
                 // 计算从开始日期到当前日期的工作日数量
                 int workDayCount = 0;
-                QDate currentDate = m_recurrenceStartDate;
-                while (currentDate <= checkDate) {
+                my::Date currentDate = my::Date(m_recurrenceStartDate);
+                while (currentDate <= my::Date(checkDate)) {
                     if (holidayManager.getDateType(currentDate) == HolidayManager::DateType::WorkDay) {
                         workDayCount++;
                     }
@@ -446,7 +446,7 @@ bool TodoItem::isInRecurrencePeriod(const QDate &checkDate) const noexcept {
                 isValidInterval = true;
                 // 计算从开始日期到当前日期的节假日数量
                 int holidayCount = 0;
-                QDate currentDate = m_recurrenceStartDate;
+                my::Date currentDate = my::Date(m_recurrenceStartDate);
                 while (currentDate <= checkDate) {
                     if (holidayManager.getDateType(currentDate) == HolidayManager::DateType::Holiday) {
                         holidayCount++;
@@ -463,7 +463,7 @@ bool TodoItem::isInRecurrencePeriod(const QDate &checkDate) const noexcept {
                 isValidInterval = true;
                 // 计算从开始日期到当前日期的周末数量
                 int weekendCount = 0;
-                QDate currentDate = m_recurrenceStartDate;
+                my::Date currentDate = my::Date(m_recurrenceStartDate);
                 while (currentDate <= checkDate) {
                     if (holidayManager.getDateType(currentDate) == HolidayManager::DateType::Weekend) {
                         weekendCount++;

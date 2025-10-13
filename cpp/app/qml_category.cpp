@@ -54,19 +54,19 @@ QStringList QmlCategoryManager::getCategories() const {
  * @return 如果存在返回true，否则返回false
  */
 bool QmlCategoryManager::categoryExists(const QString &name) const {
-    return m_categoryModel->寻找类别(name) != nullptr;
+    return m_categoryModel->寻找类别(name.toStdString()) != nullptr;
 }
 
 void QmlCategoryManager::createCategory(const QString &name) {
-    m_categoryModel->新增类别(name, m_userAuth.获取UUID());
+    m_categoryModel->新增类别(name.toStdString(), m_userAuth.获取UUID());
 }
 
 void QmlCategoryManager::updateCategory(const QString &name, const QString &newName) {
-    m_categoryModel->更新类别(name, newName);
+    m_categoryModel->更新类别(name.toStdString(), newName.toStdString());
 }
 
 void QmlCategoryManager::deleteCategory(const QString &name) {
-    m_categoryModel->删除类别(name);
+    m_categoryModel->删除类别(name.toStdString());
 }
 
 void QmlCategoryManager::loadCategories() {

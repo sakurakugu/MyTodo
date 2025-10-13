@@ -151,7 +151,7 @@ QVariant CategoryModel::获取项目数据(const CategorieItem *item, int role) 
  * @param name 类别名称
  * @return 类别项目指针，如果未找到返回nullptr
  */
-CategorieItem *CategoryModel::寻找类别(const QString &name) const {
+CategorieItem *CategoryModel::寻找类别(const std::string &name) const {
     auto it = std::find_if(m_categoryItems.begin(), m_categoryItems.end(),
                            [&name](const std::unique_ptr<CategorieItem> &item) { return item->name() == name; });
     return (it != m_categoryItems.end()) ? it->get() : nullptr;
@@ -175,11 +175,11 @@ CategorieItem *CategoryModel::寻找类别(int id) const {
  */
 CategorieItem *CategoryModel::寻找类别(const uuids::uuid &uuid) const {
     auto it = std::find_if(m_categoryItems.begin(), m_categoryItems.end(),
-                           [uuid](const std::unique_ptr<CategorieItem> &item) { return uuids::to_string(item->uuid()) == uuids::to_string(uuid); });
+                           [uuid](const std::unique_ptr<CategorieItem> &item) { return item->uuid() == uuid; });
     return (it != m_categoryItems.end()) ? it->get() : nullptr;
 }
 
-bool CategoryModel::新增类别(const QString &name, const uuids::uuid &userUuid) {
+bool CategoryModel::新增类别(const std::string &name, const uuids::uuid &userUuid) {
     qDebug() << "=== 开始创建类别 ===" << name;
 
     if (!是否是有效名称(name))
@@ -196,7 +196,7 @@ bool CategoryModel::新增类别(const QString &name, const uuids::uuid &userUui
     return it ? true : false;
 }
 
-bool CategoryModel::更新类别(const QString &name, const QString &newName) {
+bool CategoryModel::更新类别(const std::string &name, const std::string &newName) {
     qDebug() << "=== 开始更新本地类别 ===" << name << "->" << newName;
 
     if (!是否是有效名称(newName)) {
@@ -229,7 +229,7 @@ bool CategoryModel::更新类别(const QString &name, const QString &newName) {
     return success;
 }
 
-bool CategoryModel::删除类别(const QString &name) {
+bool CategoryModel::删除类别(const std::string &name) {
     qDebug() << "=== 开始删除本地类别 ===" << name;
 
     if (name == "未分类") {
@@ -284,9 +284,9 @@ void CategoryModel::更新同步成功状态(const std::vector<CategorieItem *> 
     开始更新模型();
     for (auto item : categories) {
         if (item->synced() != 3) { // 保留已删除状态
-            m_dataStorage.更新同步状态(m_categoryItems, QString::fromStdString(item->name()));
+            m_dataStorage.更新同步状态(m_categoryItems, item->name());
         } else {
-            m_dataStorage.删除类别(m_categoryItems, QString::fromStdString(item->name()));
+            m_dataStorage.删除类别(m_categoryItems, item->name());
         }
     }
     结束更新模型();
@@ -311,9 +311,11 @@ bool CategoryModel::导入类别从JSON(const QJsonArray &jsonArray, CategoryDat
  * @param name 类别名称
  * @return 如果有效返回true，否则返回false
  */
-bool CategoryModel::是否是有效名称(const QString &name) const {
-    QString trimmedName = name.trimmed();
-    return !trimmedName.isEmpty() && trimmedName.length() <= 50;
+bool CategoryModel::是否是有效名称(const std::string &name) const {
+    std::string trimmedName = name;
+    trimmedName.erase(0, trimmedName.find_first_not_of(' '));
+    trimmedName.erase(trimmedName.find_last_not_of(' ') + 1);
+    return !trimmedName.empty() && trimmedName.length() <= 50;
 }
 
 /**
