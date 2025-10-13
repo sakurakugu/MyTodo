@@ -14,8 +14,6 @@
 #include "category_item.h"
 #include "config.h"
 #include "utility.h"
-#include <QJsonArray>
-#include <QJsonObject>
 
 CategoryDataStorage::CategoryDataStorage(QObject *parent)
     : BaseDataStorage("categories", parent) // 调用基类构造函数
@@ -353,7 +351,7 @@ bool CategoryDataStorage::创建默认类别(CategorieList &categories, const uu
  * @param source 来源（服务器或本地备份）
  * @param resolution 冲突解决策略
  */
-bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const QJsonArray &categoriesArray,
+bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const nlohmann::json &categoriesArray,
                                          ImportSource source, 解决冲突方案 resolution) {
     bool success = true;
 
@@ -377,40 +375,37 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const Q
     int skipCount = 0;
 
     try {
-        for (const QJsonValue &value : categoriesArray) {
-            if (!value.isObject()) {
+        for (const auto &value : categoriesArray) {
+            if (!value.is_object()) {
                 qWarning() << "跳过无效类别（非对象）";
                 ++skipCount;
                 continue;
             }
-            QJsonObject obj = value.toObject();
+            const auto &obj = value.get<nlohmann::json::object_t>();
             if (!obj.contains("name") || !obj.contains("user_uuid")) {
                 qWarning() << "跳过无效类别（缺字段）";
                 ++skipCount;
                 continue;
             }
-
-            std::string name = obj["name"].toString().toStdString();
-            uuids::uuid userUuid = uuids::uuid::from_string(obj["user_uuid"].toString().toStdString()).value();
+            my::DateTime now = my::DateTime::now();
+            std::string name = obj.at("name").get<std::string>();
+            uuids::uuid userUuid = uuids::uuid::from_string(obj.at("user_uuid").get<std::string>()).value();
             if (userUuid.is_nil()) {
                 qWarning() << "跳过无效类别（user_uuid 无效）";
                 ++skipCount;
                 continue;
             }
 
-            uuids::uuid uuid = obj.contains("uuid")
-                                   ? uuids::uuid::from_string(obj["uuid"].toString().toStdString()).value()
-                                   : uuids::uuid_system_generator{}();
+            uuids::uuid uuid = obj.contains("uuid") ? uuids::uuid::from_string(obj.at("uuid").get<std::string>()).value()
+                                                    : uuids::uuid_system_generator{}();
             if (uuid.is_nil())
                 uuid = uuids::uuid_system_generator{}();
 
-            my::DateTime createdAt = obj.contains("created_at")
-                                         ? my::DateTime(obj["created_at"].toString().toStdString())
-                                         : my::DateTime::now();
+            my::DateTime createdAt = obj.contains("created_at") ? my::DateTime(obj.at("created_at").get<int64_t>()) : now;
             if (!createdAt.isValid())
-                createdAt = my::DateTime::now();
+                createdAt = now;
             my::DateTime updatedAt =
-                obj.contains("updated_at") ? my::DateTime(obj["updated_at"].toString().toStdString()) : createdAt;
+                obj.contains("updated_at") ? my::DateTime(obj.at("updated_at").get<int64_t>()) : createdAt;
             if (!updatedAt.isValid())
                 updatedAt = createdAt;
 
@@ -539,23 +534,23 @@ bool CategoryDataStorage::创建数据表() {
  * @param output 输出的JSON对象引用
  * @return 导出成功返回true，否则返回false
  */
-bool CategoryDataStorage::exportToJson(QJsonObject &output) {
+bool CategoryDataStorage::exportToJson(nlohmann::json &output) {
     auto query = m_database.createQuery();
     const std::string queryString = "SELECT uuid, name, user_uuid, created_at, updated_at, synced FROM categories";
     if (!query->exec(queryString)) {
         qWarning() << "查询类别数据失败:" << query->lastErrorQt();
         return false;
     }
-    QJsonArray arr;
+    nlohmann::json arr = nlohmann::json::array();
     while (query->next()) {
-        QJsonObject obj;
-        obj["uuid"] = QString::fromStdString(sqlValueCast<std::string>(query->value("uuid")));
-        obj["name"] = QString::fromStdString(sqlValueCast<std::string>(query->value("name")));
-        obj["user_uuid"] = QString::fromStdString(sqlValueCast<std::string>(query->value("user_uuid")));
-        obj["created_at"] = Utility::timestampToIsoJson(sqlValueCast<int64_t>(query->value("created_at")));
-        obj["updated_at"] = Utility::timestampToIsoJson(sqlValueCast<int64_t>(query->value("updated_at")));
+        nlohmann::json obj = nlohmann::json::object();
+        obj["uuid"] = sqlValueCast<std::string>(query->value("uuid"));
+        obj["name"] = sqlValueCast<std::string>(query->value("name"));
+        obj["user_uuid"] = sqlValueCast<std::string>(query->value("user_uuid"));
+        obj["created_at"] = sqlValueCast<int64_t>(query->value("created_at"));
+        obj["updated_at"] = sqlValueCast<int64_t>(query->value("updated_at"));
         obj["synced"] = sqlValueCast<int>(query->value("synced"));
-        arr.append(obj);
+        arr.push_back(obj);
     }
     output["categories"] = arr;
     return true;
@@ -567,8 +562,8 @@ bool CategoryDataStorage::exportToJson(QJsonObject &output) {
  * @param replaceAll 是否替换现有数据
  * @return 导入成功返回true，否则返回false
  */
-bool CategoryDataStorage::importFromJson(const QJsonObject &input, bool replaceAll) {
-    if (!input.contains("categories") || !input["categories"].isArray()) {
+bool CategoryDataStorage::importFromJson(const nlohmann::json &input, bool replaceAll) {
+    if (!input.contains("categories") || !input["categories"].is_array()) {
         return true; // 没有类别数据可导入
     }
 
@@ -583,19 +578,19 @@ bool CategoryDataStorage::importFromJson(const QJsonObject &input, bool replaceA
     }
 
     // 导入类别数据
-    QJsonArray arr = input["categories"].toArray();
+    nlohmann::json arr = input["categories"];
     for (const auto &v : arr) {
-        QJsonObject obj = v.toObject();
+        nlohmann::json obj = v;
         query->prepare( //
             "INSERT OR REPLACE INTO categories (uuid, name, user_uuid, created_at, updated_at, synced) VALUES "
-            "(?,?,?,?,?,?,?)");
-        query->bindValues(                             //
-            obj["uuid"].toString(),                    //
-            obj["name"].toString(),                    //
-            obj["user_uuid"].toString(),               //
-            Utility::fromJsonValue(obj["created_at"]), //
-            Utility::fromJsonValue(obj["updated_at"]), //
-            obj["synced"].toInt()                      //
+            "(?,?,?,?,?,?)");
+        query->bindValues(                       //
+            obj["uuid"].get<std::string>(),      //
+            obj["name"].get<std::string>(),      //
+            obj["user_uuid"].get<std::string>(), //
+            obj["created_at"].get<int64_t>(),    //
+            obj["updated_at"].get<int64_t>(),    //
+            obj["synced"].get<int>()             //
         );
         if (!query->exec()) {
             qWarning() << "导入类别数据失败:" << query->lastErrorQt();

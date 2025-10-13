@@ -38,4 +38,5 @@ target_link_libraries(mytodo_foundation
         Qt6::Gui
         tomlplusplus::tomlplusplus
         my_logger
+        nlohmann_json::nlohmann_json
 )

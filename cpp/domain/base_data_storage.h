@@ -14,6 +14,7 @@
 
 #include "database.h"
 #include <QObject>
+#include <nlohmann/json.hpp>
 #include <uuid.h>
 
 // Todo和Category的Item类型概念
@@ -78,8 +79,8 @@ class BaseDataStorage : public QObject, public IDataExporter {
     virtual bool 初始化数据表() = 0;
 
     // IDataExporter接口实现 - 子类必须重写
-    bool exportToJson(QJsonObject &output) override = 0;
-    bool importFromJson(const QJsonObject &input, bool replaceAll) override = 0;
+    bool exportToJson(nlohmann::json &output) override = 0;
+    bool importFromJson(const nlohmann::json &input, bool replaceAll) override = 0;
 
   protected:
     // 通用的数据库操作方法
@@ -95,7 +96,7 @@ class BaseDataStorage : public QObject, public IDataExporter {
                           解决冲突方案 resolution) const; // 返回应执行的动作
 
     // 成员变量
-    Database &m_database;   ///< 数据库管理器引用
+    Database &m_database;       ///< 数据库管理器引用
     std::string m_exporterName; ///< 导出器名称
 
   private:

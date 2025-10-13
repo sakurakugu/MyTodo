@@ -11,9 +11,9 @@
 
 #pragma once
 
-#include <QJsonObject>
 #include <QObject>
 #include <QTimer>
+#include <nlohmann/json.hpp>
 
 /**
  * @class VersionChecker
@@ -79,7 +79,7 @@ class VersionChecker : public QObject {
   private:
     // 内部方法
     void 执行版本检查();
-    void 解析GitHub响应(const QJsonObject &response);
+    void 解析GitHub响应(const nlohmann::json &response);
     bool 比较版本号(const QString &current, const QString &latest);
     void 设置最新版本(const QString &version);
     void 设置是否有更新(bool hasUpdate);
@@ -102,8 +102,8 @@ class VersionChecker : public QObject {
     QTimer *m_autoCheckTimer;
 
     // GitHub配置
-    static const QString GITHUB_API_URL;
-    static const QString GITHUB_REPO_OWNER;
-    static const QString GITHUB_REPO_NAME;
+    static const std::string GITHUB_API_URL;
+    static const std::string GITHUB_REPO_OWNER;
+    static const std::string GITHUB_REPO_NAME;
     static const int DEFAULT_CHECK_INTERVAL_HOURS = 24;
 };

@@ -16,7 +16,6 @@
 
 #include <QCoreApplication>
 #include <QHostInfo>
-#include <QJsonParseError>
 #include <QNetworkRequest>
 #include <QSslError>
 #include <QUrl>
@@ -57,7 +56,7 @@ NetworkRequest::~NetworkRequest() {
  * @brief 设置认证令牌
  * @param token 访问令牌字符串
  */
-void NetworkRequest::setAuthToken(const QString &token) {
+void NetworkRequest::setAuthToken(const std::string &token) {
     m_authToken = token;
 }
 
@@ -73,7 +72,7 @@ void NetworkRequest::clearAuthToken() {
  * @return 如果有有效认证令牌返回true，否则返回false
  */
 bool NetworkRequest::hasValidAuth() const {
-    return !m_authToken.isEmpty();
+    return !m_authToken.empty();
 }
 
 /**
@@ -81,18 +80,18 @@ bool NetworkRequest::hasValidAuth() const {
  * @param baseUrl 服务器基础URL
  * @param apiVersion API版本，默认为"v1"
  */
-void NetworkRequest::setServerConfig(const QString &baseUrl, const QString &apiVersion) {
+void NetworkRequest::setServerConfig(const std::string &baseUrl, const std::string &apiVersion) {
     // 更新基础 URL
     m_serverBaseUrl = baseUrl;
-    if (!m_serverBaseUrl.endsWith('/')) {
+    if (!m_serverBaseUrl.empty() && m_serverBaseUrl.back() != '/') {
         m_serverBaseUrl += '/';
     }
 
     // 仅当调用方提供了非空 apiVersion 时才覆盖；否则保持已有值，若仍为空则回退默认 v1
-    if (!apiVersion.isEmpty()) {
+    if (!apiVersion.empty()) {
         m_apiVersion = apiVersion;
     }
-    if (m_apiVersion.isEmpty()) {
+    if (m_apiVersion.empty()) {
         m_apiVersion = "v1"; // 安全回退，防止出现缺少版本前缀导致 404
     }
 }
@@ -101,7 +100,7 @@ void NetworkRequest::setServerConfig(const QString &baseUrl, const QString &apiV
  * @brief 获取服务器地址
  * @return 服务器基础URL
  */
-QString NetworkRequest::getServerBaseUrl() const {
+std::string NetworkRequest::getServerBaseUrl() const {
     return m_serverBaseUrl;
 }
 
@@ -110,24 +109,24 @@ QString NetworkRequest::getServerBaseUrl() const {
  * @param endpoint API端点路径
  * @return 完整的API URL
  */
-QString NetworkRequest::getApiUrl(const QString &endpoint) const {
-    if (m_serverBaseUrl.isEmpty()) {
+std::string NetworkRequest::getApiUrl(const std::string &endpoint) const {
+    if (m_serverBaseUrl.empty()) {
         return endpoint;
     }
 
-    QString baseUrl = m_serverBaseUrl;
-    if (!baseUrl.endsWith('/')) {
+    std::string baseUrl = m_serverBaseUrl;
+    if (!baseUrl.empty() && baseUrl.back() != '/') {
         baseUrl += '/';
     }
 
     // 添加API版本号路径
-    if (!m_apiVersion.isEmpty()) {
-        baseUrl += QString("api/%1/").arg(m_apiVersion);
+    if (!m_apiVersion.empty()) {
+        baseUrl += "api/" + m_apiVersion + "/";
     }
 
-    QString cleanEndpoint = endpoint;
-    if (cleanEndpoint.startsWith('/')) {
-        cleanEndpoint = cleanEndpoint.mid(1);
+    std::string cleanEndpoint = endpoint;
+    if (!cleanEndpoint.empty() && cleanEndpoint.front() == '/') {
+        cleanEndpoint = cleanEndpoint.substr(1);
     }
 
     return baseUrl + cleanEndpoint;
@@ -191,10 +190,10 @@ void NetworkRequest::onReplyFinished() {
     }
 
     // 查找对应的请求
-    qint64 requestId = -1;
+    int64_t requestId = -1;
     for (auto it = m_pendingRequests.begin(); it != m_pendingRequests.end(); ++it) {
-        if (it->reply == reply) {
-            requestId = it.key();
+        if (it->second.reply == reply) {
+            requestId = it->first;
             break;
         }
     }
@@ -212,8 +211,8 @@ void NetworkRequest::onReplyFinished() {
     }
 
     bool success = false;
-    QJsonObject responseData;
-    QString errorMessage;
+    nlohmann::json responseData;
+    std::string errorMessage;
 
     try {
         if (reply->error() == QNetworkReply::NoError) {
@@ -227,37 +226,42 @@ void NetworkRequest::onReplyFinished() {
                 success = true;
 #ifdef QT_DEBUG
                 qInfo() << "自定义处理器处理请求成功:" << RequestTypeToString(request.type);
-                qInfo() << "响应内容:" << responseData;
+                qInfo() << "响应内容:" << QString::fromStdString(responseData.dump());
 #else
                 qDebug() << "自定义处理器处理请求成功:" << RequestTypeToString(request.type);
 #endif
             } else {
                 // 使用默认的JSON解析逻辑
-                QJsonParseError parseError;
-                QJsonDocument doc = QJsonDocument::fromJson(responseBytes, &parseError);
+                try {
+                    nlohmann::json fullResponse = nlohmann::json::parse(responseBytes.toStdString());
 
-                if (parseError.error != QJsonParseError::NoError) {
-                    throw QString("JSON解析错误: %1").arg(parseError.errorString());
-                }
-
-                QJsonObject fullResponse = doc.object();
-
-                bool serverSuccess = fullResponse["success"].toBool();
-                if (serverSuccess) {
-                    // 成功响应，提取data字段作为响应数据
-                    responseData = fullResponse.contains("data") ? fullResponse["data"].toObject() : fullResponse;
-                    success = true;
+                    bool serverSuccess = fullResponse.value("success", false);
+                    if (serverSuccess) {
+                        // 成功响应，提取data字段作为响应数据
+                        responseData = fullResponse.contains("data") ? fullResponse["data"] : fullResponse;
+                        success = true;
 #ifdef QT_DEBUG
-                    qInfo() << "请求成功:" << NetworkRequest::GetInstance().RequestTypeToString(request.type);
-                    qInfo() << "响应内容:" << responseData;
+                        qInfo() << "请求成功:" << NetworkRequest::GetInstance().RequestTypeToString(request.type);
+                        qInfo() << "响应内容:" << QString::fromStdString(responseData.dump());
 #else
-                    qDebug() << "请求成功:" << RequestTypeToString(request.type);
+                        qDebug() << "请求成功:" << RequestTypeToString(request.type);
 #endif
-                } else {
-                    // 服务器返回错误
-                    QString serverMessage = fullResponse.contains("error") ? fullResponse["error"].toString()
-                                                                           : fullResponse["message"].toString();
-                    throw QString("服务器错误: %1").arg(serverMessage);
+                    } else {
+                        // 服务器返回错误
+                        std::string serverMessage;
+                        if (fullResponse.contains("error")) {
+                            if (fullResponse["error"].is_string()) {
+                                serverMessage = fullResponse["error"].get<std::string>();
+                            } else if (fullResponse["error"].is_object() && fullResponse["error"].contains("message")) {
+                                serverMessage = fullResponse["error"]["message"].get<std::string>();
+                            }
+                        } else if (fullResponse.contains("message")) {
+                            serverMessage = fullResponse["message"].get<std::string>();
+                        }
+                        throw std::string("服务器错误: " + serverMessage);
+                    }
+                } catch (const nlohmann::json::parse_error& e) {
+                    throw std::string("JSON解析错误: " + std::string(e.what()));
                 }
             } // 结束默认JSON解析逻辑的else分支
 
@@ -272,48 +276,58 @@ void NetworkRequest::onReplyFinished() {
             QString bodyText = QString::fromUtf8(bodyPreview);
 
             // 预设默认错误信息（含 Qt 原生错误串）
-            QString baseMsg = getErrorMessage(networkError); // 不立即拼接 reply->errorString()，留给后续覆盖
-            QString qtDetail = reply->errorString();
+            std::string baseMsg = getErrorMessage(networkError); // 不立即拼接 reply->errorString()，留给后续覆盖
+            std::string qtDetail = reply->errorString().toStdString();
 
             // 尝试解析服务端 JSON 以抽取业务错误文案
-            QString serverCode;
-            QString serverMessage; // 优先候选
-            QJsonParseError jsonErr;
-            QJsonDocument jdoc = QJsonDocument::fromJson(body, &jsonErr);
-            if (jsonErr.error == QJsonParseError::NoError && jdoc.isObject()) {
-                QJsonObject o = jdoc.object();
+            std::string serverCode;
+            std::string serverMessage; // 优先候选
+            try {
+                nlohmann::json jdoc = nlohmann::json::parse(body.toStdString());
                 // 结构: { success:false, message:"...", error:{ code:"...", message:"..." } }
-                if (o.contains("error")) {
-                    const QJsonValue v = o["error"];
-                    if (v.isObject()) {
-                        QJsonObject eo = v.toObject();
-                        serverCode = eo["code"].toString();
-                        if (serverMessage.isEmpty()) {
-                            serverMessage = eo["message"].toString();
+                if (jdoc.contains("error")) {
+                    const auto& errorValue = jdoc["error"];
+                    if (errorValue.is_object()) {
+                        if (errorValue.contains("code") && errorValue["code"].is_string()) {
+                            serverCode = errorValue["code"].get<std::string>();
                         }
-                    } else if (v.isString()) {
+                        if (serverMessage.empty() && errorValue.contains("message") && errorValue["message"].is_string()) {
+                            serverMessage = errorValue["message"].get<std::string>();
+                        }
+                    } else if (errorValue.is_string()) {
                         // 若直接把 error 作为字符串错误码
-                        serverCode = v.toString();
+                        serverCode = errorValue.get<std::string>();
                     }
                 }
-                if (serverMessage.isEmpty() && o["message"].isString()) {
-                    serverMessage = o["message"].toString();
+                if (serverMessage.empty() && jdoc.contains("message") && jdoc["message"].is_string()) {
+                    serverMessage = jdoc["message"].get<std::string>();
                 }
+            } catch (const nlohmann::json::parse_error&) {
+                // JSON解析失败，忽略服务端错误信息
             }
 
             // 归一化 serverMessage：去除前后空白
-            serverMessage = serverMessage.trimmed();
+            if (!serverMessage.empty()) {
+                // 简单的trim实现
+                size_t start = serverMessage.find_first_not_of(" \t\n\r");
+                if (start != std::string::npos) {
+                    size_t end = serverMessage.find_last_not_of(" \t\n\r");
+                    serverMessage = serverMessage.substr(start, end - start + 1);
+                } else {
+                    serverMessage.clear();
+                }
+            }
 
             // 组装对上层暴露的 errorMessage：
             // 规则：
             // 1. 若有 serverMessage，优先使用其作为核心业务文案
             // 2. 保留分类关键字前缀（如 "认证失败"），以维持现有上层关键字检测逻辑
-            if (!serverMessage.isEmpty()) {
+            if (!serverMessage.empty()) {
                 errorMessage = getErrorMessage(networkError, serverMessage);
             } else {
                 // 没有服务端文案则退回原逻辑：分类前缀 + Qt 细节
                 errorMessage = baseMsg;
-                if (!qtDetail.isEmpty()) {
+                if (!qtDetail.empty()) {
                     errorMessage += ": " + qtDetail;
                 }
             }
@@ -330,7 +344,8 @@ void NetworkRequest::onReplyFinished() {
 
             // 专门的 401 认证处理（沿用原逻辑，但复用已经解析的 JSON 信息）
             if (httpStatus == 401) {
-                QString normCode = serverCode.toUpper();
+                std::string normCode = serverCode;
+                std::transform(normCode.begin(), normCode.end(), normCode.begin(), ::toupper);
                 if (normCode == "UNAUTHORIZED") {
                     emit authTokenExpired();
                 } else if (normCode == "LOGIN_FAILED") {
@@ -344,7 +359,7 @@ void NetworkRequest::onReplyFinished() {
             // 重试逻辑：仅在没有业务语义的“可恢复”技术性错误时重试
             if (shouldRetry(networkError) && request.currentRetry < request.config.maxRetries) {
                 // 若服务器明确给出业务错误（如密码错误），不再重试
-                if (serverMessage.isEmpty()) {
+                if (serverMessage.empty()) {
                     request.currentRetry++;
                     qDebug() << "重试请求:" << RequestTypeToString(request.type) << "(" << request.currentRetry << "/"
                              << request.config.maxRetries << ")";
@@ -358,7 +373,7 @@ void NetworkRequest::onReplyFinished() {
                 }
             }
         }
-    } catch (const QString &error) {
+    } catch (const std::string &error) {
         errorMessage = error;
         qWarning() << "处理响应时发生错误:" << error;
     } catch (...) {
@@ -378,10 +393,10 @@ void NetworkRequest::onRequestTimeout() {
     }
 
     // 查找对应的请求
-    qint64 requestId = -1;
+    int64_t requestId = -1;
     for (auto it = m_pendingRequests.begin(); it != m_pendingRequests.end(); ++it) {
-        if (it->timeoutTimer == timer) {
-            requestId = it.key();
+        if (it->second.timeoutTimer == timer) {
+            requestId = it->first;
             break;
         }
     }
@@ -415,7 +430,7 @@ void NetworkRequest::onRequestTimeout() {
     }
 
     // 完成请求（失败）
-    completeRequest(requestId, false, QJsonObject(), "请求超时");
+    completeRequest(requestId, false, nlohmann::json(), "请求超时");
 }
 
 void NetworkRequest::onSslErrors(const QList<QSslError> &errors) {
@@ -440,12 +455,14 @@ void NetworkRequest::executeRequest(PendingRequest &request) {
 
     // 准备请求数据
     QByteArray requestData;
-    if (!request.config.data.isEmpty()) {
-        requestData = QJsonDocument(request.config.data).toJson(QJsonDocument::Compact);
+    if (!request.config.data.empty()) {
+        std::string jsonString = request.config.data.dump();
+        requestData = QByteArray::fromStdString(jsonString);
     }
 
     // 根据HTTP方法发送请求
-    QString method = request.config.method.toUpper();
+    std::string method = request.config.method;
+    std::transform(method.begin(), method.end(), method.begin(), ::toupper);
     if (method == "GET") {
         request.reply = m_networkRequest->get(networkRequest);
     } else if (method == "POST") {
@@ -473,8 +490,8 @@ void NetworkRequest::executeRequest(PendingRequest &request) {
     request.timeoutTimer->start();
 }
 
-void NetworkRequest::completeRequest(qint64 requestId, bool success, const QJsonObject &response,
-                                     const QString &error) {
+void NetworkRequest::completeRequest(int64_t requestId, bool success, const nlohmann::json &response,
+                                     const std::string &error) {
     if (!m_pendingRequests.contains(requestId)) {
         return;
     }
@@ -496,7 +513,7 @@ void NetworkRequest::completeRequest(qint64 requestId, bool success, const QJson
     cleanupRequest(requestId);
 }
 
-void NetworkRequest::cleanupRequest(qint64 requestId) {
+void NetworkRequest::cleanupRequest(int64_t requestId) {
     if (!m_pendingRequests.contains(requestId)) {
         return;
     }
@@ -512,7 +529,7 @@ void NetworkRequest::cleanupRequest(qint64 requestId) {
     removeActiveRequest(request.type);
 
     // 移除待处理请求
-    m_pendingRequests.remove(requestId);
+    m_pendingRequests.erase(requestId);
 }
 
 void NetworkRequest::cancelRequest(Network::RequestType type) {
@@ -520,7 +537,7 @@ void NetworkRequest::cancelRequest(Network::RequestType type) {
         return;
     }
 
-    qint64 requestId = m_activeRequests[type];
+    int64_t requestId = m_activeRequests[type];
     if (m_pendingRequests.contains(requestId)) {
         PendingRequest &request = m_pendingRequests[requestId];
         if (request.reply) {
@@ -531,18 +548,17 @@ void NetworkRequest::cancelRequest(Network::RequestType type) {
 }
 
 void NetworkRequest::cancelAllRequests() {
-    QList<qint64> requestIds = m_pendingRequests.keys();
-    for (qint64 requestId : requestIds) {
-        PendingRequest &request = m_pendingRequests[requestId];
+    for (const auto &[id, _] : m_pendingRequests) {
+        PendingRequest &request = m_pendingRequests[id];
         if (request.reply) {
             request.reply->abort();
         }
-        cleanupRequest(requestId);
+        cleanupRequest(id);
     }
 }
 
 QNetworkRequest NetworkRequest::createNetworkRequest(const RequestConfig &config) const {
-    QNetworkRequest request(QUrl(config.url));
+    QNetworkRequest request(QUrl(QString::fromStdString(config.url)));
 
     // 设置默认头部
     setupDefaultHeaders(request);
@@ -554,7 +570,7 @@ QNetworkRequest NetworkRequest::createNetworkRequest(const RequestConfig &config
 
     // 添加自定义头部
     for (auto it = config.headers.begin(); it != config.headers.end(); ++it) {
-        request.setRawHeader(it.key().toUtf8(), it.value().toUtf8());
+        request.setRawHeader(it->first.c_str(), it->second.c_str());
     }
 
     return request;
@@ -579,10 +595,10 @@ void NetworkRequest::setupDefaultHeaders(QNetworkRequest &request) const {
 }
 
 void NetworkRequest::addAuthHeader(QNetworkRequest &request) const {
-    if (!m_authToken.isEmpty()) {
-        QString authHeader = QString("Bearer %1").arg(m_authToken);
-        request.setRawHeader("Authorization", authHeader.toUtf8());
-        // qDebug() << "添加认证头部:" << authHeader.left(20) + "..."; // 只显示前20个字符
+    if (!m_authToken.empty()) {
+        std::string authHeader = std::format("Bearer {}", m_authToken);
+        request.setRawHeader("Authorization", authHeader.c_str());
+        // qDebug() << "添加认证头部:" << authHeader.substr(0, 20) + "..."; // 只显示前20个字符
     } else {
         qWarning() << "认证令牌为空，无法添加认证头部";
     }
@@ -608,8 +624,8 @@ Network::Error NetworkRequest::mapQNetworkError(QNetworkReply::NetworkError erro
     }
 }
 
-QString NetworkRequest::getErrorMessage(Network::Error error, const QString &details) const {
-    QString baseMessage;
+std::string NetworkRequest::getErrorMessage(Network::Error error, const std::string &details) const {
+    std::string baseMessage;
     switch (error) {
     case Network::Error::TimeoutError:
         baseMessage = "请求超时";
@@ -631,16 +647,16 @@ QString NetworkRequest::getErrorMessage(Network::Error error, const QString &det
         break;
     }
 
-    if (!details.isEmpty()) {
-        return QString("%1: %2").arg(baseMessage, details);
+    if (!details.empty()) {
+        return std::format("{}: {}", baseMessage, details);
     }
     return baseMessage;
 }
 
-QString NetworkRequest::RequestTypeToString(Network::RequestType type) const {
+std::string NetworkRequest::RequestTypeToString(Network::RequestType type) const {
     auto it = Network::RequestTypeNameMap.find(type);
     if (it != Network::RequestTypeNameMap.end()) {
-        return it->second;
+        return it->second.toStdString();
     }
     return "未知请求";
 }
@@ -660,5 +676,5 @@ void NetworkRequest::addActiveRequest(Network::RequestType type, qint64 requestI
 }
 
 void NetworkRequest::removeActiveRequest(Network::RequestType type) {
-    m_activeRequests.remove(type);
+    m_activeRequests.erase(type);
 }

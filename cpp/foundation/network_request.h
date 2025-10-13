@@ -11,12 +11,12 @@
 
 #pragma once
 
-#include <QJsonObject>
 #include <QNetworkReply>
 #include <QObject>
 #include <QTimer>
 #include <functional>
 #include <map>
+#include <nlohmann/json.hpp>
 #include <optional>
 
 // 前向声明
@@ -121,13 +121,13 @@ class NetworkRequest : public QObject {
      * @brief 请求配置结构
      */
     struct RequestConfig {
-        QString url;                    // 请求URL
-        QString method = "GET";         // HTTP方法，默认GET
-        QJsonObject data;               // 请求数据，JSON格式
-        QMap<QString, QString> headers; // 请求头，键值对格式
-        int timeout = 10000;            // 默认10秒超时
-        int maxRetries = 3;             // 默认最大重试3次
-        bool requiresAuth = true;       // 是否需要认证
+        std::string url;                            // 请求URL
+        std::string method = "GET";                 // HTTP方法，默认GET
+        nlohmann::json data;                        // 请求数据，JSON格式
+        std::map<std::string, std::string> headers; // 请求头，键值对格式
+        int timeout = 10000;                        // 默认10秒超时
+        int maxRetries = 3;                         // 默认最大重试3次
+        bool requiresAuth = true;                   // 是否需要认证
     };
 
     /**
@@ -136,17 +136,17 @@ class NetworkRequest : public QObject {
      * @param httpStatusCode HTTP状态码
      * @return 解析后的JSON对象，如果解析失败返回空对象
      */
-    using CustomResponseHandler = std::function<QJsonObject(const QByteArray &rawResponse, int httpStatusCode)>;
+    using CustomResponseHandler = std::function<nlohmann::json(const QByteArray &rawResponse, int httpStatusCode)>;
 
     // 认证管理
-    void setAuthToken(const QString &token); // 设置认证令牌
-    void clearAuthToken();                   // 清除认证令牌
-    bool hasValidAuth() const;               // 检查是否有有效的认证信息
+    void setAuthToken(const std::string &token); // 设置认证令牌
+    void clearAuthToken();                       // 清除认证令牌
+    bool hasValidAuth() const;                   // 检查是否有有效的认证信息
 
     // 服务器配置
-    void setServerConfig(const QString &baseUrl, const QString &apiVersion = ""); // 设置服务器地址与api版本
-    QString getServerBaseUrl() const;                                             // 获取服务器基础URL
-    QString getApiUrl(const QString &endpoint) const;                             // 获取完整的API URL
+    void setServerConfig(const std::string &baseUrl, const std::string &apiVersion = ""); // 设置服务器地址与api版本
+    std::string getServerBaseUrl() const;                                                 // 获取服务器基础URL
+    std::string getApiUrl(const std::string &endpoint) const;                             // 获取完整的API URL
 
     // 网络请求方法
     void sendRequest(Network::RequestType type, const RequestConfig &config,
@@ -155,17 +155,16 @@ class NetworkRequest : public QObject {
     void cancelRequest(Network::RequestType type); // 取消指定类型的请求
     void cancelAllRequests();                      // 取消所有请求
 
-    QString RequestTypeToString(Network::RequestType type) const; // 请求类型转字符串
+    std::string RequestTypeToString(Network::RequestType type) const; // 请求类型转字符串
 
   signals:
-    void requestCompleted(Network::RequestType type, const QJsonObject &response);               // 请求完成信号
-    void requestFailed(Network::RequestType type, Network::Error error, const QString &message); // 请求失败信号
-    void authTokenExpired();                                                                     // 认证令牌过期信号
+    void requestCompleted(Network::RequestType type, const nlohmann::json &response);                // 请求完成信号
+    void requestFailed(Network::RequestType type, Network::Error error, const std::string &message); // 请求失败信号
+    void authTokenExpired();                                                                         // 认证令牌过期信号
 
   private slots:
-    void onReplyFinished();                           // 回复完成槽函数
-    void onRequestTimeout();                          // 请求超时槽函数
-    void onSslErrors(const QList<QSslError> &errors); // SSL错误槽函数
+    void onReplyFinished();  // 回复完成槽函数
+    void onRequestTimeout(); // 请求超时槽函数
 
   private:
     explicit NetworkRequest(QObject *parent = nullptr);
@@ -181,39 +180,40 @@ class NetworkRequest : public QObject {
         QNetworkReply *reply = nullptr;      // 网络回复对象
         QTimer *timeoutTimer = nullptr;      // 超时定时器
         int currentRetry = 0;                // 当前重试次数
-        qint64 requestId;                    // 请求ID
+        int64_t requestId;                   // 请求ID
         CustomResponseHandler customHandler; // 自定义响应处理器（仅用于Other类型）
     };
 
     // 内部方法
     void executeRequest(PendingRequest &request); // 执行请求
-    void completeRequest(qint64 requestId, bool success, const QJsonObject &response = QJsonObject(),
-                         const QString &error = QString()); // 完成请求
-    void cleanupRequest(qint64 requestId);                  // 清理请求
+    void completeRequest(int64_t requestId, bool success, const nlohmann::json &response = nlohmann::json(),
+                         const std::string &error = std::string()); // 完成请求
+    void cleanupRequest(int64_t requestId);                         // 清理请求
+    void onSslErrors(const QList<QSslError> &errors);               // SSL错误槽函数(Qt自带信号)
 
-    QNetworkRequest createNetworkRequest(const RequestConfig &config) const;                 // 创建网络请求
-    Network::Error mapQNetworkError(QNetworkReply::NetworkError error) const;                // 映射网络错误
-    QString getErrorMessage(Network::Error error, const QString &details = QString()) const; // 获取错误信息
-    bool shouldRetry(Network::Error error) const;                                            // 是否应该重试
+    QNetworkRequest createNetworkRequest(const RequestConfig &config) const;                             // 创建网络请求
+    Network::Error mapQNetworkError(QNetworkReply::NetworkError error) const;                            // 映射网络错误
+    std::string getErrorMessage(Network::Error error, const std::string &details = std::string()) const; // 获取错误信息
+    bool shouldRetry(Network::Error error) const;                                                        // 是否应该重试
 
     void setupDefaultHeaders(QNetworkRequest &request) const; // 设置默认请求头
     void addAuthHeader(QNetworkRequest &request) const;       // 添加认证头
 
     // 请求去重
-    bool isDuplicateRequest(Network::RequestType type) const;           // 检查是否为重复请求
-    void addActiveRequest(Network::RequestType type, qint64 requestId); // 添加活跃请求
-    void removeActiveRequest(Network::RequestType type);                // 移除活跃请求
+    bool isDuplicateRequest(Network::RequestType type) const;            // 检查是否为重复请求
+    void addActiveRequest(Network::RequestType type, int64_t requestId); // 添加活跃请求
+    void removeActiveRequest(Network::RequestType type);                 // 移除活跃请求
 
     // 成员变量
     QNetworkAccessManager *m_networkRequest; // 网络访问管理器
-    QString m_authToken;                     // 认证令牌
-    QString m_serverBaseUrl;                 // 服务器基础URL
-    QString m_apiVersion;                    // API版本
+    std::string m_authToken;                 // 认证令牌
+    std::string m_serverBaseUrl;             // 服务器基础URL
+    std::string m_apiVersion;                // API版本
     std::string m_computerName;              // 计算机名称
 
-    QMap<qint64, PendingRequest> m_pendingRequests;      // 待处理请求映射
-    QMap<Network::RequestType, qint64> m_activeRequests; // 活跃请求映射（用于去重）
-    qint64 m_nextRequestId;                              // 下一个请求ID
+    std::map<int64_t, PendingRequest> m_pendingRequests;      // 待处理请求映射
+    std::map<Network::RequestType, int64_t> m_activeRequests; // 活跃请求映射（用于去重）
+    int64_t m_nextRequestId;                                  // 下一个请求ID
 
     // 配置常量
     static const int DEFAULT_TIMEOUT_MS = 10000;

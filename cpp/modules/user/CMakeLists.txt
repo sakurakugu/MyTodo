@@ -34,4 +34,5 @@ target_link_libraries(mytodo_user
         mytodo_foundation    # 基础模块（QDatabase, NetworkRequest类等）
         my_database          # 数据库模块（SQLite数据库连接等）   
         stduuid::stduuid     # UUID 库
+        nlohmann_json::nlohmann_json    # JSON 库（用于解析 GitHub API 响应）
 )

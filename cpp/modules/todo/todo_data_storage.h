@@ -11,8 +11,6 @@
 
 #pragma once
 
-#include <QJsonArray>
-#include <QJsonObject>
 #include <QObject>
 #include <QString>
 #include <QVariantMap>
@@ -97,7 +95,7 @@ class TodoDataStorage : public BaseDataStorage {
     bool 删除所有待办(TodoList &todos);
     bool 更新所有待办用户UUID(TodoList &todos, const uuids::uuid &newUserUuid, int synced);
 
-    bool 导入待办事项从JSON(TodoList &todos, const QJsonArray &todosArray, //
+    bool 导入待办事项从JSON(TodoList &todos, const nlohmann::json &todosArray, //
                             ImportSource source = ImportSource::Server,    //
                             解决冲突方案 resolution = 解决冲突方案::Merge);
 
@@ -105,8 +103,8 @@ class TodoDataStorage : public BaseDataStorage {
     std::vector<int> 查询待办ID列表(const QueryOptions &options);
 
     // IDataExporter接口实现
-    bool exportToJson(QJsonObject &output) override;
-    bool importFromJson(const QJsonObject &input, bool replaceAll) override;
+    bool exportToJson(nlohmann::json &output) override;
+    bool importFromJson(const nlohmann::json &input, bool replaceAll) override;
 
   private:
     static std::string 构建SQL排序语句(int sortType, bool descending); // 构建查询SQL

@@ -78,12 +78,12 @@ bool Setting::导入配置从JSON文件(const QString &filePath, bool replaceAll
     return m_config.importFromJsonFile(filePath.toStdString(), replaceAll);
 }
 
-bool Setting::导出数据库到JSON文件(const QString &filePath) {
+bool Setting::导出数据库到JSON文件([[maybe_unused]] const QString &filePath) {
     // return Database::GetInstance().exportDatabaseToJsonFile(filePath);
     return false;
 }
 
-bool Setting::导入数据库从JSON文件(const QString &filePath, bool replaceAll) {
+bool Setting::导入数据库从JSON文件([[maybe_unused]] const QString &filePath, [[maybe_unused]] bool replaceAll) {
     // return Database::GetInstance().importDatabaseFromJsonFile(filePath, replaceAll);
     return false;
 }
@@ -209,12 +209,12 @@ void Setting::初始化默认服务器配置() {
     if (!m_config.contains("server/baseUrl")) {
         m_config.save("server/baseUrl", QString(DefaultValues::baseUrl));
         m_config.save("server/apiVersion", QString(DefaultValues::apiVersion));
-        NetworkRequest::GetInstance().setServerConfig(QString(DefaultValues::baseUrl),
-                                                      QString(DefaultValues::apiVersion));
+        NetworkRequest::GetInstance().setServerConfig(DefaultValues::baseUrl, DefaultValues::apiVersion);
     } else {
         // 如果已经存在配置，确保NetworkRequest也同步更新
-        QString existingUrl = m_config.get("server/baseUrl").toString();
-        QString existingVersion = m_config.get("server/apiVersion", QString(DefaultValues::apiVersion)).toString();
+        std::string existingUrl = m_config.get("server/baseUrl").toString().toStdString();
+        std::string existingVersion =
+            m_config.get("server/apiVersion", QString(DefaultValues::apiVersion)).toString().toStdString();
         NetworkRequest::GetInstance().setServerConfig(existingUrl, existingVersion);
     }
 
@@ -308,7 +308,7 @@ void Setting::更新服务器配置(const QString &baseUrl) {
         return;
     }
 
-    NetworkRequest::GetInstance().setServerConfig(baseUrl);
+    NetworkRequest::GetInstance().setServerConfig(baseUrl.toStdString());
     m_config.save("server/baseUrl", baseUrl);
 
     qDebug() << "服务器配置已更新:" << baseUrl;

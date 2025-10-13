@@ -15,7 +15,6 @@
 #include "todo_item.h"
 #include "utility.h"
 
-#include <QJsonDocument>
 #include <uuid.h>
 
 TodoSyncServer::TodoSyncServer(UserAuth &userAuth, QObject *parent)
@@ -25,7 +24,8 @@ TodoSyncServer::TodoSyncServer(UserAuth &userAuth, QObject *parent)
       m_totalBatches(0)                 //
 {
     // 设置待办事项特有的API端点
-    m_apiEndpoint = m_config.get("server/todoApiEndpoint", QString(DefaultValues::todoApiEndpoint)).toString();
+    m_apiEndpoint =
+        m_config.get("server/todoApiEndpoint", QString(DefaultValues::todoApiEndpoint)).toString().toStdString();
 }
 
 TodoSyncServer::~TodoSyncServer() {}
@@ -81,7 +81,7 @@ std::vector<TodoItem *> TodoSyncServer::设置未同步的对象() const {
 }
 
 // 网络请求回调处理 - 重写基类方法
-void TodoSyncServer::onNetworkRequestCompleted(Network::RequestType type, const QJsonObject &response) {
+void TodoSyncServer::onNetworkRequestCompleted(Network::RequestType type, const nlohmann::json &response) {
     switch (type) {
     case Network::RequestType::FetchTodos:
         处理获取数据成功(response);
@@ -97,8 +97,8 @@ void TodoSyncServer::onNetworkRequestCompleted(Network::RequestType type, const 
 }
 
 void TodoSyncServer::onNetworkRequestFailed( //
-    Network::RequestType type, Network::Error error, const QString &message) {
-    QString typeStr;
+    Network::RequestType type, Network::Error error, const std::string &message) {
+    std::string typeStr;
     switch (type) {
     case Network::RequestType::FetchTodos:
         typeStr = NetworkRequest::GetInstance().RequestTypeToString(type);
@@ -186,30 +186,30 @@ void TodoSyncServer::推送批次到服务器(const std::vector<TodoItem *> &bat
 
     try {
         // 创建一个包含当前批次项目的JSON数组
-        QJsonArray jsonArray;
+        nlohmann::json jsonArray;
         for (TodoItem *item : std::as_const(batch)) {
-            QJsonObject obj;
-            obj["uuid"] = QString::fromStdString(uuids::to_string(item->uuid()));
-            obj["user_uuid"] = QString::fromStdString(uuids::to_string(item->userUuid()));
-            obj["title"] = QString::fromStdString(item->title());
-            obj["description"] = QString::fromStdString(item->description());
-            obj["category"] = QString::fromStdString(item->category());
+            nlohmann::json obj;
+            obj["uuid"] = uuids::to_string(item->uuid());
+            obj["user_uuid"] = uuids::to_string(item->userUuid());
+            obj["title"] = item->title();
+            obj["description"] = item->description();
+            obj["category"] = item->category();
             obj["important"] = item->important();
-            obj["deadline"] = Utility::toRfc3339Json(item->deadline().toQDateTime());
+            obj["deadline"] = item->deadline().toISOString();
             obj["recurrenceInterval"] = item->recurrenceInterval();
             obj["recurrenceCount"] = item->recurrenceCount();
             // recurrenceStartDate 仅在有效时写入
             if (item->recurrenceStartDate().isValid()) {
-                obj["recurrenceStartDate"] = QString::fromStdString(item->recurrenceStartDate().toString());
+                obj["recurrenceStartDate"] = item->recurrenceStartDate().toString();
             }
             obj["is_completed"] = item->isCompleted();
-            obj["completed_at"] = Utility::toRfc3339Json(item->completedAt().toQDateTime());
+            obj["completed_at"] = item->completedAt().toISOString();
             obj["is_trashed"] = item->isTrashed();
-            obj["trashed_at"] = Utility::toRfc3339Json(item->trashedAt().toQDateTime());
-            obj["created_at"] = Utility::toRfc3339Json(item->createdAt().toQDateTime());
-            obj["updated_at"] = Utility::toRfc3339Json(item->updatedAt().toQDateTime());
+            obj["trashed_at"] = item->trashedAt().toISOString();
+            obj["created_at"] = item->createdAt().toISOString();
+            obj["updated_at"] = item->updatedAt().toISOString();
             obj["synced"] = item->synced();
-            jsonArray.append(obj);
+            jsonArray.push_back(obj);
         }
 
         NetworkRequest::RequestConfig config;
@@ -221,7 +221,7 @@ void TodoSyncServer::推送批次到服务器(const std::vector<TodoItem *> &bat
         // 存储当前批次的未同步项目引用，用于成功后标记为已同步
         m_pendingUnsyncedItems = batch;
 
-        qInfo() << "项目数据:" << QString::fromUtf8(QJsonDocument(jsonArray).toJson(QJsonDocument::Compact));
+        qInfo() << "项目数据:" << QString::fromStdString(jsonArray.dump());
 
         m_networkRequest.sendRequest(Network::RequestType::PushTodos, config);
     } catch (const std::exception &e) {
@@ -267,12 +267,12 @@ void TodoSyncServer::推送下一个批次() {
     推送批次到服务器(currentBatch);
 }
 
-void TodoSyncServer::处理获取数据成功(const QJsonObject &response) {
+void TodoSyncServer::处理获取数据成功(const nlohmann::json &response) {
     qDebug() << "获取数据成功";
     emit syncProgress(50, "数据获取完成，正在处理...");
 
     if (response.contains("todos")) {
-        QJsonArray todosArray = response["todos"].toArray();
+        nlohmann::json todosArray = response["todos"];
         emit todosUpdatedFromServer(todosArray);
     }
 
@@ -287,15 +287,15 @@ void TodoSyncServer::处理获取数据成功(const QJsonObject &response) {
     }
 }
 
-void TodoSyncServer::处理推送更改成功(const QJsonObject &response) {
+void TodoSyncServer::处理推送更改成功(const nlohmann::json &response) {
     qDebug() << "推送更改成功";
 
     // 验证服务器响应
-    QJsonObject summary = response["summary"].toObject();
-    int created = summary["created"].toInt();
-    int updated = summary["updated"].toInt();
-    QJsonArray conflictArray = summary["conflicts"].toArray();
-    QJsonArray errorArray = summary["errors"].toArray();
+    nlohmann::json summary = response["summary"];
+    int created = summary["created"].get<int>();
+    int updated = summary["updated"].get<int>();
+    nlohmann::json conflictArray = summary["conflicts"];
+    nlohmann::json errorArray = summary["errors"];
     int conflicts = conflictArray.size();
     int errors = errorArray.size();
 
@@ -309,13 +309,10 @@ void TodoSyncServer::处理推送更改成功(const QJsonObject &response) {
     if (conflicts > 0) {
         int idx = 0;
         for (const auto &cVal : conflictArray) {
-            QJsonObject cObj = cVal.toObject();
-            qWarning() << QString("冲突 %1: index=%2, reason=%3, server_version=%4")
-                              .arg(++idx)
-                              .arg(cObj["index"].toInt())
-                              .arg(cObj["reason"].toString())
-                              .arg(QString::fromUtf8(
-                                  QJsonDocument(cObj["server_item"].toObject()).toJson(QJsonDocument::Compact)));
+            nlohmann::json cObj = cVal;
+            qWarning() << std::format("冲突 {}: index={}, reason={}, server_version={}", ++idx,
+                                      cObj["index"].get<int>(), cObj["reason"].get<std::string>(),
+                                      cObj["server_item"].dump());
         }
     }
 
@@ -323,16 +320,12 @@ void TodoSyncServer::处理推送更改成功(const QJsonObject &response) {
     if (errors > 0) {
         int idx = 0;
         for (const auto &errorValue : errorArray) {
-            QJsonObject error = errorValue.toObject();
-            QString errorMsg = error["error"].toString();
-            QString errorCode = error["code"].toString();
-            int index = error["index"].toInt();
+            nlohmann::json error = errorValue;
+            std::string errorMsg = error["error"].get<std::string>();
+            std::string errorCode = error["code"].get<std::string>();
+            int index = error["index"].get<int>();
 
-            qWarning() << QString("错误 %1: 项目序号=%2, 错误码=%3, 描述=%4")
-                              .arg(++idx)
-                              .arg(index)
-                              .arg(errorCode)
-                              .arg(errorMsg);
+            qWarning() << std::format("错误 {}: 项目序号={}, 错误码={}, 描述={}", ++idx, index, errorCode, errorMsg);
 
             // 检查是否为重复UUID错误（MySQL错误1062）
             if (errorCode == "CREATE_FAILED" && errorMsg.contains("Duplicate entry")) {
@@ -341,8 +334,8 @@ void TodoSyncServer::处理推送更改成功(const QJsonObject &response) {
                 if (index >= 0 && index < static_cast<int>(m_pendingUnsyncedItems.size())) {
                     TodoItem *item = m_pendingUnsyncedItems[index];
                     if (item) {
-                        qInfo() << QString("检测到重复UUID错误，将项目 %1 转换为更新模式")
-                                       .arg(QString::fromStdString(uuids::to_string(item->uuid())));
+                        qInfo() << std::format("检测到重复UUID错误，将项目 {} 转换为更新模式",
+                                               uuids::to_string(item->uuid()));
                         // 将synced设置为2表示需要更新而不是创建
                         item->forceSetSynced(2);
                         // 到时候重新上传更新

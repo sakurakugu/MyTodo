@@ -16,15 +16,13 @@
 #include "utility.h"
 
 #include <QDateTime>
-#include <QJsonArray>
-#include <QJsonObject>
 #include <QSet>
 #include <uuid.h>
 
 CategorySyncServer::CategorySyncServer(UserAuth &userAuth, QObject *parent) : BaseSyncServer(userAuth, parent) {
     // 设置类别特有的API端点
     m_apiEndpoint =
-        m_config.get("server/categoriesApiEndpoint", QString(DefaultValues::categoriesApiEndpoint)).toString();
+        m_config.get("server/categoriesApiEndpoint", QString(DefaultValues::categoriesApiEndpoint)).toString().toStdString();
 }
 
 CategorySyncServer::~CategorySyncServer() {}
@@ -53,7 +51,7 @@ void CategorySyncServer::新增类别(const QString &name) {
         config.url = m_networkRequest.getApiUrl(m_apiEndpoint);
         config.method = "POST";
         config.requiresAuth = true;
-        config.data["name"] = name;
+        config.data["name"] = name.toStdString();
 
         m_networkRequest.sendRequest(Network::RequestType::CreateCategory, config);
     } catch (const std::exception &e) {
@@ -75,8 +73,8 @@ void CategorySyncServer::更新类别(const QString &name, const QString &newNam
         config.url = m_networkRequest.getApiUrl(m_apiEndpoint);
         config.method = "PATCH";
         config.requiresAuth = true;
-        config.data["old_name"] = name;
-        config.data["new_name"] = newName;
+        config.data["old_name"] = name.toStdString();
+        config.data["new_name"] = newName.toStdString();
 
         m_networkRequest.sendRequest(Network::RequestType::UpdateCategory, config);
     } catch (const std::exception &e) {
@@ -97,7 +95,7 @@ void CategorySyncServer::删除类别(const QString &name) {
         config.url = m_networkRequest.getApiUrl(m_apiEndpoint);
         config.method = "DELETE";
         config.requiresAuth = true;
-        config.data["name"] = name;
+        config.data["name"] = name.toStdString();
 
         m_networkRequest.sendRequest(Network::RequestType::DeleteCategory, config);
     } catch (const std::exception &e) {
@@ -128,7 +126,7 @@ void CategorySyncServer::设置未同步的对象(const std::vector<std::unique_
 }
 
 // 网络请求回调处理
-void CategorySyncServer::onNetworkRequestCompleted(Network::RequestType type, const QJsonObject &response) {
+void CategorySyncServer::onNetworkRequestCompleted(Network::RequestType type, const nlohmann::json &response) {
     switch (type) {
     case Network::RequestType::FetchCategories:
         处理获取数据成功(response);
@@ -153,8 +151,8 @@ void CategorySyncServer::onNetworkRequestCompleted(Network::RequestType type, co
 }
 
 void CategorySyncServer::onNetworkRequestFailed( //
-    Network::RequestType type, Network::Error error, const QString &message) {
-    QString typeStr;
+    Network::RequestType type, Network::Error error, const std::string &message) {
+    std::string typeStr;
     switch (type) {
     case Network::RequestType::FetchCategories:
     case Network::RequestType::CreateCategory:
@@ -219,15 +217,15 @@ void CategorySyncServer::推送数据() {
 
     try {
         // 创建一个包含当前批次类别的JSON数组
-        QJsonArray jsonArray;
+        nlohmann::json jsonArray;
         for (CategorieItem *item : std::as_const(m_unsyncedItems)) {
-            QJsonObject obj;
-            obj["uuid"] = QString::fromStdString(uuids::to_string(item->uuid()));
-            obj["name"] = QString::fromStdString(item->name());
-            obj["created_at"] = Utility::toRfc3339Json(item->createdAt().toQDateTime());
-            obj["updated_at"] = Utility::toRfc3339Json(item->updatedAt().toQDateTime());
+            nlohmann::json obj;
+            obj["uuid"] = uuids::to_string(item->uuid());
+            obj["name"] = item->name();
+            obj["created_at"] = item->createdAt().toISOString();
+            obj["updated_at"] = item->updatedAt().toISOString();
             obj["synced"] = item->synced();
-            jsonArray.append(obj);
+            jsonArray.push_back(obj);
         }
 
         NetworkRequest::RequestConfig config;
@@ -235,13 +233,6 @@ void CategorySyncServer::推送数据() {
         config.method = "POST"; // 批量推送使用POST方法
         config.requiresAuth = true;
         config.data["categories"] = jsonArray;
-
-        // #ifdef QT_DEBUG
-        //         // 调试日志：打印payload（截断防止过长）
-        //         QJsonDocument payloadDoc(config.data);
-        //         QByteArray payloadBytes = payloadDoc.toJson(QJsonDocument::Compact);
-        //         qDebug() << "批量类别同步Payload:" << QString::fromUtf8(payloadBytes.left(512));
-        // #endif
 
         m_networkRequest.sendRequest(Network::RequestType::PushCategories, config);
     } catch (const std::exception &e) {
@@ -255,12 +246,12 @@ void CategorySyncServer::推送数据() {
     }
 }
 
-void CategorySyncServer::处理获取数据成功(const QJsonObject &response) {
+void CategorySyncServer::处理获取数据成功(const nlohmann::json &response) {
     qDebug() << "获取数据成功";
     emit syncProgress(50, "数据获取完成，正在处理...");
 
     if (response.contains("categories")) {
-        QJsonArray categoriesArray = response["categories"].toArray();
+        nlohmann::json categoriesArray = response["categories"];
         emit categoriesUpdatedFromServer(categoriesArray);
     }
 
@@ -275,26 +266,26 @@ void CategorySyncServer::处理获取数据成功(const QJsonObject &response) {
     }
 }
 
-void CategorySyncServer::处理推送更改成功(const QJsonObject &response) {
+void CategorySyncServer::处理推送更改成功(const nlohmann::json &response) {
     qDebug() << "推送更改成功";
 
     // 验证服务器响应
-    QJsonObject summary = response["summary"].toObject();
-    int created = summary["created"].toInt();
-    int updated = summary["updated"].toInt();
-    QJsonArray errorArray = summary["errors"].toArray();
+    nlohmann::json summary = response["summary"];
+    int created = summary["created"].get<int>();
+    int updated = summary["updated"].get<int>();
+    nlohmann::json errorArray = summary["errors"];
     int errors = errorArray.size();
 
     qInfo() << std::format("服务器处理结果: 创建={}, 更新={}, 错误={}", //
                            created, updated, errors);
 
     // 如果有错误，记录详细信息
-    QSet<int> failedIndexes;
+    std::set<int> failedIndexes;
     if (errors > 0) {
         for (const auto &errorValue : errorArray) {
-            QJsonObject errObj = errorValue.toObject();
-            int idx = errObj["index"].toInt(-1);
-            QString errMsg = errObj["error"].toString();
+            nlohmann::json errObj = errorValue;
+            int idx = errObj.at("index").get<int>();
+            QString errMsg = QString::fromStdString(errObj.at("error").get<std::string>());
             qWarning() << QString("类别条目 index=%1 处理失败: %2").arg(idx).arg(errMsg);
             if (idx >= 0)
                 failedIndexes.insert(idx);
@@ -350,32 +341,32 @@ void CategorySyncServer::处理推送更改成功(const QJsonObject &response) {
     }
 }
 
-void CategorySyncServer::处理创建类别成功(const QJsonObject &response) {
+void CategorySyncServer::处理创建类别成功(const nlohmann::json &response) {
     qDebug() << "创建类别成功:" << m_currentOperationName;
 
-    QString message = "类别创建成功";
+    std::string message = "类别创建成功";
     if (response.contains("message")) {
-        message = response["message"].toString();
+        message = response["message"].get<std::string>();
     }
     qWarning() << message;
 }
 
-void CategorySyncServer::处理更新类别成功(const QJsonObject &response) {
+void CategorySyncServer::处理更新类别成功(const nlohmann::json &response) {
     qDebug() << "更新类别成功:" << m_currentOperationName << "->" << m_currentOperationNewName;
 
-    QString message = "类别更新成功";
+    std::string message = "类别更新成功";
     if (response.contains("message")) {
-        message = response["message"].toString();
+        message = response["message"].get<std::string>();
     }
     qWarning() << message;
 }
 
-void CategorySyncServer::处理删除类别成功(const QJsonObject &response) {
+void CategorySyncServer::处理删除类别成功(const nlohmann::json &response) {
     qDebug() << "删除类别成功:" << m_currentOperationName;
 
-    QString message = "类别删除成功";
+    std::string message = "类别删除成功";
     if (response.contains("message")) {
-        message = response["message"].toString();
+        message = response["message"].get<std::string>();
     }
     qWarning() << message;
 }

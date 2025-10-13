@@ -26,8 +26,11 @@ target_include_directories(my_database PUBLIC
 # 如果编译失败，检查主CMake中导入的顺序是否正确
 # 比如确保先导入 my_datetime 再导入 my_database
 
-# 链接 SQLite3 库
-target_link_libraries(my_database PUBLIC SQLite::SQLite3)
+# 链接 SQLite3 库 和 nlohmann_json::nlohmann_json
+target_link_libraries(my_database PUBLIC 
+    SQLite::SQLite3
+    nlohmann_json::nlohmann_json
+)
 # 如果找到了 Qt6，则链接 Qt6::Core
 if(Qt6_FOUND)
     target_link_libraries(my_database PUBLIC Qt6::Core)

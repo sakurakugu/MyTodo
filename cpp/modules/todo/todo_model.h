@@ -16,6 +16,7 @@
 #include <QAbstractListModel>
 #include <QDateTime>
 #include <QVariant>
+#include <nlohmann/json.hpp>
 #include <uuid.h>
 
 class TodoDataStorage;
@@ -118,10 +119,10 @@ class TodoModel : public QAbstractListModel {
     void dataUpdated(); ///< 数据更新信号
 
   public slots:
-    void onDataChanged();                                        ///< 处理数据变化
-    void onRowsInserted();                                       ///< 处理行插入
-    void onRowsRemoved();                                        ///< 处理行删除
-    void onTodosUpdatedFromServer(const QJsonArray &todosArray); // 处理从服务器更新的待办事项
+    void onDataChanged();                                            ///< 处理数据变化
+    void onRowsInserted();                                           ///< 处理行插入
+    void onRowsRemoved();                                            ///< 处理行删除
+    void onTodosUpdatedFromServer(const nlohmann::json &todosArray); // 处理从服务器更新的待办事项
 
   private:
     std::vector<std::unique_ptr<TodoItem>> m_todos; ///< 待办事项列表

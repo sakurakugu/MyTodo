@@ -20,8 +20,6 @@
 #include "default_value.h"
 
 #include <QDateTime>
-#include <QJsonArray>
-#include <QJsonObject>
 #include <QRegularExpression>
 #include <chrono>
 #include <regex>
@@ -87,7 +85,7 @@ void UserAuth::加载数据() {
 
     刷新访问令牌(); // 使用刷新令牌获取新的访问令牌
 
-    qDebug() << "服务器配置: " << m_networkRequest.getApiUrl(QString::fromStdString(m_authApiEndpoint));
+    qDebug() << "服务器配置: " << m_networkRequest.getApiUrl(m_authApiEndpoint);
 }
 
 UserAuth::~UserAuth() {
@@ -131,13 +129,13 @@ void UserAuth::登录(const std::string &account, const std::string &password) {
 
     // 准备请求配置
     NetworkRequest::RequestConfig config;
-    config.url = m_networkRequest.getApiUrl(QString::fromStdString(m_authApiEndpoint)) + "?action=login";
+    config.url = m_networkRequest.getApiUrl(m_authApiEndpoint) + "?action=login";
     config.method = "POST";      // 登录使用POST方法
     config.requiresAuth = false; // 登录请求不需要认证
 
     // 创建登录数据
-    config.data["account"] = QString::fromStdString(account);
-    config.data["password"] = QString::fromStdString(password);
+    config.data["account"] = account;
+    config.data["password"] = password;
 
     // 发送登录请求
     m_networkRequest.sendRequest(Network::RequestType::Login, config);
@@ -199,16 +197,16 @@ void UserAuth::刷新访问令牌() {
 
     // 准备刷新请求
     NetworkRequest::RequestConfig config;
-    config.url = m_networkRequest.getApiUrl(QString::fromStdString(m_authApiEndpoint)) + "?action=refresh";
+    config.url = m_networkRequest.getApiUrl(m_authApiEndpoint) + "?action=refresh";
     config.method = "POST";
     config.requiresAuth = false; // 刷新请求不需要访问令牌认证
-    config.data["refresh_token"] = QString::fromStdString(m_refreshToken);
+    config.data["refresh_token"] = m_refreshToken;
 
     // 发送刷新请求
     m_networkRequest.sendRequest(Network::RequestType::RefreshToken, config);
 }
 
-void UserAuth::onNetworkRequestCompleted(Network::RequestType type, const QJsonObject &response) {
+void UserAuth::onNetworkRequestCompleted(Network::RequestType type, const nlohmann::json &response) {
     switch (type) {
     case Network::RequestType::Login:
         处理登录成功(response);
@@ -230,17 +228,17 @@ void UserAuth::onNetworkRequestCompleted(Network::RequestType type, const QJsonO
     }
 }
 
-void UserAuth::onNetworkRequestFailed(Network::RequestType type, Network::Error error, const QString &message) {
+void UserAuth::onNetworkRequestFailed(Network::RequestType type, Network::Error error, const std::string &message) {
 
     switch (type) {
     case Network::RequestType::Login:
         qWarning() << message;
-        emit loginFailed(message);
+        emit loginFailed(message.c_str());
         break;
     case Network::RequestType::RefreshToken:
         m_isRefreshing = false;
         qWarning() << "令牌刷新失败:" << message << "错误类型:" << static_cast<int>(error);
-        emit tokenRefreshFailed(message);
+        emit tokenRefreshFailed(message.c_str());
 
         // 根据错误类型进行不同处理
         if (error == Network::Error::AuthenticationError) {
@@ -309,7 +307,7 @@ void UserAuth::onAuthTokenExpired() {
     }
 }
 
-void UserAuth::处理登录成功(const QJsonObject &response) {
+void UserAuth::处理登录成功(const nlohmann::json &response) {
     // 验证响应中包含必要的字段（允许 user.email 缺失）
     if (!response.contains("access_token") || !response.contains("refresh_token") || !response.contains("user")) {
         emit loginFailed("服务器响应缺少必要字段");
@@ -317,11 +315,11 @@ void UserAuth::处理登录成功(const QJsonObject &response) {
     }
 
     // 提取认证信息
-    m_accessToken = response["access_token"].toString().toStdString();
-    m_refreshToken = response["refresh_token"].toString().toStdString();
+    m_accessToken = response["access_token"].get<std::string>();
+    m_refreshToken = response["refresh_token"].get<std::string>();
 
-    QJsonObject userObj = response["user"].toObject();
-    m_username = userObj["username"].toString().toStdString();
+    nlohmann::json userObj = response["user"];
+    m_username = userObj["username"].get<std::string>();
     if (m_username.empty()) {
         emit loginFailed("服务器响应缺少用户名");
         return;
@@ -330,9 +328,11 @@ void UserAuth::处理登录成功(const QJsonObject &response) {
     // email 允许为空
     if (!userObj.contains("email")) {
         qWarning() << "登录响应中缺少 email 字段，使用空字符串";
+        m_email = "";
+    } else {
+        m_email = userObj["email"].get<std::string>();
     }
-    m_email = userObj["email"].toString().toStdString();
-    m_uuid = uuids::uuid::from_string(userObj["uuid"].toString().toStdString()).value_or(uuids::uuid{});
+    m_uuid = uuids::uuid::from_string(userObj["uuid"].get<std::string>()).value_or(uuids::uuid{});
 
     if (m_uuid.is_nil()) {
         emit loginFailed("服务器响应缺少有效的用户UUID");
@@ -341,7 +341,7 @@ void UserAuth::处理登录成功(const QJsonObject &response) {
 
     // 设置令牌过期时间（从服务端返回过期时间，若未返回则使用默认值）
     if (response.contains("expires_in")) {
-        qint64 expiresIn = response["expires_in"].toInt();
+        qint64 expiresIn = response["expires_in"].get<int64_t>();
         if (expiresIn <= 0 || expiresIn > ACCESS_TOKEN_LIFETIME) {
             expiresIn = ACCESS_TOKEN_LIFETIME; // 防御：限制在预期范围
         }
@@ -362,7 +362,7 @@ void UserAuth::处理登录成功(const QJsonObject &response) {
     是否发送首次认证信号();
 }
 
-void UserAuth::处理令牌刷新成功(const QJsonObject &response) {
+void UserAuth::处理令牌刷新成功(const nlohmann::json &response) {
     m_isRefreshing = false;
 
     // 验证响应中包含必要的字段
@@ -373,8 +373,8 @@ void UserAuth::处理令牌刷新成功(const QJsonObject &response) {
     }
 
     // 更新访问令牌
-    m_accessToken = response["access_token"].toString().toStdString();
-    std::string refreshToken = response["refresh_token"].toString().toStdString();
+    m_accessToken = response["access_token"].get<std::string>();
+    std::string refreshToken = response["refresh_token"].get<std::string>();
     if (!refreshToken.empty()) {
         m_refreshToken = refreshToken;
     }
@@ -383,7 +383,7 @@ void UserAuth::处理令牌刷新成功(const QJsonObject &response) {
     int64_t now =
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     if (response.contains("expires_in")) {
-        int64_t expiresIn = response["expires_in"].toInt();
+        int64_t expiresIn = response["expires_in"].get<int64_t>();
         if (expiresIn <= 0 || expiresIn > ACCESS_TOKEN_LIFETIME) {
             expiresIn = ACCESS_TOKEN_LIFETIME;
         }
@@ -396,7 +396,7 @@ void UserAuth::处理令牌刷新成功(const QJsonObject &response) {
 
     // 更新刷新令牌（如果提供）
     if (response.contains("refresh_token")) {
-        m_refreshToken = response["refresh_token"].toString().toStdString();
+        m_refreshToken = response["refresh_token"].get<std::string>();
         保存凭据();
         qDebug() << "刷新令牌已更新";
     }
@@ -578,7 +578,7 @@ bool UserAuth::创建用户表() {
 /**
  * @brief 导出用户数据到JSON对象
  */
-bool UserAuth::exportToJson(QJsonObject &output) {
+bool UserAuth::exportToJson(nlohmann::json &output) {
     auto query = m_database.createQuery();
     if (!query->exec("SELECT uuid, username, email FROM users")) {
         qWarning() << "查询用户数据失败:" << query->lastErrorQt();
@@ -592,13 +592,13 @@ bool UserAuth::exportToJson(QJsonObject &output) {
         return false;
     }
 
-    QJsonArray usersArray;
+    nlohmann::json usersArray;
     for (const auto &row : resultMap) {
-        QJsonObject userObj;
-        userObj["uuid"] = QString::fromStdString(sqlValueCast<std::string>(row.at("uuid")));
-        userObj["username"] = QString::fromStdString(sqlValueCast<std::string>(row.at("username")));
-        userObj["email"] = QString::fromStdString(sqlValueCast<std::string>(row.at("email")));
-        usersArray.append(userObj);
+        nlohmann::json userObj;
+        userObj["uuid"] = sqlValueCast<std::string>(row.at("uuid"));
+        userObj["username"] = sqlValueCast<std::string>(row.at("username"));
+        userObj["email"] = sqlValueCast<std::string>(row.at("email"));
+        usersArray.push_back(userObj);
     }
 
     output["users"] = usersArray;
@@ -608,8 +608,8 @@ bool UserAuth::exportToJson(QJsonObject &output) {
 /**
  * @brief 从JSON对象导入用户数据
  */
-bool UserAuth::importFromJson(const QJsonObject &input, bool replaceAll) {
-    if (!input.contains("users") || !input["users"].isArray()) {
+bool UserAuth::importFromJson(const nlohmann::json &input, bool replaceAll) {
+    if (!input.contains("users") || !input["users"].is_array()) {
         // 没有用户数据或格式错误，但不视为错误
         return true;
     }
@@ -624,13 +624,13 @@ bool UserAuth::importFromJson(const QJsonObject &input, bool replaceAll) {
     }
 
     // 导入用户数据
-    QJsonObject userObj = input["users"].toObject();
+    nlohmann::json userObj = input["users"].at(0);
 
     std::string insertQuery = "INSERT OR REPLACE INTO users (uuid, username, email) VALUES (?, ?, ?)";
     auto query = m_database.createQuery();
-    query->bindValues(userObj["uuid"].toString().toStdString(),     //
-                      userObj["username"].toString().toStdString(), //
-                      userObj["email"].toString().toStdString());
+    query->bindValues(userObj["uuid"].get<std::string>(),     //
+                      userObj["username"].get<std::string>(), //
+                      userObj["email"].get<std::string>());
 
     if (!query->exec(insertQuery)) {
         qWarning() << "导入用户数据失败:" << query->lastErrorQt();

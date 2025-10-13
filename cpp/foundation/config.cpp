@@ -19,12 +19,11 @@
 #include <QCoreApplication>
 #include <QDesktopServices>
 #include <QDir>
-#include <QJsonArray>
-#include <QJsonObject>
 #include <QStandardPaths>
 #include <QUrl>
 #include <fstream>
 #include <limits>
+#include <nlohmann/json.hpp>
 
 Config::Config()
     : m_config(toml::table{}) //
@@ -735,29 +734,26 @@ bool Config::JsonToToml(const std::string &jsonContent, toml::table *table) {
         }
 
         // 解析JSON
-        QJsonParseError parseError;
-        QJsonDocument jsonDoc = QJsonDocument::fromJson(QByteArray::fromStdString(jsonContent), &parseError);
+        nlohmann::json jsonObj = nlohmann::json::parse(jsonContent, nullptr, false);
 
-        if (parseError.error != QJsonParseError::NoError) {
-            qCritical() << "JSON解析失败:" << parseError.errorString();
+        if (jsonObj.is_discarded()) {
+            qCritical() << "JSON解析失败";
             return false;
         }
 
-        if (!jsonDoc.isObject()) {
+        if (!jsonObj.is_object()) {
             qCritical() << "JSON根节点必须是对象";
             return false;
         }
 
-        QJsonObject jsonObj = jsonDoc.object();
-
         // 递归转换JSON对象为TOML表
-        std::function<std::unique_ptr<toml::node>(const QJsonValue &)> jsonToToml =
-            [&](const QJsonValue &value) -> std::unique_ptr<toml::node> {
+        std::function<std::unique_ptr<toml::node>(const nlohmann::json &)> jsonToToml =
+            [&](const nlohmann::json &value) -> std::unique_ptr<toml::node> {
             switch (value.type()) {
-            case QJsonValue::Bool:
-                return std::make_unique<toml::value<bool>>(value.toBool());
-            case QJsonValue::Double: {
-                double d = value.toDouble();
+            case nlohmann::json::value_t::boolean:
+                return std::make_unique<toml::value<bool>>(value.get<bool>());
+            case nlohmann::json::value_t::number_float: {
+                double d = value.get<double>();
                 // 检查是否为整数
                 if (d == std::floor(d) && d >= std::numeric_limits<int64_t>::min() &&
                     d <= std::numeric_limits<int64_t>::max()) {
@@ -766,26 +762,25 @@ bool Config::JsonToToml(const std::string &jsonContent, toml::table *table) {
                     return std::make_unique<toml::value<double>>(d);
                 }
             }
-            case QJsonValue::String: {
-                QString str = value.toString();
+            case nlohmann::json::value_t::string: {
+                std::string str = value.get<std::string>();
                 // 尝试解析为日期时间
-                QDateTime dt = QDateTime::fromString(str, Qt::ISODate);
+                QDateTime dt = QDateTime::fromString(QString::fromStdString(str), Qt::ISODate);
                 if (dt.isValid()) {
                     dt = dt.toUTC();
                     return std::make_unique<toml::value<toml::date_time>>(toml::date_time{
                         {dt.date().year(), dt.date().month(), dt.date().day()},
                         {dt.time().hour(), dt.time().minute(), dt.time().second(), dt.time().msec() * 1000000}});
                 }
-                QDate date = QDate::fromString(str, "yyyy-MM-dd");
+                QDate date = QDate::fromString(QString::fromStdString(str), "yyyy-MM-dd");
                 if (date.isValid()) {
                     return std::make_unique<toml::value<toml::date>>(toml::date{date.year(), date.month(), date.day()});
                 }
-                return std::make_unique<toml::value<std::string>>(str.toStdString());
+                return std::make_unique<toml::value<std::string>>(str);
             }
-            case QJsonValue::Array: {
+            case nlohmann::json::value_t::array: {
                 auto arr = std::make_unique<toml::array>();
-                QJsonArray jsonArray = value.toArray();
-                for (const auto &item : jsonArray) {
+                for (const auto &item : value) {
                     auto tomlItem = jsonToToml(item);
                     if (tomlItem) {
                         arr->push_back(*tomlItem);
@@ -793,26 +788,24 @@ bool Config::JsonToToml(const std::string &jsonContent, toml::table *table) {
                 }
                 return arr;
             }
-            case QJsonValue::Object: {
+            case nlohmann::json::value_t::object: {
                 auto tbl = std::make_unique<toml::table>();
-                QJsonObject jsonObject = value.toObject();
-                for (auto it = jsonObject.begin(); it != jsonObject.end(); ++it) {
+                for (auto it = value.begin(); it != value.end(); ++it) {
                     auto tomlValue = jsonToToml(it.value());
                     if (tomlValue) {
-                        tbl->insert(it.key().toStdString(), *tomlValue);
+                        tbl->insert(it.key(), *tomlValue);
                     }
                 }
                 return tbl;
             }
-            case QJsonValue::Null:
-            case QJsonValue::Undefined:
+            case nlohmann::json::value_t::null:
             default:
                 return std::make_unique<toml::value<std::string>>(std::string{});
             }
         };
 
         // 转换JSON对象为TOML表
-        auto newTomlNode = jsonToToml(QJsonValue(jsonObj));
+        auto newTomlNode = jsonToToml(jsonObj);
         if (!newTomlNode || !newTomlNode->is_table()) {
             qCritical() << "JSON转换为TOML失败";
             return false;

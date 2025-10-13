@@ -87,13 +87,13 @@ void BaseSyncServer::取消同步() {
 // 网络请求处理（默认实现）
 void BaseSyncServer::onNetworkRequestCompleted( //
     [[maybe_unused]] Network::RequestType type, //
-    [[maybe_unused]] const QJsonObject &response) {
+    [[maybe_unused]] const nlohmann::json &response) {
     // 子类应该重写此方法来处理具体的响应
 }
 
 void BaseSyncServer::onNetworkRequestFailed(    //
     [[maybe_unused]] Network::RequestType type, //
-    Network::Error error, const QString &message) {
+    Network::Error error, const std::string &message) {
 
     if (m_isSyncing) {
         setIsSyncing(false);
@@ -103,7 +103,7 @@ void BaseSyncServer::onNetworkRequestFailed(    //
             result = AuthError;
         }
 
-        emit syncCompleted(result, message);
+        emit syncCompleted(result, QString::fromStdString(message));
     }
 }
 
@@ -145,12 +145,12 @@ bool BaseSyncServer::是否可以执行同步() const {
         return false;
     }
 
-    if (m_networkRequest.getServerBaseUrl().isEmpty()) {
+    if (m_networkRequest.getServerBaseUrl().empty()) {
         qDebug() << "同步检查失败：服务器基础URL为空";
         return false;
     }
 
-    if (m_apiEndpoint.isEmpty()) {
+    if (m_apiEndpoint.empty()) {
         qDebug() << "同步检查失败：API端点为空";
         return false;
     }

@@ -16,12 +16,6 @@
 #include <fstream>
 #include <iostream>
 
-#ifdef QT_CORE_LIB
-#include <QDir>
-#include <QJsonArray>
-#include <QJsonDocument>
-#endif
-
 #ifdef MY_LOGGER_ENABLED
 #include "logger.h"
 #endif
@@ -521,7 +515,6 @@ void Database::clearError() {
     m_hasError.store(false, std::memory_order_release);
 }
 
-#ifdef QT_CORE_LIB
 void Database::registerDataExporter(const std::string &name, IDataExporter *exporter) {
     std::lock_guard<std::mutex> lock(m_mutex);
     if (exporter) {
@@ -534,17 +527,19 @@ void Database::unregisterDataExporter(const std::string &name) {
     m_dataExporters.erase(name);
 }
 
-bool Database::exportDataToJson(QJsonObject &output) {
+bool Database::exportDataToJson(nlohmann::json &output) {
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    // output["meta"] =
-    //     QJsonObject{{"version", QString(APP_VERSION_STRING)},
-    //                 {"database_version", DATABASE_VERSION},
-    //                 {"sqlite_version", getSqliteVersion()},
-    //                 {"export_time", QDateTime::currentDateTime().toString(Qt::ISODate)}}; // 不是rfc3339格式
+    output["meta"] = nlohmann::json{
+        {"version", APP_VERSION_STRING},
+        {"database_version", DATABASE_VERSION},
+        {"sqlite_version", getSqliteVersion()}
+        //    ,
+        //    {"export_time", QDateTime::currentDateTime().toString(Qt::ISODate)}
+    }; // 不是rfc3339格式
 
-    // 还有数据库版本
-    // output["database_version"] = exportTable("database_version", {"version"});
+    // 导出数据库版本
+    output["database_version"] = exportTable("database_version", {"version"});
 
     for (const auto &[name, exporter] : m_dataExporters) {
         if (!exporter->exportToJson(output)) {
@@ -556,7 +551,7 @@ bool Database::exportDataToJson(QJsonObject &output) {
     return true;
 }
 
-bool Database::importDataFromJson(const QJsonObject &input, bool replaceAll) {
+bool Database::importDataFromJson(const nlohmann::json &input, bool replaceAll) {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     Transaction transaction(*this);
@@ -572,77 +567,84 @@ bool Database::importDataFromJson(const QJsonObject &input, bool replaceAll) {
 }
 
 bool Database::exportToJsonFile(const std::string &filePath) {
-    QJsonObject output;
+    nlohmann::json output;
     if (!exportDataToJson(output)) {
         return false;
     }
 
-    QJsonDocument doc(output);
-    QFile file(QString::fromStdString(filePath));
-    if (!file.open(QIODevice::WriteOnly)) {
+    std::ofstream file(filePath);
+    if (!file.is_open()) {
         setError("无法打开文件进行写入: " + filePath);
         return false;
     }
 
-    file.write(doc.toJson());
+    std::string jsonString = output.dump(4); // 4个空格缩进
+    file << jsonString;
     return true;
 }
 
 bool Database::importFromJsonFile(const std::string &filePath, bool replaceAll) {
-    QFile file(QString::fromStdString(filePath));
-    if (!file.open(QIODevice::ReadOnly)) {
+    std::ifstream file(filePath);
+    if (!file.is_open()) {
         setError("无法打开文件进行读取: " + filePath);
         return false;
     }
 
-    QJsonParseError error;
-    QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &error);
-    if (error.error != QJsonParseError::NoError) {
-        setError("JSON解析失败: " + error.errorString().toStdString());
+    std::string jsonData((std::istreambuf_iterator<char>(file)),
+                         std::istreambuf_iterator<char>());
+    try {
+        nlohmann::json jsonDoc = nlohmann::json::parse(jsonData);
+        return importDataFromJson(jsonDoc, replaceAll);
+    } catch (const nlohmann::json::parse_error &e) {
+        setError("JSON解析失败: " + std::string(e.what()));
         return false;
     }
-
-    return importDataFromJson(doc.object(), replaceAll);
 }
 
 /**
  * @brief 导出指定表到JSON数组
  */
-QJsonArray Database::exportTable(const QString &table, const QStringList &columns) {
-    QJsonArray array;
-    auto query = createQuery(std::format("SELECT {} FROM {}", columns.join(", ").toStdString(), table.toStdString()));
+nlohmann::json Database::exportTable(const std::string &table, const std::vector<std::string> &columns) {
+    nlohmann::json array;
+    
+    // 构建列名字符串
+    std::string columnStr;
+    for (size_t i = 0; i < columns.size(); ++i) {
+        if (i > 0) columnStr += ", ";
+        columnStr += columns[i];
+    }
+    
+    auto query = createQuery(std::format("SELECT {} FROM {}", columnStr, table));
     if (!query || !query->exec()) {
-        setError("导出表失败: " + table.toStdString() + " " + query->lastError());
+        setError("导出表失败: " + table + " " + query->lastError());
         return array;
     }
     while (query->next()) {
-        QJsonObject obj;
-        for (int i = 0; i < columns.size(); ++i) {
+        nlohmann::json obj;
+        for (size_t i = 0; i < columns.size(); ++i) {
             auto v = query->value(i);
             if (std::holds_alternative<bool>(v))
                 obj[columns[i]] = sqlValueCast<bool>(v);
-            // else if (std::holds_alternative<int32_t>(v) || std::holds_alternative<int64_t>(v))
-            //     obj[columns[i]] = QJsonValue::fromVariant(v);
+            else if (std::holds_alternative<int32_t>(v) || std::holds_alternative<int64_t>(v))
+                obj[columns[i]] = sqlValueCast<int64_t>(v);
             else if (std::holds_alternative<double>(v))
                 obj[columns[i]] = sqlValueCast<double>(v);
-            // else if (std::holds_alternative<std::string>(v))
-            //     obj[columns[i]] = QString::fromStdString(v);
-            // else if (std::holds_alternative<QString>(v))
-            //     obj[columns[i]] = v;
+            else if (std::holds_alternative<std::string>(v))
+                obj[columns[i]] = sqlValueCast<std::string>(v);
+            else if (std::holds_alternative<QString>(v))
+                obj[columns[i]] = sqlValueCast<QString>(v).toStdString();
             else if (std::holds_alternative<QUuid>(v))
-                obj[columns[i]] = QString::fromStdString(sqlValueCast<std::string>(v));
+                obj[columns[i]] = sqlValueCast<QUuid>(v).toString().toStdString();
             else if (std::holds_alternative<QDateTime>(v))
-                obj[columns[i]] = QString::fromStdString(sqlValueCast<std::string>(v));
-            // else if (std::holds_alternative<std::vector<uint8_t>>(v))
-            //     obj[columns[i]] =
-            //     QJsonValue::fromVariant(QByteArray::fromStdVector(sqlValueCast<std::vector<uint8_t>>(v)));
+                obj[columns[i]] = sqlValueCast<QDateTime>(v).toString().toStdString();
+            else if (std::holds_alternative<std::vector<uint8_t>>(v))
+                obj[columns[i]] = sqlValueCast<std::vector<uint8_t>>(v);
             else if (std::holds_alternative<std::nullptr_t>(v))
-                obj[columns[i]] = QJsonValue();
-            // else
-            //     obj[columns[i]] = QJsonValue::fromVariant(v);
+                obj[columns[i]] = nullptr;
+            else
+                obj[columns[i]] = nullptr; // 未知类型设为null
         }
-        array.append(obj);
+        array.push_back(obj);
     }
     return array;
 }
-#endif

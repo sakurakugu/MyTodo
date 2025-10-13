@@ -14,8 +14,6 @@
 #include "utility.h"
 
 #include <QDateTime>
-#include <QJsonArray>
-#include <QJsonObject>
 #include <QTimeZone>
 #include <QVariant>
 #include <algorithm>
@@ -541,7 +539,7 @@ bool TodoDataStorage::删除待办([[maybe_unused]] TodoList &todos, const uuids
  * @param source 来源（服务器或本地备份）
  * @param resolution 冲突解决策略
  */
-bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArray &todosArray, //
+bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const nlohmann::json &todosArray, //
                                          ImportSource source, 解决冲突方案 resolution) {
     bool success = true;
     // 建立内存索引
@@ -561,19 +559,19 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
     int skipCount = 0;
 
     try {
-        for (const QJsonValue &value : todosArray) {
-            if (!value.isObject()) {
+        for (const auto &value : todosArray) {
+            if (!value.is_object()) {
                 qWarning() << "跳过无效待办（非对象）";
                 ++skipCount;
                 continue;
             }
-            QJsonObject obj = value.toObject();
+            nlohmann::json obj = value;
             if (!obj.contains("title") || !obj.contains("user_uuid")) {
                 qWarning() << "跳过无效待办（缺字段）";
                 ++skipCount;
                 continue;
             }
-            uuids::uuid userUuid = uuids::uuid::from_string(obj["user_uuid"].toString().toStdString()).value();
+            uuids::uuid userUuid = uuids::uuid::from_string(obj["user_uuid"].get<std::string>()).value();
             if (userUuid.is_nil()) {
                 qWarning() << "跳过无效待办（user_uuid 无效）";
                 ++skipCount;
@@ -581,28 +579,28 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const QJsonArra
             }
             uuids::uuid uuid;
             if (obj.contains("uuid")) {
-                auto opt = uuids::uuid::from_string(obj["uuid"].toString().toStdString());
+                auto opt = uuids::uuid::from_string(obj["uuid"].get<std::string>());
                 uuid = opt.has_value() ? opt.value() : uuids::uuid_system_generator{}();
             } else {
                 uuid = uuids::uuid_system_generator{}();
             }
-            std::string title = obj["title"].toString().toStdString();
-            std::string description = obj["description"].toString().toStdString();
-            std::string category = obj["category"].toString().toStdString();
-            bool important = obj["important"].toBool();
-            my::DateTime deadline = my::DateTime::fromISOString(obj["deadline"].toString().toStdString());
-            int recurrenceInterval = obj["recurrence_interval"].toInt();
-            int recurrenceCount = obj["recurrence_count"].toInt();
+            std::string title = obj["title"].get<std::string>();
+            std::string description = obj["description"].get<std::string>();
+            std::string category = obj["category"].get<std::string>();
+            bool important = obj["important"].get<bool>();
+            my::DateTime deadline = my::DateTime::fromISOString(obj["deadline"].get<std::string>());
+            int recurrenceInterval = obj["recurrence_interval"].get<int>();
+            int recurrenceCount = obj["recurrence_count"].get<int>();
             my::Date recurrenceStartDate =
-                my::Date::fromISOString(obj["recurrence_start_date"].toString().toStdString());
-            bool isCompleted = obj["is_completed"].toBool();
-            my::DateTime completedAt = my::DateTime::fromISOString(obj["completed_at"].toString().toStdString());
-            bool isTrashed = obj["is_trashed"].toBool();
-            my::DateTime trashedAt = my::DateTime::fromISOString(obj["trashed_at"].toString().toStdString());
-            my::DateTime createdAt = my::DateTime::fromISOString(obj["created_at"].toString().toStdString());
+                my::Date::fromISOString(obj["recurrence_start_date"].get<std::string>());
+            bool isCompleted = obj["is_completed"].get<bool>();
+            my::DateTime completedAt = my::DateTime::fromISOString(obj["completed_at"].get<std::string>());
+            bool isTrashed = obj["is_trashed"].get<bool>();
+            my::DateTime trashedAt = my::DateTime::fromISOString(obj["trashed_at"].get<std::string>());
+            my::DateTime createdAt = my::DateTime::fromISOString(obj["created_at"].get<std::string>());
             if (!createdAt.isValid())
                 createdAt = my::DateTime::now();
-            my::DateTime updatedAt = my::DateTime::fromISOString(obj["updated_at"].toString().toStdString());
+            my::DateTime updatedAt = my::DateTime::fromISOString(obj["updated_at"].get<std::string>());
             if (!updatedAt.isValid())
                 updatedAt = createdAt;
 
@@ -941,7 +939,7 @@ bool TodoDataStorage::创建数据表() {
  * @param output 输出的JSON对象引用
  * @return 导出是否成功
  */
-bool TodoDataStorage::exportToJson(QJsonObject &output) {
+bool TodoDataStorage::exportToJson(nlohmann::json &output) {
     auto query = m_database.createQuery();
     const std::string sql = "SELECT uuid, user_uuid, title, description, category, important, deadline, "
                             "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, "
@@ -950,36 +948,34 @@ bool TodoDataStorage::exportToJson(QJsonObject &output) {
         qWarning() << "查询待办数据失败:" << query->lastErrorQt();
         return false;
     }
-    QJsonArray arr;
+    nlohmann::json arr;
     while (query->next()) {
-        QJsonObject obj;
-        obj["uuid"] = QString::fromStdString(sqlValueCast<std::string>(query->value(1)));
-        obj["user_uuid"] = QString::fromStdString(sqlValueCast<std::string>(query->value(2)));
-        obj["title"] = QString::fromStdString(sqlValueCast<std::string>(query->value(3)));
-        QVariant desc = QString::fromStdString(sqlValueCast<std::string>(query->value(4)));
-        obj["description"] = desc.isNull() ? QJsonValue() : desc.toString();
-        obj["category"] = QString::fromStdString(sqlValueCast<std::string>(query->value(5)));
+        nlohmann::json obj;
+        obj["uuid"] = sqlValueCast<std::string>(query->value(1));
+        obj["user_uuid"] = sqlValueCast<std::string>(query->value(2));
+        obj["title"] = sqlValueCast<std::string>(query->value(3));
+        obj["description"] = sqlValueCast<std::string>(query->value(4));
+        obj["category"] = sqlValueCast<std::string>(query->value(5));
         obj["important"] = sqlValueCast<int32_t>(query->value(6));
-        obj["deadline"] = Utility::timestampToIsoJson(sqlValueCast<int64_t>(query->value(7)));
+        obj["deadline"] = my::DateTime(sqlValueCast<int64_t>(query->value(7))).toISOString();
         obj["recurrence_interval"] = sqlValueCast<int32_t>(query->value(8));
         obj["recurrence_count"] = sqlValueCast<int32_t>(query->value(9));
-        QVariant rsd = QString::fromStdString(sqlValueCast<std::string>(query->value(10)));
-        obj["recurrence_start_date"] = rsd.isNull() ? QJsonValue() : rsd.toString();
+        obj["recurrence_start_date"] = sqlValueCast<std::string>(query->value(10));
         obj["is_completed"] = sqlValueCast<int32_t>(query->value(11));
-        obj["completed_at"] = Utility::timestampToIsoJson(sqlValueCast<int64_t>(query->value(12)));
+        obj["completed_at"] = my::DateTime(sqlValueCast<int64_t>(query->value(12))).toISOString();
         obj["is_trashed"] = sqlValueCast<int32_t>(query->value(13));
-        obj["trashed_at"] = Utility::timestampToIsoJson(sqlValueCast<int64_t>(query->value(14)));
-        obj["created_at"] = Utility::timestampToIsoJson(sqlValueCast<int64_t>(query->value(15)));
-        obj["updated_at"] = Utility::timestampToIsoJson(sqlValueCast<int64_t>(query->value(16)));
+        obj["trashed_at"] = my::DateTime(sqlValueCast<int64_t>(query->value(14))).toISOString();
+        obj["created_at"] = my::DateTime(sqlValueCast<int64_t>(query->value(15))).toISOString();
+        obj["updated_at"] = my::DateTime(sqlValueCast<int64_t>(query->value(16))).toISOString();
         obj["synced"] = sqlValueCast<int32_t>(query->value(17));
-        arr.append(obj);
+        arr.push_back(obj);
     }
     output["todos"] = arr;
     return true;
 }
 
-bool TodoDataStorage::importFromJson(const QJsonObject &input, bool replaceAll) {
-    if (!input.contains("todos") || !input["todos"].isArray())
+bool TodoDataStorage::importFromJson(const nlohmann::json_abi_v3_11_3::json &input, bool replaceAll) {
+    if (!input.contains("todos") || !input["todos"].is_array())
         return true; // 没有数据
     auto query = m_database.createQuery();
     if (replaceAll) {
@@ -988,32 +984,32 @@ bool TodoDataStorage::importFromJson(const QJsonObject &input, bool replaceAll) 
             return false;
         }
     }
-    QJsonArray arr = input["todos"].toArray();
+    nlohmann::json arr = input["todos"];
     for (const auto &v : arr) {
-        QJsonObject o = v.toObject();
+        nlohmann::json o = v;
         query->prepare( //
             "INSERT OR REPLACE INTO todos (uuid, user_uuid, title, description, category, "
             "important, deadline, recurrence_interval, recurrence_count, recurrence_start_date, "
             "is_completed, completed_at, is_trashed, trashed_at, created_at, updated_at, synced) "
             "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
         query->bindValues(                             //
-            o["uuid"].toString(),                      //
-            o["user_uuid"].toString(),                 //
-            o["title"].toString(),                     //
-            o["description"].toString(),               //
-            o["category"].toString(),                  //
-            o["important"].toInt(),                    //
-            Utility::fromJsonValue(o["deadline"]),     //
-            o["recurrence_interval"].toInt(),          //
-            o["recurrence_count"].toInt(),             //
-            o["recurrence_start_date"].toString(),     //
-            o["is_completed"].toInt(),                 //
-            Utility::fromJsonValue(o["completed_at"]), //
-            o["is_trashed"].toInt(),                   //
-            Utility::fromJsonValue(o["trashed_at"]),   //
-            Utility::fromJsonValue(o["created_at"]),   //
-            Utility::fromJsonValue(o["updated_at"]),   //
-            o["synced"].toInt()                        //
+            o["uuid"].get<std::string>(),              //
+            o["user_uuid"].get<std::string>(),        //
+            o["title"].get<std::string>(),            //
+            o["description"].get<std::string>(),      //
+            o["category"].get<std::string>(),         //
+            o["important"].get<int32_t>(),            //
+            my::DateTime::fromISOString(o["deadline"].get<std::string>()).toUnixTimestampMs(),     //
+            o["recurrence_interval"].get<int32_t>(),  //
+            o["recurrence_count"].get<int32_t>(),     //
+            o["recurrence_start_date"].get<std::string>(), //
+            o["is_completed"].get<int32_t>(),                 //
+            my::DateTime::fromISOString(o["completed_at"].get<std::string>()).toUnixTimestampMs(), //
+            o["is_trashed"].get<int32_t>(),                   //
+            my::DateTime::fromISOString(o["trashed_at"].get<std::string>()).toUnixTimestampMs(),   //
+            my::DateTime::fromISOString(o["created_at"].get<std::string>()).toUnixTimestampMs(),   //
+            my::DateTime::fromISOString(o["updated_at"].get<std::string>()).toUnixTimestampMs(),   //
+            o["synced"].get<int32_t>()                        //
         );
         if (!query->exec()) {
             qWarning() << "导入待办数据失败:" << query->lastErrorQt();

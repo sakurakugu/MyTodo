@@ -12,8 +12,6 @@
 
 #pragma once
 
-#include <QJsonArray>
-#include <QJsonObject>
 #include <QList>
 
 #include "base_sync_server.h"
@@ -76,22 +74,22 @@ class TodoSyncServer : public BaseSyncServer {
 
   signals:
     // 数据更新信号（待办事项特有）
-    void todosUpdatedFromServer(const QJsonArray &todosArray);       // 从服务器更新的待办事项
+    void todosUpdatedFromServer(const nlohmann::json &todosArray);       // 从服务器更新的待办事项
     void localChangesUploaded(const std::vector<TodoItem *> &items); // 本地更改已上传
-    void syncConflictDetected(const QJsonArray &conflictItems);      // 检测到同步冲突
+    void syncConflictDetected(const nlohmann::json &conflictItems);      // 检测到同步冲突
 
   protected slots:
     void onNetworkRequestCompleted(Network::RequestType type,
-                                   const QJsonObject &response) override; // 网络请求完成
+                                   const nlohmann::json &response) override; // 网络请求完成
     void onNetworkRequestFailed(Network::RequestType type, Network::Error error,
-                                const QString &message) override; // 网络请求失败
+                                const std::string &message) override; // 网络请求失败
 
   protected:
     // 同步操作实现（重写基类方法）
     void 拉取数据() override;
     void 推送数据() override;
-    void 处理获取数据成功(const QJsonObject &response);
-    void 处理推送更改成功(const QJsonObject &response);
+    void 处理获取数据成功(const nlohmann::json &response);
+    void 处理推送更改成功(const nlohmann::json &response);
     void 推送批次到服务器(const std::vector<TodoItem *> &batch);
     void 推送下一个批次();
 

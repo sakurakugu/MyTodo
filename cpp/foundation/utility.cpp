@@ -10,7 +10,6 @@
  */
 #include "utility.h"
 
-#include <QJsonValue>
 #include <QRegularExpression>
 #include <QTimeZone>
 
@@ -22,18 +21,6 @@
  */
 QString Utility::toRfc3339String(const QDateTime &dateTime) {
     return toIsoStringWithZ(dateTime);
-}
-
-/**
- * @brief 将QDateTime转换为RFC 3339格式的QJsonValue
- * @param dateTime 要转换的日期时间对象
- * @return RFC 3339格式的QJsonValue；无效时间返回QJsonValue()
- * @note 用于JSON序列化，自动处理null值
- */
-QJsonValue Utility::toRfc3339Json(const QDateTime &dateTime) {
-    if (!dateTime.isValid())
-        return QJsonValue(); // 返回 null
-    return QJsonValue(toRfc3339String(dateTime));
 }
 
 /**
@@ -111,58 +98,6 @@ QDateTime Utility::timestampToDateTime(const QVariant &timestampMs) {
 
     return QDateTime::fromMSecsSinceEpoch(ms, QTimeZone::UTC);
 }
-
-/**
- * @brief 将毫秒时间戳转换为ISO格式的QJsonValue
- * @param timestampMs 毫秒时间戳（QVariant类型，支持数据库读取）
- * @return ISO格式的QJsonValue；无效时间戳返回QJsonValue()
- * @note 用于数据库数据导出到JSON
- */
-QJsonValue Utility::timestampToIsoJson(const QVariant &timestampMs) {
-    if (timestampMs.isNull())
-        return QJsonValue(); // 返回 null
-
-    bool ok = false;
-    qint64 ms = timestampMs.toLongLong(&ok);
-    if (!ok) {
-        return QJsonValue();
-    }
-
-    QDateTime dt = QDateTime::fromMSecsSinceEpoch(ms, QTimeZone::UTC);
-    if (!dt.isValid()) {
-        return QJsonValue();
-    }
-
-    return QJsonValue(dt.toString(Qt::ISODateWithMs));
-}
-
-/**
- * @brief 从QJsonValue解析时间戳并转换为QDateTime
- * @param jsonValue 包含时间字符串的QJsonValue
- * @return 解析后的QDateTime对象；解析失败返回无效的QDateTime
- * @note 自动检测ISO格式，用于JSON数据导入
- */
-QDateTime Utility::fromJsonValue(const QJsonValue &jsonValue) {
-    if (jsonValue.isNull() || !jsonValue.isString()) {
-        return QDateTime();
-    }
-
-    return fromIsoString(jsonValue.toString());
-}
-
-// /**
-//  * @brief 从QJsonValue解析日期并转换为QDate
-//  * @param jsonValue 包含日期字符串的QJsonValue
-//  * @return 解析后的QDate对象；解析失败返回无效的QDate
-//  * @note 自动检测ISO格式，用于JSON数据导入
-//  */
-// QDate Utility::fromJsonValue(const QJsonValue &jsonValue) {
-//     if (jsonValue.isNull() || !jsonValue.isString()) {
-//         return QDate();
-//     }
-
-//     return QDate::fromString(jsonValue.toString(), Qt::ISODate);
-// }
 
 /**
  * @brief 获取当前UTC时间的RFC 3339格式字符串

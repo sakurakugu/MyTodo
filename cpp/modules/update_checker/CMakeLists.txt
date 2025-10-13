@@ -31,5 +31,6 @@ target_link_libraries(mytodo_update_checker
     PUBLIC
         Qt6::Core
         Qt6::Network
-        mytodo_foundation    # 基础模块（QDatabase, NetworkRequest类等）
+        nlohmann_json::nlohmann_json    # JSON 库（用于解析 GitHub API 响应）
+        mytodo_foundation               # 基础模块（QDatabase, NetworkRequest类等）
 )

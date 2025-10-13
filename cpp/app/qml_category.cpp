@@ -11,14 +11,13 @@
  */
 
 #include "qml_category.h"
-#include "modules/category/category_item.h"
+#include "default_value.h"
 #include "modules/category/category_data_storage.h"
+#include "modules/category/category_item.h"
 #include "modules/category/category_model.h"
 #include "modules/category/category_sync_server.h"
-#include "default_value.h"
 #include "user_auth.h"
 
-#include <QJsonDocument>
 #include <algorithm>
 
 QmlCategoryManager::QmlCategoryManager(UserAuth &userAuth, QObject *parent)
@@ -28,12 +27,6 @@ QmlCategoryManager::QmlCategoryManager(UserAuth &userAuth, QObject *parent)
       m_categoryModel(new CategoryModel(*m_dataStorage, *m_syncServer, this)), //
       m_userAuth(userAuth)                                                     //
 {
-
-    // 连接同步服务器信号
-    connect(m_syncServer, &CategorySyncServer::categoriesUpdatedFromServer, this,
-            &QmlCategoryManager::onCategoriesUpdatedFromServer);
-    connect(m_syncServer, &CategorySyncServer::localChangesUploaded, this,
-            &QmlCategoryManager::onLocalChangesUploaded);
 
     // 桥接模型变化到管理器的属性通知：确保 QML 对 QmlCategoryManager.categories 的绑定会更新
     connect(m_categoryModel, &CategoryModel::categoriesChanged, this, &QmlCategoryManager::categoriesChanged);
@@ -80,16 +73,4 @@ void QmlCategoryManager::syncWithServer() {
 
 bool QmlCategoryManager::isSyncing() const {
     return m_syncServer->isSyncing();
-}
-
-/**
- * @brief 处理从服务器更新的类别数据
- * @param categoriesArray 类别数据数组
- */
-void QmlCategoryManager::onCategoriesUpdatedFromServer(const QJsonArray &categoriesArray) {
-    m_categoryModel->导入类别从JSON(categoriesArray);
-}
-
-void QmlCategoryManager::onLocalChangesUploaded(const std::vector<CategorieItem *> &succeedSyncedItems) {
-    m_categoryModel->更新同步成功状态(succeedSyncedItems);
 }

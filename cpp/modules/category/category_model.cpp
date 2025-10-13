@@ -18,9 +18,27 @@
 CategoryModel::CategoryModel(CategoryDataStorage &dataStorage, CategorySyncServer &syncServer, QObject *parent)
     : QAbstractListModel(parent), //
       m_dataStorage(dataStorage), //
-      m_syncServer(syncServer) {}
+      m_syncServer(syncServer) {
+
+    // 连接同步服务器信号
+    connect(&m_syncServer, &CategorySyncServer::localChangesUploaded, this, &CategoryModel::onLocalChangesUploaded);
+    connect(&m_syncServer, &CategorySyncServer::categoriesUpdatedFromServer, this,
+            &CategoryModel::onCategoriesUpdatedFromServer);
+}
 
 CategoryModel::~CategoryModel() {}
+
+/**
+ * @brief 处理从服务器更新的类别数据
+ * @param categoriesJson 类别数据JSON字符串
+ */
+void CategoryModel::onCategoriesUpdatedFromServer(const nlohmann::json &categoriesJson) {
+    导入类别从JSON(categoriesJson);
+}
+
+void CategoryModel::onLocalChangesUploaded(const std::vector<CategorieItem *> &succeedSyncedItems) {
+    更新同步成功状态(succeedSyncedItems);
+}
 
 /**
  * @brief 获取模型中的行数（类别数量）
@@ -292,7 +310,7 @@ void CategoryModel::更新同步成功状态(const std::vector<CategorieItem *> 
     结束更新模型();
 }
 
-bool CategoryModel::导入类别从JSON(const QJsonArray &jsonArray, CategoryDataStorage::ImportSource source) {
+bool CategoryModel::导入类别从JSON(const nlohmann::json &jsonArray, CategoryDataStorage::ImportSource source) {
     qDebug() << "开始从JSON导入类别数据";
 
     开始更新模型();

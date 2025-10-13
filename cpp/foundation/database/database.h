@@ -18,14 +18,10 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <nlohmann/json.hpp>
 #include <sqlite3.h>
 #include <string>
 #include <vector>
-
-#ifdef QT_CORE_LIB
-#include <QJsonObject>
-#include <QString>
-#endif
 
 /**
  * @brief 数据导入导出接口（原生SQLite版本）
@@ -41,7 +37,7 @@ class IDataExporter {
      * @param output 输出的JSON对象，各类将自己的数据填入对应的键
      * @return 导出是否成功
      */
-    virtual bool exportToJson(QJsonObject &output) = 0;
+    virtual bool exportToJson(nlohmann::json &output) = 0;
 
     /**
      * @brief 从JSON对象导入数据
@@ -49,7 +45,7 @@ class IDataExporter {
      * @param replaceAll 是否替换所有数据
      * @return 导入是否成功
      */
-    virtual bool importFromJson(const QJsonObject &input, bool replaceAll) = 0;
+    virtual bool importFromJson(const nlohmann::json &input, bool replaceAll) = 0;
 };
 
 /**
@@ -141,8 +137,8 @@ class Database {
 #ifdef QT_CORE_LIB
     void registerDataExporter(const std::string &name, IDataExporter *exporter); ///< 注册数据导出器
     void unregisterDataExporter(const std::string &name);                        ///< 注销数据导出器
-    bool exportDataToJson(QJsonObject &output);                                  ///< 导出所有数据到JSON对象
-    bool importDataFromJson(const QJsonObject &input, bool replaceAll);          ///< 从JSON对象导入数据
+    bool exportDataToJson(nlohmann::json &output);                               ///< 导出所有数据到JSON对象
+    bool importDataFromJson(const nlohmann::json &input, bool replaceAll);       ///< 从JSON对象导入数据
     bool exportToJsonFile(const std::string &filePath);                          ///< 导出数据到JSON文件
     bool importFromJsonFile(const std::string &filePath, bool replaceAll);       ///< 从JSON文件导入数据
 #endif
@@ -168,24 +164,22 @@ class Database {
     std::unique_ptr<SqlQuery> createQueryInternal();                       ///< 创建查询对象（内部使用，不加锁）
     std::unique_ptr<SqlQuery> createQueryInternal(const std::string &sql); ///< 创建并准备查询对象（内部使用，不加锁）
     bool setPragmaInternal(const std::string &pragma, const std::string &value); ///< 设置PRAGMA（内部使用，不加锁）
+    nlohmann::json exportTable(const std::string &table,
+                               const std::vector<std::string> &columns); ///< 导出指定表到JSON数组
 
     // 错误处理
     void setError(const std::string &error); ///< 设置错误信息
     void clearError();                       ///< 清除错误状态
 
     // 成员变量
-    mutable std::mutex m_mutex;      ///< 线程安全保护
-    sqlite3 *m_db;                   ///< 数据库句柄
-    std::string m_databasePath;      ///< 数据库文件路径
-    std::string m_lastError;         ///< 最后一次错误信息
-    std::atomic<bool> m_initialized; ///< 是否已初始化
-    std::atomic<bool> m_hasError;    ///< 是否有错误
-    int m_transactionLevel;          ///< 事务嵌套级别
-
-#ifdef QT_CORE_LIB
-    std::map<std::string, IDataExporter *> m_dataExporters;                   ///< 注册的数据导出器
-    QJsonArray exportTable(const QString &table, const QStringList &columns); ///< 导出指定表到JSON数组
-#endif
+    mutable std::mutex m_mutex;                             ///< 线程安全保护
+    sqlite3 *m_db;                                          ///< 数据库句柄
+    std::string m_databasePath;                             ///< 数据库文件路径
+    std::string m_lastError;                                ///< 最后一次错误信息
+    std::atomic<bool> m_initialized;                        ///< 是否已初始化
+    std::atomic<bool> m_hasError;                           ///< 是否有错误
+    int m_transactionLevel;                                 ///< 事务嵌套级别
+    std::map<std::string, IDataExporter *> m_dataExporters; ///< 注册的数据导出器
 
     // 常量
     static constexpr int DATABASE_VERSION = 1;                                         ///< 当前数据库版本

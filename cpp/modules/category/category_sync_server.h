@@ -12,8 +12,7 @@
 
 #pragma once
 
-#include <QJsonArray>
-#include <QJsonObject>
+#include <nlohmann/json.hpp>
 #include <QList>
 #include <memory>
 #include <vector>
@@ -82,27 +81,27 @@ class CategorySyncServer : public BaseSyncServer {
 
   signals:
     // 数据更新信号（类别特有）
-    void categoriesUpdatedFromServer(const QJsonArray &categoriesArray);               // 从服务器更新的类别
+    void categoriesUpdatedFromServer(const nlohmann::json &categoriesArray);               // 从服务器更新的类别
     void localChangesUploaded(const std::vector<CategorieItem *> &m_unsyncedItems); // 本地更改已上传
-    void syncConflictDetected(const QJsonArray &conflictItems);                        // 检测到同步冲突
+    void syncConflictDetected(const nlohmann::json &conflictItems);                        // 检测到同步冲突
 
   protected slots:
     void onNetworkRequestCompleted(Network::RequestType type,
-                                   const QJsonObject &response) override; // 网络请求完成
+                                   const nlohmann::json &response) override; // 网络请求完成
     void onNetworkRequestFailed(Network::RequestType type, Network::Error error,
-                                const QString &message) override; // 网络请求失败
+                                const std::string &message) override; // 网络请求失败
 
   protected:
     // 同步操作实现（重写基类方法）
     void 拉取数据() override;
     void 推送数据() override;
-    void 处理获取数据成功(const QJsonObject &response);
-    void 处理推送更改成功(const QJsonObject &response);
+    void 处理获取数据成功(const nlohmann::json &response);
+    void 处理推送更改成功(const nlohmann::json &response);
 
     // 类别操作实现
-    void 处理创建类别成功(const QJsonObject &response);
-    void 处理更新类别成功(const QJsonObject &response);
-    void 处理删除类别成功(const QJsonObject &response);
+    void 处理创建类别成功(const nlohmann::json &response);
+    void 处理更新类别成功(const nlohmann::json &response);
+    void 处理删除类别成功(const nlohmann::json &response);
 
     // 辅助方法
 

@@ -12,8 +12,6 @@
 
 #pragma once
 
-#include <QJsonArray>
-#include <QJsonObject>
 #include <QObject>
 #include <QString>
 #include <QTimer>
@@ -104,9 +102,9 @@ class BaseSyncServer : public QObject {
 
   protected slots:
     virtual void onNetworkRequestCompleted(Network::RequestType type,
-                                           const QJsonObject &response); // 网络请求完成
+                                           const nlohmann::json &response); // 网络请求完成
     virtual void onNetworkRequestFailed(Network::RequestType type, Network::Error error,
-                                        const QString &message); // 网络请求失败
+                                        const std::string &message); // 网络请求失败
     void onAutoSyncTimer();                                      // 自动同步定时器触发
 
   protected:
@@ -134,5 +132,5 @@ class BaseSyncServer : public QObject {
     SyncDirection m_currentSyncDirection; ///< 当前同步方向
 
     // 服务器配置
-    QString m_apiEndpoint; ///< API端点
+    std::string m_apiEndpoint; ///< API端点
 };

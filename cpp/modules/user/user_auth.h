@@ -15,11 +15,11 @@
 
 #pragma once
 
-#include <QJsonObject>
 #include <QObject>
 #include <QString>
 #include <QTimer>
 #include <uuid.h>
+#include <nlohmann/json.hpp>
 
 #include "database.h"
 #include "network_request.h"
@@ -67,8 +67,8 @@ class UserAuth : public QObject, public IDataExporter {
     bool 初始化用户表();
 
     // 数据导入导出接口
-    bool exportToJson(QJsonObject &output) override;
-    bool importFromJson(const QJsonObject &input, bool replaceAll) override;
+    bool exportToJson(nlohmann::json &output) override;
+    bool importFromJson(const nlohmann::json &input, bool replaceAll) override;
 
   signals:
     // 要转发到Qml的信号
@@ -89,9 +89,9 @@ class UserAuth : public QObject, public IDataExporter {
     void firstAuthCompleted();                     // 首次完成认证（登录或首次刷新）信号，仅触发一次
 
   public slots:
-    void onNetworkRequestCompleted(Network::RequestType type, const QJsonObject &response); // 处理网络请求成功
+    void onNetworkRequestCompleted(Network::RequestType type, const nlohmann::json &response); // 处理网络请求成功
     void onNetworkRequestFailed(Network::RequestType type, Network::Error error,
-                                const QString &message); // 处理网络请求失败
+                                const std::string &message); // 处理网络请求失败
     void onAuthTokenExpired();                           // 处理认证令牌过期
 
   private slots:
@@ -99,8 +99,8 @@ class UserAuth : public QObject, public IDataExporter {
 
   private:
     // 私有方法
-    void 处理登录成功(const QJsonObject &response);
-    void 处理令牌刷新成功(const QJsonObject &response);
+    void 处理登录成功(const nlohmann::json &response);
+    void 处理令牌刷新成功(const nlohmann::json &response);
     void 保存凭据();
     void 清除凭据();
     void 加载数据();
@@ -122,11 +122,11 @@ class UserAuth : public QObject, public IDataExporter {
     std::string m_refreshToken; ///< 刷新令牌
     std::string m_username;     ///< 用户名
     std::string m_email;        ///< 邮箱
-    uuids::uuid m_uuid;     ///< 用户UUID
+    uuids::uuid m_uuid;         ///< 用户UUID
 
     // 令牌管理
     QTimer *m_tokenExpiryTimer;      ///< 令牌过期检查定时器
-    int64_t m_tokenExpiryTime;        ///< 令牌过期时间戳
+    int64_t m_tokenExpiryTime;       ///< 令牌过期时间戳
     bool m_isRefreshing;             ///< 是否正在刷新令牌
     bool m_firstAuthEmitted = false; ///< 首次认证信号是否已经发出
 

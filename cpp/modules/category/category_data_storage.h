@@ -69,13 +69,13 @@ class CategoryDataStorage : public BaseDataStorage {
     bool 更新同步状态(CategorieList &categories, const std::string &name, int synced = 0);
 
     bool 创建默认类别(CategorieList &categories, const uuids::uuid &userUuid);
-    bool 导入类别从JSON(CategorieList &categories, const QJsonArray &categoriesArray,
+    bool 导入类别从JSON(CategorieList &categories, const nlohmann::json &categoriesArray,
                         ImportSource source = ImportSource::Server,
                         解决冲突方案 resolution = 解决冲突方案::Merge);
 
     // IDataExporter接口实现
-    bool exportToJson(QJsonObject &output) override;
-    bool importFromJson(const QJsonObject &input, bool replaceAll) override;
+    bool exportToJson(nlohmann::json &output) override;
+    bool importFromJson(const nlohmann::json &input, bool replaceAll) override;
 
   protected:
     // 基类虚函数实现

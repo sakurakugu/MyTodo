@@ -12,7 +12,6 @@
 #pragma once
 
 #include "datetime.h"
-#include <QJsonObject>
 #include <string>
 #include <uuid.h>
 

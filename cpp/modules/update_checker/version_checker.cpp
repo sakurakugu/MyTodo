@@ -14,14 +14,13 @@
 #include "version.h"
 
 #include <QDesktopServices>
-#include <QJsonDocument>
 #include <QUrl>
 #include <QVersionNumber>
 
 // GitHub配置常量
-const QString VersionChecker::GITHUB_API_URL = "https://api.github.com";
-const QString VersionChecker::GITHUB_REPO_OWNER = "sakurakugu";
-const QString VersionChecker::GITHUB_REPO_NAME = "MyTodo";
+const std::string VersionChecker::GITHUB_API_URL = "https://api.github.com";
+const std::string VersionChecker::GITHUB_REPO_OWNER = "sakurakugu";
+const std::string VersionChecker::GITHUB_REPO_NAME = "MyTodo";
 
 VersionChecker::VersionChecker(QObject *parent)
     : QObject(parent),                                    //
@@ -38,17 +37,17 @@ VersionChecker::VersionChecker(QObject *parent)
 
     // 连接网络请求信号
     connect(&NetworkRequest::GetInstance(), &NetworkRequest::requestCompleted, this,
-            [this](Network::RequestType type, const QJsonObject &response) {
+            [this](Network::RequestType type, const nlohmann::json &response) {
                 if (type == Network::RequestType::UpdateCheck) {
                     解析GitHub响应(response);
                 }
             });
 
     connect(&NetworkRequest::GetInstance(), &NetworkRequest::requestFailed, this,
-            [this](Network::RequestType type, [[maybe_unused]] Network::Error error, const QString &message) {
+            [this](Network::RequestType type, [[maybe_unused]] Network::Error error, const std::string &message) {
                 if (type == Network::RequestType::UpdateCheck) {
                     设置是否正在检查(false);
-                    emit updateCheckFailed(message);
+                    emit updateCheckFailed(QString::fromStdString(message));
                     qWarning() << "版本检查失败:" << message;
                 }
             });
@@ -125,8 +124,8 @@ void VersionChecker::执行版本检查() {
     设置是否正在检查(true);
 
     // 构建GitHub API URL
-    QString apiUrl =
-        QString("%1/repos/%2/%3/releases/latest").arg(GITHUB_API_URL).arg(GITHUB_REPO_OWNER).arg(GITHUB_REPO_NAME);
+    std::string apiUrl =
+        std::format("{}/repos/{}/{}/releases/latest", GITHUB_API_URL, GITHUB_REPO_OWNER, GITHUB_REPO_NAME);
 
     // 配置网络请求
     NetworkRequest::RequestConfig config;
@@ -138,24 +137,23 @@ void VersionChecker::执行版本检查() {
 
     // 设置请求头
     config.headers["Accept"] = "application/vnd.github.v3+json";
-    config.headers["User-Agent"] = QString("%1/%2").arg(APP_NAME).arg(APP_VERSION_STRING);
+    config.headers["User-Agent"] = std::format("{} v{}", APP_NAME, APP_VERSION_STRING);
 
     // 创建GitHub API自定义响应处理器
-    auto githubResponseHandler = [this](const QByteArray &rawResponse, int httpStatusCode) -> QJsonObject {
-        QJsonObject result;
+    auto githubResponseHandler = [this](const QByteArray &rawResponse, int httpStatusCode) -> nlohmann::json {
+        nlohmann::json result;
 
         try {
             if (httpStatusCode == 200) {
                 // 解析GitHub API响应
-                QJsonParseError parseError;
-                QJsonDocument doc = QJsonDocument::fromJson(rawResponse, &parseError);
+                nlohmann::json doc = nlohmann::json::parse(rawResponse);
 
-                if (parseError.error != QJsonParseError::NoError) {
-                    qWarning() << "GitHub API响应JSON解析错误:" << parseError.errorString();
+                if (doc.is_discarded()) {
+                    qWarning() << "GitHub API响应JSON解析错误:" << doc.dump();
                     return result; // 返回空对象表示失败
                 }
 
-                QJsonObject githubResponse = doc.object();
+                nlohmann::json githubResponse = doc;
 
                 // 验证必要字段
                 if (!githubResponse.contains("tag_name")) {
@@ -185,10 +183,10 @@ void VersionChecker::执行版本检查() {
     qDebug() << "发送版本检查请求到:" << apiUrl;
 }
 
-void VersionChecker::解析GitHub响应(const QJsonObject &response) {
+void VersionChecker::解析GitHub响应(const nlohmann::json &response) {
     try {
         // 检查响应是否为空（自定义处理器失败时返回空对象）
-        if (response.isEmpty()) {
+        if (response.is_discarded()) {
             emit updateCheckFailed("GitHub API响应处理失败");
             设置是否正在检查(false);
             return;
@@ -202,25 +200,25 @@ void VersionChecker::解析GitHub响应(const QJsonObject &response) {
         }
 
         // 获取版本信息
-        QString tagName = response["tag_name"].toString();
-        QString latestVersion = tagName;
+        std::string tagName = response["tag_name"].get<std::string>();
+        std::string latestVersion = tagName;
 
         // 移除版本号前缀（如 "v1.0.0" -> "1.0.0"）
-        if (latestVersion.startsWith("v", Qt::CaseInsensitive)) {
-            latestVersion = latestVersion.mid(1);
+        if (latestVersion.starts_with("v")) {
+            latestVersion = latestVersion.substr(1);
         }
 
         // 获取下载URL
-        QString downloadUrl = response["html_url"].toString();
+        std::string downloadUrl = response["html_url"].get<std::string>();
 
         // 获取发布说明
-        QString releaseNotes = response["body"].toString();
+        std::string releaseNotes = response["body"].get<std::string>();
         if (releaseNotes.length() > 500) {
-            releaseNotes = releaseNotes.left(500) + "...";
+            releaseNotes = releaseNotes.substr(0, 500) + "...";
         }
 
         // 检查是否为预发布版本
-        bool isPrerelease = response["prerelease"].toBool();
+        bool isPrerelease = response["prerelease"].get<bool>();
         if (isPrerelease) {
             qDebug() << "跳过预发布版本:" << latestVersion;
             设置是否正在检查(false);
@@ -228,12 +226,12 @@ void VersionChecker::解析GitHub响应(const QJsonObject &response) {
         }
 
         // 更新属性
-        设置最新版本(latestVersion);
-        设置更新URL(downloadUrl);
-        设置发布说明(releaseNotes);
+        设置最新版本(QString::fromStdString(latestVersion));
+        设置更新URL(QString::fromStdString(downloadUrl));
+        设置发布说明(QString::fromStdString(releaseNotes));
 
         // 比较版本
-        bool hasNewVersion = 比较版本号(m_currentVersion, latestVersion);
+        bool hasNewVersion = 比较版本号(m_currentVersion, QString::fromStdString(latestVersion));
         设置是否有更新(hasNewVersion);
 
         onUpdateCheckFinished();

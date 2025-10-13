@@ -367,15 +367,15 @@ void HolidayManager::从网络获取节假日数据(int year) {
     config.timeout = 15000;      // 15秒超时
 
     // 创建自定义响应处理器，用于传递年份信息
-    auto customHandler = [this, year](const QByteArray &rawResponse, int httpStatusCode) -> QJsonObject {
-        QJsonObject result;
+    auto customHandler = [this, year](const QByteArray &rawResponse, int httpStatusCode) -> nlohmann::json {
+        nlohmann::json result;
 
         if (httpStatusCode == 200) {
             // 首先检查原始响应是否是纯字符串（如"Year not found"）
-            QString responseText = QString::fromUtf8(rawResponse).trimmed();
+            std::string responseText = rawResponse.toStdString();
 
             // 如果响应不以 '{' 开头，很可能是错误字符串而不是JSON
-            if (!responseText.startsWith('{')) {
+            if (!responseText.starts_with('{')) {
                 qWarning() << "API返回错误信息:" << responseText << "（年份:" << year << "）";
 
                 // 记录最后检查时间，避免重复请求
@@ -383,7 +383,7 @@ void HolidayManager::从网络获取节假日数据(int year) {
                 emit holidayDataUpdated(year, false);
 
                 result["success"] = false;
-                result["error"] = QString("API错误: %1").arg(responseText);
+                result["error"] = std::format("API错误: {}", responseText);
             } else {
                 // 尝试解析JSON
                 try {
@@ -418,14 +418,14 @@ void HolidayManager::从网络获取节假日数据(int year) {
                     qWarning() << "原始响应内容:" << rawResponse;
                     emit holidayDataUpdated(year, false);
                     result["success"] = false;
-                    result["error"] = QString("JSON解析失败: %1").arg(e.what());
+                    result["error"] = std::format("JSON解析失败: {}", e.what());
                 }
             }
         } else {
             qWarning() << "获取" << year << "年节假日数据失败，HTTP状态码:" << httpStatusCode;
             emit holidayDataUpdated(year, false);
             result["success"] = false;
-            result["error"] = QString("HTTP错误，状态码: %1").arg(httpStatusCode);
+            result["error"] = std::format("HTTP错误，状态码: {}", httpStatusCode);
         }
 
         return result;

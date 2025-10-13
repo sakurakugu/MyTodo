@@ -87,14 +87,16 @@ class CategoryModel : public QAbstractListModel {
 
     void 与服务器同步();
     void 更新同步成功状态(const std::vector<CategorieItem *> &categories);
-    bool 导入类别从JSON(const QJsonArray &jsonArray,
+    bool 导入类别从JSON(const nlohmann::json &jsonArray,
                         CategoryDataStorage::ImportSource source = CategoryDataStorage::Server);
 
   signals:
     void categoriesChanged(); ///< 类别列表变化信号
 
   public slots:
-    void onCategoriesChanged(); ///< 处理类别数据变化
+    void onCategoriesChanged();                                                          ///< 处理类别数据变化
+    void onCategoriesUpdatedFromServer(const nlohmann::json &categoriesJson);               ///< 处理从服务器更新的类别数据
+    void onLocalChangesUploaded(const std::vector<CategorieItem *> &succeedSyncedItems); ///< 处理本地更改已上传
 
   private:
     // 辅助方法
