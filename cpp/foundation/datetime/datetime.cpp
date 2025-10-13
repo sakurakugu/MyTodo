@@ -1,9 +1,11 @@
-// ============================================================
-// DateTime 类实现：日期时间处理类
-//
-// 作者： sakurakugu
-// 创建日期： 2025-10-12 16:30:00 (UTC+8)
-// ============================================================
+/**
+ * @file datetime.cpp
+ * @brief 日期时间处理类实现
+ *
+ * (自动生成的头部；请完善 @brief 及详细描述)
+ * @author sakurakugu
+ * @date 2025-10-12 16:30:00 (UTC+8)
+ */
 
 #include "datetime.h"
 #include "formatter.h"
@@ -14,6 +16,10 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#endif
+
+#ifdef QT_CORE_LIB
+#include <QDateTime>
 #endif
 
 namespace my {
@@ -34,13 +40,13 @@ DateTime::DateTime(const time_point &tp) noexcept {
 }
 
 DateTime::DateTime(const Date &date, const Time &time) noexcept : m_date(date), m_time(time) {}
-DateTime::DateTime(int year, uint8_t month, uint8_t day, const Time &time) noexcept
+DateTime::DateTime(int32_t year, uint8_t month, uint8_t day, const Time &time) noexcept
     : m_date(year, month, day), m_time(time) {}
 
 DateTime::DateTime(const Date &date, uint8_t hour, uint8_t minute, uint8_t second, uint16_t millisecond) noexcept
     : m_date(date), m_time(hour, minute, second, millisecond) {}
 
-DateTime::DateTime(int year, uint8_t month, uint8_t day, uint8_t hour, uint8_t minute, uint8_t second,
+DateTime::DateTime(int32_t year, uint8_t month, uint8_t day, uint8_t hour, uint8_t minute, uint8_t second,
                    uint16_t millisecond) noexcept
     : m_date(year, month, day), m_time(hour, minute, second, millisecond) {}
 
@@ -393,27 +399,31 @@ DateTime DateTime::toLocal() const noexcept {
     }
 }
 
+bool DateTime::operator==(const DateTime &other) const noexcept {
+    return m_date == other.m_date && m_time == other.m_time;
+}
+
 // 比较运算符
-bool DateTime::operator!=(const DateTime &other) const {
+bool DateTime::operator!=(const DateTime &other) const noexcept {
     return m_date != other.m_date || m_time != other.m_time;
 }
 
-bool DateTime::operator<(const DateTime &other) const {
+bool DateTime::operator<(const DateTime &other) const noexcept {
     if (m_date != other.m_date) {
         return m_date < other.m_date;
     }
     return m_time < other.m_time;
 }
 
-bool DateTime::operator<=(const DateTime &other) const {
+bool DateTime::operator<=(const DateTime &other) const noexcept {
     return *this < other || *this == other;
 }
 
-bool DateTime::operator>(const DateTime &other) const {
+bool DateTime::operator>(const DateTime &other) const noexcept {
     return !(*this <= other);
 }
 
-bool DateTime::operator>=(const DateTime &other) const {
+bool DateTime::operator>=(const DateTime &other) const noexcept {
     return !(*this < other);
 }
 
@@ -642,5 +652,33 @@ std::chrono::minutes DateTime::getUTCOffset() noexcept {
         return std::chrono::minutes(0);
     }
 }
+
+#ifdef QT_CORE_LIB
+// Qt 转换构造函数
+DateTime::DateTime(const QDateTime &qdatetime) noexcept {
+    if (qdatetime.isValid()) { // 如果 Qt 日期时间有效
+        m_date = Date{qdatetime.date()}; // 从 Qt 日期转换为 my::Date
+        m_time = Time{qdatetime.time()}; // 从 Qt 时间转换为 my::Time
+    } else {
+        m_date = Date{1970, 1, 1};
+        m_time = Time{0, 0, 0, 0};
+    }
+}
+
+// Qt 转换静态方法
+DateTime DateTime::fromQDateTime(const QDateTime &qdatetime) noexcept {
+    return DateTime{qdatetime};
+}
+
+// Qt 转换方法
+QDateTime DateTime::toQDateTime() const noexcept {
+    if (!isValid()) {
+        return QDateTime{};
+    }
+    QDate qdate{year(), month(), day()};
+    QTime qtime{hour(), minute(), second(), millisecond()};
+    return QDateTime{qdate, qtime};
+}
+#endif
 
 } // namespace my

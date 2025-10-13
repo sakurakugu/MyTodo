@@ -30,5 +30,5 @@ target_link_libraries(mytodo_backup
     PUBLIC
         Qt6::Core
         mytodo_foundation        # 基础模块（Logger, Config类等）
-        my_database          # 数据库模块（Database类等）
+        my_database              # 数据库模块（Database类等）
 )

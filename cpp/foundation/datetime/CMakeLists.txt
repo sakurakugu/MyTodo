@@ -25,6 +25,11 @@ target_include_directories(my_datetime PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}    # 允许其它模块用 #include "database.h" 等   
 )
 
+# 如果找到了 Qt6，则链接 Qt6::Core
+if(Qt6_FOUND)
+    target_link_libraries(my_datetime PUBLIC Qt6::Core)
+endif()
+
 # 定义编译时宏，方便别的模块判断是否启用该库
 target_compile_definitions(my_datetime PUBLIC
     MY_DATETIME_ENABLED

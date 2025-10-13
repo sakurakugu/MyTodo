@@ -1,9 +1,11 @@
-// ============================================================
-// Time 类实现：时间处理类
-//
-// 作者： sakurakugu
-// 创建日期： 2025-10-12 18:16:00 (UTC+8)
-// ============================================================
+/**
+ * @file time.cpp
+ * @brief 时间处理类实现
+ *
+ * (自动生成的头部；请完善 @brief 及详细描述)
+ * @author sakurakugu
+ * @date 2025-10-12 18:16:00 (UTC+8)
+ */
 
 #include "time.hpp"
 #include "formatter.h"
@@ -11,6 +13,10 @@
 #include <regex>
 #include <sstream>
 #include <stdexcept>
+
+#ifdef QT_CORE_LIB
+#include <QTime>
+#endif
 
 namespace my {
 
@@ -406,5 +412,33 @@ void Time::normalize() noexcept {
         m_duration -= day_duration;
     }
 }
+
+#ifdef QT_CORE_LIB
+
+// Qt 转换构造函数
+Time::Time(const QTime &qtime) noexcept {
+    if (qtime.isValid()) {
+        m_duration =
+            hours{qtime.hour()} + minutes{qtime.minute()} + seconds{qtime.second()} + milliseconds{qtime.msec()};
+    } else {
+        m_duration = duration{0};
+    }
+    normalize();
+}
+
+// Qt 转换静态方法
+Time Time::fromQTime(const QTime &qtime) noexcept {
+    return Time{qtime};
+}
+
+// Qt 转换方法
+QTime Time::toQTime() const noexcept {
+    if (!isValid()) {
+        return QTime{};
+    }
+    auto components = getComponents();
+    return QTime{components.hour, components.minute, components.second, components.millisecond};
+}
+#endif
 
 } // namespace my

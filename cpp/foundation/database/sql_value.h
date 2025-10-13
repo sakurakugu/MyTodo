@@ -57,7 +57,7 @@ using SqlValue = std::variant< //
     ,
     my::DateTime, // 日期时间
     my::Date,     // 日期
-    my::Time     // 时间
+    my::Time      // 时间
 #endif
     >;
 

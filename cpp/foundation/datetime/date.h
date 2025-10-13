@@ -1,10 +1,11 @@
-// ============================================================
-// Date 类：日期处理类
-// 提供日期的创建、操作、格式化和比较功能
-//
-// 作者： sakurakugu
-// 创建日期： 2025-10-12 16:30:00 (UTC+8)
-// ============================================================
+/**
+ * @file date.h
+ * @brief 日期处理类
+ *
+ * (自动生成的头部；请完善 @brief 及详细描述)
+ * @author sakurakugu
+ * @date 2025-10-12 16:30:00 (UTC+8)
+ */
 
 #pragma once
 
@@ -15,6 +16,11 @@
 #include <optional>
 #include <string>
 #include <string_view>
+
+// Qt 前向声明
+#ifdef QT_CORE_LIB
+class QDate;
+#endif
 
 namespace my {
 
@@ -38,11 +44,17 @@ class Date {
     explicit Date(const sys_days &days) noexcept;
     explicit Date(const std::string &dateStr); // 从字符串构造 (YYYY-MM-DD格式)
     Date(const Date &other);                   // 拷贝构造函数
+#ifdef QT_CORE_LIB
+    explicit Date(const QDate &qdate) noexcept;
+#endif
 
     // 静态工厂方法
     static Date today() noexcept;
     static Date fromString(std::string_view str) noexcept;
     static Date fromISOString(std::string_view str) noexcept;
+#ifdef QT_CORE_LIB
+    static Date fromQDate(const QDate &qdate) noexcept;
+#endif
 
     // 访问器
     int32_t year() const noexcept;
@@ -75,6 +87,9 @@ class Date {
     // 格式化
     std::string toString(std::string_view format = "yyyy-MM-dd") const;
     std::string toISOString() const;
+#ifdef QT_CORE_LIB
+    QDate toQDate() const noexcept;
+#endif
 
     // 转换
     sys_days toSysDays() const noexcept;            // 转换为 sys_days 类型

@@ -14,14 +14,6 @@
 #include <sstream>
 #include <stdexcept>
 
-#ifdef STDUUID_ENABLED
-#include <uuid.h>
-#endif
-
-#ifdef MY_DATETIME_ENABLED
-#include "datetime.h"
-#endif
-
 /**
  * @brief 构造函数
  * @param db_handle SQLite数据库句柄
@@ -138,7 +130,7 @@ bool SqlQuery::bindValue(int index, const SqlValue &value) {
                 std::string str = v.toStdString();
                 result = sqlite3_bind_text(m_stmt, index, str.c_str(), str.length(), SQLITE_TRANSIENT);
             } else if constexpr (std::is_same_v<T, QUuid>) {
-                std::string str = v.toString().toStdString();
+                std::string str = v.toString(QUuid::WithoutBraces).toStdString();
                 result = sqlite3_bind_text(m_stmt, index, str.c_str(), str.length(), SQLITE_TRANSIENT);
             } else if constexpr (std::is_same_v<T, QDateTime>) { // yyyy-MM-dd hh:mm:ss.zzz(UTC+8)
                 std::string str = v.toString(Qt::ISODateWithMs).toStdString();
@@ -158,7 +150,7 @@ bool SqlQuery::bindValue(int index, const SqlValue &value) {
             } else
 #endif
 #ifdef STDUUID_ENABLED
-                if constexpr (std::is_same_v<T, QUuid>) {
+                if constexpr (std::is_same_v<T, uuids::uuid>) {
                 std::string str = uuids::to_string(v);
                 result = sqlite3_bind_text(m_stmt, index, str.c_str(), str.length(), SQLITE_TRANSIENT);
             } else

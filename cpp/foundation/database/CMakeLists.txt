@@ -23,15 +23,30 @@ target_include_directories(my_database PUBLIC
     ${INCLUDE_DIR}                 # 允许包含生成的 version.h 
 )
 
-# 链接 Qt 库和 SQLite3 库
+# 链接 SQLite3 库
+# target_link_libraries(my_database PUBLIC SQLite::SQLite3)
+
 target_link_libraries(my_database
     PUBLIC
-        Qt6::Core
         SQLite::SQLite3
-        my_logger
-        my_datetime
-        stduuid::stduuid
+        # my_datetime
 )
+# 如果找到了 my_datetime，则链接 my_datetime
+if(TARGET my_datetime)
+    target_link_libraries(my_database PUBLIC my_datetime)
+endif()
+# 如果找到了 Qt6，则链接 Qt6::Core
+if(Qt6_FOUND)
+    target_link_libraries(my_database PUBLIC Qt6::Core)
+endif()
+# 如果找到了 my_logger，则链接 my_logger
+if(TARGET my_logger)
+    target_link_libraries(my_database PUBLIC my_logger)
+endif()
+# 如果找到了 stduuid::stduuid，则链接 stduuid::stduuid
+if(TARGET stduuid::stduuid)
+    target_link_libraries(my_database PUBLIC stduuid::stduuid)
+endif()
 
 # 定义编译时宏，方便别的模块判断是否启用该库
 target_compile_definitions(my_database PUBLIC

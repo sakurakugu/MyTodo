@@ -17,11 +17,13 @@
 #include <iostream>
 
 #ifdef QT_CORE_LIB
-#include <QCoreApplication>
 #include <QDir>
 #include <QJsonArray>
 #include <QJsonDocument>
-#include <QStandardPaths>
+#endif
+
+#ifdef MY_LOGGER_ENABLED
+#include "logger.h"
 #endif
 
 Database::Database()
@@ -29,16 +31,7 @@ Database::Database()
       m_initialized(false), //
       m_hasError(false),    //
       m_transactionLevel(0) {
-#ifdef QT_CORE_LIB
-    // 使用Qt路径
-    QString appDataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    QDir appDir(appDataPath);
-    if (!appDir.exists()) {
-        appDir.mkpath(".");
-    }
-    m_databasePath = appDir.absoluteFilePath(QString::fromStdString(DATABASE_FILENAME)).toStdString();
-    qInfo() << "数据库路径:" << m_databasePath;
-#else
+
     // 使用标准C++路径
     std::filesystem::path appDataPath;
 #ifdef _WIN32
@@ -60,7 +53,6 @@ Database::Database()
     // 确保目录存在
     std::filesystem::create_directories(appDataPath);
     m_databasePath = (appDataPath / DATABASE_FILENAME).string();
-#endif
 }
 
 Database::~Database() {
@@ -111,6 +103,8 @@ bool Database::initialize() {
 
 #ifdef QT_CORE_LIB
     qInfo() << "数据库初始化成功:" << m_databasePath << "版本:" << DATABASE_VERSION;
+#elifdef MY_LOGGER_ENABLED
+    logInfo() << "数据库初始化成功:" << m_databasePath << "版本:" << DATABASE_VERSION;
 #else
     std::cout << "数据库初始化成功: " << m_databasePath << " 版本: " << DATABASE_VERSION << std::endl;
 #endif
@@ -515,8 +509,10 @@ void Database::setError(const std::string &error) {
 
 #ifdef QT_CORE_LIB
     qCritical() << QString::fromStdString(error);
+#elifdef MY_LOGGER_ENABLED
+    logCritical() << QString::fromStdString(error);
 #else
-    std::cerr << "Database Error: " << error << std::endl;
+    std::cerr << "数据库错误: " << error << std::endl;
 #endif
 }
 

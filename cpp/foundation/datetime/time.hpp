@@ -1,10 +1,11 @@
-// ============================================================
-// Time 类：时间处理类
-// 提供时间的创建、操作、格式化和比较功能
-//
-// 作者： sakurakugu
-// 创建日期： 2025-10-12 18:16:00 (UTC+8)
-// ============================================================
+/**
+ * @file time.hpp
+ * @brief 时间处理类
+ *
+ * (自动生成的头部；请完善 @brief 及详细描述)
+ * @author sakurakugu
+ * @date 2025-10-12 18:16:00 (UTC+8)
+ */
 
 #pragma once
 
@@ -15,6 +16,11 @@
 #include <optional>
 #include <string>
 #include <string_view>
+
+// Qt 前向声明
+#ifdef QT_CORE_LIB
+class QTime;
+#endif
 
 namespace my {
 
@@ -49,13 +55,14 @@ class Time {
 
     // 构造函数
     Time() = default;
+    Time(const Time &other); // 拷贝构造函数
     Time(uint8_t hour, uint8_t minute = 0, uint8_t second = 0, uint16_t millisecond = 0) noexcept;
     explicit Time(const duration &d) noexcept;
     explicit Time(const std::string &timeStr);   // 从字符串构造 (HH:MM:SS格式)
     explicit Time(const ClockTime &ct) noexcept; // 从 ClockTime 构造
-
-    // 拷贝构造函数
-    Time(const Time &other); // 拷贝构造函数
+#ifdef QT_CORE_LIB
+    explicit Time(const QTime &qtime) noexcept;
+#endif
 
     // 静态工厂方法
     static Time now() noexcept;
@@ -65,6 +72,9 @@ class Time {
     static Time fromSeconds(int64_t seconds) noexcept;
     static Time fromMinutes(int64_t minutes) noexcept;
     static Time fromHours(int64_t hours) noexcept;
+#ifdef QT_CORE_LIB
+    static Time fromQTime(const QTime &qtime) noexcept;
+#endif
 
     // 访问器
     int hour() const noexcept;
@@ -98,6 +108,9 @@ class Time {
     int64_t toSeconds() const noexcept;      // 转换为秒数（从午夜开始）
     int64_t toMinutes() const noexcept;      // 转换为分钟数（从午夜开始）
     double toHours() const noexcept;         // 转换为小时数（从午夜开始）
+#ifdef QT_CORE_LIB
+    QTime toQTime() const noexcept;
+#endif
 
     // 赋值操作符
     Time &operator=(const Time &other);

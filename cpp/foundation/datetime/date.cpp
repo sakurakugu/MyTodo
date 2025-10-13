@@ -1,9 +1,11 @@
-// ============================================================
-// Date 类实现：日期处理类
-//
-// 作者： sakurakugu
-// 创建日期： 2025-10-12 16:30:00 (UTC+8)
-// ============================================================
+/**
+ * @file date.cpp
+ * @brief 日期处理类实现
+ *
+ * (自动生成的头部；请完善 @brief 及详细描述)
+ * @author sakurakugu
+ * @date 2025-10-12 16:30:00 (UTC+8)
+ */
 
 #include "date.h"
 #include "formatter.h"
@@ -11,6 +13,10 @@
 #include <regex>
 #include <sstream>
 #include <stdexcept>
+
+#ifdef QT_CORE_LIB
+#include <QDate>
+#endif
 
 namespace my {
 
@@ -25,7 +31,7 @@ Date::Date(const sys_days &days) noexcept : m_ymd(days) {}
 Date::Date(const std::string &dateStr) {
     auto ymd = parseISO(dateStr);
     if (!ymd || !ymd->ok()) {
-        m_ymd = year_month_day{std::chrono::year{1900}, std::chrono::month{1}, std::chrono::day{1}};
+        m_ymd = year_month_day{std::chrono::year{1970}, std::chrono::month{1}, std::chrono::day{1}};
     } else {
         m_ymd = *ymd;
     }
@@ -298,5 +304,31 @@ std::optional<Date::year_month_day> Date::parseCustom(std::string_view str,
     // 简化实现，仅支持基本格式
     return parseISO(str);
 }
+
+#ifdef QT_CORE_LIB
+// Qt 转换构造函数
+Date::Date(const QDate &qdate) noexcept {
+    if (qdate.isValid()) {
+        m_ymd = year_month_day{std::chrono::year{qdate.year()},                         //
+                               std::chrono::month{static_cast<uint8_t>(qdate.month())}, //
+                               std::chrono::day{static_cast<uint8_t>(qdate.day())}};
+    } else {
+        m_ymd = year_month_day{std::chrono::year{1970}, std::chrono::month{1}, std::chrono::day{1}};
+    }
+}
+
+// Qt 转换静态方法
+Date Date::fromQDate(const QDate &qdate) noexcept {
+    return Date{qdate};
+}
+
+// Qt 转换方法
+QDate Date::toQDate() const noexcept {
+    if (!isValid()) {
+        return QDate{};
+    }
+    return QDate{year(), month(), day()};
+}
+#endif
 
 } // namespace my

@@ -73,9 +73,9 @@ else()
 endif()
 
 add_subdirectory(cpp/foundation)
-add_subdirectory(cpp/foundation/database)
 add_subdirectory(cpp/foundation/datetime)
 add_subdirectory(cpp/foundation/logger)
+add_subdirectory(cpp/foundation/database)
 add_subdirectory(cpp/domain)
 add_subdirectory(cpp/modules/category)
 add_subdirectory(cpp/modules/todo)
@@ -103,6 +103,7 @@ set(QT_COMPONENTS
 set(PRIVATE_LIBRARIES
     mytodo_foundation
     mytodo_domain
+    my_database
     mytodo_category
     mytodo_todo
     mytodo_setting

@@ -21,12 +21,9 @@ target_include_directories(my_logger PUBLIC
     ${INCLUDE_DIR}                 # 允许包含生成的 version.h
 )
 
+# 如果找到了 Qt6，则链接 Qt6::Core
 if(Qt6_FOUND)
-# 链接 Qt 库
-target_link_libraries(my_logger
-    PUBLIC
-        Qt6::Core
-)
+    target_link_libraries(my_logger PUBLIC Qt6::Core)
 endif()
 
 # 定义编译时宏，方便别的模块判断是否启用该库

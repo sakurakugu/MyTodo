@@ -1,29 +1,35 @@
-// ============================================================
-// DateTime 类：日期时间处理类
-// 提供日期时间的创建、操作、格式化和比较功能
-//
-// 作者： sakurakugu
-// 创建日期： 2025-10-12 16:30:00 (UTC+8)
-// ============================================================
+/**
+ * @file datetime.h
+ * @brief 日期时间处理类
+ *
+ * (自动生成的头部；请完善 @brief 及详细描述)
+ * @author sakurakugu
+ * @date 2025-10-12 16:30:00 (UTC+8)
+ */
 
 #pragma once
 
 #include "date.h"
 #include "time.hpp"
 #include <chrono>
-#include <compare>
-#include <expected>
-#include <format>
-#include <optional>
 #include <string>
 #include <string_view>
+
+#ifdef QT_CORE_LIB
+class QDateTime;
+#endif
 
 namespace my {
 
 /**
- * @brief 日期时间类
+ * @brief DateTime 类：结合日期和时间的完整日期时间处理类
  *
- * 基于 std::chrono 实现的日期时间类，提供类型安全的日期时间操作
+ * 该类提供了完整的日期时间操作功能，包括：
+ * - 日期时间的创建、解析和格式化
+ * - 时区处理（UTC/本地时间）
+ * - 日期时间的算术运算
+ * - Unix 时间戳转换
+ * - 与 Qt QDateTime 的互转换（可选）
  */
 class DateTime {
   public:
@@ -51,10 +57,13 @@ class DateTime {
     DateTime(const Date &date, const Time &time = Time{}) noexcept;
     DateTime(const Date &date, uint8_t hour = 0, uint8_t minute = 0, uint8_t second = 0,
              uint16_t millisecond = 0) noexcept;
-    DateTime(int year, uint8_t month, uint8_t day, const Time &time) noexcept;
-    DateTime(int year, uint8_t month, uint8_t day, uint8_t hour = 0, uint8_t minute = 0, uint8_t second = 0,
+    DateTime(int32_t year, uint8_t month, uint8_t day, const Time &time) noexcept;
+    DateTime(int32_t year, uint8_t month, uint8_t day, uint8_t hour = 0, uint8_t minute = 0, uint8_t second = 0,
              uint16_t millisecond = 0) noexcept;
     DateTime(const std::string &dateTimeStr); // 从字符串构造
+#ifdef QT_CORE_LIB
+    DateTime(const QDateTime &qdatetime) noexcept;
+#endif
 
     // 静态工厂方法
     static DateTime now(TimeZone tz = TimeZone::Local) noexcept;
@@ -64,6 +73,9 @@ class DateTime {
     static DateTime fromISOString(std::string_view str) noexcept;
     static DateTime fromUnixTimestamp(int64_t timestamp) noexcept;
     static DateTime fromUnixTimestampMs(int64_t timestampMs) noexcept;
+#ifdef QT_CORE_LIB
+    static DateTime fromQDateTime(const QDateTime &qdatetime) noexcept;
+#endif
 
     // 访问器 - 日期部分
     Date date() const noexcept;
@@ -101,6 +113,9 @@ class DateTime {
     std::string toISOString() const;
     std::string toDateString() const;
     std::string toTimeString() const;
+#ifdef QT_CORE_LIB
+    QDateTime toQDateTime() const noexcept;
+#endif
 
     // 转换
     time_point toTimePoint() const noexcept;
@@ -111,13 +126,12 @@ class DateTime {
     DateTime &operator=(const DateTime &other) = default;
 
     // 比较运算符
-    auto operator<=>(const DateTime &other) const noexcept = default;
-    bool operator==(const DateTime &other) const noexcept = default;
-    bool operator!=(const DateTime &other) const;
-    bool operator<(const DateTime &other) const;
-    bool operator<=(const DateTime &other) const;
-    bool operator>(const DateTime &other) const;
-    bool operator>=(const DateTime &other) const;
+    bool operator==(const DateTime &other) const noexcept;
+    bool operator!=(const DateTime &other) const noexcept;
+    bool operator<(const DateTime &other) const noexcept;
+    bool operator<=(const DateTime &other) const noexcept;
+    bool operator>(const DateTime &other) const noexcept;
+    bool operator>=(const DateTime &other) const noexcept;
 
     // 算术运算符
     DateTime &operator+=(const milliseconds &ms) noexcept;
@@ -181,7 +195,6 @@ class DateTime {
 };
 
 } // namespace my
-
 // std::format 支持
 template <> struct std::formatter<my::DateTime> : std::formatter<std::string> {
     auto format(const my::DateTime &dt, std::format_context &ctx) const {
