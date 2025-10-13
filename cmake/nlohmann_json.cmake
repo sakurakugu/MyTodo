@@ -30,4 +30,9 @@ function(add_nlohmann_json)
     set(JSON_Install OFF CACHE INTERNAL "")
     
     FetchContent_MakeAvailable(nlohmann_json) # 确保库已被获取并构建
+
+    # 定义编译时宏，方便别的模块判断是否启用该库
+    target_compile_definitions(nlohmann_json INTERFACE
+        NLOHMANN_JSON_ENABLED
+    )
 endfunction()

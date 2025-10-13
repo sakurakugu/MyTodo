@@ -39,4 +39,9 @@ function(add_stduuid)
         # 启用系统生成器
         target_compile_definitions(stduuid::stduuid INTERFACE UUID_SYSTEM_GENERATOR)
     endif()
+
+    # 定义编译时宏，方便别的模块判断是否启用该库
+    target_compile_definitions(stduuid::stduuid INTERFACE
+        STDUUID_ENABLED
+    )
 endfunction()

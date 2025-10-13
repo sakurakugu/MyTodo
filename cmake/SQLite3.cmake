@@ -181,6 +181,11 @@ function(add_sqlite3)
             SQLITE_DEFAULT_FOREIGN_KEYS=1    # 默认启用外键约束
     )
 
+    # 定义编译时宏，方便别的模块判断是否启用该库
+    target_compile_definitions(sqlite3 INTERFACE
+        SQLITE_ENABLED
+    )
+
     if(SQLITE3_ENABLE_JSON1)
         target_compile_definitions(sqlite3 PRIVATE SQLITE_ENABLE_JSON1) # 启用 JSON1 扩展
     endif()

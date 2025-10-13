@@ -20,6 +20,14 @@
 #include <QUuid>
 #endif
 
+#ifdef STDUUID_ENABLED
+#include <uuid.h>
+#endif
+
+#ifdef MY_DATETIME_ENABLED
+#include "datetime.h"
+#endif
+
 /**
  * @brief SQL值类型定义
  * 支持多种数据类型的SQL值，用于参数绑定和结果获取
@@ -40,6 +48,16 @@ using SqlValue = std::variant< //
     QString,  // Qt字符串
     QUuid,    // Qt UUID
     QDateTime // Qt日期时间
+#endif
+#ifdef STDUUID_ENABLED
+    ,
+    uuids::uuid // UUID
+#endif
+#ifdef MY_DATETIME_ENABLED
+    ,
+    my::DateTime, // 日期时间
+    my::Date,     // 日期
+    my::Time     // 时间
 #endif
     >;
 
@@ -143,6 +161,29 @@ template <typename T> T sqlValueCast(const SqlValue &value) {
             } else if constexpr (std::is_same_v<V, std::string> && std::is_same_v<T, QDateTime>) {
                 return QDateTime::fromString(QString::fromStdString(v), Qt::ISODateWithMs);
 #endif
+#ifdef STDUUID_ENABLED
+                // ---- STDUUID 类型互转 ----
+            } else if constexpr (std::is_same_v<V, uuids::uuid> && std::is_same_v<T, std::string>) {
+                return uuids::to_string(v);
+            } else if constexpr (std::is_same_v<V, std::string> && std::is_same_v<T, uuids::uuid>) {
+                auto uuid_opt = uuids::uuid::from_string(v);
+                return uuid_opt.value_or(uuids::uuid{});
+#endif
+#ifdef MY_DATETIME_ENABLED
+                // ---- MY_DATETIME 类型互转 ----
+            } else if constexpr (std::is_same_v<V, my::DateTime> && std::is_same_v<T, std::string>) {
+                return v.toISOString();
+            } else if constexpr (std::is_same_v<V, std::string> && std::is_same_v<T, my::DateTime>) {
+                return my::DateTime::fromString(v);
+            } else if constexpr (std::is_same_v<V, my::Date> && std::is_same_v<T, std::string>) {
+                return v.toISOString();
+            } else if constexpr (std::is_same_v<V, std::string> && std::is_same_v<T, my::Date>) {
+                return my::Date::fromString(v);
+            } else if constexpr (std::is_same_v<V, my::Time> && std::is_same_v<T, std::string>) {
+                return v.toISOString();
+            } else if constexpr (std::is_same_v<V, std::string> && std::is_same_v<T, my::Time>) {
+                return my::Time::fromString(v);
+#endif
             } else {
                 throw std::runtime_error("sqlValueCast: 不兼容的类型转换");
             }
@@ -174,6 +215,18 @@ inline std::string sqlValueToString(const SqlValue &value) {
                 return v.toString(QUuid::WithoutBraces).toStdString();
             } else if constexpr (std::is_same_v<V, QDateTime>) {
                 return v.toString(Qt::ISODateWithMs).toStdString();
+#endif
+#ifdef STDUUID_ENABLED
+            } else if constexpr (std::is_same_v<V, uuids::uuid>) {
+                return uuids::to_string(v);
+#endif
+#ifdef MY_DATETIME_ENABLED
+            } else if constexpr (std::is_same_v<V, my::DateTime>) {
+                return v.toISOString();
+            } else if constexpr (std::is_same_v<V, my::Date>) {
+                return v.toISOString();
+            } else if constexpr (std::is_same_v<V, my::Time>) {
+                return v.toISOString();
 #endif
             } else {
                 return "<不支持的类型>";
@@ -211,6 +264,18 @@ template <typename T> SqlValue sqlValueFrom(const T &v) {
     } else if constexpr (std::is_same_v<T, QUuid>) {
         return v;
     } else if constexpr (std::is_same_v<T, QDateTime>) {
+        return v;
+#endif
+#ifdef STDUUID_ENABLED
+    } else if constexpr (std::is_same_v<T, uuids::uuid>) {
+        return v;
+#endif
+#ifdef MY_DATETIME_ENABLED
+    } else if constexpr (std::is_same_v<T, my::DateTime>) {
+        return v;
+    } else if constexpr (std::is_same_v<T, my::Date>) {
+        return v;
+    } else if constexpr (std::is_same_v<T, my::Time>) {
         return v;
 #endif
     } else if constexpr (std::is_integral_v<T>) {

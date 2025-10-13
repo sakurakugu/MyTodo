@@ -29,6 +29,8 @@ target_link_libraries(my_database
         Qt6::Core
         SQLite::SQLite3
         my_logger
+        my_datetime
+        stduuid::stduuid
 )
 
 # 定义编译时宏，方便别的模块判断是否启用该库
