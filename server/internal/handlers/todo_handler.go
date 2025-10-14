@@ -463,6 +463,15 @@ func (th *TodoHandler) handleBatchSync(w http.ResponseWriter, userUUID string, r
 			})
 			continue
 		}
+		// 验证uuid是否全是0
+		if strings.TrimSpace(syncItem.UUID) == "00000000-0000-0000-0000-000000000000" {
+			errors++
+			errorDetails = append(errorDetails, map[string]interface{}{
+				"index": i, "error": "uuid 不能全是0", "code": "INVALID_UUID", "uuid": syncItem.UUID,
+			})
+			continue
+		}
+
 		// 验证用户权限
 		if syncItem.UserUUID != userUUID {
 			errors++
