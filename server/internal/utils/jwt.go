@@ -86,6 +86,29 @@ func (j *JWTHelper) ValidateToken(tokenString string) (*JWTClaims, error) {
 	return nil, fmt.Errorf("无效的令牌")
 }
 
+// GetTokenIssuedTime 获取token的签发时间（不验证token有效性）
+func (j *JWTHelper) GetTokenIssuedTime(tokenString string) (time.Time, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("意外的签名方式: %v", token.Header["alg"])
+		}
+		return j.secret, nil
+	}, jwt.WithoutClaimsValidation())
+
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	if claims, ok := token.Claims.(*JWTClaims); ok {
+		if claims.IssuedAt != nil {
+			return claims.IssuedAt.Time, nil
+		}
+		return time.Time{}, fmt.Errorf("令牌中没有签发时间")
+	}
+
+	return time.Time{}, fmt.Errorf("无法解析令牌声明")
+}
+
 // HashPassword 哈希密码
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

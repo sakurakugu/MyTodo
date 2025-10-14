@@ -215,9 +215,44 @@ func (ah *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 检查是否需要生成新的刷新令牌
+	// 如果距离上次刷新 ≥ 7 天，则签发新的刷新令牌
+	var newRefreshToken string
+	refreshTokenIssuedTime, err := ah.jwtHelper.GetTokenIssuedTime(req.RefreshToken)
+	if err != nil {
+		// 如果无法获取签发时间，为了安全起见，生成新的刷新令牌
+		newRefreshToken, err = ah.jwtHelper.GenerateToken(
+			user.ID, user.UUID, user.Username, user.Email,
+			time.Duration(config.GlobalConfig.Security.RefreshTimeout)*time.Second,
+		)
+		if err != nil {
+			ah.response.ServerError(w, "生成刷新令牌失败")
+			return
+		}
+	} else {
+		// 计算距离上次签发的时间
+		timeSinceIssued := time.Since(refreshTokenIssuedTime)
+		sevenDays := 7 * 24 * time.Hour
+
+		if timeSinceIssued >= sevenDays {
+			// 距离上次刷新 ≥ 7 天，生成新的刷新令牌
+			newRefreshToken, err = ah.jwtHelper.GenerateToken(
+				user.ID, user.UUID, user.Username, user.Email,
+				time.Duration(config.GlobalConfig.Security.RefreshTimeout)*time.Second,
+			)
+			if err != nil {
+				ah.response.ServerError(w, "生成刷新令牌失败")
+				return
+			}
+		} else {
+			// 距离上次刷新 < 7 天，保持原有的刷新令牌
+			newRefreshToken = req.RefreshToken
+		}
+	}
+
 	tokenResponse := models.TokenResponse{
 		AccessToken:  accessToken,
-		RefreshToken: req.RefreshToken, // 保持原有的刷新令牌
+		RefreshToken: newRefreshToken,
 		ExpiresIn:    config.GlobalConfig.Security.SessionTimeout,
 		TokenType:    "Bearer",
 	}
