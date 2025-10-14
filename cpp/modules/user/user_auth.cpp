@@ -80,7 +80,7 @@ void UserAuth::加载数据() {
             }
         }
     } else {
-        qWarning() << "查询用户凭据失败:" << query->lastErrorQt();
+        logWarning() << "查询用户凭据失败:" << query->lastErrorQt();
     }
 
     刷新访问令牌(); // 使用刷新令牌获取新的访问令牌
@@ -180,7 +180,7 @@ void UserAuth::刷新访问令牌() {
     }
 
     if (m_refreshToken.empty()) {
-        qWarning() << "无法刷新令牌：刷新令牌为空";
+        logWarning() << "无法刷新令牌：刷新令牌为空";
         emit tokenRefreshFailed("刷新令牌不存在");
         return;
     }
@@ -232,26 +232,26 @@ void UserAuth::onNetworkRequestFailed(Network::RequestType type, Network::Error 
 
     switch (type) {
     case Network::RequestType::Login:
-        qWarning() << message;
+        logWarning() << message;
         emit loginFailed(message.c_str());
         break;
     case Network::RequestType::RefreshToken:
         m_isRefreshing = false;
-        qWarning() << "令牌刷新失败:" << message << "错误类型:" << static_cast<int>(error);
+        logWarning() << "令牌刷新失败:" << message << "错误类型:" << static_cast<int>(error);
         emit tokenRefreshFailed(message.c_str());
 
         // 根据错误类型进行不同处理
         if (error == Network::Error::AuthenticationError) {
-            qWarning() << "刷新令牌无效或已过期，清理凭据并要求重新登录";
+            logWarning() << "刷新令牌无效或已过期，清理凭据并要求重新登录";
             清除凭据();
             emit loginRequired();
         } else {
-            qWarning() << "令牌刷新网络错误，将在下次同步时重试";
+            logWarning() << "令牌刷新网络错误，将在下次同步时重试";
             // 网络错误时不清理凭据，保留用户状态
         }
         break;
     case Network::RequestType::Logout:
-        qWarning() << "注销失败:" << message;
+        logWarning() << "注销失败:" << message;
         // 即使注销失败，也清除本地凭据
         清除凭据();
         emit logoutSuccessful();
@@ -259,7 +259,7 @@ void UserAuth::onNetworkRequestFailed(Network::RequestType type, Network::Error 
     case Network::RequestType::FetchTodos:
         // 如果是token验证请求失败，说明token无效
         if (error == Network::Error::AuthenticationError) {
-            qWarning() << "存储的访问令牌无效，尝试静默刷新";
+            logWarning() << "存储的访问令牌无效，尝试静默刷新";
             if (!m_isRefreshing && !m_refreshToken.empty()) {
                 刷新访问令牌();
             } else {
@@ -272,7 +272,7 @@ void UserAuth::onNetworkRequestFailed(Network::RequestType type, Network::Error 
     default:
         // 其他请求类型的错误处理
         if (error == Network::Error::AuthenticationError) {
-            qWarning() << "认证错误，尝试静默刷新:" << message;
+            logWarning() << "认证错误，尝试静默刷新:" << message;
             if (!m_isRefreshing && !m_refreshToken.empty()) {
                 刷新访问令牌();
             } else {
@@ -284,7 +284,7 @@ void UserAuth::onNetworkRequestFailed(Network::RequestType type, Network::Error 
 }
 
 void UserAuth::onAuthTokenExpired() {
-    qWarning() << "认证令牌已过期或无效，当前时间:" << QDateTime::currentSecsSinceEpoch()
+    logWarning() << "认证令牌已过期或无效，当前时间:" << QDateTime::currentSecsSinceEpoch()
                << "令牌过期时间:" << m_tokenExpiryTime;
 
     停止令牌过期计时器();
@@ -295,13 +295,13 @@ void UserAuth::onAuthTokenExpired() {
         刷新访问令牌();
     } else {
         if (m_refreshToken.empty()) {
-            qWarning() << "刷新令牌为空，无法自动刷新，需要重新登录";
+            logWarning() << "刷新令牌为空，无法自动刷新，需要重新登录";
         } else if (m_isRefreshing) {
-            qWarning() << "令牌刷新已在进行中，等待刷新结果";
+            logWarning() << "令牌刷新已在进行中，等待刷新结果";
             return; // 避免重复清理
         }
 
-        qWarning() << "无法自动刷新令牌，清理用户状态并要求重新登录";
+        logWarning() << "无法自动刷新令牌，清理用户状态并要求重新登录";
         清除凭据();
         emit loginRequired();
     }
@@ -327,7 +327,7 @@ void UserAuth::处理登录成功(const nlohmann::json &response) {
 
     // email 允许为空
     if (!userObj.contains("email")) {
-        qWarning() << "登录响应中缺少 email 字段，使用空字符串";
+        logWarning() << "登录响应中缺少 email 字段，使用空字符串";
         m_email = "";
     } else {
         m_email = userObj["email"].get<std::string>();
@@ -367,7 +367,7 @@ void UserAuth::处理令牌刷新成功(const nlohmann::json &response) {
 
     // 验证响应中包含必要的字段
     if (!response.contains("access_token")) {
-        qWarning() << "令牌刷新响应中缺少access_token字段";
+        logWarning() << "令牌刷新响应中缺少access_token字段";
         emit tokenRefreshFailed("服务器响应缺少访问令牌");
         return;
     }
@@ -425,7 +425,7 @@ void UserAuth::保存凭据() {
         );
 
         if (!query->exec()) {
-            qWarning() << "保存用户凭据到数据库失败:" << query->lastErrorQt();
+            logWarning() << "保存用户凭据到数据库失败:" << query->lastErrorQt();
         }
 
         emit usernameChanged();
@@ -454,7 +454,7 @@ void UserAuth::清除凭据() {
     // 清除数据库中的凭据
     auto query = m_database.createQuery();
     if (!query->exec("DELETE FROM users")) {
-        qWarning() << "清除数据库中的用户凭据失败:" << query->lastErrorQt();
+        logWarning() << "清除数据库中的用户凭据失败:" << query->lastErrorQt();
     }
 
     // 清除网络管理器的认证令牌
@@ -484,7 +484,7 @@ void UserAuth::onTokenExpiryCheck() {
             qDebug() << "到达访问令牌预刷新窗口，执行刷新";
             刷新访问令牌();
         } else if (m_tokenExpiryTime <= now) {
-            qWarning() << "访问令牌已过期，触发过期处理";
+            logWarning() << "访问令牌已过期，触发过期处理";
             emit authTokenExpired();
         } else {
             // 未到窗口（极少出现，除非外部直接调用 start 了一个不匹配的计时），重新调度
@@ -510,7 +510,7 @@ void UserAuth::开启令牌过期计时器() {
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     int64_t timeUntilExpiry = m_tokenExpiryTime - now;
     if (timeUntilExpiry <= 0) {
-        qWarning() << "访问令牌已过期或时间异常，立即尝试刷新";
+        logWarning() << "访问令牌已过期或时间异常，立即尝试刷新";
         onTokenExpiryCheck();
         return;
     }
@@ -581,14 +581,14 @@ bool UserAuth::创建用户表() {
 bool UserAuth::exportToJson(nlohmann::json &output) {
     auto query = m_database.createQuery();
     if (!query->exec("SELECT uuid, username, email FROM users")) {
-        qWarning() << "查询用户数据失败:" << query->lastErrorQt();
+        logWarning() << "查询用户数据失败:" << query->lastErrorQt();
         return false;
     }
 
     SqlMapResultSet resultMap = query->fetchAllMap();
 
     if (resultMap.empty()) {
-        qWarning() << "查询用户数据失败:" << query->lastErrorQt();
+        logWarning() << "查询用户数据失败:" << query->lastErrorQt();
         return false;
     }
 
@@ -618,7 +618,7 @@ bool UserAuth::importFromJson(const nlohmann::json &input, bool replaceAll) {
     if (replaceAll) {
         auto query = m_database.createQuery();
         if (!query->exec("DELETE FROM users")) {
-            qWarning() << "清空用户表失败:" << query->lastErrorQt();
+            logWarning() << "清空用户表失败:" << query->lastErrorQt();
             return false;
         }
     }
@@ -633,7 +633,7 @@ bool UserAuth::importFromJson(const nlohmann::json &input, bool replaceAll) {
                       userObj["email"].get<std::string>());
 
     if (!query->exec(insertQuery)) {
-        qWarning() << "导入用户数据失败:" << query->lastErrorQt();
+        logWarning() << "导入用户数据失败:" << query->lastErrorQt();
         return false;
     }
 

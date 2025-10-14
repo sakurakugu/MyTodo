@@ -11,6 +11,7 @@
  */
 #include "network_proxy.h"
 #include "config.h"
+#include "log_stream.h"
 
 /**
  * @brief 构造函数
@@ -60,7 +61,7 @@ void NetworkProxy::applyProxyToManager(QNetworkAccessManager *manager) noexcept 
     try {
         QNetworkProxy proxy = createQNetworkProxy();
         manager->setProxy(proxy);
-        qInfo() << "代理配置为" << getProxyDescription();
+        logInfo() << "代理配置为" << getProxyDescription();
     } catch (const std::exception &e) {
         qWarning() << "应用代理配置时发生异常" << ": " << e.what();
     } catch (...) {

@@ -221,15 +221,15 @@ void TodoSyncServer::推送批次到服务器(const std::vector<TodoItem *> &bat
         // 存储当前批次的未同步项目引用，用于成功后标记为已同步
         m_pendingUnsyncedItems = batch;
 
-        qInfo() << "项目数据:" << QString::fromStdString(jsonArray.dump());
+        logInfo() << "项目数据:" << jsonArray.dump(4);
 
         m_networkRequest.sendRequest(Network::RequestType::PushTodos, config);
     } catch (const std::exception &e) {
-        qCritical() << "推送更改时发生异常:" << e.what();
+        logCritical() << "推送更改时发生异常:" << e.what();
         setIsSyncing(false);
         emit syncCompleted(UnknownError, QString("推送更改失败: %1").arg(e.what()));
     } catch (...) {
-        qCritical() << "推送更改时发生未知异常";
+        logCritical() << "推送更改时发生未知异常";
         setIsSyncing(false);
         emit syncCompleted(UnknownError, "推送更改失败：未知错误");
     }
@@ -288,120 +288,122 @@ void TodoSyncServer::处理获取数据成功(const nlohmann::json &response) {
 }
 
 void TodoSyncServer::处理推送更改成功(const nlohmann::json &response) {
-    qDebug() << "推送更改成功";
+    logDebug() << "推送更改成功";
+    try {
+        // 验证服务器响应
+        nlohmann::json summary = response["summary"];
+        int created = summary["created"].get<int>();
+        int updated = summary["updated"].get<int>();
+        nlohmann::json conflictArray = summary["conflicts"];
+        nlohmann::json errorArray = summary["errors"];
+        int conflicts = conflictArray.size();
+        int errors = errorArray.size();
 
-    // 验证服务器响应
-    nlohmann::json summary = response["summary"];
-    int created = summary["created"].get<int>();
-    int updated = summary["updated"].get<int>();
-    nlohmann::json conflictArray = summary["conflicts"];
-    nlohmann::json errorArray = summary["errors"];
-    int conflicts = conflictArray.size();
-    int errors = errorArray.size();
+        logInfo() << std::format("服务器处理结果: 创建={}, 更新={}, 冲突={}, 错误={}", created, updated, conflicts,
+                                 errors);
 
-    qInfo() << QString("服务器处理结果: 创建=%1, 更新=%2, 冲突=%3, 错误=%4")
-                   .arg(created)
-                   .arg(updated)
-                   .arg(conflicts)
-                   .arg(errors); // utf-8
-
-    // 记录冲突详情（如果有）
-    if (conflicts > 0) {
-        int idx = 0;
-        for (const auto &cVal : conflictArray) {
-            nlohmann::json cObj = cVal;
-            qWarning() << std::format("冲突 {}: index={}, reason={}, server_version={}", ++idx,
-                                      cObj["index"].get<int>(), cObj["reason"].get<std::string>(),
-                                      cObj["server_item"].dump());
+        // 记录冲突详情（如果有）
+        if (conflicts > 0) {
+            int idx = 0;
+            for (const auto &cVal : conflictArray) {
+                nlohmann::json cObj = cVal;
+                logWarning() << std::format("冲突 {}: index={}, reason={}, server_version={}", ++idx,
+                                          cObj["index"].get<int>(), cObj["reason"].get<std::string>(),
+                                          cObj["server_item"].dump());
+            }
         }
-    }
 
-    // 如果有错误，记录详细信息，并处理重复UUID错误
-    if (errors > 0) {
-        int idx = 0;
-        for (const auto &errorValue : errorArray) {
-            nlohmann::json error = errorValue;
-            std::string errorMsg = error["error"].get<std::string>();
-            std::string errorCode = error["code"].get<std::string>();
-            int index = error["index"].get<int>();
+        // 如果有错误，记录详细信息，并处理重复UUID错误
+        if (errors > 0) {
+            int idx = 0;
+            for (const auto &errorValue : errorArray) {
+                nlohmann::json error = errorValue;
+                std::string errorMsg = error["error"].get<std::string>();
+                std::string errorCode = "";
+                if (error["code"].is_string()) {
+                    errorCode = error["code"].get<std::string>();
+                }
+                int index = error["index"].get<int>();
 
-            qWarning() << std::format("错误 {}: 项目序号={}, 错误码={}, 描述={}", ++idx, index, errorCode, errorMsg);
+                logWarning() << std::format("错误 {}: 项目序号={}, 错误码={}, 描述={}", ++idx, index, errorCode,
+                                          errorMsg);
 
-            // 检查是否为重复UUID错误（MySQL错误1062）
-            if (errorCode == "CREATE_FAILED" && errorMsg.contains("Duplicate entry")) {
+                // 检查是否为重复UUID错误（MySQL错误1062）
+                if (errorCode == "CREATE_FAILED" && errorMsg.contains("Duplicate entry")) {
 
-                // 找到对应的待同步项目并将其标记为更新模式
-                if (index >= 0 && index < static_cast<int>(m_pendingUnsyncedItems.size())) {
-                    TodoItem *item = m_pendingUnsyncedItems[index];
-                    if (item) {
-                        qInfo() << std::format("检测到重复UUID错误，将项目 {} 转换为更新模式",
-                                               uuids::to_string(item->uuid()));
-                        // 将synced设置为2表示需要更新而不是创建
-                        item->forceSetSynced(2);
-                        // 到时候重新上传更新
+                    // 找到对应的待同步项目并将其标记为更新模式
+                    if (index >= 0 && index < static_cast<int>(m_pendingUnsyncedItems.size())) {
+                        TodoItem *item = m_pendingUnsyncedItems[index];
+                        if (item) {
+                            qInfo() << std::format("检测到重复UUID错误，将项目 {} 转换为更新模式",
+                                                   uuids::to_string(item->uuid()));
+                            // 将synced设置为2表示需要更新而不是创建
+                            item->forceSetSynced(2);
+                            // 到时候重新上传更新
+                        }
                     }
                 }
             }
         }
-    }
 
-    bool shouldMarkAsSynced = true;
-    if (conflicts > 0 || errors > 0) {
-        shouldMarkAsSynced = false;
-        QString errorMsg = QString("由于存在%1%2%3%4，不标记项目为已同步")
-                               .arg(conflicts > 0 ? "冲突" : "")
-                               .arg((conflicts > 0 && errors > 0) ? "和" : "")
-                               .arg(errors > 0 ? "错误" : "")
-                               .arg(conflicts + errors > 0 ? "，" : "");
-        qWarning() << errorMsg;
-    }
-
-    // 只有在验证通过时才标记当前批次的项目为已同步
-    if (shouldMarkAsSynced) {
-        for (TodoItem *item : m_pendingUnsyncedItems) {
-            item->setSynced(0);
-        }
-        // 发出本地更改已上传信号
-        emit localChangesUploaded(m_pendingUnsyncedItems);
-    }
-
-    // 检查是否还有更多批次需要推送
-    if (!m_allUnsyncedItems.empty() && m_currentBatchIndex < m_totalBatches - 1) {
-        // 还有更多批次需要推送
-        m_currentBatchIndex++;
-
-        // 更新进度
-        int progress = 75 + (20 * m_currentBatchIndex / m_totalBatches);
-        emit syncProgress(progress, QString("正在推送第 %1/%2 批...").arg(m_currentBatchIndex + 1).arg(m_totalBatches));
-
-        // 清空当前批次的待同步项目列表
-        m_pendingUnsyncedItems.clear();
-
-        推送下一个批次();
-    } else {
-        // 所有批次都已完成或这是单批次推送
-        emit syncProgress(100, "更改推送完成");
-
-        // 清空待同步项目列表
-        m_pendingUnsyncedItems.clear();
-
-        if (!m_allUnsyncedItems.empty()) {
-            // 分批推送完成
-            qDebug() << "所有批次推送完成，共" << m_allUnsyncedItems.size() << "个项目";
-            m_allUnsyncedItems.clear();
-            m_currentBatchIndex = 0;
-            m_totalBatches = 0;
+        bool shouldMarkAsSynced = true;
+        if (conflicts > 0 || errors > 0) {
+            shouldMarkAsSynced = false;
+            std::string errorMsg = std::format("由于存在{}{}{}{}，不标记项目为已同步", conflicts > 0 ? "冲突" : "",
+                                               (conflicts > 0 && errors > 0) ? "和" : "", errors > 0 ? "错误" : "",
+                                               conflicts + errors > 0 ? "，" : "");
+            logWarning() << errorMsg;
         }
 
-        if (m_currentSyncDirection == Bidirectional) {
-            qDebug() << "推送阶段完成，继续执行拉取阶段";
-            // 继续拉取（此时保持 m_isSyncing=true 防止外部再触发）
-            拉取数据();
-            return;
+        // 只有在验证通过时才标记当前批次的项目为已同步
+        if (shouldMarkAsSynced) {
+            for (TodoItem *item : m_pendingUnsyncedItems) {
+                item->setSynced(0);
+            }
+            // 发出本地更改已上传信号
+            emit localChangesUploaded(m_pendingUnsyncedItems);
+        }
+
+        // 检查是否还有更多批次需要推送
+        if (!m_allUnsyncedItems.empty() && m_currentBatchIndex < m_totalBatches - 1) {
+            // 还有更多批次需要推送
+            m_currentBatchIndex++;
+
+            // 更新进度
+            int progress = 75 + (20 * m_currentBatchIndex / m_totalBatches);
+            emit syncProgress(progress,
+                              QString("正在推送第 %1/%2 批...").arg(m_currentBatchIndex + 1).arg(m_totalBatches));
+            // 清空当前批次的待同步项目列表
+            m_pendingUnsyncedItems.clear();
+
+            推送下一个批次();
         } else {
-            setIsSyncing(false);
-            更新最后同步时间();
-            emit syncCompleted(Success, "数据更改推送完成");
+            // 所有批次都已完成或这是单批次推送
+            emit syncProgress(100, "更改推送完成");
+
+            // 清空待同步项目列表
+            m_pendingUnsyncedItems.clear();
+
+            if (!m_allUnsyncedItems.empty()) {
+                // 分批推送完成
+                qDebug() << "所有批次推送完成，共" << m_allUnsyncedItems.size() << "个项目";
+                m_allUnsyncedItems.clear();
+                m_currentBatchIndex = 0;
+                m_totalBatches = 0;
+            }
+
+            if (m_currentSyncDirection == Bidirectional) {
+                qDebug() << "推送阶段完成，继续执行拉取阶段";
+                // 继续拉取（此时保持 m_isSyncing=true 防止外部再触发）
+                拉取数据();
+                return;
+            } else {
+                setIsSyncing(false);
+                更新最后同步时间();
+                emit syncCompleted(Success, "数据更改推送完成");
+            }
         }
+    } catch (const std::exception &e) {
+        logCritical() << "处理推送更改成功时发生异常:" << e.what();
     }
 }

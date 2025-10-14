@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
     Logger::GetInstance().setLogLevel(LogLevel::Debug); // 默认 Info，调试模式下设为 Debug
 #endif
 
-    qInfo() << std::format("{}/v{}", APP_NAME, APP_VERSION_STRING) << "应用程序启动";
+    logInfo() << std::format("{}/v{}", APP_NAME, APP_VERSION_STRING) << "应用程序启动";
 
     // 设置应用样式为Material
     qputenv("QT_QUICK_CONTROLS_STYLE", "Material");

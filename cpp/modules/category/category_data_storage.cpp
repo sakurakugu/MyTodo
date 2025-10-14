@@ -14,6 +14,8 @@
 #include "category_item.h"
 #include "config.h"
 #include "utility.h"
+#include "log_stream.h"
+
 
 CategoryDataStorage::CategoryDataStorage(QObject *parent)
     : BaseDataStorage("categories", parent) // 调用基类构造函数
@@ -383,7 +385,7 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const n
             }
             const auto &obj = value.get<nlohmann::json::object_t>();
             if (!obj.contains("name") || !obj.contains("user_uuid")) {
-                qWarning() << "跳过无效类别（缺字段）";
+                logWarning() << "跳过无效类别（缺字段）";
                 ++skipCount;
                 continue;
             }
@@ -391,7 +393,7 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const n
             std::string name = obj.at("name").get<std::string>();
             uuids::uuid userUuid = uuids::uuid::from_string(obj.at("user_uuid").get<std::string>()).value();
             if (userUuid.is_nil()) {
-                qWarning() << "跳过无效类别（user_uuid 无效）";
+                logWarning() << "跳过无效类别（user_uuid 无效）";
                 ++skipCount;
                 continue;
             }
@@ -401,11 +403,11 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const n
             if (uuid.is_nil())
                 uuid = uuids::uuid_system_generator{}();
 
-            my::DateTime createdAt = obj.contains("created_at") ? my::DateTime(obj.at("created_at").get<int64_t>()) : now;
+            my::DateTime createdAt = obj.contains("created_at") ? my::DateTime(obj.at("created_at").get<my::DateTime>()) : now;
             if (!createdAt.isValid())
                 createdAt = now;
             my::DateTime updatedAt =
-                obj.contains("updated_at") ? my::DateTime(obj.at("updated_at").get<int64_t>()) : createdAt;
+                obj.contains("updated_at") ? my::DateTime(obj.at("updated_at").get<my::DateTime>()) : createdAt;
             if (!updatedAt.isValid())
                 updatedAt = createdAt;
 
@@ -472,11 +474,11 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const n
             m_database.rollbackTransaction();
         }
     } catch (const std::exception &e) {
-        qCritical() << "导入类别时发生异常:" << e.what();
+        logCritical() << "导入类别时发生异常:" << e.what();
         m_database.rollbackTransaction();
         success = false;
     } catch (...) {
-        qCritical() << "导入类别时发生未知异常";
+        logCritical() << "导入类别时发生未知异常";
         m_database.rollbackTransaction();
         success = false;
     }

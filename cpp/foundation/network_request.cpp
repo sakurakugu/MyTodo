@@ -142,7 +142,7 @@ void NetworkRequest::sendRequest(Network::RequestType type, const RequestConfig 
                                  const std::optional<CustomResponseHandler> &customHandler) {
     // 如果提供了自定义处理器，检查请求类型是否合法
     if (customHandler.has_value() && type < Network::RequestType::Other) {
-        qWarning() << "自定义响应处理器仅适用于自定义请求类型（大于等于Network::RequestType::Other）";
+        logWarning() << "自定义响应处理器仅适用于自定义请求类型（大于等于Network::RequestType::Other）";
         emit requestFailed(type, Network::Error::UnknownError, "自定义响应处理器仅适用于自定义请求类型");
         return;
     }
@@ -225,8 +225,8 @@ void NetworkRequest::onReplyFinished() {
                 responseData = request.customHandler(responseBytes, httpStatusCode);
                 success = true;
 #ifdef QT_DEBUG
-                qInfo() << "自定义处理器处理请求成功:" << RequestTypeToString(request.type);
-                qInfo() << "响应内容:" << QString::fromStdString(responseData.dump());
+                logInfo() << "自定义处理器处理请求成功:" << RequestTypeToString(request.type);
+                logInfo() << "响应内容:" << QString::fromStdString(responseData.dump());
 #else
                 qDebug() << "自定义处理器处理请求成功:" << RequestTypeToString(request.type);
 #endif
@@ -241,8 +241,8 @@ void NetworkRequest::onReplyFinished() {
                         responseData = fullResponse.contains("data") ? fullResponse["data"] : fullResponse;
                         success = true;
 #ifdef QT_DEBUG
-                        qInfo() << "请求成功:" << NetworkRequest::GetInstance().RequestTypeToString(request.type);
-                        qInfo() << "响应内容:" << QString::fromStdString(responseData.dump());
+                        logInfo() << "请求成功:" << NetworkRequest::GetInstance().RequestTypeToString(request.type);
+                        logInfo() << "响应内容:" <<responseData.dump(4);
 #else
                         qDebug() << "请求成功:" << RequestTypeToString(request.type);
 #endif
@@ -335,11 +335,11 @@ void NetworkRequest::onReplyFinished() {
 // 日志输出（含 HTTP 状态与预览体）
 #ifdef QT_DEBUG
             if (!bodyText.isEmpty())
-                qWarning() << "网络请求失败:" << RequestTypeToString(request.type) << "- HTTP状态码:" << httpStatus
+                logWarning() << "网络请求失败:" << RequestTypeToString(request.type) << "- HTTP状态码:" << httpStatus
                            << "-" << errorMessage << "-" << "错误码:" << serverCode << "响应体预览:" << bodyText;
             else
 #endif
-                qWarning() << "网络请求失败:" << RequestTypeToString(request.type) << "- HTTP状态码:" << httpStatus
+                logWarning() << "网络请求失败:" << RequestTypeToString(request.type) << "- HTTP状态码:" << httpStatus
                            << "-" << errorMessage << "-" << "错误码:" << serverCode;
 
             // 专门的 401 认证处理（沿用原逻辑，但复用已经解析的 JSON 信息）
@@ -361,7 +361,7 @@ void NetworkRequest::onReplyFinished() {
                 // 若服务器明确给出业务错误（如密码错误），不再重试
                 if (serverMessage.empty()) {
                     request.currentRetry++;
-                    qDebug() << "重试请求:" << RequestTypeToString(request.type) << "(" << request.currentRetry << "/"
+                    logDebug() << "重试请求:" << RequestTypeToString(request.type) << "(" << request.currentRetry << "/"
                              << request.config.maxRetries << ")";
                     QTimer::singleShot(1000 * request.currentRetry, [this, requestId]() {
                         if (m_pendingRequests.contains(requestId)) {
@@ -375,10 +375,10 @@ void NetworkRequest::onReplyFinished() {
         }
     } catch (const std::string &error) {
         errorMessage = error;
-        qWarning() << "处理响应时发生错误:" << error;
+        logWarning() << "处理响应时发生错误:" << error;
     } catch (...) {
         errorMessage = "处理响应时发生未知错误";
-        qWarning() << "处理响应时发生未知错误";
+        logWarning() << "处理响应时发生未知错误";
     }
 
     // 完成请求
@@ -407,7 +407,7 @@ void NetworkRequest::onRequestTimeout() {
 
     PendingRequest &request = m_pendingRequests[requestId];
 
-    qWarning() << "请求超时:" << RequestTypeToString(request.type);
+    logWarning() << "请求超时:" << RequestTypeToString(request.type);
 
     // 取消网络请求
     if (request.reply) {
@@ -439,9 +439,9 @@ void NetworkRequest::onSslErrors(const QList<QSslError> &errors) {
         return;
     }
 
-    qWarning() << "SSL错误:";
+    logWarning() << "SSL错误:";
     for (const QSslError &error : errors) {
-        qWarning() << " -" << error.errorString();
+        logWarning() << " -" << error.errorString();
     }
 
     // 忽略所有SSL错误
@@ -451,7 +451,7 @@ void NetworkRequest::onSslErrors(const QList<QSslError> &errors) {
 void NetworkRequest::executeRequest(PendingRequest &request) {
     QNetworkRequest networkRequest = createNetworkRequest(request.config);
 
-    qDebug() << "发送网络请求:" << RequestTypeToString(request.type) << "到" << networkRequest.url().toString();
+    logDebug() << "发送网络请求:" << RequestTypeToString(request.type) << "到" << networkRequest.url().toString();
 
     // 准备请求数据
     QByteArray requestData;
@@ -471,14 +471,14 @@ void NetworkRequest::executeRequest(PendingRequest &request) {
         request.reply = m_networkRequest->put(networkRequest, requestData);
     } else if (method == "PATCH") {
         // 使用sendCustomRequest发送PATCH请求
-        qInfo() << "发送PATCH请求到服务器:" << networkRequest.url().toString();
-        qInfo() << "PATCH请求数据:" << QString::fromUtf8(requestData);
+        logInfo() << "发送PATCH请求到服务器:" << networkRequest.url().toString();
+        logInfo() << "PATCH请求数据:" << QString::fromUtf8(requestData);
         request.reply = m_networkRequest->sendCustomRequest(networkRequest, "PATCH", requestData);
     } else if (method == "DELETE") {
         request.reply = m_networkRequest->deleteResource(networkRequest);
     } else {
         // 默认使用POST（向后兼容）
-        qWarning() << "不支持的HTTP方法:" << method << ", 使用POST代替";
+        logWarning() << "不支持的HTTP方法:" << method << ", 使用POST代替";
         request.reply = m_networkRequest->post(networkRequest, requestData);
     }
 
@@ -600,7 +600,7 @@ void NetworkRequest::addAuthHeader(QNetworkRequest &request) const {
         request.setRawHeader("Authorization", authHeader.c_str());
         // qDebug() << "添加认证头部:" << authHeader.substr(0, 20) + "..."; // 只显示前20个字符
     } else {
-        qWarning() << "认证令牌为空，无法添加认证头部";
+        logWarning() << "认证令牌为空，无法添加认证头部";
     }
 }
 
@@ -656,7 +656,7 @@ std::string NetworkRequest::getErrorMessage(Network::Error error, const std::str
 std::string NetworkRequest::RequestTypeToString(Network::RequestType type) const {
     auto it = Network::RequestTypeNameMap.find(type);
     if (it != Network::RequestTypeNameMap.end()) {
-        return it->second.toStdString();
+        return it->second;
     }
     return "未知请求";
 }

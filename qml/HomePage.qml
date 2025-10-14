@@ -1045,7 +1045,7 @@ Page {
         id: filterMenu
         width: 200
         height: implicitHeight
-        z: 10000  // 确保菜单显示在最上层
+        z: 1000  // 确保菜单显示在最上层
 
         background: MainBackground {}
 
@@ -1127,7 +1127,7 @@ Page {
         id: userMenu
         width: 200
         height: implicitHeight
-        z: 10000  // 确保菜单显示在最上层
+        z: 1000  // 确保菜单显示在最上层
 
         background: MainBackground {}
 

@@ -10,6 +10,7 @@
  */
 
 #include "todo_data_storage.h"
+#include "log_stream.h"
 #include "todo_item.h"
 #include "utility.h"
 
@@ -588,18 +589,18 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const nlohmann:
             std::string description = obj["description"].get<std::string>();
             std::string category = obj["category"].get<std::string>();
             bool important = obj["important"].get<bool>();
-            my::DateTime deadline = my::DateTime::fromISOString(obj["deadline"].get<std::string>());
+            my::DateTime deadline = obj["deadline"].get<my::DateTime>();
             int recurrenceInterval = obj["recurrence_interval"].get<int>();
             int recurrenceCount = obj["recurrence_count"].get<int>();
-            my::Date recurrenceStartDate = my::Date::fromISOString(obj["recurrence_start_date"].get<std::string>());
+            my::Date recurrenceStartDate = obj["recurrence_start_date"].get<my::Date>();
             bool isCompleted = obj["is_completed"].get<bool>();
-            my::DateTime completedAt = my::DateTime::fromISOString(obj["completed_at"].get<std::string>());
+            my::DateTime completedAt = obj["completed_at"].get<my::DateTime>();
             bool isTrashed = obj["is_trashed"].get<bool>();
-            my::DateTime trashedAt = my::DateTime::fromISOString(obj["trashed_at"].get<std::string>());
-            my::DateTime createdAt = my::DateTime::fromISOString(obj["created_at"].get<std::string>());
+            my::DateTime trashedAt = obj["trashed_at"].get<my::DateTime>();
+            my::DateTime createdAt = obj["created_at"].get<my::DateTime>();
             if (!createdAt.isValid())
                 createdAt = my::DateTime::now();
-            my::DateTime updatedAt = my::DateTime::fromISOString(obj["updated_at"].get<std::string>());
+            my::DateTime updatedAt = obj["updated_at"].get<my::DateTime>();
             if (!updatedAt.isValid())
                 updatedAt = createdAt;
 
@@ -760,11 +761,11 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const nlohmann:
             m_database.rollbackTransaction();
         }
     } catch (const std::exception &e) {
-        qCritical() << "导入待办时发生异常:" << e.what();
+        logCritical() << "导入待办时发生异常:" << e.what();
         m_database.rollbackTransaction();
         success = false;
     } catch (...) {
-        qCritical() << "导入待办时发生未知异常";
+        logCritical() << "导入待办时发生未知异常";
         m_database.rollbackTransaction();
         success = false;
     }

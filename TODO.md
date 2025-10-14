@@ -4,8 +4,6 @@
 在代码中添加详细的日志信息，并对齐哪些是 qdebug 哪些是 qinfo 等
 代码里实现了 GET、POST、PUT、PATCH、DELETE，但还少了 HEAD、OPTIONS、TRACE、CONNECT。（network_request.cpp）
 之后添加待办种类本地创建功能
-将 c++中的全局变量 global_state.cpp 中的变量放到 qml 中？
-统一调整 z: z 值
 日期筛选不见了
 logWarning() << dt.toISOString(); 这种实现一键开关
 鼠标放上去显示图标的文字还没实现

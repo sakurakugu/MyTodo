@@ -13,6 +13,8 @@
 
  * @file log_stream.h*/
 
+#pragma once
+
 #include "logger.h"
 #include <source_location>
 #include <sstream>

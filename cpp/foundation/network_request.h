@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include "log_stream.h"
 #include <QNetworkReply>
 #include <QObject>
 #include <QTimer>
@@ -84,7 +85,7 @@ enum Error {
 };
 
 // 请求类型的中文名称映射
-static const std::map<RequestType, QString> RequestTypeNameMap = //
+static const std::map<RequestType, std::string> RequestTypeNameMap = //
     {{Login, "登录请求"},
      {Sync, "同步请求"},
      {FetchTodos, "获取待办事项请求"},
