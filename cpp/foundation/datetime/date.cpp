@@ -63,6 +63,26 @@ Date Date::fromISOString(std::string_view str) noexcept {
     return Date{*ymd};
 }
 
+#ifdef NLOHMANN_JSON_ENABLED
+// 序列化
+void to_json(nlohmann::json &j, const Date &date) {
+    if (date.isValid()) {
+        j = date.toISOString();
+    } else {
+        j = nullptr;
+    }
+}
+
+// 反序列化
+void from_json(const nlohmann::json &j, Date &date) {
+    if (j.is_string()) {
+        date = Date{j.get<std::string>()};
+    } else {
+        date = Date{};
+    }
+}
+#endif
+
 // 访问器
 int32_t Date::year() const noexcept {
     return static_cast<int32_t>(m_ymd.year());

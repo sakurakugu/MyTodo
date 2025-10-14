@@ -284,12 +284,12 @@ bool HolidayManager::保存节假日数据到本地文件(int year, const std::v
     nlohmann::json holidayArray = nlohmann::json::array();
 
     for (const HolidayItem &holiday : holidays) {
-        holidayArray.push_back(holiday.toJson());
+        holidayArray.push_back(holiday);
     }
 
     jsonObject["year"] = year;
     jsonObject["holidays"] = holidayArray;
-    jsonObject["updateTime"] = my::DateTime::now().toISOString();
+    jsonObject["updateTime"] = my::DateTime::now();
 
     std::ofstream file(filePath);
     if (!file.is_open()) {

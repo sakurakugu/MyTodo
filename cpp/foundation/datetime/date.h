@@ -22,6 +22,10 @@
 class QDate;
 #endif
 
+#ifdef NLOHMANN_JSON_ENABLED
+#include <nlohmann/json.hpp>
+#endif
+
 namespace my {
 
 enum DayOfWeek {
@@ -46,6 +50,11 @@ class Date {
     using years = std::chrono::years;
     using year_month_day = std::chrono::year_month_day;
     using sys_days = std::chrono::sys_days;
+
+#ifdef NLOHMANN_JSON_ENABLED
+    friend void to_json(nlohmann::json &j, const Date &date);
+    friend void from_json(const nlohmann::json &j, Date &date);
+#endif
 
     // 构造函数
     Date() = default;

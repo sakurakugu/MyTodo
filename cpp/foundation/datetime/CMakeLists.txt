@@ -27,6 +27,10 @@ target_include_directories(my_datetime PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}    # 允许其它模块用 #include "database.h" 等   
 )
 
+# 如果找到了nlohmann_json，则链接 nlohmann_json::nlohmann_json
+if(TARGET nlohmann_json::nlohmann_json)
+    target_link_libraries(my_datetime PUBLIC nlohmann_json::nlohmann_json)
+endif()
 # 如果找到了 Qt6，则链接 Qt6::Core
 if(Qt6_FOUND)
     target_link_libraries(my_datetime PUBLIC Qt6::Core)

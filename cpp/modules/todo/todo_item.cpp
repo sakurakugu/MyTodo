@@ -82,6 +82,88 @@ TodoItem::TodoItem(int id,                              ///< 待办事项唯一�
       m_synced(synced)                                  ///< 初始化待办事项同步状态
 {}
 
+void to_json(nlohmann::json &j, const TodoItem &item) {
+    j = nlohmann::json{
+        {"id", item.m_id},                                   //
+        {"uuid", uuids::to_string(item.m_uuid)},             //
+        {"userUuid", uuids::to_string(item.m_userUuid)},     //
+        {"title", item.m_title},                             //
+        {"description", item.m_description},                 //
+        {"category", item.m_category},                       //
+        {"important", item.m_important},                     //
+        {"deadline", item.m_deadline},                       //
+        {"recurrenceInterval", item.m_recurrenceInterval},   //
+        {"recurrenceCount", item.m_recurrenceCount},         //
+        {"recurrenceStartDate", item.m_recurrenceStartDate}, //
+        {"isCompleted", item.m_isCompleted},                 //
+        {"completedAt", item.m_completedAt},                 //
+        {"isTrashed", item.m_isTrashed},                     //
+        {"trashedAt", item.m_trashedAt},                     //
+        {"createdAt", item.m_createdAt},                     //
+        {"updatedAt", item.m_updatedAt},                     //
+        {"synced", item.m_synced}                            //
+    };
+}
+
+void from_json(const nlohmann::json &j, TodoItem &item) {
+    // 必需字段
+    if (j.contains("id") && j["id"].is_number_integer()) {
+        item.setId(j["id"].get<int>());
+    }
+    if (j.contains("uuid") && j["uuid"].is_string()) {
+        item.setUuid(uuids::uuid::from_string(j["uuid"].get<std::string>()).value());
+    }
+    if (j.contains("userUuid") && j["userUuid"].is_string()) {
+        item.setUserUuid(uuids::uuid::from_string(j["userUuid"].get<std::string>()).value());
+    }
+    if (j.contains("title") && j["title"].is_string()) {
+        item.setTitle(j["title"].get<std::string>());
+    }
+    // 可选字段
+    if (j.contains("description") && j["description"].is_string()) {
+        item.setDescription(j["description"].get<std::string>());
+    }
+    if (j.contains("category") && j["category"].is_string()) {
+        item.setCategory(j["category"].get<std::string>());
+    }
+    if (j.contains("important") && j["important"].is_boolean()) {
+        item.setImportant(j["important"].get<bool>());
+    }
+    if (j.contains("deadline") && j["deadline"].is_string()) {
+        item.setDeadline(j["deadline"].get<my::DateTime>());
+    }
+    if (j.contains("recurrenceInterval") && j["recurrenceInterval"].is_number_integer()) {
+        item.setRecurrenceInterval(j["recurrenceInterval"].get<int>());
+    }
+    if (j.contains("recurrenceCount") && j["recurrenceCount"].is_number_integer()) {
+        item.setRecurrenceCount(j["recurrenceCount"].get<int>());
+    }
+    if (j.contains("recurrenceStartDate") && j["recurrenceStartDate"].is_string()) {
+        item.setRecurrenceStartDate(j["recurrenceStartDate"].get<my::Date>());
+    }
+    if (j.contains("isCompleted") && j["isCompleted"].is_boolean()) {
+        item.setIsCompleted(j["isCompleted"].get<bool>());
+    }
+    if (j.contains("completedAt") && j["completedAt"].is_string()) {
+        item.setCompletedAt(j["completedAt"].get<my::DateTime>());
+    }
+    if (j.contains("isTrashed") && j["isTrashed"].is_boolean()) {
+        item.setIsTrashed(j["isTrashed"].get<bool>());
+    }
+    if (j.contains("trashedAt") && j["trashedAt"].is_string()) {
+        item.setTrashedAt(j["trashedAt"].get<my::DateTime>());
+    }
+    if (j.contains("createdAt") && j["createdAt"].is_string()) {
+        item.setCreatedAt(j["createdAt"].get<my::DateTime>());
+    }
+    if (j.contains("updatedAt") && j["updatedAt"].is_string()) {
+        item.setUpdatedAt(j["updatedAt"].get<my::DateTime>());
+    }
+    if (j.contains("synced") && j["synced"].is_number_integer()) {
+        item.setSynced(j["synced"].get<int>());
+    }
+}
+
 /**
  * @brief 设置待办事项的唯一标识符
  * @param id 新的待办事项ID

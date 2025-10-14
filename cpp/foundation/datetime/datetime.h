@@ -19,6 +19,10 @@
 class QDateTime;
 #endif
 
+#ifdef NLOHMANN_JSON_ENABLED
+#include <nlohmann/json.hpp>
+#endif
+
 namespace my {
 
 class TimeZone;
@@ -51,6 +55,11 @@ class DateTime {
         UTC,
         Local
     };
+
+#ifdef NLOHMANN_JSON_ENABLED
+    friend void to_json(nlohmann::json &j, const DateTime &dt);
+    friend void from_json(const nlohmann::json &j, DateTime &dt);
+#endif
 
     // 构造函数
     DateTime() = default;

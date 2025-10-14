@@ -54,6 +54,48 @@ CategorieItem::CategorieItem(      //
       m_synced(synced)             ///< 初始化同步状态
 {}
 
+void to_json(nlohmann::json &j, const CategorieItem &item) {
+    j = nlohmann::json{
+        {"id", item.m_id},                               //
+        {"uuid", uuids::to_string(item.m_uuid)},         //
+        {"name", item.m_name},                           //
+        {"userUuid", uuids::to_string(item.m_userUuid)}, //
+        {"createdAt", item.m_createdAt},                 //
+        {"updatedAt", item.m_updatedAt},                 //
+        {"synced", item.m_synced},                       //
+    };
+}
+void from_json(const nlohmann::json &j, CategorieItem &item) {
+    // 必需字段
+    if (j.contains("id") && j["id"].is_number_integer()) {
+        item.setId(j["id"].get<int>());
+    }
+
+    if (j.contains("uuid") && j["uuid"].is_string()) {
+        item.setUuid(uuids::uuid::from_string(j["uuid"].get<std::string>()).value());
+    }
+
+    if (j.contains("name") && j["name"].is_string()) {
+        item.setName(j["name"].get<std::string>());
+    }
+
+    if (j.contains("userUuid") && j["userUuid"].is_string()) {
+        item.setUserUuid(uuids::uuid::from_string(j["userUuid"].get<std::string>()).value());
+    }
+
+    if (j.contains("createdAt") && j["createdAt"].is_string()) {
+        item.setCreatedAt(j["createdAt"].get<my::DateTime>());
+    }
+
+    if (j.contains("updatedAt") && j["updatedAt"].is_string()) {
+        item.setUpdatedAt(j["updatedAt"].get<my::DateTime>());
+    }
+
+    if (j.contains("synced") && j["synced"].is_number_integer()) {
+        item.setSynced(j["synced"].get<int>());
+    }
+}
+
 /**
  * @brief 设置分类的唯一标识符
  * @param id 新的分类ID

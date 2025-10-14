@@ -12,6 +12,7 @@
 #pragma once
 
 #include "datetime.h"
+#include <nlohmann/json.hpp>
 #include <string>
 #include <uuid.h>
 
@@ -38,26 +39,29 @@ class TodoItem {
     bool operator!=(const TodoItem &other) const noexcept;
 
     explicit TodoItem();
-    TodoItem(int id,                                  ///< 唯一标识符
-             const uuids::uuid &uuid,                 ///< 唯一标识符（UUID）
-             const uuids::uuid &userUuid,             ///< 用户UUID
-             const std::string &title,                ///< 待办事项标题
-             const std::string &description,          ///< 待办事项详细描述
-             const std::string &category,             ///< 待办事项分类
-             bool important,                          ///< 重要程度
-             const my::DateTime &deadline,            ///< 截止日期、重复结束日期
-             int recurrenceInterval,                  ///< 重复间隔
-             int recurrenceCount,                     ///< 重复次数
+    TodoItem(int id,                              ///< 唯一标识符
+             const uuids::uuid &uuid,             ///< 唯一标识符（UUID）
+             const uuids::uuid &userUuid,         ///< 用户UUID
+             const std::string &title,            ///< 待办事项标题
+             const std::string &description,      ///< 待办事项详细描述
+             const std::string &category,         ///< 待办事项分类
+             bool important,                      ///< 重要程度
+             const my::DateTime &deadline,        ///< 截止日期、重复结束日期
+             int recurrenceInterval,              ///< 重复间隔
+             int recurrenceCount,                 ///< 重复次数
              const my::Date &recurrenceStartDate, ///< 重复开始日期
-             bool isCompleted,                        ///< 是否已完成
-             const my::DateTime &completedAt,         ///< 完成时间
-             bool isTrashed,                          ///< 是否已回收
-             const my::DateTime &trashedAt,           ///< 回收时间
-             const my::DateTime &createdAt,           ///< 创建时间
-             const my::DateTime &updatedAt,           ///< 最后更新时间
-             int synced                               ///< 是否已与服务器同步（是否要上传）
-                                                      ///< 0表示已同步，1表示待插入，2表示待更新，3表示待删除
+             bool isCompleted,                    ///< 是否已完成
+             const my::DateTime &completedAt,     ///< 完成时间
+             bool isTrashed,                      ///< 是否已回收
+             const my::DateTime &trashedAt,       ///< 回收时间
+             const my::DateTime &createdAt,       ///< 创建时间
+             const my::DateTime &updatedAt,       ///< 最后更新时间
+             int synced                           ///< 是否已与服务器同步（是否要上传）
+                                                  ///< 0表示已同步，1表示待插入，2表示待更新，3表示待删除
     );
+
+    friend void to_json(nlohmann::json &j, const TodoItem &item);
+    friend void from_json(const nlohmann::json &j, TodoItem &item);
 
     int id() const noexcept { return m_id; } // 获取ID
     void setId(int id);                      // 设置ID

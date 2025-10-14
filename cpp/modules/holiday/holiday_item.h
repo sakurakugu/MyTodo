@@ -45,20 +45,25 @@ class HolidayItem {
     HolidayItem(const my::Date &date, const std::string &name, bool isOffDay);
     explicit HolidayItem(const nlohmann::json &json);
 
+    friend void to_json(nlohmann::json &j, const HolidayItem &item);
+    friend void from_json(const nlohmann::json &j, HolidayItem &item);
+
     // Getter方法
     my::Date date() const { return m_date; }
     std::string name() const { return m_name; }
     bool isOffDay() const { return m_isOffDay; } ///< 是否为休息日
+    bool isHoliday() const { return m_isHoliday; } ///< 是否为节假日
 
     // Setter方法
     void setDate(const my::Date &date) { m_date = date; }
     void setName(const std::string &name) { m_name = name; }
     void setIsOffDay(bool isOffDay) { m_isOffDay = isOffDay; }
+    void setIsHoliday(bool isHoliday) { m_isHoliday = isHoliday; }
 
     // JSON序列化
     nlohmann::json toJson() const;             ///< 转换为JSON对象
     bool fromJson(const nlohmann::json &json); ///< 从JSON对象加载数据
-    bool isValid() const;                   ///< 检查数据是否有效
+    bool isValid() const;                      ///< 检查数据是否有效
 
     // 比较操作符（按日期比较）
     bool operator<(const HolidayItem &other) const;

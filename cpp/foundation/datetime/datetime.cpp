@@ -24,7 +24,7 @@ namespace my {
 // 构造函数
 DateTime::DateTime(const int64_t timestamp, std::optional<minutes> tzOffset) noexcept
     : DateTime(system_clock::from_time_t(timestamp), tzOffset) {}
-    
+
 DateTime::DateTime(const time_point &tp, std::optional<minutes> tzOffset) noexcept {
     auto days = std::chrono::floor<std::chrono::days>(tp);
     auto time_since_midnight = tp - days;
@@ -65,6 +65,26 @@ DateTime::DateTime(const std::string &dateTimeStr) {
         m_tzOffset = dt->m_tzOffset;
     }
 }
+
+#ifdef NLOHMANN_JSON_ENABLED
+// 序列化
+void to_json(nlohmann::json &j, const DateTime &dt) {
+    if (dt.isValid()) {
+        j = dt.toISOString();
+    } else {
+        j = nullptr;
+    }
+}
+
+// 反序列化
+void from_json(const nlohmann::json &j, DateTime &dt) {
+    if (j.is_string()) {
+        dt = DateTime{j.get<std::string>()};
+    } else {
+        dt = DateTime{};
+    }
+}
+#endif
 
 // 静态工厂方法
 /**

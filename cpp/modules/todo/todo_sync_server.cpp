@@ -195,19 +195,19 @@ void TodoSyncServer::推送批次到服务器(const std::vector<TodoItem *> &bat
             obj["description"] = item->description();
             obj["category"] = item->category();
             obj["important"] = item->important();
-            obj["deadline"] = item->deadline().toISOString();
+            obj["deadline"] = item->deadline();
             obj["recurrenceInterval"] = item->recurrenceInterval();
             obj["recurrenceCount"] = item->recurrenceCount();
             // recurrenceStartDate 仅在有效时写入
             if (item->recurrenceStartDate().isValid()) {
-                obj["recurrenceStartDate"] = item->recurrenceStartDate().toString();
+                obj["recurrenceStartDate"] = item->recurrenceStartDate();
             }
             obj["is_completed"] = item->isCompleted();
-            obj["completed_at"] = item->completedAt().toISOString();
+            obj["completed_at"] = item->completedAt();
             obj["is_trashed"] = item->isTrashed();
-            obj["trashed_at"] = item->trashedAt().toISOString();
-            obj["created_at"] = item->createdAt().toISOString();
-            obj["updated_at"] = item->updatedAt().toISOString();
+            obj["trashed_at"] = item->trashedAt();
+            obj["created_at"] = item->createdAt();
+            obj["updated_at"] = item->updatedAt();
             obj["synced"] = item->synced();
             jsonArray.push_back(obj);
         }

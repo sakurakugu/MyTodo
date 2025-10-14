@@ -22,6 +22,10 @@
 class QTime;
 #endif
 
+#ifdef NLOHMANN_JSON_ENABLED
+#include <nlohmann/json.hpp>
+#endif
+
 namespace my {
 
 /**
@@ -52,6 +56,11 @@ class Time {
     using minutes = std::chrono::minutes;
     using hours = std::chrono::hours;
     using duration = std::chrono::milliseconds;
+
+#ifdef NLOHMANN_JSON_ENABLED
+    friend void to_json(nlohmann::json &j, const Time &time);
+    friend void from_json(const nlohmann::json &j, Time &time);
+#endif
 
     // 构造函数
     Time() = default;

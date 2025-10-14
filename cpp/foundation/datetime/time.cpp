@@ -65,6 +65,26 @@ Time Time::now() noexcept {
                 static_cast<uint16_t>(ms.count())};
 }
 
+#ifdef NLOHMANN_JSON_ENABLED
+// 序列化
+void to_json(nlohmann::json &j, const Time &time) {
+    if (time.isValid()) {
+        j = time.toISOString();
+    } else {
+        j = nullptr;
+    }
+}
+
+// 反序列化
+void from_json(const nlohmann::json &j, Time &time) {
+    if (j.is_string()) {
+        time = Time{j.get<std::string>()};
+    } else {
+        time = Time{};
+    }
+}
+#endif
+
 Time Time::fromString(std::string_view str) noexcept {
     // TODO: 支持自定义格式
     return fromISOString(str);

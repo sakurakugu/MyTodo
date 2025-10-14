@@ -24,51 +24,29 @@ HolidayItem::HolidayItem(const my::Date &date, const std::string &name, bool isO
  * @param json JSON对象
  */
 HolidayItem::HolidayItem(const nlohmann::json &json) {
-    fromJson(json);
+    from_json(json, *this);
 }
 
-/**
- * @brief 转换为JSON对象
- * @return JSON对象
- */
-nlohmann::json HolidayItem::toJson() const {
-    nlohmann::json json;
-    json["date"] = m_date.toISOString();
-    json["name"] = m_name;
-    json["isOffDay"] = m_isOffDay;
-    return json;
+void to_json(nlohmann::json &j, const HolidayItem &item) {
+    j = nlohmann::json{{"date", item.m_date}, {"name", item.m_name}, {"isOffDay", item.m_isOffDay}};
 }
 
-/**
- * @brief 从JSON对象加载数据
- * @param json JSON对象
- * @return 是否成功
- */
-bool HolidayItem::fromJson(const nlohmann::json &json) {
-    if (!json.contains("date") || !json.contains("name") || !json.contains("isOffDay"))
-        return false;
+void from_json(const nlohmann::json &j, HolidayItem &item) {
+    if (j.contains("date") && j["date"].is_string()) {
+        item.setDate(j["date"].get<my::Date>());
+    }
 
-    // 解析日期
-    if (!json["date"].is_string())
-        return false;
-    std::string dateStr = json["date"].get<std::string>();
-    m_date = my::Date(dateStr);
-    if (!m_date.isValid())
-        return false;
+    if (j.contains("name") && j["name"].is_string()) {
+        item.setName(j["name"].get<std::string>());
+    }
 
-    // 解析名称
-    if (!json["name"].is_string())
-        return false;
-    m_name = json["name"].get<std::string>();
-    if (m_name.empty())
-        return false;
-
-    // 解析是否放假
-    if (!json["isOffDay"].is_boolean())
-        return false;
-    m_isOffDay = json["isOffDay"].get<bool>();
-
-    return true;
+    if (j.contains("isOffDay") && j["isOffDay"].is_boolean()) {
+        item.setIsOffDay(j["isOffDay"].get<bool>());
+    }
+    // 如果包含isHoliday字段，且为布尔值，则设置isHoliday
+    if (j.contains("isHoliday") && j["isHoliday"].is_boolean()) {
+        item.setIsHoliday(j["isHoliday"].get<bool>());
+    }
 }
 
 /**
@@ -84,7 +62,7 @@ bool HolidayItem::operator<(const HolidayItem &other) const {
 }
 
 bool HolidayItem::operator==(const HolidayItem &other) const {
-    return m_date == other.m_date && m_name == other.m_name && m_isOffDay == other.m_isOffDay;
+    return m_date == other.m_date && m_name == other.m_name && m_isOffDay == other.m_isOffDay && m_isHoliday == other.m_isHoliday;
 }
 
 bool HolidayItem::operator!=(const HolidayItem &other) const {

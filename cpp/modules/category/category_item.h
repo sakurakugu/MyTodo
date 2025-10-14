@@ -46,6 +46,9 @@ class CategorieItem {
                                                  ///< 0表示已同步，1表示待插入，2表示待更新，3表示待删除
     );
 
+    friend void to_json(nlohmann::json &j, const CategorieItem &item);
+    friend void from_json(const nlohmann::json &j, CategorieItem &item);
+
     int id() const noexcept { return m_id; } // 获取ID
     void setId(int id);                      // 设置ID
 

@@ -222,8 +222,8 @@ void CategorySyncServer::推送数据() {
             nlohmann::json obj;
             obj["uuid"] = uuids::to_string(item->uuid());
             obj["name"] = item->name();
-            obj["created_at"] = item->createdAt().toISOString();
-            obj["updated_at"] = item->updatedAt().toISOString();
+            obj["created_at"] = item->createdAt();
+            obj["updated_at"] = item->updatedAt();
             obj["synced"] = item->synced();
             jsonArray.push_back(obj);
         }
