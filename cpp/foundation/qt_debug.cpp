@@ -11,7 +11,7 @@
  */
 
 #include "qt_debug.h"
-// #include "datetime.h"
+#include "datetime.h"
 #include "log_stream.h"
 #include <QDirIterator>
 #include <chrono>
@@ -37,11 +37,14 @@ void QtDebug::设置终端编码(int codePage) {
 }
 
 void QtDebug::测试用() {
-    // my::DateTime dt = my::DateTime::now();
-    // logWarning() << dt.toISOString();
+    // 当前时间，qt格式
+    QDateTime dt = QDateTime::currentDateTime();
+    logWarning() << dt.toString(Qt::ISODateWithMs).toStdString();
+    logWarning() << dt.toString(Qt::ISODate).toStdString();
+    // 时间戳
+    logWarning() << dt.toSecsSinceEpoch();
+    logWarning() << dt.toMSecsSinceEpoch();
 
-    // std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-    // std::chrono::zoned_time local_time{std::chrono::current_zone(), now};
-
-    // logWarning() << "Local time: " << local_time << '\n';
+    logWarning() << my::DateTime::now(my::TimeZoneType::Local).toISOString();
+    logWarning() << my::DateTime::utcNow();
 }

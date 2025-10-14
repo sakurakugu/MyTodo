@@ -11,6 +11,7 @@
 
 #include "date.h"
 #include "time.hpp"
+#include "timezone.h"
 #include <chrono>
 #include <string>
 #include <string_view>
@@ -24,8 +25,6 @@ class QDateTime;
 #endif
 
 namespace my {
-
-class TimeZone;
 
 /**
  * @brief DateTime 类：结合日期和时间的完整日期时间处理类
@@ -50,19 +49,13 @@ class DateTime {
     using months = std::chrono::months;
     using years = std::chrono::years;
 
-    // 时区类型
-    enum class TimeZone {
-        UTC,
-        Local
-    };
-
 #ifdef NLOHMANN_JSON_ENABLED
     friend void to_json(nlohmann::json &j, const DateTime &dt);
     friend void from_json(const nlohmann::json &j, DateTime &dt);
 #endif
 
     // 构造函数
-    DateTime() = default;
+    DateTime() noexcept;
     DateTime(const DateTime &other) = default;
     DateTime(const int64_t timestamp, std::optional<minutes> tzOffset = std::nullopt) noexcept; // 从Unix时间戳构造
     DateTime(const time_point &tp, std::optional<minutes> tzOffset = std::nullopt) noexcept;    // UTC
@@ -87,9 +80,9 @@ class DateTime {
 #endif
 
     // 静态工厂方法
-    static DateTime now(TimeZone tz = TimeZone::Local) noexcept; // 获取当前日期时间
-    static DateTime utcNow() noexcept;
-    static DateTime today(TimeZone tz = TimeZone::Local) noexcept;
+    static DateTime now(TimeZoneType tz = TimeZoneType::Local) noexcept; // 获取当前日期时间
+    static DateTime utcNow() noexcept; // 获取当前UTC日期时间(不含时区)
+    static DateTime today(TimeZoneType tz = TimeZoneType::Local) noexcept;
     static DateTime fromString(std::string_view str) noexcept;
     static DateTime fromISOString(std::string_view str) noexcept;
     static DateTime fromUnixTimestamp(int64_t timestamp) noexcept;
@@ -150,7 +143,7 @@ class DateTime {
     int64_t toUnixTimestampMs() const noexcept;
 
     // 格式化
-    std::string toString(std::string_view format = "yyyy-MM-dd hh:mm:ss") const;
+    std::string toString(std::string_view format = "yyyy-MM-dd HH:mm:ss") const;
     std::string toISOString() const;
     std::string toDateString() const;
     std::string toTimeString() const;
@@ -209,9 +202,9 @@ class DateTime {
 
   private:
     // 储存UTC时间和日期
-    Date m_date;        // 日期部分
-    Time m_time;        // 时间部分
-    minutes m_tzOffset; // 时区偏移，单位：分钟
+    Date m_date;                                // 日期部分
+    Time m_time;                                // 时间部分
+    minutes m_tzOffset{0};                      // 时区偏移，单位：分钟
 
     // 辅助方法
     static std::optional<DateTime> parseISO(std::string_view str) noexcept;

@@ -106,7 +106,7 @@ class Time {
     int64_t hoursTo(const Time &other) const noexcept;
 
     // 格式化
-    std::string toString(std::string_view format = "hh:mm:ss") const;
+    std::string toString(std::string_view format = "") const;
     std::string toISOString() const;
     std::string to12HourString() const; // 12小时制格式 (hh:mm:ss AM/PM)
     std::string to24HourString() const; // 24小时制格式 (hh:mm:ss)

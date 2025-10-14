@@ -12,7 +12,7 @@
 #include "config.h"
 #include "version.h"
 
-#if defined(Q_OS_WIN)
+#ifdef _WIN32
 #include <windows.h>
 #endif
 

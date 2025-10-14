@@ -533,9 +533,8 @@ bool Database::exportDataToJson(nlohmann::json &output) {
     output["meta"] = nlohmann::json{
         {"version", APP_VERSION_STRING},
         {"database_version", DATABASE_VERSION},
-        {"sqlite_version", getSqliteVersion()}
-        //    ,
-        //    {"export_time", QDateTime::currentDateTime().toString(Qt::ISODate)}
+        {"sqlite_version", getSqliteVersion()},
+        {"export_time", std::chrono::system_clock::now().time_since_epoch().count()} // 时间戳
     }; // 不是rfc3339格式
 
     // 导出数据库版本
@@ -590,8 +589,7 @@ bool Database::importFromJsonFile(const std::string &filePath, bool replaceAll) 
         return false;
     }
 
-    std::string jsonData((std::istreambuf_iterator<char>(file)),
-                         std::istreambuf_iterator<char>());
+    std::string jsonData((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     try {
         nlohmann::json jsonDoc = nlohmann::json::parse(jsonData);
         return importDataFromJson(jsonDoc, replaceAll);
@@ -606,14 +604,15 @@ bool Database::importFromJsonFile(const std::string &filePath, bool replaceAll) 
  */
 nlohmann::json Database::exportTable(const std::string &table, const std::vector<std::string> &columns) {
     nlohmann::json array;
-    
+
     // 构建列名字符串
     std::string columnStr;
     for (size_t i = 0; i < columns.size(); ++i) {
-        if (i > 0) columnStr += ", ";
+        if (i > 0)
+            columnStr += ", ";
         columnStr += columns[i];
     }
-    
+
     auto query = createQuery(std::format("SELECT {} FROM {}", columnStr, table));
     if (!query || !query->exec()) {
         setError("导出表失败: " + table + " " + query->lastError());
@@ -623,20 +622,15 @@ nlohmann::json Database::exportTable(const std::string &table, const std::vector
         nlohmann::json obj;
         for (size_t i = 0; i < columns.size(); ++i) {
             auto v = query->value(i);
+            // 从数据库导出只有这5种类型：int64_t, double, string, blob, nullptr
             if (std::holds_alternative<bool>(v))
                 obj[columns[i]] = sqlValueCast<bool>(v);
-            else if (std::holds_alternative<int32_t>(v) || std::holds_alternative<int64_t>(v))
+            else if (std::holds_alternative<int64_t>(v))
                 obj[columns[i]] = sqlValueCast<int64_t>(v);
             else if (std::holds_alternative<double>(v))
                 obj[columns[i]] = sqlValueCast<double>(v);
             else if (std::holds_alternative<std::string>(v))
                 obj[columns[i]] = sqlValueCast<std::string>(v);
-            else if (std::holds_alternative<QString>(v))
-                obj[columns[i]] = sqlValueCast<QString>(v).toStdString();
-            else if (std::holds_alternative<QUuid>(v))
-                obj[columns[i]] = sqlValueCast<QUuid>(v).toString().toStdString();
-            else if (std::holds_alternative<QDateTime>(v))
-                obj[columns[i]] = sqlValueCast<QDateTime>(v).toString().toStdString();
             else if (std::holds_alternative<std::vector<uint8_t>>(v))
                 obj[columns[i]] = sqlValueCast<std::vector<uint8_t>>(v);
             else if (std::holds_alternative<std::nullptr_t>(v))

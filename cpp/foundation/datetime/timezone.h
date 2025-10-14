@@ -15,6 +15,12 @@
 
 namespace my {
 
+// 时区类型
+enum class TimeZoneType {
+    UTC,
+    Local
+};
+
 /**
  * @brief TimeZone 类：时区信息管理器
  *

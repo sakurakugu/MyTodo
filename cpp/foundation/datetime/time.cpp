@@ -22,8 +22,14 @@ namespace my {
 
 // 构造函数
 Time::Time(uint8_t hour, uint8_t minute, uint8_t second, uint16_t millisecond) noexcept {
-    m_duration = hours{hour} + minutes{minute} + seconds{second} + milliseconds{millisecond};
-    normalize();
+    // 检查参数有效性
+    if (hour > 23 || minute > 59 || second > 59 || millisecond > 999) {
+        // 创建无效时间对象，使用负值表示无效状态
+        m_duration = duration{-1};
+    } else {
+        m_duration = hours{hour} + minutes{minute} + seconds{second} + milliseconds{millisecond};
+        normalize();
+    }
 }
 
 Time::Time(const duration &d) noexcept : m_duration(d) {
@@ -93,7 +99,10 @@ Time Time::fromString(std::string_view str) noexcept {
 Time Time::fromISOString(std::string_view str) noexcept {
     auto d = parseISO(str);
     if (!d) {
-        return Time{};
+        // 创建无效时间对象
+        Time invalid;
+        invalid.m_duration = duration{-1};
+        return invalid;
     }
     return Time{*d};
 }
@@ -117,6 +126,11 @@ Time Time::fromHours(int64_t hours) noexcept {
 // 一次性计算所有组件
 ClockTime Time::getComponents() const noexcept {
     int64_t total_ms = std::chrono::duration_cast<milliseconds>(m_duration).count();
+
+    // 处理负值（无效时间）
+    if (total_ms < 0) {
+        return ClockTime{0, 0, 0, 0};
+    }
 
     // 保证只在一天范围内
     total_ms %= 24 * 60 * 60 * 1000;
@@ -225,7 +239,8 @@ int64_t Time::hoursTo(const Time &other) const noexcept {
 // 格式化
 std::string Time::toString(std::string_view format) const {
     if (format.empty()) {
-        return toISOString();
+        // 默认返回24小时制格式，不包含毫秒
+        return std::format("{:02d}:{:02d}:{:02d}", hour(), minute(), second());
     }
 
     // 使用统一的格式化工具

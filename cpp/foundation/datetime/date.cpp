@@ -126,12 +126,32 @@ Date &Date::addDays(int32_t days) noexcept {
 }
 
 Date &Date::addMonths(int32_t months) noexcept {
-    m_ymd = m_ymd + std::chrono::months{months};
+    auto new_ymd = m_ymd + std::chrono::months{months};
+    
+    // 如果结果无效（比如1月31日+1个月=2月31日），调整到该月的最后一天
+    if (!new_ymd.ok()) {
+        auto year = new_ymd.year();
+        auto month = new_ymd.month();
+        auto last_day = std::chrono::year_month_day_last{year, std::chrono::month_day_last{month}}.day();
+        new_ymd = std::chrono::year_month_day{year, month, last_day};
+    }
+    
+    m_ymd = new_ymd;
     return *this;
 }
 
 Date &Date::addYears(int32_t years) noexcept {
-    m_ymd = m_ymd + std::chrono::years{years};
+    auto new_ymd = m_ymd + std::chrono::years{years};
+    
+    // 如果结果无效（比如闰年2月29日+1年=非闰年2月29日），调整到该月的最后一天
+    if (!new_ymd.ok()) {
+        auto year = new_ymd.year();
+        auto month = new_ymd.month();
+        auto last_day = std::chrono::year_month_day_last{year, std::chrono::month_day_last{month}}.day();
+        new_ymd = std::chrono::year_month_day{year, month, last_day};
+    }
+    
+    m_ymd = new_ymd;
     return *this;
 }
 
@@ -313,7 +333,14 @@ std::optional<Date::year_month_day> Date::parseISO(std::string_view str) noexcep
             return std::nullopt;
         }
 
-        return std::chrono::year_month_day{std::chrono::year{year}, std::chrono::month{month}, std::chrono::day{day}};
+        auto ymd = std::chrono::year_month_day{std::chrono::year{year}, std::chrono::month{month}, std::chrono::day{day}};
+        
+        // 检查日期是否真正有效（例如，2月30日是无效的）
+        if (!ymd.ok()) {
+            return std::nullopt;
+        }
+        
+        return ymd;
     } catch (...) {
         return std::nullopt;
     }

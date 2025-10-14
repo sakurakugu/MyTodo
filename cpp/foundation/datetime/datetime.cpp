@@ -9,8 +9,8 @@
 
 #include "datetime.h"
 #include "formatter.h"
-#include "timezone.h"
 #include <iomanip>
+#include <iostream>
 #include <regex>
 #include <sstream>
 #include <stdexcept>
@@ -22,8 +22,11 @@
 namespace my {
 
 // 构造函数
+DateTime::DateTime() noexcept
+    : m_date(Date::today()), m_time(Time::now()), m_tzOffset(TimeZone::GetInstance().getUTCOffset()) {}
+
 DateTime::DateTime(const int64_t timestamp, std::optional<minutes> tzOffset) noexcept
-    : DateTime(system_clock::from_time_t(timestamp), tzOffset) {}
+    : DateTime(system_clock::from_time_t(timestamp), tzOffset.value_or(my::TimeZone::GetInstance().getUTCOffset())) {}
 
 DateTime::DateTime(const time_point &tp, std::optional<minutes> tzOffset) noexcept {
     auto days = std::chrono::floor<std::chrono::days>(tp);
@@ -34,24 +37,26 @@ DateTime::DateTime(const time_point &tp, std::optional<minutes> tzOffset) noexce
     auto s = std::chrono::floor<std::chrono::seconds>(time_since_midnight - h - m);
     auto ms = std::chrono::floor<std::chrono::milliseconds>(time_since_midnight - h - m - s);
 
-    m_date = Date{days};
+    m_date = Date{std::chrono::sys_days{days}};
     m_time = Time{static_cast<uint8_t>(h.count()), static_cast<uint8_t>(m.count()), static_cast<uint8_t>(s.count()),
                   static_cast<uint16_t>(ms.count())};
     m_tzOffset = tzOffset.value_or(my::TimeZone::GetInstance().getUTCOffset());
 }
 
 DateTime::DateTime(const Date &date, const Time &time, std::optional<minutes> tzOffset) noexcept
-    : m_date(date), m_time(time), m_tzOffset(tzOffset.value_or(minutes{0})) {}
+    : m_date(date), m_time(time), m_tzOffset(tzOffset.value_or(TimeZone::GetInstance().getUTCOffset())) {}
 DateTime::DateTime(int32_t year, uint8_t month, uint8_t day, const Time &time, std::optional<minutes> tzOffset) noexcept
-    : m_date(year, month, day), m_time(time), m_tzOffset(tzOffset.value_or(minutes{0})) {}
+    : m_date(year, month, day), m_time(time), m_tzOffset(tzOffset.value_or(TimeZone::GetInstance().getUTCOffset())) {}
 
 DateTime::DateTime(const Date &date, uint8_t hour, uint8_t minute, uint8_t second, uint16_t millisecond,
                    std::optional<minutes> tzOffset) noexcept
-    : m_date(date), m_time(hour, minute, second, millisecond), m_tzOffset(tzOffset.value_or(minutes{0})) {}
+    : m_date(date), m_time(hour, minute, second, millisecond),
+      m_tzOffset(tzOffset.value_or(TimeZone::GetInstance().getUTCOffset())) {}
 
 DateTime::DateTime(int32_t year, uint8_t month, uint8_t day, uint8_t hour, uint8_t minute, uint8_t second,
                    uint16_t millisecond, std::optional<minutes> tzOffset) noexcept
-    : m_date(year, month, day), m_time(hour, minute, second, millisecond), m_tzOffset(tzOffset.value_or(minutes{0})) {}
+    : m_date(year, month, day), m_time(hour, minute, second, millisecond),
+      m_tzOffset(tzOffset.value_or(TimeZone::GetInstance().getUTCOffset())) {}
 
 DateTime::DateTime(const std::string &dateTimeStr) {
     auto dt = parseISO(dateTimeStr);
@@ -93,10 +98,10 @@ void from_json(const nlohmann::json &j, DateTime &dt) {
  * @param tz 时区，默认本地时区
  * @return DateTime 当前日期时间
  */
-DateTime DateTime::now(TimeZone tz) noexcept {
+DateTime DateTime::now(TimeZoneType tz) noexcept {
     auto now = system_clock::now();
-    if (tz == TimeZone::UTC) {
-        return DateTime{now};
+    if (tz == TimeZoneType::UTC) {
+        return DateTime{now, minutes{0}};
     } else {
         auto offset = my::TimeZone::GetInstance().getUTCOffset();
         return DateTime{now, offset};
@@ -104,10 +109,10 @@ DateTime DateTime::now(TimeZone tz) noexcept {
 }
 
 DateTime DateTime::utcNow() noexcept {
-    return now(TimeZone::UTC);
+    return now(TimeZoneType::UTC);
 }
 
-DateTime DateTime::today(TimeZone tz) noexcept {
+DateTime DateTime::today(TimeZoneType tz) noexcept {
     auto now = DateTime::now(tz);
     return DateTime{now.year(), now.month(), now.day(), 0, 0, 0, 0, now.m_tzOffset};
 }
@@ -119,7 +124,12 @@ DateTime DateTime::fromString(std::string_view str) noexcept {
 DateTime DateTime::fromISOString(std::string_view str) noexcept {
     auto tp = parseISO(str);
     if (!tp) {
-        return DateTime{};
+        // 返回一个无效的DateTime
+        DateTime invalid;
+        invalid.m_date = Date{}; // 默认构造的Date是无效的
+        invalid.m_time = Time{};
+        invalid.m_tzOffset = minutes{0};
+        return invalid;
     }
 
     return DateTime{*tp};
@@ -200,26 +210,118 @@ bool DateTime::isLeapYear() const noexcept {
 
 // 日期时间操作
 DateTime &DateTime::addMilliseconds(int64_t ms) noexcept {
-    m_time += milliseconds{ms};
-    normalizeDateTime();
+    // 记录原始时间的毫秒数
+    int64_t originalMs = m_time.toMilliseconds();
+
+    // 计算新的总毫秒数
+    int64_t newTotalMs = originalMs + ms;
+
+    // 计算需要调整的天数
+    int64_t dayAdjustment = 0;
+    if (newTotalMs >= 86400000) {
+        dayAdjustment = newTotalMs / 86400000;
+        newTotalMs %= 86400000;
+    } else if (newTotalMs < 0) {
+        // 计算需要减去的天数（向上取整的绝对值）
+        dayAdjustment = -((-newTotalMs - 1) / 86400000 + 1);
+        newTotalMs = newTotalMs - dayAdjustment * 86400000;
+    }
+
+    // 调整日期
+    if (dayAdjustment != 0) {
+        m_date.addDays(static_cast<int32_t>(dayAdjustment));
+    }
+
+    // 设置新的时间（从毫秒数创建）
+    m_time = Time::fromMilliseconds(newTotalMs);
+
     return *this;
 }
 
 DateTime &DateTime::addSeconds(int64_t seconds) noexcept {
+    // 记录原始时间的毫秒数
+    int64_t originalMs = m_time.toMilliseconds();
+
+    // 添加秒数
     m_time.addSeconds(seconds);
-    normalizeDateTime();
+
+    // 计算实际添加的毫秒数
+    int64_t addedMs = seconds * 1000;
+
+    // 计算新的总毫秒数
+    int64_t newTotalMs = originalMs + addedMs;
+
+    // 计算需要调整的天数
+    int64_t dayAdjustment = 0;
+    if (newTotalMs >= 86400000) {
+        dayAdjustment = newTotalMs / 86400000;
+    } else if (newTotalMs < 0) {
+        dayAdjustment = (newTotalMs - 86399999) / 86400000; // 向下取整
+    }
+
+    // 调整日期
+    if (dayAdjustment != 0) {
+        m_date.addDays(static_cast<int32_t>(dayAdjustment));
+    }
+
     return *this;
 }
 
 DateTime &DateTime::addMinutes(int64_t minutes) noexcept {
+    // 记录原始时间的毫秒数
+    int64_t originalMs = m_time.toMilliseconds();
+
+    // 添加分钟数
     m_time.addMinutes(minutes);
-    normalizeDateTime();
+
+    // 计算实际添加的毫秒数
+    int64_t addedMs = minutes * 60000;
+
+    // 计算新的总毫秒数
+    int64_t newTotalMs = originalMs + addedMs;
+
+    // 计算需要调整的天数
+    int64_t dayAdjustment = 0;
+    if (newTotalMs >= 86400000) {
+        dayAdjustment = newTotalMs / 86400000;
+    } else if (newTotalMs < 0) {
+        dayAdjustment = (newTotalMs - 86399999) / 86400000; // 向下取整
+    }
+
+    // 调整日期
+    if (dayAdjustment != 0) {
+        m_date.addDays(static_cast<int32_t>(dayAdjustment));
+    }
+
     return *this;
 }
 
 DateTime &DateTime::addHours(int64_t hours) noexcept {
+    // 记录原始时间的毫秒数
+    int64_t originalMs = m_time.toMilliseconds();
+
+    // 添加小时数
     m_time.addHours(hours);
-    normalizeDateTime();
+
+    // 计算实际添加的毫秒数
+    int64_t addedMs = hours * 3600000;
+
+    // 计算新的总毫秒数
+    int64_t newTotalMs = originalMs + addedMs;
+
+    // 计算需要调整的天数
+    int64_t dayAdjustment = 0;
+    if (newTotalMs >= 86400000) {
+        dayAdjustment = newTotalMs / 86400000;
+    } else if (newTotalMs < 0) {
+        dayAdjustment = (newTotalMs - 86399999) / 86400000; // 向下取整
+    }
+
+    // 调整日期
+    if (dayAdjustment != 0) {
+        m_date.addDays(static_cast<int32_t>(dayAdjustment));
+    }
+
     return *this;
 }
 
@@ -325,14 +427,18 @@ std::string DateTime::toDateString() const {
 }
 
 std::string DateTime::toTimeString() const {
-    return std::format("{:02d}:{:02d}:{:02d}", hour(), minute(), second());
+    return time().toString(); // 不含毫秒
 }
 
 // 转换
 std::chrono::system_clock::time_point DateTime::toTimePoint() const noexcept {
     auto days = m_date.toSysDays();
     auto time_duration = m_time.toDuration();
-    return days + time_duration;
+    auto local_time_point = days + time_duration;
+
+    // 如果有时区偏移，需要减去偏移得到UTC时间
+    // 因为存储的是本地时间，要转换为UTC需要减去偏移
+    return local_time_point - m_tzOffset;
 }
 
 // 处理跨日期边界的私有方法
@@ -634,7 +740,7 @@ std::optional<DateTime> DateTime::parseISO(std::string_view str) noexcept {
         }
 
         Date date{year, month, day};
-        Time time{hour, minute, second, millisecond};
+        Time time(hour, minute, second, millisecond);
 
         if (!date.isValid() || !time.isValid()) {
             return std::nullopt;

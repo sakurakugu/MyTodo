@@ -8,7 +8,9 @@
  */
 
 #include "formatter.h"
-#include <format>
+#include <algorithm>
+#include <vector>
+#include <cstdio>
 
 namespace my {
 
@@ -21,7 +23,20 @@ namespace my {
 std::string DateTimeFormatter::format(std::string_view pattern, const ReplacementMap &replacements) {
     std::string result{pattern};
 
+    // 创建一个按占位符长度排序的向量，确保较长的模式先被替换
+    std::vector<std::pair<std::string, std::function<std::string()>>> sortedReplacements;
     for (const auto &[placeholder, replacementFunc] : replacements) {
+        sortedReplacements.emplace_back(placeholder, replacementFunc);
+    }
+    
+    // 按占位符长度降序排序
+    std::sort(sortedReplacements.begin(), sortedReplacements.end(),
+              [](const auto &a, const auto &b) {
+                  return a.first.length() > b.first.length();
+              });
+
+    // 按排序后的顺序进行替换
+    for (const auto &[placeholder, replacementFunc] : sortedReplacements) {
         result = replacePlaceholder(result, placeholder, replacementFunc());
     }
 
@@ -36,11 +51,21 @@ std::string DateTimeFormatter::format(std::string_view pattern, const Replacemen
  * @return 日期替换映射
  */
 DateTimeFormatter::ReplacementMap DateTimeFormatter::createDateReplacements(int32_t year, uint8_t month, uint8_t day) {
-    return {{"{YYYY}", [year]() { return std::format("{:04d}", year); }},
-            {"{MM}", [month]() { return std::format("{:02d}", month); }},
-            {"{DD}", [day]() { return std::format("{:02d}", day); }},
-            {"{M}", [month]() { return std::to_string(month); }},
-            {"{D}", [day]() { return std::to_string(day); }}};
+    return {
+        // 大括号格式
+        {"{YYYY}", [year]() { return std::format("{:04d}", year); }},
+        {"{MM}", [month]() { return std::format("{:02d}", month); }},
+        {"{DD}", [day]() { return std::format("{:02d}", day); }},
+        {"{M}", [month]() { return std::to_string(month); }},
+        {"{D}", [day]() { return std::to_string(day); }},
+        
+        // 常见格式模式
+        {"yyyy", [year]() { return std::format("{:04d}", year); }},
+        {"MM", [month]() { return std::format("{:02d}", month); }},
+        {"dd", [day]() { return std::format("{:02d}", day); }},
+        {"M", [month]() { return std::to_string(month); }},
+        {"d", [day]() { return std::to_string(day); }}
+    };
 }
 
 /**
@@ -53,30 +78,61 @@ DateTimeFormatter::ReplacementMap DateTimeFormatter::createDateReplacements(int3
  */
 DateTimeFormatter::ReplacementMap DateTimeFormatter::createTimeReplacements(uint8_t hour, uint8_t minute,
                                                                             uint8_t second, uint16_t millisecond) {
-    return {{"{HH}", [hour]() { return std::format("{:02d}", hour); }},
-            {"{mm}", [minute]() { return std::format("{:02d}", minute); }},
-            {"{ss}", [second]() { return std::format("{:02d}", second); }},
-            {"{SSS}", [millisecond]() { return std::format("{:03d}", millisecond); }},
-            {"{H}", [hour]() { return std::to_string(hour); }},
-            {"{m}", [minute]() { return std::to_string(minute); }},
-            {"{s}", [second]() { return std::to_string(second); }},
-            {"{S}", [millisecond]() { return std::to_string(millisecond); }},
-            {"{hh}",
-             [hour]() {
-                 int h12 = hour % 12;
-                 if (h12 == 0)
-                     h12 = 12;
-                 return std::format("{:02d}", h12);
-             }},
-            {"{h}",
-             [hour]() {
-                 int h12 = hour % 12;
-                 if (h12 == 0)
-                     h12 = 12;
-                 return std::to_string(h12);
-             }},
-            {"{A}", [hour]() { return hour < 12 ? "AM" : "PM"; }},
-            {"{a}", [hour]() { return hour < 12 ? "am" : "pm"; }}};
+    return {
+        // 大括号格式
+        {"{HH}", [hour]() { return std::format("{:02d}", hour); }},
+        {"{mm}", [minute]() { return std::format("{:02d}", minute); }},
+        {"{ss}", [second]() { return std::format("{:02d}", second); }},
+        {"{SSS}", [millisecond]() { return std::format("{:03d}", millisecond); }},
+        {"{fff}", [millisecond]() { return std::format("{:03d}", millisecond); }},
+        {"{H}", [hour]() { return std::to_string(hour); }},
+        {"{m}", [minute]() { return std::to_string(minute); }},
+        {"{s}", [second]() { return std::to_string(second); }},
+        {"{S}", [millisecond]() { return std::to_string(millisecond); }},
+        {"{hh}",
+         [hour]() {
+             int h12 = hour % 12;
+             if (h12 == 0)
+                 h12 = 12;
+             return std::format("{:02d}", h12);
+         }},
+        {"{h}",
+         [hour]() {
+             int h12 = hour % 12;
+             if (h12 == 0)
+                 h12 = 12;
+             return std::to_string(h12);
+         }},
+        {"{A}", [hour]() { return hour < 12 ? "AM" : "PM"; }},
+        {"{a}", [hour]() { return hour < 12 ? "am" : "pm"; }},
+        
+        // 常见格式模式
+        {"HH", [hour]() { return std::format("{:02d}", hour); }},
+        {"mm", [minute]() { return std::format("{:02d}", minute); }},
+        {"ss", [second]() { return std::format("{:02d}", second); }},
+        {"zzz", [millisecond]() { return std::format("{:03d}", millisecond); }},
+        {"fff", [millisecond]() { return std::format("{:03d}", millisecond); }},
+        {"H", [hour]() { return std::to_string(hour); }},
+        {"m", [minute]() { return std::to_string(minute); }},
+        {"s", [second]() { return std::to_string(second); }},
+        {"z", [millisecond]() { return std::to_string(millisecond); }},
+        {"hh",
+         [hour]() {
+             int h12 = hour % 12;
+             if (h12 == 0)
+                 h12 = 12;
+             return std::format("{:02d}", h12);
+         }},
+        {"h",
+         [hour]() {
+             int h12 = hour % 12;
+             if (h12 == 0)
+                 h12 = 12;
+             return std::to_string(h12);
+         }},
+        {"A", [hour]() { return hour < 12 ? "AM" : "PM"; }},
+        {"a", [hour]() { return hour < 12 ? "am" : "pm"; }}
+    };
 }
 
 /**

@@ -146,7 +146,7 @@ class Date {
     Date operator-(const Date &other) const noexcept; // 减日期
 
   private:
-    year_month_day m_ymd{std::chrono::year{1900}, std::chrono::month{1}, std::chrono::day{1}};
+    year_month_day m_ymd{std::chrono::year{0}, std::chrono::month{0}, std::chrono::day{0}};
 
     // 辅助方法
     static std::optional<year_month_day> parseISO(std::string_view str) noexcept; // 解析 ISO 格式日期字符串

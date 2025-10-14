@@ -95,7 +95,7 @@ CMakeLists.txt.user*
 .pch/
 .rcc/
 .uic/
-/build*/
+build*/
 
 # IDE 生成文件
 .idea/

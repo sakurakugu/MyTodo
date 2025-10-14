@@ -39,4 +39,5 @@ target_link_libraries(mytodo_foundation
         tomlplusplus::tomlplusplus
         my_logger
         nlohmann_json::nlohmann_json
+        my_datetime
 )

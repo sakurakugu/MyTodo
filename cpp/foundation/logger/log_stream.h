@@ -71,3 +71,11 @@ inline LogStream logCritical(const std::source_location &loc = std::source_locat
 inline LogStream logFatal(const std::source_location &loc = std::source_location::current()) {
     return logStream(LogLevel::Fatal, loc);
 }
+
+#ifdef QT_CORE_LIB
+// << 运算符重载
+inline std::ostream &operator<<(std::ostream &os, const QString &dt) {
+    os << dt.toStdString();
+    return os;
+}
+#endif
