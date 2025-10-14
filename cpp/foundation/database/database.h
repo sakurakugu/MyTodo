@@ -126,13 +126,6 @@ class Database {
     std::string lastError() const;  ///< 获取最后一次错误信息
     bool hasError() const;          ///< 检查是否有错误
 
-    // 表管理
-    bool tableExists(const std::string &tableName);                                 ///< 检查表是否存在
-    std::vector<std::string> getTableNames();                                       ///< 获取所有表名
-    std::vector<std::string> getColumnNames(const std::string &tableName);          ///< 获取表的列名
-    bool createTable(const std::string &tableName, const std::string &tableSchema); ///< 创建表
-    bool dropTable(const std::string &tableName);                                   ///< 删除表
-
     // 数据导入导出
 #ifdef QT_CORE_LIB
     void registerDataExporter(const std::string &name, IDataExporter *exporter); ///< 注册数据导出器

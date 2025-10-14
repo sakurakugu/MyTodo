@@ -5,7 +5,7 @@
  * 该文件定义了QmlHolidayManager类，作为HolidayManager的QML包装层。
  *
  * @author Sakurakugu
- * @date 2025-10-07 23:33:00(UTC+8) 周一
+ * P25-10-07 23:33:00 (UTC+8) 周二
  */
 
 #pragma once

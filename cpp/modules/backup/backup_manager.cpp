@@ -76,7 +76,7 @@ bool BackupManager::执行备份() {
         bool configBackupSuccess = m_config.exportToJsonFile(ConfigBackupFilePath, excludeKeys);
         // 执行数据库备份
         bool dbBackupSuccess = false;
-        // TODO: dbBackupSuccess =Database::GetInstance().exportDatabaseToJsonFile(QString::fromStdString(DatabaseBackupFilePath));
+        dbBackupSuccess = Database::GetInstance().exportToJsonFile(DatabaseBackupFilePath);
 
         if (configBackupSuccess && dbBackupSuccess) {
             // 更新最后备份时间

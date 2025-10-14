@@ -5,7 +5,7 @@
  * 该文件实现了QmlHolidayManager类的所有方法。
  *
  * @author Sakurakugu
- * @date 2025-10-07 23:33:00(UTC+8) 周一
+ * P25-10-07 23:33:00 (UTC+8) 周二
  */
 
 #include "qml_holiday.h"

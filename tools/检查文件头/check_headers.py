@@ -37,14 +37,15 @@ import os
 import re
 import sys
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
-
-# TODO: 如果文件头有日期和周数，检查周数是否正确
 
 HEADER_RE = re.compile(r"^\s*/\*\*(?P<body>.*?)\*/", re.DOTALL)
 TAG_RE = re.compile(r"@(?P<tag>file|brief|date|change|author)\b\s*(?P<value>.*)")
 DATE_PREFIX_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
+# 匹配包含周数的完整日期格式：YYYY-MM-DD HH:MM:SS (UTC+8) 周X
+DATE_WITH_WEEKDAY_RE = re.compile(r"(?P<date>\d{4}-\d{2}-\d{2})\s+(?P<time>\d{2}:\d{2}:\d{2})\s*\(UTC\+8\)\s*周(?P<weekday>[一二三四五六日])")
 
 DEFAULT_AUTHOR = "Sakurakugu"
 
@@ -58,6 +59,76 @@ class Violation:
     code: str
     message: str
     fix_applied: bool = False
+
+
+@dataclass
+class WeekdayValidationResult:
+    """周数验证结果"""
+    is_valid: bool
+    error_message: Optional[str] = None
+    correct_weekday: Optional[str] = None
+    declared_weekday: Optional[str] = None
+    corrected_date_str: Optional[str] = None
+
+
+def validate_date_weekday(date_str: str) -> WeekdayValidationResult:
+    """验证日期字符串中的周数是否正确。
+    
+    Args:
+        date_str: 包含日期和周数的字符串，格式如 "2025-09-15 20:55:22 (UTC+8) 周一"
+        
+    Returns:
+        WeekdayValidationResult: 包含验证结果和修复信息的对象
+    """
+    match = DATE_WITH_WEEKDAY_RE.search(date_str)
+    if not match:
+        return WeekdayValidationResult(is_valid=True)  # 没有找到完整的日期+周数格式，认为有效
+    
+    date_part = match.group("date")
+    declared_weekday = match.group("weekday")
+    
+    try:
+        # 解析日期
+        date_obj = datetime.strptime(date_part, "%Y-%m-%d")
+        
+        # 获取实际的星期几 (0=周一, 6=周日)
+        actual_weekday_num = date_obj.weekday()
+        
+        # 中文周数映射
+        weekday_map = {
+            0: "一",  # 周一
+            1: "二",  # 周二  
+            2: "三",  # 周三
+            3: "四",  # 周四
+            4: "五",  # 周五
+            5: "六",  # 周六
+            6: "日"   # 周日
+        }
+        
+        expected_weekday = weekday_map[actual_weekday_num]
+        
+        if declared_weekday != expected_weekday:
+            # 生成修正后的日期字符串
+            corrected_str = DATE_WITH_WEEKDAY_RE.sub(
+                lambda m: f"{m.group('date')} {m.group('time')} (UTC+8) 周{expected_weekday}",
+                date_str
+            )
+            
+            return WeekdayValidationResult(
+                is_valid=False,
+                error_message=f"日期 {date_part} 应该是周{expected_weekday}，但标记为周{declared_weekday}",
+                correct_weekday=expected_weekday,
+                declared_weekday=declared_weekday,
+                corrected_date_str=corrected_str
+            )
+        else:
+            return WeekdayValidationResult(is_valid=True)
+            
+    except ValueError:
+        return WeekdayValidationResult(
+            is_valid=False,
+            error_message=f"无法解析日期: {date_part}"
+        )
 
 
 def is_excluded(path: Path) -> bool:
@@ -128,11 +199,35 @@ def scan_file(path: Path, fix: bool) -> List[Violation]:
         violations.append(Violation(path, "missing_date", "缺少@date 标签"))
     elif not DATE_PREFIX_RE.search(date):
         violations.append(Violation(path, "bad_date", f"@date 格式不符合 YYYY-MM-DD 前缀: {date}"))
+    else:
+        # 检查日期中的周数是否正确
+        weekday_result = validate_date_weekday(date)
+        if not weekday_result.is_valid:
+            if fix and weekday_result.corrected_date_str:
+                # 自动修复周数错误
+                new_body = replace_tag_value(header_body, "date", date, weekday_result.corrected_date_str)
+                content = content.replace(header_body, new_body)
+                path.write_text(content, encoding="utf-8")
+                violations.append(Violation(path, "wrong_weekday", f"@date 周数错误已修复: 周{weekday_result.declared_weekday} -> 周{weekday_result.correct_weekday}", True))
+            else:
+                violations.append(Violation(path, "wrong_weekday", f"@date 周数错误: {weekday_result.error_message}"))
 
     # @change 检查（如果存在）
     change = tags.get("change")
     if change and not DATE_PREFIX_RE.search(change):
         violations.append(Violation(path, "bad_change", f"@change 未包含日期前缀: {change}"))
+    elif change:
+        # 检查change中的周数是否正确
+        weekday_result = validate_date_weekday(change)
+        if not weekday_result.is_valid:
+            if fix and weekday_result.corrected_date_str:
+                # 自动修复周数错误
+                new_body = replace_tag_value(header_body, "change", change, weekday_result.corrected_date_str)
+                content = content.replace(header_body, new_body)
+                path.write_text(content, encoding="utf-8")
+                violations.append(Violation(path, "wrong_weekday", f"@change 周数错误已修复: 周{weekday_result.declared_weekday} -> 周{weekday_result.correct_weekday}", True))
+            else:
+                violations.append(Violation(path, "wrong_weekday", f"@change 周数错误: {weekday_result.error_message}"))
 
     return violations
 
@@ -154,6 +249,14 @@ def insert_or_replace_tag(header_body: str, tag: str, value: str) -> str:
 
 def replace_file_name(header_body: str, old: str, new: str) -> str:
     return re.sub(rf"(@file)\s+{re.escape(old)}", fr"\1 {new}", header_body, count=1)
+
+
+def replace_tag_value(header_body: str, tag: str, old_value: str, new_value: str) -> str:
+    """替换文件头中指定标签的值"""
+    # 使用更精确的替换，确保只替换指定标签的值
+    pattern = rf"(@{tag}\s+){re.escape(old_value)}"
+    replacement = rf"@{tag} {new_value}"
+    return re.sub(pattern, replacement, header_body, count=1)
 
 
 def build_header_template(filename: str) -> str:

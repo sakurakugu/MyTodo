@@ -1,5 +1,5 @@
 /**
- * @file timezone_manager.h
+ * @file timezone.h
  * @brief 时区管理类 - 提供时区信息缓存和管理功能
  *
  * 该类负责管理系统时区信息，避免频繁的系统调用，提供缓存机制

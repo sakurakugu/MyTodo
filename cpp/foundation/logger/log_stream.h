@@ -8,7 +8,7 @@
  * 具体使用方法在logger.h中。
  *
  * @author Sakurakugu
- * @date 2025-10-11 21:42:09(UTC+8) 周二
+ * P25-10-11 21:42:09 (UTC+8) 周六
  * @change 2025-10-12 19:24:05 (UTC+8) 周日
 
  * @file log_stream.h*/
