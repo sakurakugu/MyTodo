@@ -9,11 +9,7 @@
 
 #include "datetime.h"
 #include "formatter.h"
-#include <iomanip>
-#include <iostream>
 #include <regex>
-#include <sstream>
-#include <stdexcept>
 
 #ifdef QT_CORE_LIB
 #include <QDateTime>
@@ -417,9 +413,24 @@ std::string DateTime::toString(std::string_view format) const {
     return DateTimeFormatter::format(format, replacements);
 }
 
-std::string DateTime::toISOString() const {
-    return std::format("{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}.{:03d}Z", year(), month(), day(), hour(), minute(),
-                       second(), millisecond());
+std::string DateTime::toLocalString() const {
+    DateTime dt = DateTime{*this} + m_tzOffset;
+    return std::format("{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}", dt.year(), dt.month(), dt.day(), dt.hour(),
+                       dt.minute(), dt.second());
+}
+
+std::string DateTime::toISOString(TimeZoneType tz) const {
+    if (tz == TimeZoneType::Local && m_tzOffset != minutes(0)) {
+        DateTime dt = DateTime{*this} + m_tzOffset;
+        int32_t offsetHours = std::chrono::duration_cast<hours>(m_tzOffset).count();
+        int32_t offsetMinutes = std::chrono::duration_cast<minutes>(m_tzOffset).count() % 60;
+        return std::format("{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}.{:03d}{}{:02d}:{:02d}", dt.year(), dt.month(),
+                           dt.day(), dt.hour(), dt.minute(), dt.second(), dt.millisecond(),
+                           (offsetHours > 0 ? "+" : "-"), std::abs(offsetHours), std::abs(offsetMinutes));
+    } else {
+        return std::format("{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}.{:03d}Z", year(), month(), day(), hour(),
+                           minute(), second(), millisecond());
+    }
 }
 
 std::string DateTime::toDateString() const {

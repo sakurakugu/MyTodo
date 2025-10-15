@@ -17,6 +17,10 @@
 
 #include <uuid.h>
 
+// 静态常量成员定义
+const int TodoSyncServer::m_maxBatchSize = 100;
+const int TodoSyncServer::m_maxRetryCount = 3;
+
 TodoSyncServer::TodoSyncServer(UserAuth &userAuth, QObject *parent)
     : BaseSyncServer(userAuth, parent), //
       m_currentPushIndex(0),            //
@@ -39,6 +43,7 @@ void TodoSyncServer::取消同步() {
     m_currentPushIndex = 0;
     m_currentBatchIndex = 0;
     m_totalBatches = 0;
+    m_retryCount.clear();
 }
 
 void TodoSyncServer::重置同步状态() {
@@ -50,6 +55,7 @@ void TodoSyncServer::重置同步状态() {
     m_currentBatchIndex = 0;
     m_totalBatches = 0;
     m_allUnsyncedItems.clear();
+    m_retryCount.clear();
 }
 
 // 数据操作接口实现
@@ -308,8 +314,8 @@ void TodoSyncServer::处理推送更改成功(const nlohmann::json &response) {
             for (const auto &cVal : conflictArray) {
                 nlohmann::json cObj = cVal;
                 logWarning() << std::format("冲突 {}: index={}, reason={}, server_version={}", ++idx,
-                                          cObj["index"].get<int>(), cObj["reason"].get<std::string>(),
-                                          cObj["server_item"].dump());
+                                            cObj["index"].get<int>(), cObj["reason"].get<std::string>(),
+                                            cObj["server_item"].dump());
             }
         }
 
@@ -319,29 +325,37 @@ void TodoSyncServer::处理推送更改成功(const nlohmann::json &response) {
             for (const auto &errorValue : errorArray) {
                 nlohmann::json error = errorValue;
                 std::string errorMsg = error["error"].get<std::string>();
-                std::string errorCode = "";
-                if (error["code"].is_string()) {
-                    errorCode = error["code"].get<std::string>();
+                std::string errorUuid = "";
+                if (error["index"].is_string()) {
+                    errorUuid = error["uuid"].get<std::string>();
                 }
                 int index = error["index"].get<int>();
 
-                logWarning() << std::format("错误 {}: 项目序号={}, 错误码={}, 描述={}", ++idx, index, errorCode,
-                                          errorMsg);
+                logWarning() << std::format("错误 {}: 项目序号={}, 错误码={}, 描述={}", ++idx, index, errorUuid,
+                                            errorMsg);
 
-                // 检查是否为重复UUID错误（MySQL错误1062）
-                if (errorCode == "CREATE_FAILED" && errorMsg.contains("Duplicate entry")) {
+                // 找到对应的待同步项目并将其标记为更新模式
+                if (index >= 0 && index < static_cast<int>(m_pendingUnsyncedItems.size())) {
+                    TodoItem *item = m_pendingUnsyncedItems[index];
+                    // 检查重试次数
 
-                    // 找到对应的待同步项目并将其标记为更新模式
-                    if (index >= 0 && index < static_cast<int>(m_pendingUnsyncedItems.size())) {
-                        TodoItem *item = m_pendingUnsyncedItems[index];
-                        if (item) {
-                            qInfo() << std::format("检测到重复UUID错误，将项目 {} 转换为更新模式",
-                                                   uuids::to_string(item->uuid()));
-                            // 将synced设置为2表示需要更新而不是创建
-                            item->forceSetSynced(2);
-                            // 到时候重新上传更新
-                        }
+                    int currentRetryCount = m_retryCount[errorUuid];
+                    if (currentRetryCount >= m_maxRetryCount) {
+                        logWarning() << std::format("项目 {} 已达到最大重试次数 {}，跳过重试", errorUuid,
+                                                    m_maxRetryCount);
+                        // 从重试映射中移除
+                        // m_retryCount.erase(errorUuid); // TODO: 当全部成功后，再移除
+                        continue;
                     }
+
+                    // 增加重试次数
+                    m_retryCount[errorUuid] = currentRetryCount + 1;
+
+                    logInfo() << std::format("检测到重复UUID错误，将项目 {} 转换为更新模式 (重试次数: {}/{})",
+                                             errorUuid, m_retryCount[errorUuid], m_maxRetryCount);
+                    // 将synced设置为2表示需要更新而不是创建
+                    item->forceSetSynced(2);
+                    // 到时候重新上传更新
                 }
             }
         }
@@ -349,9 +363,8 @@ void TodoSyncServer::处理推送更改成功(const nlohmann::json &response) {
         bool shouldMarkAsSynced = true;
         if (conflicts > 0 || errors > 0) {
             shouldMarkAsSynced = false;
-            std::string errorMsg = std::format("由于存在{}{}{}{}，不标记项目为已同步", conflicts > 0 ? "冲突" : "",
-                                               (conflicts > 0 && errors > 0) ? "和" : "", errors > 0 ? "错误" : "",
-                                               conflicts + errors > 0 ? "，" : "");
+            std::string errorMsg = std::format("由于存在{}{}{}，不标记项目为已同步", conflicts > 0 ? "冲突" : "",
+                                               (conflicts > 0 && errors > 0) ? "和" : "", errors > 0 ? "错误" : "");
             logWarning() << errorMsg;
         }
 
@@ -395,7 +408,9 @@ void TodoSyncServer::处理推送更改成功(const nlohmann::json &response) {
             if (m_currentSyncDirection == Bidirectional) {
                 qDebug() << "推送阶段完成，继续执行拉取阶段";
                 // 继续拉取（此时保持 m_isSyncing=true 防止外部再触发）
-                拉取数据();
+                if (m_retryCount.empty()) {
+                    拉取数据();
+                }
                 return;
             } else {
                 setIsSyncing(false);

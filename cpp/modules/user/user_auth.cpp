@@ -24,6 +24,10 @@
 #include <chrono>
 #include <regex>
 
+const int UserAuth::ACCESS_TOKEN_LIFETIME = 3600;
+const int UserAuth::REFRESH_TOKEN_LIFETIME = 30 * 24 * 3600; // 2592000 秒
+const int UserAuth::ACCESS_TOKEN_REFRESH_AHEAD = 300;        // 5 分钟，可根据需要调整
+
 UserAuth::UserAuth(QObject *parent)
     : QObject(parent),                                 //
       m_networkRequest(NetworkRequest::GetInstance()), //
@@ -34,7 +38,7 @@ UserAuth::UserAuth(QObject *parent)
 {
     // 初始化用户表
     if (!初始化用户表()) {
-        qCritical() << "用户表初始化失败";
+        logCritical() << "用户表初始化失败";
     }
 
     // 连接网络请求信号
@@ -63,29 +67,16 @@ void UserAuth::加载数据() {
     // 尝试从数据库中加载存储的凭据
     auto query = m_database.createQuery();
 
-    if (query->exec("SELECT uuid, username, email, refreshToken FROM users LIMIT 1")) {
-        auto rows = query->fetchAll();
-        if (!rows.empty()) {
-            const auto &row = rows[0];
-            for (const auto &[columnName, value] : row) {
-                if (columnName == "uuid") {
-                    m_uuid = sqlValueCast<uuids::uuid>(value);
-                } else if (columnName == "username") {
-                    m_username = sqlValueCast<std::string>(value);
-                } else if (columnName == "email") {
-                    m_email = sqlValueCast<std::string>(value);
-                } else if (columnName == "refreshToken") {
-                    m_refreshToken = sqlValueCast<std::string>(value);
-                }
-            }
-        }
+    if (query->exec("SELECT uuid, username, email, refreshToken FROM users")) {
+        m_uuid = sqlValueCast<uuids::uuid>(query->value("uuid"));
+        m_username = sqlValueCast<std::string>(query->value("username"));
+        m_email = sqlValueCast<std::string>(query->value("email"));
+        m_refreshToken = sqlValueCast<std::string>(query->value("refreshToken"));
     } else {
-        logWarning() << "查询用户凭据失败:" << query->lastErrorQt();
+        logWarning() << "查询用户凭据失败:" << query->lastError();
     }
 
     刷新访问令牌(); // 使用刷新令牌获取新的访问令牌
-
-    qDebug() << "服务器配置: " << m_networkRequest.getApiUrl(m_authApiEndpoint);
 }
 
 UserAuth::~UserAuth() {
@@ -125,7 +116,7 @@ void UserAuth::登录(const std::string &account, const std::string &password) {
         }
     }
 
-    qDebug() << "尝试登录账户:" << account;
+    logDebug() << "尝试登录账户:" << account;
 
     // 准备请求配置
     NetworkRequest::RequestConfig config;
@@ -174,7 +165,7 @@ uuids::uuid UserAuth::获取UUID() const {
 
 void UserAuth::刷新访问令牌() {
     if (m_uuid.is_nil()) {
-        qDebug() << "无法刷新令牌：用户未登录";
+        logDebug() << "无法刷新令牌：用户未登录";
         emit tokenRefreshFailed("用户未登录");
         return;
     }
@@ -186,14 +177,14 @@ void UserAuth::刷新访问令牌() {
     }
 
     if (m_isRefreshing) {
-        qDebug() << "令牌刷新已在进行中，跳过重复请求";
+        logDebug() << "令牌刷新已在进行中，跳过重复请求";
         return;
     }
 
     m_isRefreshing = true;
     emit tokenRefreshStarted();
 
-    qDebug() << "开始刷新访问令牌...";
+    logDebug() << "开始刷新访问令牌...";
 
     // 准备刷新请求
     NetworkRequest::RequestConfig config;
@@ -220,7 +211,7 @@ void UserAuth::onNetworkRequestCompleted(Network::RequestType type, const nlohma
         break;
     case Network::RequestType::FetchTodos:
         // 如果是token验证请求成功，说明token有效
-        qDebug() << "存储的访问令牌验证成功，用户已自动登录：" << m_username;
+        logDebug() << "存储的访问令牌验证成功，用户已自动登录：" << m_username;
         break;
     default:
         // 其他请求类型不在此处理
@@ -284,14 +275,16 @@ void UserAuth::onNetworkRequestFailed(Network::RequestType type, Network::Error 
 }
 
 void UserAuth::onAuthTokenExpired() {
-    logWarning() << "认证令牌已过期或无效，当前时间:" << QDateTime::currentSecsSinceEpoch()
-               << "令牌过期时间:" << m_tokenExpiryTime;
+    logWarning()
+        << "认证令牌已过期或无效，当前时间:"
+        << std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count()
+        << "令牌过期时间:" << m_tokenExpiryTime;
 
     停止令牌过期计时器();
 
     // 尝试使用refresh token自动刷新
     if (!m_refreshToken.empty() && !m_isRefreshing) {
-        qDebug() << "尝试使用refresh token自动刷新访问令牌";
+        logDebug() << "尝试使用refresh token自动刷新访问令牌";
         刷新访问令牌();
     } else {
         if (m_refreshToken.empty()) {
@@ -341,21 +334,27 @@ void UserAuth::处理登录成功(const nlohmann::json &response) {
 
     // 设置令牌过期时间（从服务端返回过期时间，若未返回则使用默认值）
     if (response.contains("expires_in")) {
-        qint64 expiresIn = response["expires_in"].get<int64_t>();
+        int64_t expiresIn = response["expires_in"].get<int64_t>();
         if (expiresIn <= 0 || expiresIn > ACCESS_TOKEN_LIFETIME) {
             expiresIn = ACCESS_TOKEN_LIFETIME; // 防御：限制在预期范围
         }
-        m_tokenExpiryTime = QDateTime::currentSecsSinceEpoch() + expiresIn;
+        m_tokenExpiryTime =
+            std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch())
+                .count() +
+            expiresIn;
     } else {
-        m_tokenExpiryTime = QDateTime::currentSecsSinceEpoch() + ACCESS_TOKEN_LIFETIME;
+        m_tokenExpiryTime =
+            std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch())
+                .count() +
+            ACCESS_TOKEN_LIFETIME;
     }
 
     m_networkRequest.setAuthToken(m_accessToken.c_str());
     开启令牌过期计时器();
     保存凭据();
 
-    // qDebug() << "用户" << m_username << "登录成功 (email=" << m_email << ")";
-    qDebug() << "用户" << m_username;
+    // logDebug() << "用户" << m_username << "登录成功 (email=" << m_email << ")";
+    logDebug() << "用户" << m_username;
 
     emit isLoggedInChanged();
     emit loginSuccessful(QString::fromStdString(m_username));
@@ -388,17 +387,17 @@ void UserAuth::处理令牌刷新成功(const nlohmann::json &response) {
             expiresIn = ACCESS_TOKEN_LIFETIME;
         }
         m_tokenExpiryTime = now + expiresIn;
-        qDebug() << "令牌过期时间已更新:" << m_tokenExpiryTime << "有效期:" << expiresIn << "秒";
+        logDebug() << "令牌过期时间已更新:" << m_tokenExpiryTime << "有效期:" << expiresIn << "秒";
     } else {
         m_tokenExpiryTime = now + ACCESS_TOKEN_LIFETIME;
-        qDebug() << "令牌过期时间使用默认生命周期 ACCESS_TOKEN_LIFETIME:" << ACCESS_TOKEN_LIFETIME;
+        logDebug() << "令牌过期时间使用默认生命周期 ACCESS_TOKEN_LIFETIME:" << ACCESS_TOKEN_LIFETIME;
     }
 
     // 更新刷新令牌（如果提供）
     if (response.contains("refresh_token")) {
         m_refreshToken = response["refresh_token"].get<std::string>();
         保存凭据();
-        qDebug() << "刷新令牌已更新";
+        logDebug() << "刷新令牌已更新";
     }
 
     // 设置网络管理器的认证令牌
@@ -407,7 +406,7 @@ void UserAuth::处理令牌刷新成功(const nlohmann::json &response) {
     // 重新启动令牌过期检查定时器
     开启令牌过期计时器();
 
-    qDebug() << "访问令牌刷新成功，定时器已重新启动";
+    logDebug() << "访问令牌刷新成功，定时器已重新启动";
     emit isLoggedInChanged();
     emit tokenRefreshSuccessful();
     是否发送首次认证信号();
@@ -465,23 +464,25 @@ void UserAuth::清除凭据() {
     emit uuidChanged();
     emit isLoggedInChanged();
 
-    qDebug() << "已清除用户凭据";
+    logDebug() << "已清除用户凭据";
 }
 
 void UserAuth::是否发送首次认证信号() {
     if (!m_firstAuthEmitted && !m_accessToken.empty()) {
         m_firstAuthEmitted = true;
         emit firstAuthCompleted();
-        qDebug() << "首次认证完成信号已发出";
+        logDebug() << "首次认证完成信号已发出";
     }
 }
 
 void UserAuth::onTokenExpiryCheck() {
     // 到达预定刷新窗口，若仍未刷新则执行刷新；若已经刷新，计时器会在刷新成功里重新安排
     if (!m_isRefreshing) {
-        qint64 now = QDateTime::currentSecsSinceEpoch();
+        int64_t now =
+            std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch())
+                .count();
         if (m_tokenExpiryTime > 0 && m_tokenExpiryTime - now <= ACCESS_TOKEN_REFRESH_AHEAD) {
-            qDebug() << "到达访问令牌预刷新窗口，执行刷新";
+            logDebug() << "到达访问令牌预刷新窗口，执行刷新";
             刷新访问令牌();
         } else if (m_tokenExpiryTime <= now) {
             logWarning() << "访问令牌已过期，触发过期处理";
@@ -491,7 +492,7 @@ void UserAuth::onTokenExpiryCheck() {
             开启令牌过期计时器();
         }
     } else {
-        qDebug() << "刷新进行中，忽略本次 onTokenExpiryCheck";
+        logDebug() << "刷新进行中，忽略本次 onTokenExpiryCheck";
     }
 }
 
@@ -502,7 +503,7 @@ void UserAuth::开启令牌过期计时器() {
     m_tokenExpiryTimer->stop(); // 重置任何旧的调度
 
     if (m_tokenExpiryTime == 0) {
-        qDebug() << "未设置 token 过期时间，不安排刷新";
+        logDebug() << "未设置 token 过期时间，不安排刷新";
         return;
     }
 
@@ -529,7 +530,7 @@ void UserAuth::开启令牌过期计时器() {
     delayMs = static_cast<int>(refreshDelaySec * 1000);
 
     m_tokenExpiryTimer->start(delayMs);
-    // qDebug() << "计划在" << refreshDelaySec << "秒后进入预刷新窗口 (token 剩余" << timeUntilExpiry << "秒)";
+    // logDebug() << "计划在" << refreshDelaySec << "秒后进入预刷新窗口 (token 剩余" << timeUntilExpiry << "秒)";
 }
 
 void UserAuth::停止令牌过期计时器() {
@@ -545,6 +546,7 @@ void UserAuth::停止令牌过期计时器() {
 bool UserAuth::初始化用户表() {
     // 确保数据库已初始化
     if (!m_database.initialize()) {
+        logCritical() << "数据库初始化失败";
         return false;
     }
 
@@ -556,7 +558,6 @@ bool UserAuth::初始化用户表() {
  * @return 创建是否成功
  */
 bool UserAuth::创建用户表() {
-    auto query = m_database.createQuery();
     const std::string createTableQuery = R"(
         CREATE TABLE IF NOT EXISTS users (
             uuid TEXT PRIMARY KEY NOT NULL,
@@ -566,12 +567,13 @@ bool UserAuth::创建用户表() {
         )
     )";
 
+    auto query = m_database.createQuery();
     if (!query->exec(createTableQuery)) {
-        qCritical() << "创建用户表失败:" << query->lastErrorQt();
+        logCritical() << "创建用户表失败:" << query->lastErrorQt();
         return false;
     }
 
-    qDebug() << "用户表初始化成功";
+    logDebug() << "用户表初始化成功";
     return true;
 }
 
@@ -588,7 +590,7 @@ bool UserAuth::exportToJson(nlohmann::json &output) {
     SqlMapResultSet resultMap = query->fetchAllMap();
 
     if (resultMap.empty()) {
-        logWarning() << "查询用户数据失败:" << query->lastErrorQt();
+        logWarning() << "用户表无数据可导出";
         return false;
     }
 

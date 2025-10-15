@@ -11,7 +11,6 @@
 
 #include <atomic>
 #include <chrono>
-#include <optional>
 
 namespace my {
 

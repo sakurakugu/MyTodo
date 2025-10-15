@@ -18,8 +18,8 @@
 #include <QObject>
 #include <QString>
 #include <QTimer>
-#include <uuid.h>
 #include <nlohmann/json.hpp>
+#include <uuid.h>
 
 #include "database.h"
 #include "network_request.h"
@@ -92,7 +92,7 @@ class UserAuth : public QObject, public IDataExporter {
     void onNetworkRequestCompleted(Network::RequestType type, const nlohmann::json &response); // 处理网络请求成功
     void onNetworkRequestFailed(Network::RequestType type, Network::Error error,
                                 const std::string &message); // 处理网络请求失败
-    void onAuthTokenExpired();                           // 处理认证令牌过期
+    void onAuthTokenExpired();                               // 处理认证令牌过期
 
   private slots:
     void onTokenExpiryCheck(); // 定时检查令牌过期
@@ -132,11 +132,11 @@ class UserAuth : public QObject, public IDataExporter {
 
     // ===== 令牌策略常量 =====
     // 访问令牌总有效期（秒）—— 服务端约定：1 小时
-    static const int ACCESS_TOKEN_LIFETIME = 3600;
+    static const int ACCESS_TOKEN_LIFETIME;
     // 刷新令牌总有效期（秒）—— 服务端约定：30 天
-    static const int REFRESH_TOKEN_LIFETIME = 30 * 24 * 3600; // 2592000 秒
+    static const int REFRESH_TOKEN_LIFETIME; // 2592000 秒
     // 在访问令牌过期前多少秒刷新（预刷新提前量）
-    static const int ACCESS_TOKEN_REFRESH_AHEAD = 300; // 5 分钟，可根据需要调整
+    static const int ACCESS_TOKEN_REFRESH_AHEAD; // 5 分钟，可根据需要调整
 
     // 服务器配置
     std::string m_authApiEndpoint; ///< 认证API端点

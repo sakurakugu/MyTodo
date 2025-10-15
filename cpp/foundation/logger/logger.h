@@ -161,7 +161,7 @@ class Logger {
     std::atomic<LogLevel> m_logLevel;         // 日志级别
     std::atomic<bool> m_logToFile;            // 是否将日志输出到文件
     std::atomic<bool> m_logToConsole;         // 是否将日志输出到控制台
-    std::atomic<qint64> m_maxLogFileSize;     // 最大日志文件大小（字节）
+    std::atomic<int64_t> m_maxLogFileSize;     // 最大日志文件大小（字节）
     std::atomic<int> m_maxLogFiles;           // 最大日志文件数量
     std::string m_logDir;                     // 日志目录路径
     std::string m_logFileName;                // 日志文件名
@@ -177,7 +177,7 @@ template <FileSizeType T> std::expected<void, LogError> Logger::setMaxLogFileSiz
         }
     }
     std::shared_lock lock(m_shared_mutex);
-    m_maxLogFileSize = static_cast<qint64>(maxSize);
+    m_maxLogFileSize = static_cast<int64_t>(maxSize);
     return {};
 }
 

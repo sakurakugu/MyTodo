@@ -9,10 +9,6 @@
  */
 
 #include "sql_query.h"
-#include <cstring>
-#include <iomanip>
-#include <sstream>
-#include <stdexcept>
 
 /**
  * @brief 构造函数

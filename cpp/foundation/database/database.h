@@ -15,7 +15,6 @@
 #include "sql_query.h"
 #include "version.h"
 
-#include <functional>
 #include <memory>
 #include <mutex>
 #include <nlohmann/json.hpp>
@@ -153,7 +152,6 @@ class Database {
     bool setupDatabase();                                 ///< 设置数据库配置
 
     // 内部方法（不加锁）
-    sqlite3 *getHandleInternal();                                          ///< 获取数据库句柄（内部使用，不加锁）
     std::unique_ptr<SqlQuery> createQueryInternal();                       ///< 创建查询对象（内部使用，不加锁）
     std::unique_ptr<SqlQuery> createQueryInternal(const std::string &sql); ///< 创建并准备查询对象（内部使用，不加锁）
     bool setPragmaInternal(const std::string &pragma, const std::string &value); ///< 设置PRAGMA（内部使用，不加锁）
@@ -166,6 +164,7 @@ class Database {
 
     // 成员变量
     mutable std::mutex m_mutex;                             ///< 线程安全保护
+    mutable std::mutex m_errorMutex;                        ///< 错误处理互斥锁
     sqlite3 *m_db;                                          ///< 数据库句柄
     std::string m_databasePath;                             ///< 数据库文件路径
     std::string m_lastError;                                ///< 最后一次错误信息

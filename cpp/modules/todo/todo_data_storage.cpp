@@ -51,7 +51,7 @@ bool TodoDataStorage::加载待办(TodoList &todos) {
             return false;
         }
 
-        while (query->next()) {
+        do {
             int id = sqlValueCast<int32_t>(query->value("id"));
             uuids::uuid uuid = sqlValueCast<uuids::uuid>(query->value("uuid"));
             uuids::uuid userUuid = sqlValueCast<uuids::uuid>(query->value("user_uuid"));
@@ -92,7 +92,7 @@ bool TodoDataStorage::加载待办(TodoList &todos) {
                 synced                              // 是否已同步
             );
             todos.push_back(std::move(item));
-        }
+        } while (query->next());
 
         qDebug() << "成功从数据库加载" << todos.size() << "个待办事项";
     } catch (const std::exception &e) {
@@ -156,24 +156,31 @@ bool TodoDataStorage::新增待办(TodoList &todos, const std::string &title, co
         "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, "
         "is_trashed, trashed_at, created_at, updated_at, synced) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     insertQuery->prepare(insertString);
-    insertQuery->bindValues(
-        newTodo->uuid(),                                                                                       //
-        newTodo->userUuid(),                                                                                   //
-        newTodo->title(),                                                                                      //
-        newTodo->description(),                                                                                //
-        newTodo->category(),                                                                                   //
-        newTodo->important(),                                                                                  //
-        newTodo->deadline().isValid() ? SqlValue(newTodo->deadline().toUnixTimestampMs()) : SqlValue(nullptr), //
-        newTodo->recurrenceInterval(),                                                                         //
-        newTodo->recurrenceCount(),                                                                            //
-        newTodo->recurrenceStartDate().toString(),                                                             //
+    SqlValue deadlineValue =
+        newTodo->deadline().isValid() ? SqlValue(newTodo->deadline().toUnixTimestampMs()) : SqlValue(nullptr);
+    SqlValue completedAtValue =
+        newTodo->completedAt().isValid() ? SqlValue(newTodo->completedAt().toUnixTimestampMs()) : SqlValue(nullptr);
+    SqlValue trashedAtValue =
+        newTodo->trashedAt().isValid() ? SqlValue(newTodo->trashedAt().toUnixTimestampMs()) : SqlValue(nullptr);
+
+    insertQuery->bindValues(                       //
+        newTodo->uuid(),                           //
+        newTodo->userUuid(),                       //
+        newTodo->title(),                          //
+        newTodo->description(),                    //
+        newTodo->category(),                       //
+        newTodo->important(),                      //
+        deadlineValue,                             //
+        newTodo->recurrenceInterval(),             //
+        newTodo->recurrenceCount(),                //
+        newTodo->recurrenceStartDate().toString(), //
         newTodo->isCompleted(),
-        newTodo->completedAt().isValid() ? SqlValue(newTodo->completedAt().toUnixTimestampMs()) : SqlValue(nullptr), //
-        newTodo->isTrashed(),                                                                                        //
-        newTodo->trashedAt().isValid() ? SqlValue(newTodo->trashedAt().toUnixTimestampMs()) : SqlValue(nullptr),     //
-        newTodo->createdAt().toUnixTimestampMs(),                                                                    //
-        newTodo->updatedAt().toUnixTimestampMs(),                                                                    //
-        newTodo->synced()                                                                                            //
+        completedAtValue,                         //
+        newTodo->isTrashed(),                     //
+        trashedAtValue,                           //
+        newTodo->createdAt().toUnixTimestampMs(), //
+        newTodo->updatedAt().toUnixTimestampMs(), //
+        newTodo->synced()                         //
     );
     if (!insertQuery->exec()) {
         qCritical() << "插入待办事项到数据库失败:" << insertQuery->lastErrorQt();
@@ -204,24 +211,31 @@ bool TodoDataStorage::新增待办(TodoList &todos, std::unique_ptr<TodoItem> it
         "recurrence_interval, recurrence_count, recurrence_start_date, is_completed, completed_at, "
         "is_trashed, trashed_at, created_at, updated_at, synced) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     insertQuery->prepare(insertString);
-    insertQuery->bindValues(
-        item->uuid(),                                                                                          //
-        item->userUuid(),                                                                                      //
-        item->title(),                                                                                         //
-        item->description(),                                                                                   //
-        item->category(),                                                                                      //
-        item->important(),                                                                                     //
-        item->deadline().isValid() ? SqlValue(item->deadline().toUnixTimestampMs()) : SqlValue(nullptr),       //
-        item->recurrenceInterval(),                                                                            //
-        item->recurrenceCount(),                                                                               //
-        item->recurrenceStartDate().toString(),                                                                //
-        item->isCompleted(),                                                                                   //
-        item->completedAt().isValid() ? SqlValue(item->completedAt().toUnixTimestampMs()) : SqlValue(nullptr), //
-        item->isTrashed(),                                                                                     //
-        item->trashedAt().isValid() ? SqlValue(item->trashedAt().toUnixTimestampMs()) : SqlValue(nullptr),     //
-        item->createdAt().toUnixTimestampMs(),                                                                 //
-        item->updatedAt().toUnixTimestampMs(),                                                                 //
-        item->synced()                                                                                         //
+    SqlValue deadlineValue =
+        item->deadline().isValid() ? SqlValue(item->deadline().toUnixTimestampMs()) : SqlValue(nullptr);
+    SqlValue completedAtValue =
+        item->completedAt().isValid() ? SqlValue(item->completedAt().toUnixTimestampMs()) : SqlValue(nullptr);
+    SqlValue trashedAtValue =
+        item->trashedAt().isValid() ? SqlValue(item->trashedAt().toUnixTimestampMs()) : SqlValue(nullptr);
+
+    insertQuery->bindValues(                    //
+        item->uuid(),                           //
+        item->userUuid(),                       //
+        item->title(),                          //
+        item->description(),                    //
+        item->category(),                       //
+        item->important(),                      //
+        deadlineValue,                          //
+        item->recurrenceInterval(),             //
+        item->recurrenceCount(),                //
+        item->recurrenceStartDate().toString(), //
+        item->isCompleted(),                    //
+        completedAtValue,                       //
+        item->isTrashed(),                      //
+        trashedAtValue,                         //
+        item->createdAt().toUnixTimestampMs(),  //
+        item->updatedAt().toUnixTimestampMs(),  //
+        item->synced()                          //
     );
     if (!insertQuery->exec()) {
         qCritical() << "插入待办事项到数据库失败:" << insertQuery->lastErrorQt();
@@ -690,7 +704,7 @@ bool TodoDataStorage::导入待办事项从JSON(TodoList &todos, const nlohmann:
                     break;
                 }
                 auto idQuery = m_database.createQuery();
-                if (idQuery->exec("SELECT last_insert_rowid()") && idQuery->next())
+                if (idQuery->exec("SELECT last_insert_rowid()"))
                     ref.setId(sqlValueCast<int32_t>(idQuery->value(0)));
                 uuidIndex[uuid] = newItem.get();
                 todos.push_back(std::move(newItem));
@@ -881,8 +895,9 @@ std::vector<int> TodoDataStorage::查询待办ID列表(const QueryOptions &opt) 
         qCritical() << "查询待办事项ID失败:" << query->lastErrorQt();
         return indexs;
     }
-    while (query->next())
+    do {
         indexs.push_back(sqlValueCast<int32_t>(query->value(0)));
+    } while (query->next());
     return indexs;
 }
 
@@ -895,6 +910,7 @@ bool TodoDataStorage::初始化数据表() {
 }
 
 bool TodoDataStorage::创建数据表() {
+    auto query = m_database.createQuery();
     const std::string createTableQuery = R"(
         CREATE TABLE IF NOT EXISTS todos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -917,7 +933,11 @@ bool TodoDataStorage::创建数据表() {
             synced INTEGER NOT NULL DEFAULT 1
         )
     )";
-    执行SQL查询(createTableQuery);
+    if (!query->exec(createTableQuery)) {
+        logCritical() << "SQL查询执行失败:" << m_database.lastError();
+        logCritical() << "查询语句:" << createTableQuery;
+    }
+    return true;
 
     const std::vector<std::string> indexes = //
         {"CREATE INDEX IF NOT EXISTS idx_todos_uuid ON todos(uuid)",
@@ -928,7 +948,12 @@ bool TodoDataStorage::创建数据表() {
          "CREATE INDEX IF NOT EXISTS idx_todos_trashed ON todos(is_trashed)",
          "CREATE INDEX IF NOT EXISTS idx_todos_synced ON todos(synced)"};
     for (const std::string &idx : indexes) {
-        执行SQL查询(idx);
+        query->bindValues({idx});
+        if (!query->exec()) {
+            logCritical() << "SQL查询执行失败:" << m_database.lastError();
+            logCritical() << "查询语句:" << idx;
+            return false;
+        }
     }
     qDebug() << "todos表初始化成功";
     return true;
@@ -949,7 +974,7 @@ bool TodoDataStorage::exportToJson(nlohmann::json &output) {
         return false;
     }
     nlohmann::json arr;
-    while (query->next()) {
+    do {
         nlohmann::json obj;
         obj["uuid"] = sqlValueCast<std::string>(query->value(1));
         obj["user_uuid"] = sqlValueCast<std::string>(query->value(2));
@@ -969,7 +994,7 @@ bool TodoDataStorage::exportToJson(nlohmann::json &output) {
         obj["updated_at"] = my::DateTime(sqlValueCast<int64_t>(query->value(16)));
         obj["synced"] = sqlValueCast<int32_t>(query->value(17));
         arr.push_back(obj);
-    }
+    } while (query->next());
     output["todos"] = arr;
     return true;
 }

@@ -255,7 +255,7 @@ bool BackupManager::检查是否需要备份() const {
 
     // 计算距离上次备份的天数
     QDateTime currentTime = QDateTime::currentDateTime();
-    qint64 daysSinceLastBackup = lastBackupTime.daysTo(currentTime);
+    int64_t daysSinceLastBackup = lastBackupTime.daysTo(currentTime);
 
     // 如果距离上次备份的天数超过了间隔，需要备份
     return daysSinceLastBackup >= intervalDays;

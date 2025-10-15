@@ -19,22 +19,36 @@
 #include <QSet>
 #include <uuid.h>
 
+// 静态常量成员定义
+const int CategorySyncServer::m_maxRetryCount = 3;
+
 CategorySyncServer::CategorySyncServer(UserAuth &userAuth, QObject *parent) : BaseSyncServer(userAuth, parent) {
     // 设置类别特有的API端点
-    m_apiEndpoint =
-        m_config.get("server/categoriesApiEndpoint", QString(DefaultValues::categoriesApiEndpoint)).toString().toStdString();
+    m_apiEndpoint = m_config.get("server/categoriesApiEndpoint", QString(DefaultValues::categoriesApiEndpoint))
+                        .toString()
+                        .toStdString();
 }
 
 CategorySyncServer::~CategorySyncServer() {}
 
 void CategorySyncServer::取消同步() {
     BaseSyncServer::取消同步();
+
+    // 清理分类特有的状态
     m_unsyncedItems.clear();
+    m_currentOperationName.clear();
+    m_currentOperationNewName.clear();
+    m_retryCount.clear();
 }
 
 void CategorySyncServer::重置同步状态() {
     BaseSyncServer::重置同步状态();
+
+    // 清理分类特有的状态
     m_unsyncedItems.clear();
+    m_currentOperationName.clear();
+    m_currentOperationNewName.clear();
+    m_retryCount.clear();
 }
 
 // 类别操作接口实现
@@ -285,8 +299,31 @@ void CategorySyncServer::处理推送更改成功(const nlohmann::json &response
         for (const auto &errorValue : errorArray) {
             nlohmann::json errObj = errorValue;
             int idx = errObj.at("index").get<int>();
-            QString errMsg = QString::fromStdString(errObj.at("error").get<std::string>());
-            qWarning() << QString("类别条目 index=%1 处理失败: %2").arg(idx).arg(errMsg);
+            std::string errMsg = errObj.at("error").get<std::string>();
+
+            // 检查重试次数限制
+            if (idx >= 0 && idx < static_cast<int>(m_unsyncedItems.size())) {
+                CategorieItem *item = m_unsyncedItems[idx];
+                if (item) {
+                    std::string uuid = uuids::to_string(item->uuid());
+                    int currentRetryCount = m_retryCount[uuid];
+
+                    if (currentRetryCount >= m_maxRetryCount) {
+                        logWarning() << std::format("类别条目 {} (index={}) 已达到最大重试次数 {}，跳过重试: {}", uuid,
+                                                    idx, m_maxRetryCount, errMsg);
+                        // 从重试映射中移除
+                        // m_retryCount.erase(uuid); // TODO: 当全部成功后，再移除
+                        // 不将此项目添加到失败索引中，这样它就不会被保留用于重试
+                        continue;
+                    }
+
+                    // 增加重试次数
+                    m_retryCount[uuid] = currentRetryCount + 1;
+                    logWarning() << std::format("类别条目 {} (index={}) 处理失败 (重试次数: {}/{}): {}", uuid, idx,
+                                                m_retryCount[uuid], m_maxRetryCount, errMsg);
+                }
+            }
+
             if (idx >= 0)
                 failedIndexes.insert(idx);
         }
@@ -332,7 +369,9 @@ void CategorySyncServer::处理推送更改成功(const nlohmann::json &response
     if (m_currentSyncDirection == Bidirectional) {
         qDebug() << "推送阶段完成，继续执行拉取阶段";
         // 继续拉取（此时保持 m_isSyncing=true 防止外部再触发）
-        拉取数据();
+        if (m_retryCount.empty()) {
+            拉取数据();
+        }
         return;
     } else {
         setIsSyncing(false);

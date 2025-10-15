@@ -10,7 +10,6 @@
 #include "formatter.h"
 #include <algorithm>
 #include <vector>
-#include <cstdio>
 
 namespace my {
 

@@ -32,8 +32,8 @@
 #include "app/qml_todo.h"
 #include "app/qml_update_checker.h"
 #include "app/qml_user_auth.h"
-#include "logger.h"
 #include "log_stream.h"
+#include "logger.h"
 #include "modules/user/user_auth.h"
 #include "qt_debug.h"
 #include "version.h"
@@ -71,6 +71,7 @@ int main(int argc, char *argv[]) {
     QGuiApplication::setApplicationName(APP_NAME);              // 设置应用名称（不设置组织名）
     QGuiApplication::setApplicationVersion(APP_VERSION_STRING); // 设置应用版本
 
+    Setting::GetInstance();                          // 先初始化设置，加载默认配置
     UserAuth userAuth;                               // 核心认证逻辑实例
     QmlUserAuth qmlUserAuth(userAuth);               // QML 认证层实例
     QmlCategoryManager qmlCategoryManager(userAuth); // QML 类别管理器实例

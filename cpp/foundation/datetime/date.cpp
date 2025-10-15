@@ -9,10 +9,7 @@
 
 #include "date.h"
 #include "formatter.h"
-#include <iomanip>
 #include <regex>
-#include <sstream>
-#include <stdexcept>
 
 #ifdef QT_CORE_LIB
 #include <QDate>

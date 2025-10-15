@@ -14,7 +14,6 @@
 #include "timezone.h"
 #include <chrono>
 #include <string>
-#include <string_view>
 
 #ifdef QT_CORE_LIB
 class QDateTime;
@@ -81,7 +80,7 @@ class DateTime {
 
     // 静态工厂方法
     static DateTime now(TimeZoneType tz = TimeZoneType::Local) noexcept; // 获取当前日期时间
-    static DateTime utcNow() noexcept; // 获取当前UTC日期时间(不含时区)
+    static DateTime utcNow() noexcept;                                   // 获取当前UTC日期时间(不含时区)
     static DateTime today(TimeZoneType tz = TimeZoneType::Local) noexcept;
     static DateTime fromString(std::string_view str) noexcept;
     static DateTime fromISOString(std::string_view str) noexcept;
@@ -144,7 +143,8 @@ class DateTime {
 
     // 格式化
     std::string toString(std::string_view format = "yyyy-MM-dd HH:mm:ss") const;
-    std::string toISOString() const;
+    std::string toLocalString() const;
+    std::string toISOString(TimeZoneType tz = TimeZoneType::UTC) const;
     std::string toDateString() const;
     std::string toTimeString() const;
 #ifdef QT_CORE_LIB
@@ -202,9 +202,9 @@ class DateTime {
 
   private:
     // 储存UTC时间和日期
-    Date m_date;                                // 日期部分
-    Time m_time;                                // 时间部分
-    minutes m_tzOffset{0};                      // 时区偏移，单位：分钟
+    Date m_date;           // 日期部分
+    Time m_time;           // 时间部分
+    minutes m_tzOffset{0}; // 时区偏移，单位：分钟
 
     // 辅助方法
     static std::optional<DateTime> parseISO(std::string_view str) noexcept;

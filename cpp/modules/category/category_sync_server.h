@@ -12,10 +12,8 @@
 
 #pragma once
 
-#include <nlohmann/json.hpp>
 #include <QList>
-#include <memory>
-#include <vector>
+#include <unordered_map>
 
 #include "base_sync_server.h"
 
@@ -106,10 +104,13 @@ class CategorySyncServer : public BaseSyncServer {
     // 辅助方法
 
   private:
-    // 数据管理
-    std::vector<CategorieItem *> m_unsyncedItems;
-
+    std::vector<CategorieItem *> m_unsyncedItems;    ///< 未同步的分类项目列表
+    
     // 当前操作状态
     QString m_currentOperationName;    ///< 当前操作的对象的名称（用于类别CRUD操作）
     QString m_currentOperationNewName; ///< 当前操作的对象的新名称（用于更新操作）
+    
+    // 重试次数管理
+    static const int m_maxRetryCount;            ///< 最大重试次数
+    std::unordered_map<std::string, int> m_retryCount; ///< 项目UUID到重试次数的映射
 };

@@ -7,7 +7,6 @@
  */
 
 #include "timezone.h"
-#include <stdexcept>
 
 #ifdef _WIN32
 #include <windows.h>

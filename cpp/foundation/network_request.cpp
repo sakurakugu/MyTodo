@@ -14,7 +14,6 @@
 #include "network_proxy.h"
 #include "version.h"
 
-#include <QCoreApplication>
 #include <QHostInfo>
 #include <QNetworkRequest>
 #include <QSslError>
@@ -335,12 +334,12 @@ void NetworkRequest::onReplyFinished() {
 // 日志输出（含 HTTP 状态与预览体）
 #ifdef QT_DEBUG
             if (!bodyText.isEmpty())
-                logWarning() << "网络请求失败:" << RequestTypeToString(request.type) << "- HTTP状态码:" << httpStatus
-                           << "-" << errorMessage << "-" << "错误码:" << serverCode << "响应体预览:" << bodyText;
+                logWarning() << "网络请求失败:" << RequestTypeToString(request.type) << " - HTTP状态码:" << httpStatus
+                           << " - " << errorMessage << " - " << "错误码:" << serverCode << " - 响应体预览:" << bodyText;
             else
 #endif
-                logWarning() << "网络请求失败:" << RequestTypeToString(request.type) << "- HTTP状态码:" << httpStatus
-                           << "-" << errorMessage << "-" << "错误码:" << serverCode;
+                logWarning() << "网络请求失败:" << RequestTypeToString(request.type) << " - HTTP状态码:" << httpStatus
+                           << " - " << errorMessage << " - " << "错误码:" << serverCode;
 
             // 专门的 401 认证处理（沿用原逻辑，但复用已经解析的 JSON 信息）
             if (httpStatus == 401) {
@@ -451,7 +450,7 @@ void NetworkRequest::onSslErrors(const QList<QSslError> &errors) {
 void NetworkRequest::executeRequest(PendingRequest &request) {
     QNetworkRequest networkRequest = createNetworkRequest(request.config);
 
-    logDebug() << "发送网络请求:" << RequestTypeToString(request.type) << "到" << networkRequest.url().toString();
+    logDebug() << "发送网络请求: " << RequestTypeToString(request.type) << " 到 " << networkRequest.url().toString();
 
     // 准备请求数据
     QByteArray requestData;
@@ -581,9 +580,9 @@ void NetworkRequest::setupDefaultHeaders(QNetworkRequest &request) const {
     // 应用名 / 版本 (平台@计算机名)
     const QByteArray userAgent = std::format("{} v{} (Qt@{})", APP_NAME, APP_VERSION_STRING, m_computerName).c_str();
     // 设置Origin头部，格式为 app://应用名(平台)
-#if defined(Q_OS_WIN)
+#if defined(_WIN32)
     const QByteArray origin = std::format("app://{}({})", APP_NAME, "Windows").c_str();
-#elif defined(Q_OS_MACOS)
+#elif defined(__APPLE__)
     const QByteArray origin = std::format("app://{}({})", APP_NAME, "macOS").c_str();
 #else
     const QByteArray origin = std::format("app://{}({})", APP_NAME, "Linux").c_str();
@@ -671,7 +670,7 @@ bool NetworkRequest::isDuplicateRequest(Network::RequestType type) const {
     return m_activeRequests.contains(type);
 }
 
-void NetworkRequest::addActiveRequest(Network::RequestType type, qint64 requestId) {
+void NetworkRequest::addActiveRequest(Network::RequestType type, int64_t requestId) {
     m_activeRequests[type] = requestId;
 }
 

@@ -14,7 +14,6 @@
 
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 
 #ifdef MY_LOGGER_ENABLED
 #include "logger.h"
@@ -56,11 +55,10 @@ Database::~Database() {
 bool Database::initialize() {
     if (m_initialized.load(std::memory_order_acquire))
         return true;
-    std::lock_guard<std::mutex> lock(m_mutex);
     m_initialized.store(true, std::memory_order_release);
-
     clearError();
-
+    
+    std::lock_guard<std::mutex> lock(m_mutex);
     // 打开数据库
     int result = sqlite3_open(m_databasePath.c_str(), &m_db);
     if (result != SQLITE_OK) {
@@ -129,11 +127,6 @@ void Database::close() {
 }
 
 sqlite3 *Database::getHandle() {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return getHandleInternal();
-}
-
-sqlite3 *Database::getHandleInternal() {
     if (!isInitialized()) {
         setError("数据库未初始化");
         return nullptr;
@@ -148,7 +141,7 @@ std::string Database::getDatabasePath() const {
 
 std::unique_ptr<SqlQuery> Database::createQuery() {
     std::lock_guard<std::mutex> lock(m_mutex);
-    sqlite3 *handle = getHandleInternal();
+    sqlite3 *handle = getHandle();
     if (!handle) {
         return nullptr;
     }
@@ -171,7 +164,7 @@ std::unique_ptr<SqlQuery> Database::createQuery(const std::string &sql) {
 }
 
 std::unique_ptr<SqlQuery> Database::createQueryInternal() {
-    sqlite3 *handle = getHandleInternal();
+    sqlite3 *handle = getHandle();
     if (!handle) {
         return nullptr;
     }
@@ -376,7 +369,7 @@ std::string Database::getSqliteVersion() {
 }
 
 std::string Database::lastError() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_errorMutex);
     return m_lastError;
 }
 
@@ -498,7 +491,10 @@ bool Database::setupDatabase() {
 }
 
 void Database::setError(const std::string &error) {
-    m_lastError = error;
+    {
+        std::lock_guard<std::mutex> lock(m_errorMutex);
+        m_lastError = error;
+    }
     m_hasError.store(true, std::memory_order_release);
 
 #ifdef QT_CORE_LIB
@@ -511,7 +507,10 @@ void Database::setError(const std::string &error) {
 }
 
 void Database::clearError() {
-    m_lastError.clear();
+    {
+        std::lock_guard<std::mutex> lock(m_errorMutex);
+        m_lastError.clear();
+    }
     m_hasError.store(false, std::memory_order_release);
 }
 
@@ -618,7 +617,7 @@ nlohmann::json Database::exportTable(const std::string &table, const std::vector
         setError("导出表失败: " + table + " " + query->lastError());
         return array;
     }
-    while (query->next()) {
+    do {
         nlohmann::json obj;
         for (size_t i = 0; i < columns.size(); ++i) {
             auto v = query->value(i);
@@ -639,6 +638,6 @@ nlohmann::json Database::exportTable(const std::string &table, const std::vector
                 obj[columns[i]] = nullptr; // 未知类型设为null
         }
         array.push_back(obj);
-    }
+    } while (query->next());
     return array;
 }

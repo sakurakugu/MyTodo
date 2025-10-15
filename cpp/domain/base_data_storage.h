@@ -83,10 +83,6 @@ class BaseDataStorage : public QObject, public IDataExporter {
     bool importFromJson(const nlohmann::json &input, bool replaceAll) override = 0;
 
   protected:
-    // 通用的数据库操作方法
-    bool 执行SQL查询(const std::string &queryString);
-    bool 执行SQL查询(const std::string &queryString, const std::vector<SqlValue> &params);
-
     // 通用的表创建方法
     virtual bool 创建数据表() = 0;
 

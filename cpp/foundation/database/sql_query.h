@@ -15,7 +15,6 @@
 #include <sqlite3.h>
 #include <string>
 #include <type_traits>
-#include <variant>
 #include <vector>
 
 /**
@@ -83,6 +82,7 @@ class SqlQuery {
     }
 
     bool next();                                         // 移动到下一行结果
+    bool execAndNext() { return next(); }                // 执行并移动到下一行结果（bool next()的别名）
     SqlValue value(int index) const;                     // 获取当前行的列值
     SqlValue value(const std::string &columnName) const; // 获取当前行的列值
     SqlRow currentRow() const;                           // 获取当前行的所有数据

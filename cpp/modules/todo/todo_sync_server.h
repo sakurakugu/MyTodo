@@ -13,6 +13,7 @@
 #pragma once
 
 #include <QList>
+#include <unordered_map>
 
 #include "base_sync_server.h"
 
@@ -98,8 +99,14 @@ class TodoSyncServer : public BaseSyncServer {
     std::vector<TodoItem *> m_todoItems;            ///< 待同步的待办事项列表
     std::vector<TodoItem *> m_pendingUnsyncedItems; ///< 等待推送的未同步项目
     std::vector<TodoItem *> m_allUnsyncedItems;     ///< 存储所有待同步项目
+
+    // 批次管理
     int m_currentPushIndex;                         ///< 当前推送的项目索引
     int m_currentBatchIndex;                        ///< 当前批次索引
     int m_totalBatches;                             ///< 总批次数
-    static const int m_maxBatchSize = 100;          ///< 最大批次大小
+    static const int m_maxBatchSize;          ///< 最大批次大小
+    
+    // 重试次数管理
+    static const int m_maxRetryCount;           ///< 最大重试次数
+    std::unordered_map<std::string, int> m_retryCount; ///< 项目UUID到重试次数的映射
 };

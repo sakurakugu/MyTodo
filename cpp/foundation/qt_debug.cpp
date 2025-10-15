@@ -17,7 +17,7 @@
 #include <chrono>
 
 // Windows 相关头文件
-#ifdef Q_OS_WIN
+#ifdef _WIN32
 #include <windows.h>
 #endif
 
@@ -29,7 +29,7 @@ void QtDebug::打印资源路径(const QString &path) {
 }
 
 void QtDebug::设置终端编码(int codePage) {
-#ifdef Q_OS_WIN
+#ifdef _WIN32
     // Windows平台，设置控制台编码
     SetConsoleCP(codePage);
     SetConsoleOutputCP(codePage);
@@ -37,14 +37,4 @@ void QtDebug::设置终端编码(int codePage) {
 }
 
 void QtDebug::测试用() {
-    // 当前时间，qt格式
-    QDateTime dt = QDateTime::currentDateTime();
-    logWarning() << dt.toString(Qt::ISODateWithMs).toStdString();
-    logWarning() << dt.toString(Qt::ISODate).toStdString();
-    // 时间戳
-    logWarning() << dt.toSecsSinceEpoch();
-    logWarning() << dt.toMSecsSinceEpoch();
-
-    logWarning() << my::DateTime::now(my::TimeZoneType::Local).toISOString();
-    logWarning() << my::DateTime::utcNow();
 }

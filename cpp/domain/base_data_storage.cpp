@@ -38,45 +38,14 @@ BaseDataStorage::~BaseDataStorage() {
  */
 bool BaseDataStorage::初始化() {
     if (!m_database.initialize()) {
-        qCritical() << m_exporterName << "数据库初始化失败";
+        logCritical() << m_exporterName << "数据库初始化失败";
         return false;
     }
     // 初始化数据表
     if (!初始化数据表()) {
-        qCritical() << m_exporterName << "数据表初始化失败";
+        logCritical() << m_exporterName << "数据表初始化失败";
         return false;
     }
     return true;
 }
 
-/**
- * @brief 执行SQL查询（无参数）
- * @param queryString SQL查询语句
- * @return 执行是否成功
- */
-bool BaseDataStorage::执行SQL查询(const std::string &queryString) {
-    auto query = m_database.createQuery();
-    if (!query->exec(queryString)) {
-        logCritical() << "SQL查询执行失败:" << m_database.lastError();
-        logCritical() << "查询语句:" << queryString;
-        return false;
-    }
-    return true;
-}
-
-/**
- * @brief 执行SQL查询（带参数）
- * @param queryString SQL查询语句
- * @param params 查询参数
- * @return 执行是否成功
- */
-bool BaseDataStorage::执行SQL查询(const std::string &queryString, const std::vector<SqlValue> &params) {
-    auto query = m_database.createQuery();
-    query->bindValues(params);
-    if (!query->exec(queryString)) {
-        logCritical() << "SQL查询执行失败:" << m_database.lastError();
-        logCritical() << "查询语句:" << queryString;
-        return false;
-    }
-    return true;
-}

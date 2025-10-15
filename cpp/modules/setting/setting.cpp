@@ -32,7 +32,7 @@ Setting::Setting(QObject *parent)
 Setting::~Setting() {}
 
 int Setting::getOsType() const {
-#if defined(Q_OS_WIN)
+#if defined(_WIN32)
     return 0;
 #else
     return 1;
@@ -128,7 +128,7 @@ bool Setting::获取日志是否输出到控制台() const {
     return result.toBool();
 }
 
-void Setting::设置最大日志文件大小(qint64 maxSize) {
+void Setting::设置最大日志文件大小(int64_t maxSize) {
     m_config.save("log/maxFileSize", maxSize);
     auto result = m_logger.setMaxLogFileSize(maxSize);
     if (!result) {
@@ -136,8 +136,8 @@ void Setting::设置最大日志文件大小(qint64 maxSize) {
     }
 }
 
-qint64 Setting::获取最大日志文件大小() const {
-    constexpr qint64 defaultSize = 10 * 1024 * 1024; // 默认10MB
+int64_t Setting::获取最大日志文件大小() const {
+    constexpr int64_t defaultSize = 10 * 1024 * 1024; // 默认10MB
     auto result = m_config.get("log/maxFileSize", defaultSize);
     return result.toLongLong();
 }

@@ -172,20 +172,20 @@ void QmlGlobalData::setSelectedTodo(const QVariant &value) {
 
 bool QmlGlobalData::isSystemInDarkMode() const {
 
-#if defined(Q_OS_WIN) // Windows 平台
+#if defined(_WIN32) // Windows 平台
     QSettings settings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
                        QSettings::NativeFormat);
     int value = settings.value("AppsUseLightTheme", 1).toInt();
     return value == 0; // 0 = 深色，1 = 浅色
 
-#elif defined(Q_OS_MACOS) // macOS 平台
+#elif defined(__APPLE__) // macOS 平台
     QProcess process;
     process.start("defaults", {"read", "-g", "AppleInterfaceStyle"});
     process.waitForFinished();
     QString output = QString::fromUtf8(process.readAllStandardOutput()).trimmed();
     return (output.compare("Dark", Qt::CaseInsensitive) == 0);
 
-#elif defined(Q_OS_LINUX) // Linux (GNOME / KDE)
+#elif defined(__linux__) // Linux (GNOME / KDE)
     // 1. 先尝试 GNOME
     QProcess process;
     process.start("gsettings", {"get", "org.gnome.desktop.interface", "color-scheme"});
@@ -287,10 +287,10 @@ QString QmlGlobalData::formatDateTime(const QVariant &dateTime) const {
     }
 
     QDateTime now = QDateTime::currentDateTime();
-    qint64 timeDiff = now.toMSecsSinceEpoch() - dt.toMSecsSinceEpoch();
-    qint64 minutesDiff = timeDiff / (1000 * 60);
-    qint64 hoursDiff = timeDiff / (1000 * 60 * 60);
-    qint64 daysDiff = timeDiff / (1000 * 60 * 60 * 24);
+    int64_t timeDiff = now.toMSecsSinceEpoch() - dt.toMSecsSinceEpoch();
+    int64_t minutesDiff = timeDiff / (1000 * 60);
+    int64_t hoursDiff = timeDiff / (1000 * 60 * 60);
+    int64_t daysDiff = timeDiff / (1000 * 60 * 60 * 24);
 
     // 今天
     if (daysDiff == 0) {

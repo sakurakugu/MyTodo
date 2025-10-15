@@ -81,8 +81,8 @@ class Setting : public QObject {
     bool 获取日志是否记录到文件() const;
     void 设置日志是否输出到控制台(bool enabled);
     bool 获取日志是否输出到控制台() const;
-    void 设置最大日志文件大小(qint64 maxSize);
-    qint64 获取最大日志文件大小() const;
+    void 设置最大日志文件大小(int64_t maxSize);
+    int64_t 获取最大日志文件大小() const;
     void 设置最大日志文件数量(int maxFiles);
     int 获取最大日志文件数量() const;
     QString 获取日志文件路径() const;

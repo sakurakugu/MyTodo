@@ -9,10 +9,7 @@
 
 #include "time.hpp"
 #include "formatter.h"
-#include <iomanip>
 #include <regex>
-#include <sstream>
-#include <stdexcept>
 
 #ifdef QT_CORE_LIB
 #include <QTime>

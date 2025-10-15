@@ -13,9 +13,8 @@
 #include "category_data_storage.h"
 #include "category_item.h"
 #include "config.h"
-#include "utility.h"
 #include "log_stream.h"
-
+#include "utility.h"
 
 CategoryDataStorage::CategoryDataStorage(QObject *parent)
     : BaseDataStorage("categories", parent) // 调用基类构造函数
@@ -47,7 +46,7 @@ bool CategoryDataStorage::加载类别(CategorieList &categories) {
             return false;
         }
 
-        while (query->next()) {
+        do {
             int id = sqlValueCast<int>(query->value("id"));
             uuids::uuid uuid = sqlValueCast<uuids::uuid>(query->value("uuid"));
             std::string name = sqlValueCast<std::string>(query->value("name"));
@@ -66,14 +65,14 @@ bool CategoryDataStorage::加载类别(CategorieList &categories) {
                 synced                                   // 是否已同步
             );
             categories.push_back(std::move(item));
-        }
+        } while (query->next());
 
-        qDebug() << "成功从数据库加载" << categories.size() << "个类别";
+        logDebug() << "成功从数据库加载" << categories.size() << "个类别";
     } catch (const std::exception &e) {
-        qCritical() << "加载本地存储时发生异常:" << e.what();
+        logCritical() << "加载本地存储时发生异常:" << e.what();
         success = false;
     } catch (...) {
-        qCritical() << "加载本地存储时发生未知异常";
+        logCritical() << "加载本地存储时发生未知异常";
         success = false;
     }
 
@@ -398,12 +397,14 @@ bool CategoryDataStorage::导入类别从JSON(CategorieList &categories, const n
                 continue;
             }
 
-            uuids::uuid uuid = obj.contains("uuid") ? uuids::uuid::from_string(obj.at("uuid").get<std::string>()).value()
-                                                    : uuids::uuid_system_generator{}();
+            uuids::uuid uuid = obj.contains("uuid")
+                                   ? uuids::uuid::from_string(obj.at("uuid").get<std::string>()).value()
+                                   : uuids::uuid_system_generator{}();
             if (uuid.is_nil())
                 uuid = uuids::uuid_system_generator{}();
 
-            my::DateTime createdAt = obj.contains("created_at") ? my::DateTime(obj.at("created_at").get<my::DateTime>()) : now;
+            my::DateTime createdAt =
+                obj.contains("created_at") ? my::DateTime(obj.at("created_at").get<my::DateTime>()) : now;
             if (!createdAt.isValid())
                 createdAt = now;
             my::DateTime updatedAt =
@@ -513,9 +514,9 @@ bool CategoryDataStorage::创建数据表() {
             synced INTEGER NOT NULL DEFAULT 1
         )
     )";
-    auto createQuery = m_database.createQuery();
-    if (!createQuery->exec(createTableQuery)) {
-        qCritical() << "创建categories表失败:" << createQuery->lastErrorQt();
+    auto query = m_database.createQuery();
+    if (!query->exec(createTableQuery)) {
+        logCritical() << "创建categories表失败:" << query->lastErrorQt();
         return false;
     }
 
@@ -525,9 +526,9 @@ bool CategoryDataStorage::创建数据表() {
          "CREATE INDEX IF NOT EXISTS idx_categories_user_uuid ON categories(user_uuid)",
          "CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name)"};
     for (const std::string &idx : indexes)
-        if (!createQuery->exec(idx))
-            qWarning() << "创建categories表索引失败:" << createQuery->lastErrorQt();
-    qDebug() << "categories表初始化成功";
+        if (!query->exec(idx))
+            logWarning() << "创建categories表索引失败:" << query->lastErrorQt();
+    logDebug() << "categories表初始化成功";
     return true;
 }
 
@@ -544,7 +545,7 @@ bool CategoryDataStorage::exportToJson(nlohmann::json &output) {
         return false;
     }
     nlohmann::json arr = nlohmann::json::array();
-    while (query->next()) {
+    do {
         nlohmann::json obj = nlohmann::json::object();
         obj["uuid"] = sqlValueCast<std::string>(query->value("uuid"));
         obj["name"] = sqlValueCast<std::string>(query->value("name"));
@@ -553,7 +554,7 @@ bool CategoryDataStorage::exportToJson(nlohmann::json &output) {
         obj["updated_at"] = sqlValueCast<int64_t>(query->value("updated_at"));
         obj["synced"] = sqlValueCast<int>(query->value("synced"));
         arr.push_back(obj);
-    }
+    } while (query->next());
     output["categories"] = arr;
     return true;
 }
