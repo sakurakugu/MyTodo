@@ -769,14 +769,22 @@ func (th *TodoHandler) convertToCreateRequest(syncItem *models.SyncTodoItem) *mo
 	}
 
 	// 处理时间字段（支持毫秒或字符串，由 time.Time 解析）
+	// 检测并过滤掉1970-01-01这种"空"时间值
 	if syncItem.Deadline != nil {
 		deadline := *syncItem.Deadline
-		req.Deadline = &deadline
+		// 检查是否为1970-01-01的时间（Unix纪元开始时间），这通常表示空值
+		if !deadline.IsZero() && deadline.Year() != 1970 {
+			req.Deadline = &deadline
+		}
+		// 如果是1970年的时间，则不设置deadline（保持为nil）
 	}
 
 	if syncItem.TrashedAt != nil {
 		trashedAt := *syncItem.TrashedAt
-		req.TrashedAt = &trashedAt
+		// 同样检查TrashedAt字段
+		if !trashedAt.IsZero() && trashedAt.Year() != 1970 {
+			req.TrashedAt = &trashedAt
+		}
 	}
 
 	if syncItem.RecurrenceStartDate != nil && *syncItem.RecurrenceStartDate != "" {
@@ -808,14 +816,22 @@ func (th *TodoHandler) convertToUpdateRequest(syncItem *models.SyncTodoItem) *mo
 	}
 
 	// 处理时间字段（支持毫秒或字符串）
+	// 检测并过滤掉1970-01-01这种"空"时间值
 	if syncItem.Deadline != nil {
 		deadline := *syncItem.Deadline
-		req.Deadline = &deadline
+		// 检查是否为1970-01-01的时间（Unix纪元开始时间），这通常表示空值
+		if !deadline.IsZero() && deadline.Year() != 1970 {
+			req.Deadline = &deadline
+		}
+		// 如果是1970年的时间，则不设置deadline（保持为nil）
 	}
 
 	if syncItem.TrashedAt != nil {
 		trashedAt := *syncItem.TrashedAt
-		req.TrashedAt = &trashedAt
+		// 同样检查TrashedAt字段
+		if !trashedAt.IsZero() && trashedAt.Year() != 1970 {
+			req.TrashedAt = &trashedAt
+		}
 	}
 
 	if syncItem.RecurrenceStartDate != nil && *syncItem.RecurrenceStartDate != "" {
