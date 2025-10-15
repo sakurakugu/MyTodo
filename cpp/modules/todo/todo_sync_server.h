@@ -12,10 +12,8 @@
 
 #pragma once
 
-#include <QList>
-#include <unordered_map>
-
 #include "base_sync_server.h"
+#include <unordered_map>
 
 class TodoItem;
 
@@ -75,9 +73,9 @@ class TodoSyncServer : public BaseSyncServer {
 
   signals:
     // 数据更新信号（待办事项特有）
-    void todosUpdatedFromServer(const nlohmann::json &todosArray);       // 从服务器更新的待办事项
+    void todosUpdatedFromServer(const nlohmann::json &todosArray);   // 从服务器更新的待办事项
     void localChangesUploaded(const std::vector<TodoItem *> &items); // 本地更改已上传
-    void syncConflictDetected(const nlohmann::json &conflictItems);      // 检测到同步冲突
+    void syncConflictDetected(const nlohmann::json &conflictItems);  // 检测到同步冲突
 
   protected slots:
     void onNetworkRequestCompleted(Network::RequestType type,
@@ -101,12 +99,12 @@ class TodoSyncServer : public BaseSyncServer {
     std::vector<TodoItem *> m_allUnsyncedItems;     ///< 存储所有待同步项目
 
     // 批次管理
-    int m_currentPushIndex;                         ///< 当前推送的项目索引
-    int m_currentBatchIndex;                        ///< 当前批次索引
-    int m_totalBatches;                             ///< 总批次数
-    static const int m_maxBatchSize;          ///< 最大批次大小
-    
+    int m_currentPushIndex;          ///< 当前推送的项目索引
+    int m_currentBatchIndex;         ///< 当前批次索引
+    int m_totalBatches;              ///< 总批次数
+    static const int m_maxBatchSize; ///< 最大批次大小
+
     // 重试次数管理
-    static const int m_maxRetryCount;           ///< 最大重试次数
+    static const int m_maxRetryCount;                  ///< 最大重试次数
     std::unordered_map<std::string, int> m_retryCount; ///< 项目UUID到重试次数的映射
 };

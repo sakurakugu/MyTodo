@@ -157,7 +157,6 @@ void TodoSyncServer::推送数据() {
         // 如果是双向同步且没有本地更改，直接完成
         if (m_currentSyncDirection == Bidirectional || m_currentSyncDirection == UploadOnly) {
             setIsSyncing(false);
-            更新最后同步时间();
             emit syncCompleted(Success, "同步完成");
         }
         return;
@@ -250,7 +249,6 @@ void TodoSyncServer::推送下一个批次() {
         // 所有批次都已推送完成
         qDebug() << "所有批次推送完成";
         setIsSyncing(false);
-        更新最后同步时间();
         emit syncCompleted(Success, QString("分批同步完成，共推送 %1 个项目").arg(m_allUnsyncedItems.size()));
 
         // 清理临时数据
@@ -288,7 +286,6 @@ void TodoSyncServer::处理获取数据成功(const nlohmann::json &response) {
     } else {
         // 仅下载模式，直接完成同步
         setIsSyncing(false);
-        更新最后同步时间();
         emit syncCompleted(Success, "数据获取完成");
     }
 }
@@ -414,7 +411,6 @@ void TodoSyncServer::处理推送更改成功(const nlohmann::json &response) {
                 return;
             } else {
                 setIsSyncing(false);
-                更新最后同步时间();
                 emit syncCompleted(Success, "数据更改推送完成");
             }
         }

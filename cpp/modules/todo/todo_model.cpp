@@ -214,7 +214,7 @@ bool TodoModel::新增待办(const QString &title, const uuids::uuid &userUuid, 
     return true;
 }
 
-bool TodoModel::更新待办(int index, const QVariantMap &todoData) {
+bool TodoModel::更新待办(int index, const std::map<std::string, QVariant> &todoData) {
     // 通过过滤后的索引获取实际的任务项
     auto todoItem = 获取过滤后的待办(index);
     QModelIndex modelIndex = 获取内容在待办列表中的索引(todoItem);
@@ -279,7 +279,7 @@ bool TodoModel::标记完成(int index, bool completed) {
 
     bool success = false;
     try {
-        QVariantMap todoData;
+        std::map<std::string, QVariant> todoData;
         todoData["is_completed"] = completed;
 
         // 如果任务被标记为完成，并且当前过滤器是“待办”或“已完成”，则将其从视图中移除
@@ -340,7 +340,7 @@ bool TodoModel::标记删除(int index, bool trashed) {
                 return false;
             }
             beginResetModel();
-            QVariantMap todoData;
+            std::map<std::string, QVariant> todoData;
             todoData["is_trashed"] = false;
             return 更新待办(index, todoData);
 

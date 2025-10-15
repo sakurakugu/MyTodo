@@ -13,7 +13,6 @@
 #pragma once
 
 #include <QObject>
-#include <QString>
 #include <QTimer>
 
 #include "network_request.h"
@@ -114,7 +113,6 @@ class BaseSyncServer : public QObject {
     void 执行同步(SyncDirection direction); // 执行同步操作
 
     // 辅助方法
-    void 更新最后同步时间();
     bool 是否可以执行同步() const;
     void 开启自动同步计时器();
     void 停止自动同步计时器();
@@ -127,7 +125,6 @@ class BaseSyncServer : public QObject {
 
     // 同步状态
     bool m_isSyncing;                     ///< 当前是否正在同步
-    QString m_lastSyncTime;               ///< 最后同步时间
     int m_autoSyncInterval;               ///< 自动同步间隔（分钟）
     SyncDirection m_currentSyncDirection; ///< 当前同步方向
 

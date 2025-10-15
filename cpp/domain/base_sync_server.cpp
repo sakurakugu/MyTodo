@@ -13,8 +13,6 @@
 #include "config.h"
 #include "user_auth.h"
 
-#include <QDateTime>
-
 BaseSyncServer::BaseSyncServer(UserAuth &userAuth, QObject *parent)
     : QObject(parent),                                 // 父对象
       m_networkRequest(NetworkRequest::GetInstance()), // 网络请求对象
@@ -37,7 +35,6 @@ BaseSyncServer::BaseSyncServer(UserAuth &userAuth, QObject *parent)
 
     // 从设置中加载自动同步配置
     m_autoSyncInterval = m_config.get("sync/autoSyncInterval", 30).toInt();
-    m_lastSyncTime = QString("1970-01-01 00:00:00");
 
     开启自动同步计时器();
 }
@@ -131,10 +128,6 @@ void BaseSyncServer::执行同步(SyncDirection direction) {
         拉取数据();
         break;
     }
-}
-
-void BaseSyncServer::更新最后同步时间() {
-    m_lastSyncTime = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
 }
 
 bool BaseSyncServer::是否可以执行同步() const {

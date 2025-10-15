@@ -65,8 +65,8 @@ void QmlTodoManager::addTodo(const QString &title, const QString &description, c
  * @return 更新是否成功
  */
 bool QmlTodoManager::updateTodo(int index, const QString &roleName, const QVariant &value) {
-    QVariantMap todoData;
-    todoData[roleName] = value;
+    std::map<std::string, QVariant> todoData;
+    todoData[roleName.toStdString()] = value;
     return m_todoModel->更新待办(index, todoData);
 }
 
@@ -80,8 +80,12 @@ bool QmlTodoManager::updateTodo() {
         return false;
     }
 
-    const QVariantMap todoMap = selectedTodo.toMap();
-    const int index = todoMap.value("index", -1).toInt();
+    const QVariantMap variantMap = selectedTodo.toMap();
+    std::map<std::string, QVariant> todoMap;
+    for (auto it = variantMap.begin(); it != variantMap.end(); ++it) {
+        todoMap[it.key().toStdString()] = it.value();
+    }
+    const int index = todoMap.at("index").toInt();
     if (index < 0 || index >= m_todoModel->rowCount()) {
         return false;
     }

@@ -100,7 +100,7 @@ class TodoModel : public QAbstractListModel {
                   const QString &category = "未分类", bool important = false,           //
                   const QDateTime &deadline = QDateTime(), int recurrenceInterval = 0,  //
                   int recurrenceCount = 0, const QDate &recurrenceStartDate = QDate()); //
-    bool 更新待办(int index, const QVariantMap &todoData);
+    bool 更新待办(int index, const std::map<std::string, QVariant> &todoData);
     bool 标记完成(int index, bool completed);
     bool 标记删除(int index, bool trashed);                           // isTrashed = 1/0 回收或删除
     bool 软删除待办(int index);                                       // synced = 3

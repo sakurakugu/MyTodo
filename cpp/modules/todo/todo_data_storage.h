@@ -12,8 +12,6 @@
 #pragma once
 
 #include <QObject>
-#include <QString>
-#include <QVariantMap>
 #include <algorithm>
 #include <memory>
 #include <vector>
@@ -85,7 +83,7 @@ class TodoDataStorage : public BaseDataStorage {
                   const std::string &category, bool important, const my::DateTime &deadline, int recurrenceInterval,
                   int recurrenceCount, const my::Date &recurrenceStartDate, uuids::uuid userUuid);
     bool 新增待办(TodoList &todos, std::unique_ptr<TodoItem> item);
-    bool 更新待办(TodoList &todos, const uuids::uuid &uuid, const QVariantMap &todoData);
+    bool 更新待办(TodoList &todos, const uuids::uuid &uuid, const std::map<std::string, QVariant> &todoData);
     bool 更新待办(TodoList &todos, TodoItem &item);
     bool 回收待办(TodoList &todos, const uuids::uuid &uuid);   // (标记isTrashed为删除)
     bool 软删除待办(TodoList &todos, const uuids::uuid &uuid); // (标记synced为删除)
@@ -96,7 +94,7 @@ class TodoDataStorage : public BaseDataStorage {
     bool 更新所有待办用户UUID(TodoList &todos, const uuids::uuid &newUserUuid, int synced);
 
     bool 导入待办事项从JSON(TodoList &todos, const nlohmann::json &todosArray, //
-                            ImportSource source = ImportSource::Server,    //
+                            ImportSource source = ImportSource::Server,        //
                             解决冲突方案 resolution = 解决冲突方案::Merge);
 
     // 数据库侧过滤 + 排序查询（仅返回符合条件的 id 列表，后续由上层映射为对象）

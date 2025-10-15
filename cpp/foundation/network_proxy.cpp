@@ -96,7 +96,7 @@ const QString &NetworkProxy::getProxyHost() const noexcept {
  * @brief 获取代理端口
  * @return 代理端口
  */
-constexpr int NetworkProxy::getProxyPort() const noexcept {
+constexpr uint16_t NetworkProxy::getProxyPort() const noexcept {
     return m_proxyPort;
 }
 
@@ -239,7 +239,7 @@ QNetworkProxy NetworkProxy::createQNetworkProxy() const noexcept {
             (m_proxyType == ProxyType::HttpProxy) ? QNetworkProxy::HttpProxy : QNetworkProxy::Socks5Proxy;
         proxy.setType(proxyType);
         proxy.setHostName(m_proxyHost);
-        proxy.setPort(static_cast<quint16>(m_proxyPort));
+        proxy.setPort((m_proxyPort));
 
         if (hasProxyAuth()) {
             proxy.setUser(m_proxyUsername);
@@ -260,7 +260,7 @@ QNetworkProxy NetworkProxy::createQNetworkProxy() const noexcept {
  * @param username 用户名
  * @param password 密码
  */
-void NetworkProxy::updateProxyConfig(ProxyType type, const QString &host, int port, const QString &username,
+void NetworkProxy::updateProxyConfig(ProxyType type, const QString &host, uint16_t port, const QString &username,
                                      const QString &password) noexcept {
     m_proxyType = type;
     m_proxyHost = host;

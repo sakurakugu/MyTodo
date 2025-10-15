@@ -19,8 +19,6 @@
 #include "database.h"
 #include "default_value.h"
 
-#include <QDateTime>
-#include <QRegularExpression>
 #include <chrono>
 #include <regex>
 

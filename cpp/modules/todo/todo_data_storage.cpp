@@ -15,7 +15,6 @@
 #include "utility.h"
 
 #include <QDateTime>
-#include <QTimeZone>
 #include <QVariant>
 #include <algorithm>
 
@@ -255,7 +254,8 @@ bool TodoDataStorage::新增待办(TodoList &todos, std::unique_ptr<TodoItem> it
  * @param todoData 待办事项数据映射
  * @return 更新是否成功
  */
-bool TodoDataStorage::更新待办(TodoList &todos, const uuids::uuid &uuid, const QVariantMap &todoData) {
+bool TodoDataStorage::更新待办(TodoList &todos, const uuids::uuid &uuid,
+                               const std::map<std::string, QVariant> &todoData) {
     auto it = std::find_if(todos.begin(), todos.end(),
                            [uuid](const std::unique_ptr<TodoItem> &item) { return item->uuid() == uuid; });
     if (it == todos.end()) {
@@ -274,70 +274,72 @@ bool TodoDataStorage::更新待办(TodoList &todos, const uuids::uuid &uuid, con
     };
     if (todoData.contains("title")) {
         appendField("title", QMetaType::QString);
-        (*it)->setTitle(todoData["title"].toString().toStdString());
+        (*it)->setTitle(todoData.at("title").toString().toStdString());
     }
     if (todoData.contains("description")) {
         appendField("description", QMetaType::QString);
-        (*it)->setDescription(todoData["description"].toString().toStdString());
+        (*it)->setDescription(todoData.at("description").toString().toStdString());
     }
     if (todoData.contains("category")) {
         appendField("category", QMetaType::QString);
-        (*it)->setCategory(todoData["category"].toString().toStdString());
+        (*it)->setCategory(todoData.at("category").toString().toStdString());
     }
     if (todoData.contains("important")) {
         appendField("important", QMetaType::Bool);
-        (*it)->setImportant(todoData["important"].toBool());
+        (*it)->setImportant(todoData.at("important").toBool());
     }
     if (todoData.contains("deadline")) {
         appendField("deadline", QMetaType::QDateTime);
-        (*it)->setDeadline(my::DateTime(todoData["deadline"].toString().toStdString()));
+        (*it)->setDeadline(my::DateTime(todoData.at("deadline").toString().toStdString()));
     }
     if (todoData.contains("recurrence_interval")) {
         appendField("recurrence_interval", QMetaType::Int);
-        (*it)->setRecurrenceInterval(todoData["recurrence_interval"].toInt());
+        (*it)->setRecurrenceInterval(todoData.at("recurrence_interval").toInt());
     }
     if (todoData.contains("recurrence_count")) {
         appendField("recurrence_count", QMetaType::Int);
-        (*it)->setRecurrenceCount(todoData["recurrence_count"].toInt());
+        (*it)->setRecurrenceCount(todoData.at("recurrence_count").toInt());
     }
     if (todoData.contains("recurrence_start_date")) {
         appendField("recurrence_start_date", QMetaType::QDate);
-        (*it)->setRecurrenceStartDate(my::Date(todoData["recurrence_start_date"].toString().toStdString()));
+        (*it)->setRecurrenceStartDate(my::Date(todoData.at("recurrence_start_date").toString().toStdString()));
     }
     if (todoData.contains("is_completed")) {
         appendField("is_completed", QMetaType::Bool);
-        (*it)->setIsCompleted(todoData["is_completed"].toBool());
+        (*it)->setIsCompleted(todoData.at("is_completed").toBool());
     }
     if (todoData.contains("completed_at")) {
         appendField("completed_at", QMetaType::QDateTime);
-        (*it)->setCompletedAt(my::DateTime(todoData["completed_at"].toString().toStdString()));
+        (*it)->setCompletedAt(my::DateTime(todoData.at("completed_at").toString().toStdString()));
     }
     if (todoData.contains("is_trashed")) {
         appendField("is_trashed", QMetaType::Bool);
-        (*it)->setIsTrashed(todoData["is_trashed"].toBool());
+        (*it)->setIsTrashed(todoData.at("is_trashed").toBool());
     }
     if (todoData.contains("trashed_at")) {
         appendField("trashed_at", QMetaType::QDateTime);
-        (*it)->setTrashedAt(my::DateTime(todoData["trashed_at"].toString().toStdString()));
+        (*it)->setTrashedAt(my::DateTime(todoData.at("trashed_at").toString().toStdString()));
     }
     // 始终更新这两个字段
     order += "updated_at = ?, synced = ? WHERE uuid = ?";
     updateQuery->prepare(order);
     for (const auto &[type, name] : fields) {
         if (type == QMetaType::QDateTime) {
-            updateQuery->addBindValue(my::DateTime(todoData[QString::fromStdString(name)].toString().toStdString()));
+            updateQuery->addBindValue(my::DateTime(todoData.at(name).toString().toStdString()));
         } else if (type == QMetaType::QDate) {
-            updateQuery->addBindValue(my::Date(todoData[QString::fromStdString(name)].toString().toStdString()));
+            updateQuery->addBindValue(my::Date(todoData.at(name).toString().toStdString()));
         } else if (type == QMetaType::Bool) {
-            updateQuery->addBindValue(todoData[QString::fromStdString(name)].toBool());
+            updateQuery->addBindValue(todoData.at(name).toBool());
         } else if (type == QMetaType::Int) {
-            updateQuery->addBindValue(todoData[QString::fromStdString(name)].toInt());
+            updateQuery->addBindValue(todoData.at(name).toInt());
         } else {
-            updateQuery->addBindValue(todoData[QString::fromStdString(name)].toString());
+            updateQuery->addBindValue(todoData.at(name).toString());
         }
     }
-    QDateTime now = QDateTime::currentDateTimeUtc();
-    updateQuery->addBindValue(now.toMSecsSinceEpoch());
+    int64_t now =
+        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
+            .count();
+    updateQuery->addBindValue(now);
     updateQuery->addBindValue(((*it)->synced() != 1) ? 2 : 1);
     updateQuery->addBindValue(uuids::to_string(uuid));
     if (!updateQuery->exec()) {
@@ -405,7 +407,7 @@ bool TodoDataStorage::更新待办([[maybe_unused]] TodoList &todos, TodoItem &i
  * @return 回收是否成功
  */
 bool TodoDataStorage::回收待办(TodoList &todos, const uuids::uuid &uuid) {
-    QVariantMap todoData;
+    std::map<std::string, QVariant> todoData;
     todoData["is_trashed"] = true;
     todoData["trashed_at"] = QDateTime::currentDateTimeUtc();
     return 更新待办(todos, uuid, todoData);

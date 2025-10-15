@@ -16,7 +16,6 @@
 #include "utility.h"
 
 #include <QDateTime>
-#include <QSet>
 #include <uuid.h>
 
 // 静态常量成员定义
@@ -220,7 +219,6 @@ void CategorySyncServer::推送数据() {
         // 如果是双向同步且没有本地更改，直接完成
         if (m_currentSyncDirection == Bidirectional || m_currentSyncDirection == UploadOnly) {
             setIsSyncing(false);
-            更新最后同步时间();
             emit syncCompleted(Success, "同步完成");
         }
         return;
@@ -275,7 +273,6 @@ void CategorySyncServer::处理获取数据成功(const nlohmann::json &response
     } else {
         // 仅下载模式，直接完成同步
         setIsSyncing(false);
-        更新最后同步时间();
         emit syncCompleted(Success, "数据获取完成");
     }
 }
@@ -375,7 +372,6 @@ void CategorySyncServer::处理推送更改成功(const nlohmann::json &response
         return;
     } else {
         setIsSyncing(false);
-        更新最后同步时间();
         emit syncCompleted(Success, "数据更改推送完成");
     }
 }

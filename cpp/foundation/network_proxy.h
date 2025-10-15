@@ -80,7 +80,7 @@ class NetworkProxy : public QObject {
     // 代理信息获取
     constexpr ProxyType getProxyType() const noexcept; // 获取当前代理类型
     const QString &getProxyHost() const noexcept;      // 获取代理主机
-    constexpr int getProxyPort() const noexcept;       // 获取代理端口
+    constexpr uint16_t getProxyPort() const noexcept;  // 获取代理端口
     const QString &getProxyUsername() const noexcept;  // 获取代理用户名
     constexpr bool hasProxyAuth() const noexcept;      // 检查是否配置了代理认证
 
@@ -101,13 +101,13 @@ class NetworkProxy : public QObject {
 
     // 内部方法
     QNetworkProxy createQNetworkProxy() const noexcept; // 创建QNetworkProxy对象
-    void updateProxyConfig(ProxyType type, const QString &host, int port, const QString &username,
+    void updateProxyConfig(ProxyType type, const QString &host, uint16_t port, const QString &username,
                            const QString &password) noexcept; // 更新代理配置
 
     // 成员变量
     ProxyType m_proxyType;   // 代理类型
     QString m_proxyHost;     // 代理主机
-    int m_proxyPort;         // 代理端口
+    uint16_t m_proxyPort;    // 代理端口
     QString m_proxyUsername; // 代理用户名
     QString m_proxyPassword; // 代理密码
     bool m_proxyEnabled;     // 代理是否启用
