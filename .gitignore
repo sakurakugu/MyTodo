@@ -47,6 +47,7 @@ Thumbs.db
 /.qmake.stash
 .cache
 bin/
+.qmlls.ini
 
 # QtCreator 生成文件
 *.pro.user*
