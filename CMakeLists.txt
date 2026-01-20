@@ -132,7 +132,7 @@ set(RESOURCE_FILES
 find_package(Qt6 REQUIRED COMPONENTS ${QT_COMPONENTS})
 
 # Qt6 项目标准设置
-qt_standard_project_setup(REQUIRES 6.9)
+qt_standard_project_setup(REQUIRES 6.10)
 
 # 创建可执行文件目标
 qt_add_executable(${APP_NAME} 
@@ -146,7 +146,7 @@ set_target_properties(${APP_NAME} PROPERTIES
     DEBUG_POSTFIX "_debug"          # Debug 版本后缀
 )
 
-# 新增 QML 模块
+# 新增 QML 模块（会自动生成 ./.qmlls.ini）
 qt_add_qml_module(${APP_NAME}
     URI ${APP_NAME}                              # QML 模块 URI
     VERSION ${VERSION_MAJOR}.${VERSION_MINOR}    # 模块版本
